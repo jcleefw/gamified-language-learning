@@ -62,13 +62,34 @@
 - Delete irrelevant session files
 - Start ADR #3 (shared types strategy) or #4 (API surface design)
 
+### 2026-03-04 — ANKI Parameters & Word Pool Deck Discussion
+
+**Branch**: main
+**Goal**: Resolve open question on ANKI defaults vs mobile-tuned parameters; define word pool deck behavior for eager learners
+
+**Completed**:
+- Discussed three approaches (A: pure defaults, B: conservative, C: defaults + cap) with concrete number traces
+- Resolved ANKI parameter open question → Approach C (FSRS 0.90 retention + 90-day max interval cap)
+- Defined word pool deck as sandbox mode (no ANKI side effects)
+- Designed soft signal mechanism (3 wrong all-time → pull review date forward, reset counter)
+- Updated SRS PRD §5.11, §8.1, §13
+- Updated CONTEXT.md open questions
+- Updated SRS Engine ADR `SrsConfig` with `desiredRetention` and `maxInterval`
+
+**Decisions Made**:
+- ANKI parameters: Approach C — FSRS defaults + 90-day max interval cap
+- Word pool: sandbox mode, analytics-tracked, soft signal at 3 wrong
+- No minimum pool size for word pool
+- Question type distribution: same as curated (70/20/10), challenge modes deferred
+- No separate ADR for word pool — product rules, not architecture
+
 ---
 
 ## Session Statistics
 
 | Metric | Value |
 |--------|-------|
-| Total Sessions (this branch) | 3 |
+| Total Sessions (this branch) | 4 |
 | Average Duration | — |
 | Stories Completed | 0 |
 | Bugs Fixed | 0 |

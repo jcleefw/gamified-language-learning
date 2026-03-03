@@ -5,6 +5,29 @@
 
 ## Decision Log
 
+### 2026-03-04: ANKI Parameters — FSRS Defaults + 90-Day Cap
+**Context**: Open question in SRS PRD and CONTEXT.md — should we use Anki defaults or tune for shorter mobile sessions? Three approaches considered: (A) pure FSRS defaults, (B) conservative mobile-tuned params, (C) FSRS defaults + max interval cap.
+**Decision**: Approach C — FSRS desired retention 0.90 (default) + 90-day max interval cap.
+**Rationale**: Phase 1 mastery (10 correct answers) is already stronger than Anki's learning steps, so default FSRS early intervals are fine. 90-day cap prevents words vanishing for months (A's problem at 140+ day gaps) without the excessive review pressure of B (8–12 reviews per batch at 6 months). Gate 1 metrics ("first-review accuracy ≥ 80%", "ANKI fallback rate < 5%") validate within a week.
+**Alternatives Considered**:
+- A (pure defaults): intervals grow to 365+ days — too long for MC-based recognition, likely triggers excessive 3-lapse fallbacks
+- B (conservative 0.85 retention): more early reviews per word, eats batch slots, users feel "stuck reviewing" at scale
+**Impact**: CONTEXT.md open question resolved, SRS PRD §13 resolved, SRS Engine ADR updated with `desiredRetention` and `maxInterval` in `SrsConfig`.
+
+---
+
+### 2026-03-04: Word Pool Deck — Sandbox with Soft Signal
+**Context**: Eager learners finish 2–3 decks and want free-form review from the word pool. Key question: should word pool reviews affect ANKI scheduling?
+**Decision**: Sandbox mode — no ANKI side effects. All attempts tracked with `source = wordPool` for analytics. Soft signal: 3 wrong answers all-time per word → pull `next_review_at` forward to now, reset counter. No lapse/ease/mastery changes.
+**Rationale**: Eager daily review would inflate ANKI intervals if counted (user reviews daily for 2 weeks → intervals balloon → words vanish when user stops). Sandbox preserves ANKI integrity. Soft signal is a gentle nudge — consequence is mild (word appears one batch sooner), not punitive (no Phase 1 reset).
+**Alternatives Considered**:
+- Full ANKI integration: eagerness backfires when user stops practicing
+- Pure sandbox (no signal at all): forgotten words only caught at next scheduled ANKI review
+- Rolling window for wrong counter: unnecessary complexity for minimal benefit
+**Impact**: SRS PRD §5.11 #43 expanded, §8.1 #3 (source field added), §8.1 #7 (word pool wrong counter added). No separate ADR — product rules, not architecture.
+
+---
+
 ### 2026-03-03: iOS Audio Autoplay — Hybrid Strategy
 **Context**: iOS Safari blocks audible audio autoplay without user gesture. Audio recognition questions (10% of quiz batch) require audio playback. Open question carried across PWA ADR, FE toolchain session, and SRS PRD.
 **Decision**: Hybrid approach — session-level `AudioContext` unlock on quiz start tap, per-question autoplay attempt via `audio.play()`, visible play/replay button always rendered as fallback.

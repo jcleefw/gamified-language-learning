@@ -1,31 +1,32 @@
 # Current Focus
 
 **Branch**: main
-**Updated**: 2026-03-03
+**Updated**: 2026-03-04
 
 ## Active Work
 
 - **Epic**: N/A — Architecture planning phase
 - **Story**: N/A
-- **Status**: Housekeeping complete
+- **Status**: SRS parameter decisions complete, word pool deck rules defined
 
 ## Last Session Outcome
 
-Completed two follow-up tasks from the curation engine ADR session:
+Product discussion session — resolved two open questions and defined word pool deck behavior.
 
-### Task 1: RULES.md Restructure (271 → 201 lines)
-- Moved GOOD/BAD code examples from Code Standards section to `docs/code-standards-examples.md` (human-readable, not mandatory agent reading)
-- Trimmed Testing Protocol example block (−8 lines) and Guardrails section (−8 lines)
-- Added new "Package Structure Conventions" section: co-located tests, PascalCase class files, camelCase utility files, domain-scoped types.ts, integration tests at package root
+### 1. ANKI Parameters for Mobile (Open Question Resolved)
+- **Decision**: Approach C — FSRS defaults (desired retention 0.90) + 90-day max interval cap
+- **Rationale**: Phase 1 mastery (10 correct answers) provides sufficient initial reinforcement for default FSRS early intervals. 90-day cap prevents words vanishing for months (Approach A problem) without over-reviewing (Approach B problem).
+- **Gate 1 tuning knobs**: if first-review accuracy < 80% → raise retention to 0.92–0.95; if ANKI fallback rate > 5% → lower max interval cap
+- **Files changed**: CONTEXT.md, SRS PRD §13, SRS Engine ADR (added `desiredRetention` and `maxInterval` to `SrsConfig`)
 
-### Task 2: Open Questions Audit
-Resolved items struck through with inline notes across 5 files:
-- **iOS audio autoplay**: resolved in SRS Learning Path PRD, FE Toolchain ADR, PRODUCT-BRIEF.md (was already resolved in PWA ADR and CONTEXT.md)
-- **Monorepo shared types**: resolved in Monorepo Tooling ADR — each engine owns its types, no `packages/shared-types`
-- **Monorepo structure**: resolved in FE Toolchain ADR — points to Monorepo Tooling ADR
-
-### CODEMAP.md
-- Added `docs/` directory entry
+### 2. Word Pool Deck Rules (New PRD Content)
+- **Sandbox mode**: word pool reviews do NOT affect ANKI scheduling (no interval/ease/lapse changes)
+- **Analytics tracking**: every attempt recorded with source = `wordPool`
+- **Soft signal**: 3 wrong answers all-time in word pool → pull `next_review_at` forward to now, reset counter to 0. No lapse/ease/mastery impact.
+- **Question types**: same as curated (70/20/10). Challenge modes deferred.
+- **Batch composition**: random from all mastered words, no minimum pool size
+- **No separate ADR needed** — product rules, not architectural decisions
+- **Files changed**: SRS PRD §5.11, §8.1
 
 ## ADRs Completed
 
@@ -37,14 +38,12 @@ Resolved items struck through with inline notes across 5 files:
 
 ## Follow-Up Actions (Next Session)
 
-1. ~~Update RULES.md~~ — ✅ Done
-2. ~~Audit open questions across ADRs/PRDs~~ — ✅ Done
-3. **Delete irrelevant session files**: `sessions/` contains files superseded by ADRs
-4. Start next ADR topic (#4 API surface design)
+1. **Delete irrelevant session files**: `sessions/` contains files superseded by ADRs
+2. Start next ADR topic (#4 API surface design)
 
 ## Context for Next Session
 
-- Curation engine ADR: `product-documentation/architecture/20260303T210000Z-engineering-curation-engine-package.md`
 - SRS engine ADR: `product-documentation/architecture/20260302T160536Z-engineering-srs-engine-package.md`
+- SRS PRD: `product-documentation/prds/20260226T100000Z-srs-learning-path.md`
+- Curation engine ADR: `product-documentation/architecture/20260303T210000Z-engineering-curation-engine-package.md`
 - Hono backend ADR: `product-documentation/architecture/20260303T195134Z-engineering-headless-hono-backend.md`
-- Code standards examples: `docs/code-standards-examples.md`

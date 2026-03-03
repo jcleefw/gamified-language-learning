@@ -128,6 +128,11 @@ The cost of not solving this: learners forget 80%+ of vocabulary within weeks wi
 41. **Curated deck**: Words from a conversation, active learning. Users can skip ahead to a different curated deck.
 42. **Revision deck**: Mastered words from a specific conversation, scheduled for spaced review via ANKI.
 43. **Word pool deck**: All learned words across all conversations, user-initiated review. No graduation — user can repeat as desired.
+    - **Sandbox mode**: Word pool reviews do **not** affect ANKI scheduling — no interval updates, no ease factor changes, no lapse counting.
+    - **Analytics tracking**: Every word pool attempt is recorded in quiz result history with source = `wordPool` (word ID, question type, correct/incorrect, timestamp).
+    - **Soft signal**: If a word is answered wrong **3 times (all-time)** in word pool, its ANKI `next_review_at` is pulled forward to now. The wrong counter resets to 0 after firing. This does not modify lapse count, ease factor, or mastery — it only accelerates when the word next appears in a structured review.
+    - **Question type distribution**: Same as curated batches (70% MC, 20% word block, 10% audio). Future consideration: challenge modes with different distributions.
+    - **Batch composition**: 15 questions, words selected randomly from all mastered words. No minimum pool size — if fewer than 15 mastered words, words repeat within the batch.
 44. **Custom deck**: User-created decks (implement last, out of scope for this PRD).
 45. **Foundational deck**: Consonants, vowels, tones for specific languages (e.g., Chinese, Thai). Cannot skip ahead. Separate mastery tracking.
 
@@ -190,10 +195,11 @@ All SRS data is stored in **Cloudflare D1** (SQLite). Audio files are stored in 
 
 1. **Per-word mastery state**: Current mastery count, phase (learning or review), active/shelved status, shelved timestamp.
 2. **ANKI review schedule**: Next review timestamp, interval, ease factor, lapse count — per word.
-3. **Quiz result history**: Per-question records — word ID, question type, correct/incorrect, timestamp, peek used (boolean).
+3. **Quiz result history**: Per-question records — word ID, question type, correct/incorrect, timestamp, peek used (boolean), source (`curated` | `revision` | `wordPool` | `foundational`).
 4. **Deck progress**: Per-user per-deck state — active word IDs, mastered word count, current batch number.
 5. **Foundational progress**: Per-user foundational deck state — current active 3 words, mastery per word, deck depletion flag.
 6. **Stuck word tracking**: Per-word batch attempt counter, shelved status, shelve expiry timestamp.
+7. **Word pool wrong counter**: Per-word integer, increments on word pool wrong answers, resets to 0 when soft signal fires (threshold: 3).
 
 ### 8.2 Data Retention
 
@@ -259,7 +265,7 @@ Learners authenticate via **Google OAuth** or **email/password credentials** usi
 | Question | Owner | Target |
 |---|---|---|
 | ~~iOS audio autoplay — does tap-to-play UX feel natural in quiz flow?~~ | Dev | ~~First quiz prototype~~ — **Resolved**: Hybrid approach (session-level `AudioContext` unlock + per-question autoplay attempt + visible tap-to-play fallback). See PWA ADR. |
-| Mid-quiz connection loss — is discarding in-progress batch acceptable, or should we persist to localStorage? | Product | Gate 1 review |
-| ANKI algorithm parameters — use Anki defaults or tune for shorter mobile sessions? | Product | Gate 1 review |
+| ~~Mid-quiz connection loss~~ — **Resolved**: Discard in-progress batch if app closed before reconnection. No localStorage persistence in v1. Revisit at Gate 2 with real usage data. | Product | ~~Gate 1 review~~ Resolved |
+| ~~ANKI algorithm parameters — use Anki defaults or tune for shorter mobile sessions?~~ — **Resolved**: FSRS defaults (desired retention 0.90) + 90-day max interval cap. Tuning knobs: raise retention to 0.92–0.95 if first-review accuracy < 80%; lower max interval if ANKI fallback rate > 5%. Both configurable via `SrsConfig`. | Product | ~~Gate 1 review~~ Resolved |
 | Foundational deck content — who creates the initial consonant/vowel/tone decks per language? | Curator / Product | Before first language launch |
 | Batch assembly performance — is < 100ms achievable with D1 at scale? | Dev | Before Gate 2 |

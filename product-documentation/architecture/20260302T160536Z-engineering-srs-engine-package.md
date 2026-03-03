@@ -89,6 +89,8 @@ const engine = new SrsEngine({
   lapseThreshold: 3,
   continuousWrongThreshold: 3,
   foundationalAllocation: { active: 0.2, postDepletion: 0.05 },
+  desiredRetention: 0.9,
+  maxInterval: 90, // days — prevents words from vanishing for months
 })
 
 // Core operations
