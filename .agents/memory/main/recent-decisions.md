@@ -17,6 +17,15 @@
 
 ---
 
+### 2026-03-03: Headless Hono Backend for Orchestration
+**Context**: The architecture is moving toward a highly decoupled model with extracted logic engines. We need a secure, portable orchestration layer for API keys, D1/R2 data, and Gemini quotas.
+**Decision**: Implement a Headless Hono API on Cloudflare Workers as the primary orchestration layer.
+**Rationale**: Decouples Nuxt (frontend) as a plug-and-play consumer, protects secrets, and simplifies Postman-first development. 
+**Impact**: Nuxt SSR routes will be minimal; all business orchestration moves to the Hono Worker. Auth shifts to a backend-first strategy. 
+**Related ADR**: `20260303T195134Z-engineering-headless-hono-backend.md`
+
+---
+
 ## Guidelines for Recording Decisions
 
 - Record decisions when they affect multiple stories or architecture

@@ -27,6 +27,23 @@
 **Next Session Should**:
 - Write the ADR
 - Address remaining architect questions (item #4: backend server need)
+### 2026-03-03 — Backend Strategy & Headless Architecture
+
+**Goal**: Determine the backend server strategy (Headless vs Monolithic).
+
+**Completed**:
+- Decided on a Headless Hono API (Cloudflare Worker) as the central orchestration layer.
+- Drafted ADR: `20260303T195134Z-engineering-headless-hono-backend.md`.
+- Updated architect questions to mark this item resolved.
+
+**Decisions Made**:
+- Backend acts as a Gateway for secrets (Gemini) and I/O (D1/R2).
+- Nuxt is treated as a plug-and-play frontend consumer.
+- Auth moves to a backend-first strategy.
+
+**Next Session Should**:
+- Discuss shared types strategy between packages.
+- Start API surface design for Hono endpoints.
 
 ---
 

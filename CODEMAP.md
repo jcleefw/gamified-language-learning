@@ -100,6 +100,7 @@ Project navigation index. Use this to orient before reading files.
 | `20260227T022513Z-engineering-monorepo-tooling.md` | Monorepo tooling |
 | `20260301T161844Z-infra-cloudflare-platform.md` | Cloudflare Workers + D1 + R2 |
 | `20260302T160536Z-engineering-srs-engine-package.md` | SRS engine as separate package |
+| `20260303T195134Z-engineering-headless-hono-backend.md` | Headless Hono Backend for orchestration |
 
 ---
 
