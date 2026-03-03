@@ -1,0 +1,150 @@
+# .agents/guardrails.yml
+# Platform-agnostic guardrail definitions.
+# Adapters translate these to platform-native hooks/settings.
+
+guardrails:
+
+  # Block dangerous commands
+  - trigger: pre-command
+    action: block
+    match_patterns:
+      - "rm -rf"
+      - "git push --force"
+      - "git push -f"
+      - "git reset --hard"
+      - "--no-verify"
+      - "DROP TABLE"
+      - "DROP DATABASE"
+      - "DELETE FROM.*WHERE.*1"
+    message: "🛑 Blocked: dangerous command. Requires explicit human approval. Ask the user before proceeding."
+
+  # Require approval for sensitive file edits
+  - trigger: pre-file-edit
+    action: confirm
+    match_paths:
+      - "db/migrate/**"
+      - ".env*"
+      - "**/secrets/**"
+      - "docker-compose*.yml"
+      - ".agents/RULES.md"
+      - ".agents/guardrails.yml"
+      - "AGENT.md"
+    message: "⚠️ Editing sensitive file — confirm with the user before proceeding."
+
+  # Prevent schema changes without review
+  - trigger: pre-file-edit
+    action: confirm
+    match_paths:
+      - "src/server/db/schema.ts"
+      - "src/server/db/migrations/**"
+    message: "🔒 Schema change detected — requires careful review. Is this intentional?"
+
+  # Auto-approve safe reads (documentation)
+  - trigger: pre-file-read
+    action: approve
+    match_paths:
+      - "*.yml"
+      - "*.yaml"
+      - ".gitignore"
+      - "package.json"
+      - "tsconfig.json"
+    suppress_output: false
+
+---
+
+## Implementation Notes
+
+### For Claude Code Users
+
+These guardrails map to Claude Code hooks and settings.json configuration:
+
+**PreToolUse Hook** (dangerous commands):
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "script",
+            "path": "./.agents/scripts/validate-command.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**PreToolUse Hook** (sensitive file edits):
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "script",
+            "path": "./.agents/scripts/validate-file-edit.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Guardrail Categories
+
+### 1. Block Dangerous Commands
+- `rm -rf` (recursive deletion)
+- `git push --force` / `git push -f` (force push)
+- `git reset --hard` (discard changes)
+- `--no-verify` (bypass git hooks)
+- `DROP TABLE` / `DROP DATABASE` (destructive SQL)
+
+**When triggered**: Agent stops and requests explicit user approval before proceeding.
+
+### 2. Require Approval for Sensitive Files
+- `db/migrate/**` — Database migrations
+- `.env*` — Environment variables
+- `**/secrets/**` — Credential storage
+- `docker-compose*.yml` — Infrastructure as code
+- `.agents/RULES.md` — This governance system
+- `.agents/guardrails.yml` — This guardrail definition
+- `AGENT.md` — Agent persona
+
+**When triggered**: Agent asks "Are you sure?" with context on why the file is sensitive.
+
+### 3. Prevent Schema Changes Without Review
+- `src/server/db/schema.ts` — Database schema definition
+- `src/server/db/migrations/**` — Schema migration scripts
+
+**When triggered**: Agent confirms schema intent before creating or modifying migrations.
+
+### 4. Auto-Approve Safe Reads
+Documentation, configuration, and data files are safe to read without user confirmation:
+- `**/*.md` — Markdown documentation
+- `**/*.txt` — Text files
+- `*.json` — JSON configs
+- `*.yml` / `*.yaml` — YAML configs
+- `.gitignore`, `package.json`, `tsconfig.json` — Standard configs
+
+**When triggered**: Read is approved automatically; output is shown as normal.
+
+---
+
+## When to Update Guardrails
+
+**Add new guardrails when**:
+1. A dangerous pattern emerges (new command class to block)
+2. New sensitive file categories are created
+3. A human had to stop the agent from making a mistake
+
+**Example**: If you add a new secrets system, update the sensitive files list immediately.
+
+**Keep it lean**: Only guard against real risks, not hypothetical ones.
