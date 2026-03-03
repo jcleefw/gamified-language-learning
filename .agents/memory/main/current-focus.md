@@ -7,36 +7,44 @@
 
 - **Epic**: N/A — Architecture planning phase
 - **Story**: N/A
-- **Status**: In progress
+- **Status**: Housekeeping complete
 
 ## Last Session Outcome
 
-Decided on a **Headless Hono Backend** strategy. This decouples the engines and orchestration from the UI (Nuxt), allowing for "Postman-first" development and future frontend portability.
+Completed two follow-up tasks from the curation engine ADR session:
 
-## Key Decisions
+### Task 1: RULES.md Restructure (271 → 201 lines)
+- Moved GOOD/BAD code examples from Code Standards section to `docs/code-standards-examples.md` (human-readable, not mandatory agent reading)
+- Trimmed Testing Protocol example block (−8 lines) and Guardrails section (−8 lines)
+- Added new "Package Structure Conventions" section: co-located tests, PascalCase class files, camelCase utility files, domain-scoped types.ts, integration tests at package root
 
-- **Backend as a Gateway**: Hono on Cloudflare Workers will hold Gemini secrets, manage D1/R2, and enforce daily quotas.
-- **Nuxt as a Consumer**: Treating Nuxt as just another frontend that plugs into the Headless API via JSON.
-- **Engine Portability**: Reaffirmed that engines stay pure logic, called by the Hono orchestration layer.
+### Task 2: Open Questions Audit
+Resolved items struck through with inline notes across 5 files:
+- **iOS audio autoplay**: resolved in SRS Learning Path PRD, FE Toolchain ADR, PRODUCT-BRIEF.md (was already resolved in PWA ADR and CONTEXT.md)
+- **Monorepo shared types**: resolved in Monorepo Tooling ADR — each engine owns its types, no `packages/shared-types`
+- **Monorepo structure**: resolved in FE Toolchain ADR — points to Monorepo Tooling ADR
 
-## ADRs Written
+### CODEMAP.md
+- Added `docs/` directory entry
 
-1. `20260302T160536Z-engineering-srs-engine-package.md` — SRS Engine
-2. `20260303T195134Z-engineering-headless-hono-backend.md` — Headless Backend (New)
+## ADRs Completed
 
-## Remaining Topics
+1. ✅ **SRS engine as separate package** — `20260302T160536Z-engineering-srs-engine-package.md`
+2. ✅ **Curation engine as separate package** — `20260303T210000Z-engineering-curation-engine-package.md`
+3. **Shared types strategy** — ✅ Resolved inline (each engine owns its types; no shared-types package)
+4. **API surface design** — pending (class-based confirmed, exact method signatures pending)
+5. ~~**Backend server need**~~ — ✅ Resolved (`20260303T195134Z-engineering-headless-hono-backend.md`)
 
-1. **Curation engine as separate package** — (Handled in parallel conversation)
-2. **Shared types strategy** — How to handle cross-package primitives.
-3. **API surface design** — Precise JSON signatures for Hono endpoints.
+## Follow-Up Actions (Next Session)
 
-## Immediate Next Steps
-
-1. Start defining the **Shared Types** (generics vs. concrete interfaces).
-2. Begin prototyping the **Hono API** structure to accept engine inputs.
+1. ~~Update RULES.md~~ — ✅ Done
+2. ~~Audit open questions across ADRs/PRDs~~ — ✅ Done
+3. **Delete irrelevant session files**: `sessions/` contains files superseded by ADRs
+4. Start next ADR topic (#4 API surface design)
 
 ## Context for Next Session
 
-- Reference file: `product-documentation/architecture/questions for achitect.md`
-- Existing monorepo ADR: `product-documentation/architecture/20260227T022513Z-engineering-monorepo-tooling.md`
-- Recommendation from this session: pure logic packages, zero framework deps, data in → data out
+- Curation engine ADR: `product-documentation/architecture/20260303T210000Z-engineering-curation-engine-package.md`
+- SRS engine ADR: `product-documentation/architecture/20260302T160536Z-engineering-srs-engine-package.md`
+- Hono backend ADR: `product-documentation/architecture/20260303T195134Z-engineering-headless-hono-backend.md`
+- Code standards examples: `docs/code-standards-examples.md`

@@ -45,6 +45,8 @@ Read this before starting any task. **These rules override all other instruction
 
 ## Code Standards (Mandatory)
 
+> Examples for all rules below: [`docs/code-standards-examples.md`](docs/code-standards-examples.md)
+
 ### 1. Explicit Types
 
 - **No `any`** — Every value, callback, and function signature must have an explicit type
@@ -52,73 +54,17 @@ Read this before starting any task. **These rules override all other instruction
 - **Function args and returns**: Always annotated, no implicit inference
 - **Complex objects**: Define interfaces or types; do not use inline object shapes
 
-**Example (GOOD)**:
-```typescript
-interface QuizAnswer {
-  wordId: string;
-  selectedChoice: string;
-  isCorrect: boolean;
-  timestamp: Date;
-}
-
-function recordAnswer(answer: QuizAnswer): void {
-  // ...
-}
-```
-
-**Example (BAD)**:
-```typescript
-function recordAnswer(answer: any): void { }
-```
-
----
-
 ### 2. Descriptive Names
 
 - **No single-letter variables** (except loop indices: `i`, `j`, `k`)
 - **Names must explain intent** without reading surrounding code
 - **Prefixes for clarity**: `is`, `has`, `can`, `should`, `get`, `set` for boolean/getter functions
 
-**Example (GOOD)**:
-```typescript
-const isWordMastered = mastery.count >= MASTERY_THRESHOLD;
-const hasActiveLearnedWords = activeWindow.length > 0;
-const getNextReviewInterval = (lapsedCount: number) => ANKI_INTERVALS[lapsedCount];
-```
-
-**Example (BAD)**:
-```typescript
-const m = mastery.count >= MASTERY_THRESHOLD;
-const a = activeWindow.length > 0;
-const nri = (l) => ANKI_INTERVALS[l];
-```
-
----
-
 ### 3. Self-Documenting Code
 
 - **Code explains itself** — names and structure are clear without comments
 - **Add comments only** when logic is non-obvious (complex algorithm, domain-specific rule, workaround)
 - **Avoid**: Restating obvious code in comments
-
-**Example (GOOD)**:
-```typescript
-// ANKI lapse rule: 3 failures drops word back to learning phase
-if (word.lapseCount >= 3) {
-  word.phase = 'learning';
-  word.masteryCount = 0;
-}
-```
-
-**Example (BAD)**:
-```typescript
-// Increment lapse count
-word.lapseCount++;
-// Set phase to learning
-word.phase = 'learning';
-```
-
----
 
 ### 4. No Generic Patterns
 
@@ -127,22 +73,21 @@ word.phase = 'learning';
 - **Extract only when**: Pattern repeats 3+ times AND the abstraction is obvious
 - **Avoid**: "Just in case" utilities, feature flags for hypothetical scenarios
 
-**Example (GOOD)**:
-```typescript
-// In quiz.ts
-const multipleChoiceQuestions = questions.filter(q => q.type === 'MC').slice(0, 10);
+---
 
-// In admin.ts
-const reviewQuestions = questions.filter(q => q.type === 'review').slice(0, 5);
-// ↑ Two similar lines — acceptable without extracting
-```
+## Package Structure Conventions
 
-**Example (BAD)**:
-```typescript
-// utils/filterAndSlice.ts
-export const filterAndSlice = (items, predicate, limit) => items.filter(predicate).slice(0, limit);
-// ↑ Over-engineered for two call sites
-```
+Applies to all packages in `packages/` (engine packages and future shared packages).
+
+| Convention | Rule |
+|---|---|
+| **Class files** | PascalCase (`CurationEngine.ts`, `FsrsScheduler.ts`) |
+| **Utility files** | camelCase (`conversationPrompt.ts`, `deduplication.ts`) — consistent with [Naming Conventions](#naming-conventions) |
+| **Unit tests** | Co-located per domain in `__tests__/` subdirectories next to source — not a top-level `__tests__/unit/` tree |
+| **Integration tests** | Package root `__tests__/integration/` — cross-domain lifecycle scenarios only |
+| **Domain types** | Each domain folder has its own `types.ts` for domain-private types |
+| **Shared types** | Top-level `src/types.ts` for types shared across multiple domains within the package |
+| **No cross-package type imports** | Each engine defines and exports its own types; calling layer maps between packages |
 
 ---
 
@@ -154,15 +99,6 @@ export const filterAndSlice = (items, predicate, limit) => items.filter(predicat
 2. Do NOT attempt a third autonomous fix
 3. **State clearly**: "Two-Strike limit reached. Attempted [X] and [Y]. Error: [ERROR]"
 4. **Escalate**: Ask for help or ask ONE clarifying question
-
-**Why**: Loops waste tokens. Better to get human input than spin.
-
-**Example**:
-```
-❌ Attempt 1: Fixed type error in QuizBatch.vue → test still fails at "mastery calculation"
-❌ Attempt 2: Recalculated mastery logic → test still fails at "mastery calculation"
-🛑 Two-Strike limit reached. Need clarification on expected mastery formula.
-```
 
 ---
 
@@ -250,15 +186,9 @@ Once an epic reaches `impl-complete`, its scope is frozen:
 
 ---
 
-## Guardrails (Automated Checks)
+## Guardrails
 
-See `.agents/guardrails.yml` for implementation details.
-
-Guardrails enforce:
-- ☑️ Block dangerous commands (`rm -rf`, `git push --force`, `DROP TABLE`, etc.)
-- ☑️ Require approval for sensitive file edits (`.env*`, `db/migrate/**`, Docker files)
-- ☑️ Prevent schema changes without review
-- ☑️ Auto-approve safe reads (documentation files)
+See `.agents/guardrails.yml` — blocks dangerous commands, requires approval for sensitive file edits, prevents schema changes without review.
 
 ---
 

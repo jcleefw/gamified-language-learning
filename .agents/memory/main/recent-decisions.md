@@ -26,6 +26,33 @@
 
 ---
 
+### 2026-03-03: Curation Engine — Prompt-Builder + Response-Parser Pattern
+**Context**: Curation engine's core workflow involves Gemini API calls (I/O), but engine must remain pure. Two options: (A) engine builds prompts and parses responses, calling layer handles API call; (B) engine accepts injected adapter and owns full workflow.
+**Decision**: Option A — prompt-builder + response-parser. Engine is 100% synchronous and pure.
+**Rationale**: No async, no mocks needed in tests, clean I/O boundary. Calling layer orchestration is trivial (3 steps).
+**Alternatives Considered**: Injected adapter (Option B) — gives engine workflow ownership but requires async code and interface mocking.
+**Impact**: Curation engine ADR written. Pattern applies to any future engine that wraps external APIs.
+**Related ADR**: `20260303T210000Z-engineering-curation-engine-package.md`
+
+### 2026-03-03: TTS Stays as Calling-Layer Service
+**Context**: TTS is consumed by both curation and SRS paths. Considered: (1) in curation engine, (2) separate `packages/tts-engine`, (3) calling-layer service.
+**Decision**: Option 3 — calling-layer service (`ttsService.ts`). Not a package.
+**Rationale**: TTS is inherently I/O-bound (API calls, R2 storage, queue management). No meaningful pure logic to extract. Provider abstraction can live as an interface in the server layer.
+**Impact**: No `packages/tts-engine`. TTS logic stays in server services.
+
+### 2026-03-03: Foundational Decks Out of Curation Engine
+**Context**: Foundational decks are fixed word sets uploaded as JSON. Considered whether validation/parsing belongs in curation engine.
+**Decision**: Out of engine. Calling layer handles with Zod schema validation.
+**Rationale**: Foundational decks aren't curated — they're predefined reference data. Doesn't fit engine purpose (AI-assisted curation workflow).
+
+### 2026-03-03: Package Structure Conventions
+**Context**: File structure patterns (co-located tests, domain-scoped types, naming) apply to all engine packages. Needed a canonical location.
+**Decision**: Add to RULES.md as a new section. Move existing code examples to `docs/code-standards-examples.md` to make room.
+**Rationale**: RULES.md is the enforcement file — highest visibility, read first by all agents.
+**Impact**: RULES.md update pending (next session follow-up).
+
+---
+
 ## Guidelines for Recording Decisions
 
 - Record decisions when they affect multiple stories or architecture

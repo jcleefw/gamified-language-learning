@@ -100,16 +100,22 @@ Project navigation index. Use this to orient before reading files.
 | `20260227T022513Z-engineering-monorepo-tooling.md` | Monorepo tooling |
 | `20260301T161844Z-infra-cloudflare-platform.md` | Cloudflare Workers + D1 + R2 |
 | `20260302T160536Z-engineering-srs-engine-package.md` | SRS engine as separate package |
-| `20260303T195134Z-engineering-headless-hono-backend.md` | Headless Hono Backend for orchestration |
+| `20260303T195134Z-engineering-headless-hono-backend.md` | Headless Hono backend strategy |
+| `20260303T210000Z-engineering-curation-engine-package.md` | Curation engine as separate package |
+
+---
+
+## `docs/` — Human + Agent Reference
+
+| File | Purpose |
+|------|---------|
+| `code-standards-examples.md` | GOOD/BAD code examples for RULES.md code standards. Not mandatory agent reading — reference only. |
 
 ---
 
 ## `sessions/` — Session State
 
-| File | Purpose |
-|------|---------|
-| `20260226T133833Z-fe-framework-toolchain.md` | FE framework selection session |
-| `20260227T000000Z-fe-platform-vue-pwa.md` | Vue + PWA platform session |
+> Session files are created during active discussions and deleted once decisions are captured in ADRs and memory. Currently empty.
 
 ---
 

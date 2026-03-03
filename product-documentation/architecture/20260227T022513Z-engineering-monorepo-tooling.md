@@ -221,7 +221,7 @@ All packages import from `packages/logger` — no direct Consola or `console.log
 
 | Question | Owner | Target |
 |---|---|---|
-| Should `packages/shared-types` be added for cross-package TypeScript interfaces? | Architect | Before backend ADR |
+| ~~Should `packages/shared-types` be added for cross-package TypeScript interfaces?~~ | ~~Architect~~ | **Resolved**: No. Each engine defines and exports its own types. Calling layer maps between packages. See SRS engine ADR §Types Ownership and curation engine ADR §Types Ownership. |
 | Remote caching for Turborepo (Vercel Remote Cache) — worth enabling for CI speed? | Architect | After first CI pipeline is running |
 | Maximum worktree count before offset table needs revision | Dev | When offset 60 is first used |
 

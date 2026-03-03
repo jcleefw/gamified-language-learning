@@ -109,7 +109,7 @@ Histoire is Vue-native (built by Akryum, the Vue tooling ecosystem). Story files
 |---|---|---|
 | What are Nuxt's actual limits for this project? | User + implementation | Explore during build — if Nuxt imposes constraints, fall back to Vite |
 | Do design files (Figma, etc.) exist, or will tokens be defined during implementation? | User | Affects whether a Figma → PandaCSS codegen step is needed |
-| Monorepo structure: how are frontend, backend, and design-system packages organized? | Deferred | Separate ADR |
+| ~~Monorepo structure: how are frontend, backend, and design-system packages organized?~~ | ~~Deferred~~ | **Resolved**: See [Monorepo Tooling ADR](20260227T022513Z-engineering-monorepo-tooling.md) |
 | Agent design system compliance: `.claude/rules/design-system.md` setup | Deferred | Separate ADR — design system ADR |
 | ~~iOS audio autoplay restrictions~~ | ~~Deferred~~ | **Resolved**: Hybrid approach — session-level `AudioContext` unlock + per-question autoplay attempt + visible tap-to-play fallback. See PWA ADR. |
 
