@@ -4,6 +4,24 @@
 
 ## Sessions
 
+### 2026-03-04 — Memory Protocol Review & Hook Design
+
+**Goal**: Explore claude-mem as a potential improvement to the current memory protocol.
+
+**Completed**:
+- Compared claude-mem vs current `.agents/memory/{branch}/` protocol
+- Rejected claude-mem: platform lock-in (Claude Code hooks + MCP), external services (SQLite, Chroma, Bun worker)
+- Identified the borrowed concept: progressive disclosure retrieval — not adopted, noted as CODEMAP pattern already
+- Identified real friction: write trigger forgotten in freeform ADR sessions and long-context sessions
+- Ruled out: stop hook, /wrap skill, _index.md (CODEMAP duplication)
+- Decided: `PostToolUse` hook fires on writes to `product-documentation/architecture/*.md`, appends pointer to `recent-decisions.md`
+- Wrote ADR: `20260304T120000Z-agentic-memory-hook.md`
+- Also confirmed: `session-log.md` and `recent-decisions.md` overlap via "Decisions Made" duplication — keep session-log for now, trim if it stays low value
+
+**Next Session Should**:
+- Implement the `PostToolUse` hook in `settings.json`
+- Test it by writing a dummy ADR and verifying the pointer append
+
 ### 2026-03-03 — Engine Package Extraction ADR Interview
 
 **Branch**: main

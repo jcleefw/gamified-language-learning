@@ -5,6 +5,14 @@
 
 ## Decision Log
 
+### 2026-03-04: Automated Memory Pointer via PostToolUse Hook
+**Context**: Manual memory write triggers get forgotten in freeform ADR sessions and long-context sessions. Explored claude-mem as an alternative — rejected for platform lock-in and noise. Considered stop hook, /wrap skill, and _index.md — all rejected.
+**Decision**: Claude Code `PostToolUse` hook fires when `product-documentation/architecture/*.md` is written. Appends a one-liner pointer to `recent-decisions.md`. No AI summarisation — just filename + date.
+**Trade-off**: Hook trigger is Claude Code-specific. Storage stays agnostic in `.agents/memory/`.
+**Related ADR**: `20260304T120000Z-agentic-memory-hook.md`
+
+---
+
 ### 2026-03-04: D1 Batch Assembly < 100ms — Deferred to Gate 2, Schema Design Required
 **Context**: Open question in SRS PRD §8.3 and CONTEXT.md — is < 100ms achievable with D1 at scale?
 **Decision**: Not closed yet. Achievable at V1/Gate 2 scale with proper schema design. Validate P95 latency at Gate 2 with telemetry. "At scale" risk doesn't materialize until 10K+ concurrent.
