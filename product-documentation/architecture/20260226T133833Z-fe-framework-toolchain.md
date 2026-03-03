@@ -111,7 +111,7 @@ Histoire is Vue-native (built by Akryum, the Vue tooling ecosystem). Story files
 | Do design files (Figma, etc.) exist, or will tokens be defined during implementation? | User | Affects whether a Figma → PandaCSS codegen step is needed |
 | Monorepo structure: how are frontend, backend, and design-system packages organized? | Deferred | Separate ADR |
 | Agent design system compliance: `.claude/rules/design-system.md` setup | Deferred | Separate ADR — design system ADR |
-| iOS audio autoplay restrictions | Deferred | Carried over from PWA platform ADR — requires early prototype |
+| ~~iOS audio autoplay restrictions~~ | ~~Deferred~~ | **Resolved**: Hybrid approach — session-level `AudioContext` unlock + per-question autoplay attempt + visible tap-to-play fallback. See PWA ADR. |
 
 ---
 

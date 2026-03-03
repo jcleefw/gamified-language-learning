@@ -178,7 +178,7 @@ The learner path is delivered as a **Progressive Web App (PWA)** built with **Vu
 2. **Standalone mode**: The PWA manifest uses `display: standalone` to remove browser chrome. Quiz sessions feel native when installed to the home screen.
 3. **No app store**: Distribution is via URL + home screen install prompt. No Xcode/Android Studio dependency.
 4. **Capacitor upgrade path**: If native APIs (haptics, iOS audio edge cases) are required, Capacitor wraps the existing Vue app without rewrite. Trigger criteria: iOS audio failures or user haptic feedback complaints.
-5. **iOS audio constraint**: Audio recognition questions require an explicit user gesture before playback (iOS Safari autoplay policy). The quiz UI must include a tap-to-play interaction — autoplay is not permitted.
+5. **iOS audio strategy (Hybrid)**: Quiz start screen requires a tap ("Start Quiz" / "Ready?") which creates an `AudioContext` and calls `.resume()`, unlocking audio for the session. Each audio recognition question attempts autoplay via `audio.play()` — if the promise rejects (iOS suspended the context), the play button shows in "tap to play" state. A visible play/replay button is always rendered on every audio question regardless of autoplay success. This degrades gracefully across all browsers.
 
 ---
 
@@ -258,7 +258,7 @@ Learners authenticate via **Google OAuth** or **email/password credentials** usi
 
 | Question | Owner | Target |
 |---|---|---|
-| iOS audio autoplay — does tap-to-play UX feel natural in quiz flow? | Dev | First quiz prototype |
+| ~~iOS audio autoplay — does tap-to-play UX feel natural in quiz flow?~~ | Dev | ~~First quiz prototype~~ — **Resolved**: Hybrid approach (session-level `AudioContext` unlock + per-question autoplay attempt + visible tap-to-play fallback). See PWA ADR. |
 | Mid-quiz connection loss — is discarding in-progress batch acceptable, or should we persist to localStorage? | Product | Gate 1 review |
 | ANKI algorithm parameters — use Anki defaults or tune for shorter mobile sessions? | Product | Gate 1 review |
 | Foundational deck content — who creates the initial consonant/vowel/tone decks per language? | Curator / Product | Before first language launch |

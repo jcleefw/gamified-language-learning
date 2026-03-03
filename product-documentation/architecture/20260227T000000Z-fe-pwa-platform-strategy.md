@@ -75,6 +75,6 @@ Build a **Progressive Web App (PWA)** with a mobile-first design strategy.
 
 ## Open Questions
 
-- **iOS audio autoplay:** Will audio recognition questions require a workaround for iOS Safari's autoplay policy? Needs validation during quiz prototype. Owner: [TBD]. Target: first quiz prototype build.
+- ~~**iOS audio autoplay**~~ — **Resolved**: Hybrid approach. Session-level `AudioContext` unlock on quiz start tap, autoplay attempt per question, visible tap-to-play/replay button always rendered as fallback. No early prototype needed — degrades gracefully. See SRS PRD §7.5.
 - **PWA install prompt strategy:** How and when do we prompt learners to install the PWA? (On first login? After N sessions?) Not an architecture question but affects the immersive experience goal.
 - **Capacitor trigger criteria:** What specific limitation would trigger migration to Capacitor? Should be defined before it becomes urgent. Suggested criteria: iOS audio failures or haptic feedback complaints from users.

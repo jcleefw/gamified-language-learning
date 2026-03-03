@@ -336,7 +336,7 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 
 | Question | Owner | Target | PRD Reference |
 |---|---|---|---|
-| iOS audio autoplay UX—does tap-to-play feel natural? | Dev | First quiz prototype | SRS Learning Path |
+| ~~iOS audio autoplay UX—does tap-to-play feel natural?~~ | ~~Dev~~ | ~~First quiz prototype~~ — **Resolved**: Hybrid approach (session-level unlock + autoplay attempt + tap fallback). See PWA ADR. | SRS Learning Path |
 | Mid-quiz connection loss—is discarding in-progress batch acceptable? | Product | Gate 1 review | SRS Learning Path |
 | ANKI parameters—use defaults or tune for mobile sessions? | Product | Gate 1 review | SRS Learning Path |
 | Foundational deck content creation—who owns per-language decks? | Curator/Product | Before language launch | Content Curation |
