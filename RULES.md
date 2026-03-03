@@ -164,6 +164,8 @@ A story is NOT complete until:
 
 ## Memory Protocol
 
+> **IMPORTANT**: Do NOT use any platform-specific auto-memory system (e.g., Claude Code's `~/.claude/` directory). All project memory is in `.agents/memory/{branch}/` only.
+
 The agent writes to `.agents/memory/{branch}/` at these trigger points:
 
 | Trigger | File to Update | Content |

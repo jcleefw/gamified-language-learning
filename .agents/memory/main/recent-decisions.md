@@ -5,6 +5,24 @@
 
 ## Decision Log
 
+### 2026-03-04: D1 Batch Assembly < 100ms — Deferred to Gate 2, Schema Design Required
+**Context**: Open question in SRS PRD §8.3 and CONTEXT.md — is < 100ms achievable with D1 at scale?
+**Decision**: Not closed yet. Achievable at V1/Gate 2 scale with proper schema design. Validate P95 latency at Gate 2 with telemetry. "At scale" risk doesn't materialize until 10K+ concurrent.
+**Findings**:
+- Batch assembly touches 5 logical concerns — risk is naive impl doing 5 serial D1 round trips
+- D1 via Workers binding: 2–10ms per indexed query. 1–2 round trips = comfortably under 100ms
+- Active window capped at 8 words → tiny result sets regardless of deck size
+- Proper schema collapses 5 concerns into 1 read query with indexed `(user_id, deck_id)` + `next_review_at`
+**To close**: Schema design ADR needed → confirm ≤ 2 D1 round trips in calling layer → add P95 to Gate 2 telemetry targets
+**Proposed resolution**: Achievable with proper schema design. Validate at Gate 2.
+
+### 2026-03-04: Mid-Quiz Connection Loss — Discard In-Progress Batch
+**Context**: Open question in SRS PRD §10 — is discarding the in-progress batch acceptable if user closes app before reconnection?
+**Decision**: Discard. No localStorage persistence in v1. Revisit at Gate 2 with real usage data.
+**Rationale**: Too early to decide at Gate 1 (solo user). 15-question batch is short (~5 min) — losing it isn't catastrophic. Mastery redundancy (10 correct to master) cushions the loss. localStorage resume introduces stale-state risk (word states may change between disconnect and reconnect). Discard aligns with the already-stated always-online v1 position.
+**Alternatives Considered**: localStorage persistence (persist answers, replay against current D1 states on reconnect) — valid but complex; surface the complexity at Gate 2 if discard proves painful.
+**Impact**: CONTEXT.md open question resolved, SRS PRD §10 and §13 resolved.
+
 ### 2026-03-04: ANKI Parameters — FSRS Defaults + 90-Day Cap
 **Context**: Open question in SRS PRD and CONTEXT.md — should we use Anki defaults or tune for shorter mobile sessions? Three approaches considered: (A) pure FSRS defaults, (B) conservative mobile-tuned params, (C) FSRS defaults + max interval cap.
 **Decision**: Approach C — FSRS desired retention 0.90 (default) + 90-day max interval cap.
