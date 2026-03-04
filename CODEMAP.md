@@ -19,7 +19,6 @@ Project navigation index. Use this to orient before reading files.
 | `CODEMAP.md` | This file — navigation index |
 | `README.md` | Project overview for humans |
 | `THOUGHTS.md` | Freeform product notes |
-| `claude-code-playbook.md` | Claude Code-specific workflow reference |
 
 ---
 
@@ -38,38 +37,9 @@ Project navigation index. Use this to orient before reading files.
 | `.agents/tools/memory-consolidate.sh` | Consolidate branch memory into main on merge |
 | `.agents/guardrails.yml` | Platform-agnostic safety checks |
 | `.agents/integrations.yml` | External tool integrations (MCP servers, APIs) |
+| `.agents/reference/` | Platform-specific docs (e.g., `claude-code-playbook.md`). Not read at bootstrap. |
 
-### Skills by Category
-
-| Category | Skills |
-|----------|--------|
-| `architect/` | fe-design, fe-review, be-design, be-review, infra-design, infra-review, qa-design, qa-review, engineering-design, engineering-review, cost-analysis |
-| `dev/` | code-review, debug-investigation, refactor, security-review, explain-code, fix-review, tdd-plan, tdd-implement |
-| `ba/` | requirements-spec, use-case, data-dictionary, gap-analysis, process-map, stakeholder-interview-guide, requirements-synthesis, requirements-traceability, api-cost-model, saving-session-state |
-| `product/` | user-story, release-notes, user-research-synthesis, competitive-analysis-research, competitive-analysis-writeup, prioritize, roadmap-slice, metrics-definition, ideate, prd |
-| `agentic/` | create-skill |
-
-### Workflows
-
-| Workflow | Purpose |
-|----------|---------|
-| `create-epic.md` | Plan a new feature initiative |
-| `create-design-spec.md` | Technical blueprint |
-| `create-changelog.md` | Document completed work |
-| `create-bug.md` | Bug report |
-| `create-rfc.md` | Architectural proposal |
-| `create-ux-spec.md` | UX/interaction design |
-| `create-test-plan.md` | Test strategy |
-| `create-sprint-summary.md` | Sprint summary |
-| `create-code-map.md` | Generate/update CODEMAP |
-| `code-change-workflow.md` | Standard dev workflow |
-| `discover-and-plan.md` | Explore and plan work |
-| `review-and-fix.md` | Review and correct issues |
-| `refactor.md` | Structured refactoring |
-| `onboard.md` | Onboard to a codebase area |
-| `context-refresh.md` | Refresh agent context |
-| `retrospective.md` | Project retrospective |
-| `prototype.md` | Prototype a feature |
+> Skills and workflows are auto-listed by the platform. See `.agents/skills/` and `.agents/workflows/` if needed.
 
 ---
 
@@ -113,59 +83,9 @@ Project navigation index. Use this to orient before reading files.
 
 ---
 
-## `sessions/` — Session State
-
-> Session files are created during active discussions and deleted once decisions are captured in ADRs and memory. Currently empty.
-
----
-
 ## `src/` — Application Source (TBD)
 
-> Source directory not yet created. Structure will be established when implementation begins.
-
-### Expected Structure
-
-```
-src/
-├── server/
-│   ├── api/                    # API routes (Nitro / Cloudflare Workers)
-│   │   ├── auth/               # Login, OAuth, session handlers
-│   │   ├── conversations/      # Content curation API endpoints
-│   │   ├── quiz/               # Quiz batch assembly, answer submission
-│   │   ├── tts/                # TTS generation request handlers
-│   │   └── users/              # User management (admin)
-│   ├── db/
-│   │   ├── schema.ts           # D1 table definitions ⚠️ sensitive
-│   │   └── migrations/         # Schema migrations ⚠️ sensitive
-│   └── services/
-│       ├── ttsService.ts       # Rate-limited TTS generation
-│       ├── srsService.ts       # ANKI algorithm, mastery tracking
-│       ├── quizBatchService.ts # Batch composition, active window
-│       └── geminiService.ts    # Gemini API client (conv + breakdown)
-│
-├── components/
-│   ├── quiz/                   # QuizBatch, QuizQuestion, MultipleChoice, WordBlock
-│   ├── curation/               # ConversationEditor, WordBreakdown, PublishControls
-│   ├── auth/                   # LoginForm, OAuthButton
-│   └── ui/                     # Shared UI (buttons, cards, inputs — from Ark UI)
-│
-├── composables/
-│   ├── useQuizBatch.ts         # Quiz batch state + answer submission
-│   ├── useWordMastery.ts       # Mastery tracking, phase transitions
-│   ├── useActiveWindow.ts      # 8-word active window management
-│   ├── useTTSAudio.ts          # Audio playback, status polling
-│   └── useAuth.ts              # Session state, role checks
-│
-├── pages/
-│   ├── index.vue               # Dashboard / deck list
-│   ├── quiz/[deckId].vue       # Quiz session
-│   ├── curation/               # Curator interface
-│   └── admin/                  # Admin user management
-│
-└── assets/
-    ├── tokens/                 # PandaCSS design tokens
-    └── styles/                 # Global styles
-```
+> Not yet created. Will be populated in CODEMAP when implementation begins.
 
 ---
 

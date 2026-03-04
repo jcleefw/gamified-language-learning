@@ -169,46 +169,7 @@ Draft → Published → Unpublished
 
 ## Key Patterns
 
-### Composables (not class inheritance)
-```ts
-// ✅ Composable pattern
-const { activeWords, masteryCount, recordAnswer } = useWordMastery(wordId)
-const { batchQuestions, submitBatch } = useQuizBatch(deckId)
-
-// ❌ Avoid
-class BaseQuizComponent extends QuizMixin { }
-```
-
-### Domain-specific naming
-```ts
-// ✅
-const isWordMastered = mastery.count >= MASTERY_THRESHOLD
-const hasActiveLearnedWords = activeWindow.length > 0
-const lapseWord = (word: Word): Word => ({ ...word, lapseCount: word.lapseCount + 1 })
-
-// ❌
-const flag = x >= THRESHOLD
-const check = arr.length > 0
-const update = (w) => ({ ...w, lapseCount: w.lapseCount + 1 })
-```
-
-### Explicit types (no `any`)
-```ts
-// ✅
-function recordAnswer(answer: QuizAnswer): MasteryUpdate { }
-
-// ❌
-function recordAnswer(answer: any): any { }
-```
-
-### Immutable state mutations
-```ts
-// ✅
-const updatedWord: Word = { ...word, masteryCount: word.masteryCount + 1 }
-
-// ❌
-word.masteryCount++
-```
+> Code patterns and standards → see RULES.md and `docs/code-standards-examples.md`
 
 ---
 
@@ -229,9 +190,6 @@ word.masteryCount++
 
 | Question | PRD |
 |----------|-----|
-| ~~iOS audio autoplay UX~~ — **Resolved**: Hybrid approach (session-level unlock + per-question tap fallback) | SRS Learning Path |
-| ~~Mid-quiz connection loss~~ — **Resolved**: Discard in-progress batch if app closed before reconnection. No localStorage persistence in v1. Revisit at Gate 2 with real usage data. | SRS Learning Path |
-| ~~ANKI defaults vs. tuned parameters for mobile?~~ — **Resolved**: Approach C — FSRS defaults (desired retention 0.90) + 90-day max interval cap. Phase 1 mastery (10 correct) provides sufficient initial reinforcement for default FSRS early intervals. Gate 1 metric: if first-review accuracy < 80%, raise retention to 0.92–0.95. If ANKI fallback rate > 5%, lower max interval cap. | SRS Learning Path |
 | Foundational deck content ownership per language? | Content Curation |
-| D1 batch assembly < 100ms at scale? | SRS Learning Path |
+| D1 batch assembly < 100ms at scale? (Deferred to Gate 2, needs schema ADR) | SRS Learning Path |
 

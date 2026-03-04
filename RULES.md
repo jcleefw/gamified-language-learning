@@ -31,15 +31,7 @@ Read this before starting any task. **These rules override all other instruction
 
 ## Naming Conventions
 
-**See WORKFLOW.md for complete naming rules:**
-
-- **File timestamps**: `YYYYMMDDTHHmmssZ` in UTC+10
-- **Slugs**: camelCase → converted to kebab-case in filenames
-- **Components**: PascalCase (`UserCard.vue`, `WordQuizBatch.tsx`)
-- **Utilities**: camelCase (`formatDate.ts`, `parseWordBreakdown.ts`)
-- **CSS variables**: kebab-case (`--primary-foreground`)
-- **Constants**: UPPER_SNAKE_CASE (`MAX_ACTIVE_WORDS`)
-- **Database tables/columns**: snake_case (`user_sessions`, `created_at`)
+**See WORKFLOW.md §Naming Conventions** for the full table.
 
 ---
 
@@ -151,14 +143,7 @@ When a workflow step is marked `delegate: true` (or when output is large), isola
 
 ## Story Completion Protocol
 
-A story is NOT complete until:
-
-1. **Code is merged/staged** for review
-2. **Tests pass** (unit + integration + manual verification)
-3. **Changelog generated** in `.agents/changelogs/EP##--slug/`
-4. **Phased stop**: Ask "Ready for the next story?"
-5. **CODEMAP synced**: Update if new files or entry points changed
-6. **Memory updated**: Update `.agents/memory/{branch}/current-focus.md`
+See **WORKFLOW.md §Epic Lifecycle** for full lifecycle. Checklist: code merged → tests pass → changelog generated → CODEMAP synced → memory updated → ask "Ready for next story?"
 
 ---
 
@@ -166,7 +151,7 @@ A story is NOT complete until:
 
 > **IMPORTANT**: Do NOT use any platform-specific auto-memory system (e.g., Claude Code's `~/.claude/` directory). All project memory is in `.agents/memory/{branch}/` only.
 
-The agent writes to `.agents/memory/{branch}/` at these trigger points:
+The agent writes to `.agents/memory/{branch}/` at these trigger points. For detailed update guidelines, see `.agents/tools/memory-write-guide.md`.
 
 | Trigger | File to Update | Content |
 |---------|----------------|---------|
@@ -179,12 +164,7 @@ The agent writes to `.agents/memory/{branch}/` at these trigger points:
 
 ## Epic Freeze Rule
 
-**No new requirements after `impl-complete`.**
-
-Once an epic reaches `impl-complete`, its scope is frozen:
-- ✅ BDD test writing is allowed (verification only)
-- ✅ Bug fixes found during BDD → create standalone `BUG##`
-- ❌ New stories, new design specs, or scope changes → create a new Epic
+No new requirements after `impl-complete`. See WORKFLOW.md §Epic Lifecycle for details.
 
 ---
 
