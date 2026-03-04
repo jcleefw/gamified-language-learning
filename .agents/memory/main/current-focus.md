@@ -7,49 +7,127 @@
 
 - **Epic**: N/A — Pre-build readiness phase
 - **Story**: N/A
-- **Status**: MVP readiness assessment complete. 5 gaps identified. Queued for discussion.
+- **Status**: GAP-03 ✅. GAP-04 ✅. GAP-05 ✅. 2 gaps remaining (GAP-01, GAP-02 — deferred to their stages).
 
 ## Last Session Outcome
 
-PM readiness review — assessed all product-documentation against MVP build readiness. No code written. Gap register produced.
+GAP-03 — defined 10-stage MVP build sequence, Stage 1 as immediate target.
+GAP-05 — full agentic dev workflow defined: epic lifecycle gates, branching, BDD ownership, unit test protocol, commit discipline, story sizing, PR template.
 
-**Full gap register**: `product-documentation/20260304T125757Z-mvp-readiness-gaps.md`
+**Roadmap slice**: `product-documentation/roadmap/20260305T142801Z-stage1-build-sequence.md`
 
-### Gaps Summary
+### Build Sequence (Accepted)
 
-| # | Gap | Output | Role | Priority |
-|---|---|---|---|---|
-| GAP-01 | No API contract | ADR | `architect` | 4 |
-| GAP-02 | No database schema | ADR | `architect` | 3 |
-| GAP-03 | No build sequence / Stage 1 vertical | Roadmap slice + epic list | `product` + `scrum` | 1 — start here |
-| GAP-04 | Curation engine ADR still "Proposed" | Close existing ADR | `architect` | 5 — quick win |
-| GAP-05 | No E2E agentic dev workflow (commit discipline, test protocol, PR process, stage transitions) | Workflow/playbook doc or skills | `agentic` + `scrum` | 2 |
+| Stage | Feature | Key Dependency |
+|---|---|---|
+| 1 | SRS engine + terminal runner (in-memory, pure TS) | None — start here |
+| 2 | Hono API layer (engine over HTTP, in-memory) | Stage 1 engine |
+| 3 | Database persistence (local SQLite first → cloud D1 later) | Stage 2 API |
+| 4 | Quiz UI (mobile-first, seed data) | Stage 3 DB |
+| 5 | Auth (Google OAuth + JWT) | Stage 2 API |
+| 6 | Curation engine (pure TS, parallel track) | Stage 1 monorepo |
+| 7 | Gemini integration (real AI-generated decks) | Stage 6 + Stage 2 |
+| 8 | Curator UI | Stage 7 |
+| 9 | TTS audio system | Stage 8 |
+| 10 | Admin UI | Stage 5 auth |
 
-### What Can Start Without Resolving Gaps
-- `packages/srs-engine` — pure TypeScript, well-defined API, no I/O
-- `packages/curation-engine` — same pattern
-- Monorepo scaffolding (pnpm + Turborepo + Docker Compose)
+### Epic Lifecycle Gates (Accepted)
 
-## ADRs Completed
+| Transition | Entry Criteria | Validator |
+|---|---|---|
+| `Accepted → In Progress` | Design spec ready, ADRs accepted, schema available (if DB epic), no upstream dependencies | Agent self-check |
+| `In Progress → Impl-Complete` | All stories Done, local tests pass, changelog + CODEMAP + memory updated | Human approves |
+| `Impl-Complete → BDD Pending` | PRD agent writes BDD scenarios, human confirms before QA picks up | Human confirms |
+| `BDD Pending → Completed` | Agent creates PR. Human monitors CI, merges when green. | Human |
 
-1. ✅ **SRS engine as separate package** — `20260302T160536Z-engineering-srs-engine-package.md`
-2. ✅ **Curation engine as separate package** — `20260303T210000Z-engineering-curation-engine-package.md`
-3. ✅ **Shared types strategy** — resolved inline (each engine owns its types; no shared-types package)
-4. **API surface design** — pending (GAP-01)
-5. ✅ **Backend server need** — `20260303T195134Z-engineering-headless-hono-backend.md`
-6. **Database schema** — pending (GAP-02)
+### Branching Model (Accepted)
+
+```
+main
+  └── feature/EP##-slug          (epic branch)
+        └── feature/EP##-ST##-slug  (story branch per story)
+```
+
+Story branch → merged to epic branch when story Done. Epic branch → merged to main via human-approved PR at Impl-Complete.
+
+### Story Creation Sequence (Accepted)
+
+Titles (rough list) → Design spec → Stories fully detailed → Epic Accepted → agent picks up ST##01.
+
+### BDD Protocol (Accepted)
+
+- PRD agent writes scenarios (product owns what). QA agent writes test implementation (owns how).
+- Two-strike rule applies to QA agent building tests locally.
+- CI monitoring is out of scope for agents. Agents create PR only; human monitors CI and merges.
+
+### Unit Test Protocol (Accepted)
+
+| Layer | TDD | Coverage | Done Gate |
+|---|---|---|---|
+| Engine packages | Strict TDD | High — all paths | Full package suite (B) |
+| Backend routes | Pragmatic | Contract-level | Full package suite (B) |
+| Frontend | Pragmatic | Happy path | Full package suite (B) |
+| BDD | PRD agent scenarios + QA impl | Medium | Deferred to UI stage |
+
+### Commit Discipline (Accepted)
+
+- One commit per story, at end of REVIEW phase, after full package suite passes
+- Implementation + tests in one commit — never split
+- Format: `feat(EP##-ST##): [what]. [why in body].`
+- Conventional types: `feat`, `fix`, `chore`, `docs`, `refactor`
+
+### Story Sizing (Accepted)
+
+- Max one layer per story. Cross-layer = must split before CODE begins.
+- Split triggers: layer bleed, multiple independent ACs, >~5 files discovered in PLAN phase
+- Agent proposes split inline, waits for human approval — no files created until approved
+- Splitting allowed in PLAN phase only. CODE started = no splitting
+
+### PR Template (Accepted)
+
+```
+## What
+[Story ID + one-line summary]
+
+## Why
+[Acceptance criteria this closes]
+
+## Test evidence
+[Test command + pass/fail summary]
+
+## Linked artifacts
+[Story file, Design spec, ADR(s)]
+
+## Checklist
+- [ ] Full package suite passes
+- [ ] CODEMAP updated
+- [ ] Changelog entry written
+- [ ] Memory updated
+```
+
+### Story-Level State (Accepted)
+
+No formal story states. PLAN/CODE/TEST/REVIEW phases + full package suite pass + "ready for next story?" is sufficient.
+
+## Remaining Gaps
+
+| # | Gap | Status | When |
+|---|---|---|---|
+| GAP-01 | No API contract | ✅ Resolved | — |
+| GAP-02 | No database schema | Open | Stage 3 prerequisite |
+| GAP-03 | No build sequence | ✅ Resolved | — |
+| GAP-04 | Curation ADR still "Proposed" | ✅ Resolved | — |
+| GAP-05 | No agentic dev workflow | ✅ Resolved | — |
 
 ## Follow-Up Actions (Next Session)
 
-1. ~~Address **GAP-03** (build sequence)~~ — 🔄 **ONGOING** (Thread: T-019cb8f0-fee6-7149-90fb-67288aabf028) — `roadmap-slice` + product discussion
-2. Address **GAP-05** (agentic dev workflow) — use `agentic` + `scrum` discussion
-3. Then address **GAP-02** (database schema ADR) and **GAP-01** (API surface ADR)
-4. Close **GAP-04** (accept curation engine ADR) — low effort, do anytime
+1. Begin **Stage 1** implementation: monorepo scaffolding → srs-engine → terminal runner
+2. Write agentic workflow decisions into WORKFLOW.md / RULES.md (the GAP-05 output artifact)
 
 ## Key File References
 
+- Roadmap slice: `product-documentation/roadmap/20260305T142801Z-stage1-build-sequence.md`
 - Gap register: `product-documentation/20260304T125757Z-mvp-readiness-gaps.md`
 - SRS engine ADR: `product-documentation/architecture/20260302T160536Z-engineering-srs-engine-package.md`
 - Curation engine ADR: `product-documentation/architecture/20260303T210000Z-engineering-curation-engine-package.md`
 - Hono backend ADR: `product-documentation/architecture/20260303T195134Z-engineering-headless-hono-backend.md`
-- SRS PRD: `product-documentation/prds/20260226T100000Z-srs-learning-path.md`

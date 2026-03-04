@@ -3,19 +3,18 @@
 **Branch**: main
 **Policy**: Only the most recent session is kept. Overwritten each session.
 
-## Last Session: 2026-03-04 — MVP Readiness Assessment
+## Last Session: 2026-03-05 — GAP-03 Build Sequence
 
-**Goal**: PM readiness review — assess all product-documentation against MVP build readiness.
+**Goal**: Resolve GAP-03 — define Stage 1 vertical slice and full MVP build sequence.
 
 **Completed**:
-- Assessed all PRDs/ADRs for build readiness
-- Produced gap register: `product-documentation/20260304T125757Z-mvp-readiness-gaps.md`
-- Identified 5 gaps (GAP-01 through GAP-05)
-- Prioritized: GAP-03 (build sequence) first, then GAP-05 (dev workflow)
+- Discussed 3 options for Stage 1 scope (minimal/curation/full) — chose minimal (no auth, no AI, no TTS)
+- Refined further: terminal proof only, no Hono, no DB, pure in-memory engine validation
+- Produced roadmap slice: `product-documentation/roadmap/20260305T142801Z-stage1-build-sequence.md`
+- 10-stage build sequence accepted (1 feature per stage)
+- Key decisions: Hono before DB, local SQLite before D1, learning loop before content pipeline
 
 **Next**:
-- GAP-03: Build sequence / Stage 1 vertical slice → `roadmap-slice`
-- GAP-05: Agentic dev workflow
-- GAP-02: Database schema ADR
-- GAP-01: API surface ADR
+- GAP-05: Agentic dev workflow (commit discipline, test protocol, stage transitions)
+- Stage 1 implementation: monorepo scaffold → srs-engine → terminal runner
 - GAP-04: Accept curation engine ADR (quick win)

@@ -1,6 +1,6 @@
 # ADR: Curation Engine as a Separate Package
 
-**Status:** Proposed
+**Status:** Accepted
 
 **Date:** 2026-03-03
 
@@ -303,5 +303,5 @@ Semver with changelog generated from commits. Even as an internal `workspace:*` 
 - [Monorepo Tooling](20260227T022513Z-engineering-monorepo-tooling.md)
 - [Headless Hono Backend](20260303T195134Z-engineering-headless-hono-backend.md)
 - [Cloudflare Platform](20260301T161844Z-infra-cloudflare-platform.md)
-- Shared Types Strategy — ADR #3 (pending)
+- Shared Types Strategy — resolved inline (each engine owns its types; no shared-types package)
 - API Surface Design — ADR #4 (pending)
