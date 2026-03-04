@@ -1,110 +1,55 @@
 # Recent Decisions
 
 **Branch**: main
-**Updated**: 2026-03-03
+**Updated**: 2026-03-05
+**Rolling window**: Keep last 3 days only. Older decisions archived to `decisions-archive.md`.
 
-## Decision Log
+## Decision Index (1-liner each)
+
+| Date | Decision | Related |
+|------|----------|---------|
+| 03-04 | Memory pointer via PostToolUse hook on ADR writes | `20260304T120000Z-agentic-memory-hook.md` |
+| 03-04 | D1 batch < 100ms — deferred to Gate 2, needs schema ADR | SRS PRD §8.3 |
+| 03-04 | Mid-quiz disconnect — discard batch, no localStorage v1 | SRS PRD §10 |
+| 03-04 | ANKI params — FSRS 0.90 retention + 90-day max interval | SRS PRD §13 |
+| 03-04 | Word pool — sandbox mode, soft signal at 3 wrong | SRS PRD §5.11 |
+| 03-03 | Headless Hono backend for orchestration | `20260303T195134Z-engineering-headless-hono-backend.md` |
+| 03-03 | Curation engine — prompt-builder + response-parser | `20260303T210000Z-engineering-curation-engine-package.md` |
+| 03-03 | TTS stays as calling-layer service, not a package | — |
+| 03-03 | Foundational decks out of curation engine | — |
+| 03-03 | Package structure conventions → RULES.md | — |
+
+## Recent Details (last 3 days only)
 
 ### 2026-03-04: Automated Memory Pointer via PostToolUse Hook
-**Context**: Manual memory write triggers get forgotten in freeform ADR sessions and long-context sessions. Explored claude-mem as an alternative — rejected for platform lock-in and noise. Considered stop hook, /wrap skill, and _index.md — all rejected.
-**Decision**: Claude Code `PostToolUse` hook fires when `product-documentation/architecture/*.md` is written. Appends a one-liner pointer to `recent-decisions.md`. No AI summarisation — just filename + date.
-**Trade-off**: Hook trigger is Claude Code-specific. Storage stays agnostic in `.agents/memory/`.
+**Decision**: `PostToolUse` hook fires when `product-documentation/architecture/*.md` is written. Appends pointer to `recent-decisions.md`.
 **Related ADR**: `20260304T120000Z-agentic-memory-hook.md`
 
----
+### 2026-03-04: D1 Batch Assembly < 100ms — Deferred to Gate 2
+**Decision**: Achievable with proper schema design. Validate P95 at Gate 2. Needs schema ADR first.
 
-### 2026-03-04: D1 Batch Assembly < 100ms — Deferred to Gate 2, Schema Design Required
-**Context**: Open question in SRS PRD §8.3 and CONTEXT.md — is < 100ms achievable with D1 at scale?
-**Decision**: Not closed yet. Achievable at V1/Gate 2 scale with proper schema design. Validate P95 latency at Gate 2 with telemetry. "At scale" risk doesn't materialize until 10K+ concurrent.
-**Findings**:
-- Batch assembly touches 5 logical concerns — risk is naive impl doing 5 serial D1 round trips
-- D1 via Workers binding: 2–10ms per indexed query. 1–2 round trips = comfortably under 100ms
-- Active window capped at 8 words → tiny result sets regardless of deck size
-- Proper schema collapses 5 concerns into 1 read query with indexed `(user_id, deck_id)` + `next_review_at`
-**To close**: Schema design ADR needed → confirm ≤ 2 D1 round trips in calling layer → add P95 to Gate 2 telemetry targets
-**Proposed resolution**: Achievable with proper schema design. Validate at Gate 2.
-
-### 2026-03-04: Mid-Quiz Connection Loss — Discard In-Progress Batch
-**Context**: Open question in SRS PRD §10 — is discarding the in-progress batch acceptable if user closes app before reconnection?
-**Decision**: Discard. No localStorage persistence in v1. Revisit at Gate 2 with real usage data.
-**Rationale**: Too early to decide at Gate 1 (solo user). 15-question batch is short (~5 min) — losing it isn't catastrophic. Mastery redundancy (10 correct to master) cushions the loss. localStorage resume introduces stale-state risk (word states may change between disconnect and reconnect). Discard aligns with the already-stated always-online v1 position.
-**Alternatives Considered**: localStorage persistence (persist answers, replay against current D1 states on reconnect) — valid but complex; surface the complexity at Gate 2 if discard proves painful.
-**Impact**: CONTEXT.md open question resolved, SRS PRD §10 and §13 resolved.
+### 2026-03-04: Mid-Quiz Connection Loss — Discard Batch
+**Decision**: Discard in-progress batch. No localStorage in v1. Revisit at Gate 2.
 
 ### 2026-03-04: ANKI Parameters — FSRS Defaults + 90-Day Cap
-**Context**: Open question in SRS PRD and CONTEXT.md — should we use Anki defaults or tune for shorter mobile sessions? Three approaches considered: (A) pure FSRS defaults, (B) conservative mobile-tuned params, (C) FSRS defaults + max interval cap.
-**Decision**: Approach C — FSRS desired retention 0.90 (default) + 90-day max interval cap.
-**Rationale**: Phase 1 mastery (10 correct answers) is already stronger than Anki's learning steps, so default FSRS early intervals are fine. 90-day cap prevents words vanishing for months (A's problem at 140+ day gaps) without the excessive review pressure of B (8–12 reviews per batch at 6 months). Gate 1 metrics ("first-review accuracy ≥ 80%", "ANKI fallback rate < 5%") validate within a week.
-**Alternatives Considered**:
-- A (pure defaults): intervals grow to 365+ days — too long for MC-based recognition, likely triggers excessive 3-lapse fallbacks
-- B (conservative 0.85 retention): more early reviews per word, eats batch slots, users feel "stuck reviewing" at scale
-**Impact**: CONTEXT.md open question resolved, SRS PRD §13 resolved, SRS Engine ADR updated with `desiredRetention` and `maxInterval` in `SrsConfig`.
-
----
+**Decision**: FSRS desired retention 0.90 + 90-day max interval cap. Gate 1 validation: first-review accuracy ≥ 80%, ANKI fallback rate < 5%.
 
 ### 2026-03-04: Word Pool Deck — Sandbox with Soft Signal
-**Context**: Eager learners finish 2–3 decks and want free-form review from the word pool. Key question: should word pool reviews affect ANKI scheduling?
-**Decision**: Sandbox mode — no ANKI side effects. All attempts tracked with `source = wordPool` for analytics. Soft signal: 3 wrong answers all-time per word → pull `next_review_at` forward to now, reset counter. No lapse/ease/mastery changes.
-**Rationale**: Eager daily review would inflate ANKI intervals if counted (user reviews daily for 2 weeks → intervals balloon → words vanish when user stops). Sandbox preserves ANKI integrity. Soft signal is a gentle nudge — consequence is mild (word appears one batch sooner), not punitive (no Phase 1 reset).
-**Alternatives Considered**:
-- Full ANKI integration: eagerness backfires when user stops practicing
-- Pure sandbox (no signal at all): forgotten words only caught at next scheduled ANKI review
-- Rolling window for wrong counter: unnecessary complexity for minimal benefit
-**Impact**: SRS PRD §5.11 #43 expanded, §8.1 #3 (source field added), §8.1 #7 (word pool wrong counter added). No separate ADR — product rules, not architecture.
-
----
+**Decision**: No ANKI side effects. Soft signal: 3 wrong all-time → pull `next_review_at` forward, reset counter.
 
 ### 2026-03-03: iOS Audio Autoplay — Hybrid Strategy
-**Context**: iOS Safari blocks audible audio autoplay without user gesture. Audio recognition questions (10% of quiz batch) require audio playback. Open question carried across PWA ADR, FE toolchain session, and SRS PRD.
-**Decision**: Hybrid approach — session-level `AudioContext` unlock on quiz start tap, per-question autoplay attempt via `audio.play()`, visible play/replay button always rendered as fallback.
-**Rationale**: Degrades gracefully on all platforms. No broken state — if autoplay works, great; if not, tap-to-play is always available. Matches patterns used by Duolingo/Memrise.
-**Alternatives Considered**:
-- Option A (tap-to-play only): Simplest but adds extra tap per audio question (~1s overhead each)
-- Option B (session unlock only): Seamless but fails silently if iOS suspends AudioContext
-**Impact**: SRS PRD §7.5 updated, PWA ADR open question closed, CONTEXT.md open question resolved. No early prototype spike needed.
-**Related ADR**: PWA Platform Strategy ADR
+**Decision**: Session-level `AudioContext` unlock + per-question autoplay attempt + visible play button fallback.
+
+### 2026-03-03: Headless Hono Backend
+**Decision**: Hono on Cloudflare Workers as orchestration layer. Nuxt = plug-and-play consumer.
+
+### 2026-03-03: Curation Engine — Prompt-Builder Pattern
+**Decision**: Engine builds prompts + parses responses. 100% synchronous and pure. Calling layer handles API.
 
 ---
 
-### 2026-03-03: Headless Hono Backend for Orchestration
-**Context**: The architecture is moving toward a highly decoupled model with extracted logic engines. We need a secure, portable orchestration layer for API keys, D1/R2 data, and Gemini quotas.
-**Decision**: Implement a Headless Hono API on Cloudflare Workers as the primary orchestration layer.
-**Rationale**: Decouples Nuxt (frontend) as a plug-and-play consumer, protects secrets, and simplifies Postman-first development. 
-**Impact**: Nuxt SSR routes will be minimal; all business orchestration moves to the Hono Worker. Auth shifts to a backend-first strategy. 
-**Related ADR**: `20260303T195134Z-engineering-headless-hono-backend.md`
+## Rotation Policy
 
----
-
-### 2026-03-03: Curation Engine — Prompt-Builder + Response-Parser Pattern
-**Context**: Curation engine's core workflow involves Gemini API calls (I/O), but engine must remain pure. Two options: (A) engine builds prompts and parses responses, calling layer handles API call; (B) engine accepts injected adapter and owns full workflow.
-**Decision**: Option A — prompt-builder + response-parser. Engine is 100% synchronous and pure.
-**Rationale**: No async, no mocks needed in tests, clean I/O boundary. Calling layer orchestration is trivial (3 steps).
-**Alternatives Considered**: Injected adapter (Option B) — gives engine workflow ownership but requires async code and interface mocking.
-**Impact**: Curation engine ADR written. Pattern applies to any future engine that wraps external APIs.
-**Related ADR**: `20260303T210000Z-engineering-curation-engine-package.md`
-
-### 2026-03-03: TTS Stays as Calling-Layer Service
-**Context**: TTS is consumed by both curation and SRS paths. Considered: (1) in curation engine, (2) separate `packages/tts-engine`, (3) calling-layer service.
-**Decision**: Option 3 — calling-layer service (`ttsService.ts`). Not a package.
-**Rationale**: TTS is inherently I/O-bound (API calls, R2 storage, queue management). No meaningful pure logic to extract. Provider abstraction can live as an interface in the server layer.
-**Impact**: No `packages/tts-engine`. TTS logic stays in server services.
-
-### 2026-03-03: Foundational Decks Out of Curation Engine
-**Context**: Foundational decks are fixed word sets uploaded as JSON. Considered whether validation/parsing belongs in curation engine.
-**Decision**: Out of engine. Calling layer handles with Zod schema validation.
-**Rationale**: Foundational decks aren't curated — they're predefined reference data. Doesn't fit engine purpose (AI-assisted curation workflow).
-
-### 2026-03-03: Package Structure Conventions
-**Context**: File structure patterns (co-located tests, domain-scoped types, naming) apply to all engine packages. Needed a canonical location.
-**Decision**: Add to RULES.md as a new section. Move existing code examples to `docs/code-standards-examples.md` to make room.
-**Rationale**: RULES.md is the enforcement file — highest visibility, read first by all agents.
-**Impact**: RULES.md update pending (next session follow-up).
-
----
-
-## Guidelines for Recording Decisions
-
-- Record decisions when they affect multiple stories or architecture
-- Link to ADR if this is a formal architecture decision
-- Include alternatives considered (shows reasoning)
-- Note the impact (who/what is affected)
+- Keep only decisions from the last 3 days in "Recent Details"
+- Decision Index keeps 1-liner summaries indefinitely (trim when > 20 rows)
+- When trimming: move full details to `decisions-archive.md`

@@ -33,13 +33,11 @@ Quick command reference. For details, see the governance files linked below.
 
 ## Memory Consolidation
 
-When merging a feature branch to main:
+When merging a feature branch to main. See `.agents/tools/memory-consolidate-guide.md` for full instructions.
 
 ```bash
 .agents/tools/memory-consolidate.sh main
 ```
-
-This consolidates branch memory into `main/` folder, documenting decisions and learnings.
 
 ---
 

@@ -7,13 +7,15 @@ description: "Saves the current discussion session state to a timestamped file f
 
 When this skill is loaded, immediately perform the following:
 
-1. **Determine the current timestamp** in ISO 8601 format: `YYYYMMDDTHHMMSSZ` (e.g., `20260226T143000Z`).
+1. **Read `.agents/tools/memory-write-guide.md`** for memory update guidelines.
 
-2. **Analyze the full current conversation** and extract the following into a structured markdown document.
+2. **Determine the current timestamp** in ISO 8601 format: `YYYYMMDDTHHMMSSZ` (e.g., `20260226T143000Z`).
 
-3. **Derive a short description** — 2–4 words in kebab-case summarizing the main topic of the session (e.g., `agentic-skill-setup`, `auth-flow-design`).
+3. **Analyze the full current conversation** and extract the following into a structured markdown document.
 
-4. **Write to `sessions/<timestamp>-<short-description>.md`** in the workspace root. Create the `sessions/` directory if it does not exist.
+4. **Derive a short description** — 2–4 words in kebab-case summarizing the main topic of the session (e.g., `agentic-skill-setup`, `auth-flow-design`).
+
+5. **Write to `sessions/<timestamp>-<short-description>.md`** in the workspace root. Create the `sessions/` directory if it does not exist.
 
 ## Output Format
 

@@ -1,49 +1,55 @@
 # Current Focus
 
 **Branch**: main
-**Updated**: 2026-03-04
+**Updated**: 2026-03-05
 
 ## Active Work
 
-- **Epic**: N/A — Architecture planning phase
+- **Epic**: N/A — Pre-build readiness phase
 - **Story**: N/A
-- **Status**: SRS parameter decisions complete, word pool deck rules defined
+- **Status**: MVP readiness assessment complete. 5 gaps identified. Queued for discussion.
 
 ## Last Session Outcome
 
-Product discussion session — resolved two open questions and defined word pool deck behavior.
+PM readiness review — assessed all product-documentation against MVP build readiness. No code written. Gap register produced.
 
-### 1. ANKI Parameters for Mobile (Open Question Resolved)
-- **Decision**: Approach C — FSRS defaults (desired retention 0.90) + 90-day max interval cap
-- **Rationale**: Phase 1 mastery (10 correct answers) provides sufficient initial reinforcement for default FSRS early intervals. 90-day cap prevents words vanishing for months (Approach A problem) without over-reviewing (Approach B problem).
-- **Gate 1 tuning knobs**: if first-review accuracy < 80% → raise retention to 0.92–0.95; if ANKI fallback rate > 5% → lower max interval cap
-- **Files changed**: CONTEXT.md, SRS PRD §13, SRS Engine ADR (added `desiredRetention` and `maxInterval` to `SrsConfig`)
+**Full gap register**: `product-documentation/20260304T125757Z-mvp-readiness-gaps.md`
 
-### 2. Word Pool Deck Rules (New PRD Content)
-- **Sandbox mode**: word pool reviews do NOT affect ANKI scheduling (no interval/ease/lapse changes)
-- **Analytics tracking**: every attempt recorded with source = `wordPool`
-- **Soft signal**: 3 wrong answers all-time in word pool → pull `next_review_at` forward to now, reset counter to 0. No lapse/ease/mastery impact.
-- **Question types**: same as curated (70/20/10). Challenge modes deferred.
-- **Batch composition**: random from all mastered words, no minimum pool size
-- **No separate ADR needed** — product rules, not architectural decisions
-- **Files changed**: SRS PRD §5.11, §8.1
+### Gaps Summary
+
+| # | Gap | Output | Role | Priority |
+|---|---|---|---|---|
+| GAP-01 | No API contract | ADR | `architect` | 4 |
+| GAP-02 | No database schema | ADR | `architect` | 3 |
+| GAP-03 | No build sequence / Stage 1 vertical | Roadmap slice + epic list | `product` + `scrum` | 1 — start here |
+| GAP-04 | Curation engine ADR still "Proposed" | Close existing ADR | `architect` | 5 — quick win |
+| GAP-05 | No E2E agentic dev workflow (commit discipline, test protocol, PR process, stage transitions) | Workflow/playbook doc or skills | `agentic` + `scrum` | 2 |
+
+### What Can Start Without Resolving Gaps
+- `packages/srs-engine` — pure TypeScript, well-defined API, no I/O
+- `packages/curation-engine` — same pattern
+- Monorepo scaffolding (pnpm + Turborepo + Docker Compose)
 
 ## ADRs Completed
 
 1. ✅ **SRS engine as separate package** — `20260302T160536Z-engineering-srs-engine-package.md`
 2. ✅ **Curation engine as separate package** — `20260303T210000Z-engineering-curation-engine-package.md`
-3. **Shared types strategy** — ✅ Resolved inline (each engine owns its types; no shared-types package)
-4. **API surface design** — pending (class-based confirmed, exact method signatures pending)
-5. ~~**Backend server need**~~ — ✅ Resolved (`20260303T195134Z-engineering-headless-hono-backend.md`)
+3. ✅ **Shared types strategy** — resolved inline (each engine owns its types; no shared-types package)
+4. **API surface design** — pending (GAP-01)
+5. ✅ **Backend server need** — `20260303T195134Z-engineering-headless-hono-backend.md`
+6. **Database schema** — pending (GAP-02)
 
 ## Follow-Up Actions (Next Session)
 
-1. **Delete irrelevant session files**: `sessions/` contains files superseded by ADRs
-2. Start next ADR topic (#4 API surface design)
+1. ~~Address **GAP-03** (build sequence)~~ — 🔄 **ONGOING** (Thread: T-019cb8f0-fee6-7149-90fb-67288aabf028) — `roadmap-slice` + product discussion
+2. Address **GAP-05** (agentic dev workflow) — use `agentic` + `scrum` discussion
+3. Then address **GAP-02** (database schema ADR) and **GAP-01** (API surface ADR)
+4. Close **GAP-04** (accept curation engine ADR) — low effort, do anytime
 
-## Context for Next Session
+## Key File References
 
+- Gap register: `product-documentation/20260304T125757Z-mvp-readiness-gaps.md`
 - SRS engine ADR: `product-documentation/architecture/20260302T160536Z-engineering-srs-engine-package.md`
-- SRS PRD: `product-documentation/prds/20260226T100000Z-srs-learning-path.md`
 - Curation engine ADR: `product-documentation/architecture/20260303T210000Z-engineering-curation-engine-package.md`
 - Hono backend ADR: `product-documentation/architecture/20260303T195134Z-engineering-headless-hono-backend.md`
+- SRS PRD: `product-documentation/prds/20260226T100000Z-srs-learning-path.md`
