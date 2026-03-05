@@ -1,0 +1,19 @@
+{
+  "name": "gamified-language-learning",
+  "private": true,
+  "packageManager": "pnpm@10.30.1",
+  "engines": { "node": ">=20", "pnpm": ">=9" },
+  "scripts": {
+    "build": "turbo build",
+    "test": "turbo test",
+    "test:watch": "turbo watch test",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "turbo": "^2",
+    "typescript": "^5.7",
+    "vitest": "^3",
+    "eslint": "^9",
+    "typescript-eslint": "^8"
+  }
+}

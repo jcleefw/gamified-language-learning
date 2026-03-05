@@ -5,16 +5,18 @@
 
 ## Active Work
 
-- **Epic**: N/A — Pre-build readiness phase
-- **Story**: N/A
-- **Status**: GAP-03 ✅. GAP-04 ✅. GAP-05 ✅. 2 gaps remaining (GAP-01, GAP-02 — deferred to their stages).
+- **Epic**: EP01 — Monorepo Scaffolding
+- **Story**: EP01-ST01 ✅ CODE+TEST complete — in REVIEW
+- **Status**: All 3 ACs pass. `packageManager` gap found and resolved. Pending: changelog, CODEMAP, commit.
 
 ## Last Session Outcome
 
-GAP-03 — defined 10-stage MVP build sequence, Stage 1 as immediate target.
-GAP-05 — full agentic dev workflow defined: epic lifecycle gates, branching, BDD ownership, unit test protocol, commit discipline, story sizing, PR template.
+EP01-ST01 — pnpm workspace + Turborepo scaffolding implemented and tested.
+- Created `pnpm-workspace.yaml`, `package.json`, `turbo.json`
+- `pnpm install` ✅, `pnpm build` ✅ (0 packages, no-op)
+- Gap: Turbo 2.x requires `packageManager` field — added `pnpm@10.30.1`
 
-**Roadmap slice**: `product-documentation/roadmap/20260305T142801Z-stage1-build-sequence.md`
+**Next**: Complete REVIEW (changelog → CODEMAP → commit), then ST02.
 
 ### Build Sequence (Accepted)
 
