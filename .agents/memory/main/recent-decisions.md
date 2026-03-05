@@ -1,13 +1,18 @@
 # Recent Decisions
 
 **Branch**: main
-**Updated**: 2026-03-05
+**Updated**: 20260306T033504Z
 **Rolling window**: Keep last 3 days only. Older decisions archived to `decisions-archive.md`.
 
 ## Decision Index (1-liner each)
 
 | Date | Decision | Related |
 |------|----------|---------|
+| 03-06 | EP02-ST05: demo script converted to integration test — `__tests__/integration/srs-lifecycle.test.ts` owns CI correctness; demo kept for human-readable output | EP02-ST05 |
+| 03-06 | EP02-ST05: FSRS interval growth requires backdating `lastReview` by `scheduledDays` between calls — `scheduleReview` always passes `new Date()` so elapsed time must be simulated | EP02-ST05 |
+| 03-06 | EP02-ST05: root `package.json` needs `"type": "module"` for tsx to resolve ESM-only `@gll/srs-engine` exports | EP02-ST05 |
+| 03-06 | EP02-ST04: `enable_short_term: false` required in ts-fsrs — default mode schedules new cards in minutes, not days | EP02-ST04 |
+| 03-06 | EP02: Unit tests live in `src/**/__tests__/` (co-located), not top-level `__tests__/unit/` — vitest include updated | EP02 review |
 | 03-05 | EP01-ST03: DS01 spec `workspace:*` for npm deps (typescript, vitest) is invalid — use version ranges | EP01-ST03 implementation |
 | 03-05 | EP01-ST03: tsconfig `include: __tests__/**/*` conflicts with `rootDir: src` — removed __tests__ from include | EP01-ST03 implementation |
 | 03-05 | EP01-ST03: Vitest 3.x exits 1 with no test files — added `passWithNoTests: true` to vitest.config.ts | EP01-ST03 implementation |
@@ -44,6 +49,12 @@
 | 03-03 | Package structure conventions → RULES.md | — |
 
 ## Recent Details (last 3 days only)
+
+### 2026-03-06: EP02 — Unit Test Location Convention Correction
+
+**Context**: EP02-ST02 placed `mastery.test.ts` in `packages/srs-engine/__tests__/unit/` — a top-level directory. RULES.md §Package Structure specifies unit tests are co-located per domain, in `__tests__/` subdirectories next to source.
+**Decision**: Moved to `src/__tests__/mastery.test.ts`. Future unit tests follow same pattern (e.g., `src/scheduling/__tests__/FsrsScheduler.test.ts`). Integration tests remain at package-root `__tests__/integration/`.
+**vitest.config.ts**: Updated `include` from `__tests__/**/*.test.ts` to `['src/**/__tests__/**/*.test.ts', '__tests__/integration/**/*.test.ts']`.
 
 ### 2026-03-05: EP01-ST03 — Three DS01 Spec Gaps
 

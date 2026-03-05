@@ -1,2 +1,14 @@
-// Public API — populated by EP02+
-export {}
+export type {
+  MasteryPhase,
+  WordCategory,
+  FsrsCardState,
+  WordState,
+  QuizAnswer,
+  SrsConfig,
+} from './types.js'
+
+export { updateMastery } from './mastery.js'
+
+export type { SpacedRepetitionScheduler } from './scheduling/scheduler.interface.js'
+export type { ReviewResult } from './scheduling/types.js'
+export { FsrsScheduler } from './scheduling/FsrsScheduler.js'

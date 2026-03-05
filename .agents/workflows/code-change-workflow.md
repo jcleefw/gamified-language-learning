@@ -6,8 +6,13 @@ description: Master workflow for ANY story implementation. Ensures consistency a
 ## Step 0 — Session Start
 1. Read `.agents/memory/{branch}/current-focus.md` — identify active epic and story
 2. Read RULES.md
-3. Confirm with user: "Picking up EP##-ST## — ready to start PLAN?"
-4. **STOP** — wait for user confirmation before continuing
+3. **Branch setup** (first story of an epic only):
+   - If `feature/EP##-slug` does not exist → create it from `main`: `git checkout -b feature/EP##-slug main`
+   - Create story branch from epic branch: `git checkout -b feature/EP##-ST##-slug feature/EP##-slug`
+   - For subsequent stories: `git checkout -b feature/EP##-ST##-slug feature/EP##-slug` (epic branch already exists)
+   - **Parallel epics**: each cuts its own `feature/EP##-slug` from `main` independently — no cross-branch deps
+4. Confirm with user: "Picking up EP##-ST## on `feature/EP##-ST##-slug` — ready to start PLAN?"
+5. **STOP** — wait for user confirmation before continuing
 
 ## Step 1 — PLAN (`tdd-plan`)
 1. Read RULES.md
