@@ -8,6 +8,7 @@
 
 | Date | Decision | Related |
 |------|----------|---------|
+| 03-06 | EP02: Unit tests live in `src/**/__tests__/` (co-located), not top-level `__tests__/unit/` — vitest include updated | EP02 review |
 | 03-05 | EP01-ST03: DS01 spec `workspace:*` for npm deps (typescript, vitest) is invalid — use version ranges | EP01-ST03 implementation |
 | 03-05 | EP01-ST03: tsconfig `include: __tests__/**/*` conflicts with `rootDir: src` — removed __tests__ from include | EP01-ST03 implementation |
 | 03-05 | EP01-ST03: Vitest 3.x exits 1 with no test files — added `passWithNoTests: true` to vitest.config.ts | EP01-ST03 implementation |
@@ -44,6 +45,12 @@
 | 03-03 | Package structure conventions → RULES.md | — |
 
 ## Recent Details (last 3 days only)
+
+### 2026-03-06: EP02 — Unit Test Location Convention Correction
+
+**Context**: EP02-ST02 placed `mastery.test.ts` in `packages/srs-engine/__tests__/unit/` — a top-level directory. RULES.md §Package Structure specifies unit tests are co-located per domain, in `__tests__/` subdirectories next to source.
+**Decision**: Moved to `src/__tests__/mastery.test.ts`. Future unit tests follow same pattern (e.g., `src/scheduling/__tests__/FsrsScheduler.test.ts`). Integration tests remain at package-root `__tests__/integration/`.
+**vitest.config.ts**: Updated `include` from `__tests__/**/*.test.ts` to `['src/**/__tests__/**/*.test.ts', '__tests__/integration/**/*.test.ts']`.
 
 ### 2026-03-05: EP01-ST03 — Three DS01 Spec Gaps
 
