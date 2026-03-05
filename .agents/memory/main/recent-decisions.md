@@ -8,6 +8,7 @@
 
 | Date | Decision | Related |
 |------|----------|---------|
+| 03-05 | EP01-ST02: ESLint 9.x requires `jiti` to load `eslint.config.ts` — added as root devDependency | EP01-ST02 implementation |
 | 03-05 | EP01-ST01: Turbo 2.x requires `packageManager` field in root `package.json` — added `pnpm@10.30.1` | EP01-ST01 implementation |
 | 03-05 | GAP-01: API surface ADR accepted — flat namespace, wrapped envelope, Bearer JWT, api-contract package | `20260305T200000Z-engineering-api-surface.md` |
 | 03-05 | GAP-04: Curation engine ADR accepted; shared types resolved inline | `20260303T210000Z-engineering-curation-engine-package.md` |

@@ -6,8 +6,8 @@
 ## Active Work
 
 - **Epic**: EP01 — Monorepo Scaffolding
-- **Story**: EP01-ST01 ✅ CODE+TEST complete — in REVIEW
-- **Status**: All 3 ACs pass. `packageManager` gap found and resolved. Pending: changelog, CODEMAP, commit.
+- **Story**: EP01-ST02 ✅ CODE+TEST complete — in REVIEW
+- **Status**: All ACs pass. `jiti` gap found and resolved. Pending: changelog, CODEMAP, commit.
 
 ## Last Session Outcome
 
