@@ -1,6 +1,6 @@
 # EP02-ST04: FsrsScheduler adapter
 
-**Created**: 2026-03-06
+**Created**: 20260306T031108Z
 **Epic**: [EP02 - SRS Engine Core: Mastery + ANKI Scheduling](../../plans/epics/EP02-srs-engine-mastery.md)
 **Status**: Complete ✅
 

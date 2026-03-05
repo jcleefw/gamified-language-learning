@@ -1,7 +1,7 @@
 # Recent Decisions
 
 **Branch**: main
-**Updated**: 2026-03-05
+**Updated**: 20260306T033504Z
 **Rolling window**: Keep last 3 days only. Older decisions archived to `decisions-archive.md`.
 
 ## Decision Index (1-liner each)
