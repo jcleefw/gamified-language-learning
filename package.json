@@ -1,6 +1,7 @@
 {
   "name": "gamified-language-learning",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@10.30.1",
   "engines": {
     "node": ">=20",
@@ -10,11 +11,14 @@
     "build": "turbo build",
     "test": "turbo test",
     "test:watch": "turbo watch test",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "demo": "tsx scripts/demo-srs.ts"
   },
   "devDependencies": {
+    "@gll/srs-engine": "workspace:*",
     "eslint": "^9",
     "jiti": "^2.6.1",
+    "tsx": "^4",
     "turbo": "^2",
     "typescript": "^5.7",
     "typescript-eslint": "^8",

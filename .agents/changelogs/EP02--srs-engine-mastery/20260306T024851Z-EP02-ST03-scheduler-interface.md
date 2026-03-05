@@ -1,6 +1,6 @@
 # EP02-ST03: SpacedRepetitionScheduler interface + ReviewResult type
 
-**Created**: 2026-03-06T00:00:00Z
+**Created**: 20260306T024851Z
 **Epic**: [EP02 - SRS Engine Core: Mastery + ANKI Scheduling](../../plans/epics/EP02-srs-engine-mastery.md)
 **Status**: Complete ✅
 
