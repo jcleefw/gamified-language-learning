@@ -3,6 +3,12 @@ description: Master workflow for ANY story implementation. Ensures consistency a
 ---
 # Code Change Workflow
 
+## Step 0 — Session Start
+1. Read `.agents/memory/{branch}/current-focus.md` — identify active epic and story
+2. Read RULES.md
+3. Confirm with user: "Picking up EP##-ST## — ready to start PLAN?"
+4. **STOP** — wait for user confirmation before continuing
+
 ## Step 1 — PLAN (`tdd-plan`)
 1. Read RULES.md
 2. Read the story spec (DS## §Stories section for the target ST##)

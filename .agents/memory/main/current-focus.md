@@ -6,17 +6,17 @@
 ## Active Work
 
 - **Epic**: EP01 — Monorepo Scaffolding
-- **Story**: EP01-ST02 ✅ CODE+TEST complete — in REVIEW
-- **Status**: All ACs pass. `jiti` gap found and resolved. Pending: changelog, CODEMAP, commit.
+- **Story**: EP01-ST03 — next up
+- **Status**: ST01 ✅ ST02 ✅ ST03 pending
 
 ## Last Session Outcome
 
-EP01-ST01 — pnpm workspace + Turborepo scaffolding implemented and tested.
-- Created `pnpm-workspace.yaml`, `package.json`, `turbo.json`
-- `pnpm install` ✅, `pnpm build` ✅ (0 packages, no-op)
-- Gap: Turbo 2.x requires `packageManager` field — added `pnpm@10.30.1`
+EP01-ST02 — root tsconfig + ESLint flat config implemented and committed.
+- Created `tsconfig.base.json`, `eslint.config.ts`
+- Gap: ESLint 9.x requires `jiti` to load `.ts` config — installed as root devDependency
+- Config parses and resolves correctly ✅
 
-**Next**: Complete REVIEW (changelog → CODEMAP → commit), then ST02.
+**Next**: EP01-ST03 — Vitest workspace + `packages/srs-engine/` skeleton → `pnpm test` exits 0
 
 ### Build Sequence (Accepted)
 
