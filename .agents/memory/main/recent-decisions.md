@@ -8,6 +8,9 @@
 
 | Date | Decision | Related |
 |------|----------|---------|
+| 03-05 | EP01-ST03: DS01 spec `workspace:*` for npm deps (typescript, vitest) is invalid — use version ranges | EP01-ST03 implementation |
+| 03-05 | EP01-ST03: tsconfig `include: __tests__/**/*` conflicts with `rootDir: src` — removed __tests__ from include | EP01-ST03 implementation |
+| 03-05 | EP01-ST03: Vitest 3.x exits 1 with no test files — added `passWithNoTests: true` to vitest.config.ts | EP01-ST03 implementation |
 | 03-05 | EP01-ST02: ESLint 9.x requires `jiti` to load `eslint.config.ts` — added as root devDependency | EP01-ST02 implementation |
 | 03-05 | EP01-ST01: Turbo 2.x requires `packageManager` field in root `package.json` — added `pnpm@10.30.1` | EP01-ST01 implementation |
 | 03-05 | GAP-01: API surface ADR accepted — flat namespace, wrapped envelope, Bearer JWT, api-contract package | `20260305T200000Z-engineering-api-surface.md` |
@@ -41,6 +44,17 @@
 | 03-03 | Package structure conventions → RULES.md | — |
 
 ## Recent Details (last 3 days only)
+
+### 2026-03-05: EP01-ST03 — Three DS01 Spec Gaps
+
+**Gap 1 — `workspace:*` for npm packages**
+DS01 specified `"typescript": "workspace:*"` and `"vitest": "workspace:*"` in `packages/srs-engine/devDependencies`. The `workspace:*` protocol is for internal workspace packages only — pnpm errors if applied to npm registry packages. Fixed with version ranges `"^5.7"` and `"^3"` matching root.
+
+**Gap 2 — tsconfig `include` conflicts with `rootDir`**
+DS01 included `"__tests__/**/*"` in tsconfig `include` alongside `rootDir: "src"`. TypeScript TS6059: files outside `rootDir` cannot be compiled. Fixed by removing `__tests__/**/*` from `include`. Vitest handles test file transformation via its own bundler — tsc does not compile tests.
+
+**Gap 3 — Vitest 3.x exits 1 with no tests**
+DS01 claimed "Vitest exits 0 on no test files found by default." Vitest 3.x exits 1 without `passWithNoTests: true`. Added to `vitest.config.ts`. All three commands now exit 0: `pnpm install`, `pnpm build`, `pnpm test`.
 
 ### 2026-03-05: EP01-ST01 — Turbo 2.x `packageManager` Requirement
 **Context**: DS01 spec omitted `packageManager` from root `package.json`. Turbo 2.x fails with `Could not resolve workspaces — Missing packageManager field`.

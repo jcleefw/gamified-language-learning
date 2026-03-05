@@ -6,13 +6,16 @@
 ## Active Work
 
 - **Epic**: EP01 — Monorepo Scaffolding
-- **Story**: EP01-ST03 — next up
-- **Status**: ST01 ✅ ST02 ✅ ST03 pending
+- **Story**: EP01-ST03 ✅ — complete, pending commit
+- **Status**: ST01 ✅ ST02 ✅ ST03 ✅ — EP01 all stories done
 
 ## Last Session Outcome
 
-EP01-ST02 — root tsconfig + ESLint flat config implemented and committed.
-- Created `tsconfig.base.json`, `eslint.config.ts`
+EP01-ST03 — Vitest workspace + srs-engine scaffold complete.
+- Created `vitest.workspace.ts`, full `packages/srs-engine/` skeleton
+- `pnpm install`, `pnpm build`, `pnpm test` all exit 0
+- 3 DS01 spec gaps corrected (see recent-decisions.md)
+- **Next**: commit EP01-ST03, then begin EP02 — SRS engine core
 - Gap: ESLint 9.x requires `jiti` to load `.ts` config — installed as root devDependency
 - Config parses and resolves correctly ✅
 
