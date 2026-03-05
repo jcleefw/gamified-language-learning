@@ -18,7 +18,11 @@ EP02-ST05 — Demo script complete.
 - Added `"demo": "tsx scripts/demo-srs.ts"` to root scripts
 - `pnpm demo` exits 0, prints Learning→ANKI progression with interval
 - EP02 status → `Impl-Complete`
-- **Next**: human PR to merge epic branch → main; then EP03 or EP06 per build sequence
+- **Next**: improve `scripts/demo-srs.ts` to prove more behavior (separate conversation):
+  1. Simulate multiple ANKI reviews to show interval growth (3 → 8 → 21 → 55 → 90)
+  2. Simulate wrong answers in Learning phase — show mastery decrement
+  3. Simulate 3 lapses in ANKI phase — show phase reset back to Learning + mastery=0
+  - Then: human PR to merge epic branch → main
 
 ## Import Convention (Locked)
 
