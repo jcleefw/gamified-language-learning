@@ -1,22 +1,28 @@
 # Current Focus
 
-**Branch**: feature/EP02-ST02-mastery-counting
+**Branch**: feature/EP02-ST03-scheduler-interface
 **Updated**: 2026-03-06
 
 ## Active Work
 
 - **Epic**: EP02 — SRS Engine Core: Mastery + ANKI Scheduling
-- **Story**: EP02-ST02 ✅ — complete, pending commit
-- **Status**: ST01 ✅ ST02 ✅ — mastery counting + phase transition done
+- **Story**: EP02-ST03 ✅ — complete
+- **Status**: ST01 ✅ ST02 ✅ ST03 ✅ — scheduler interface + ReviewResult defined
+
+## Import Convention (Locked)
+
+- Own source file imports → `.js` extension (required by tsc emit; TypeScript resolves to `.ts`)
+- External package imports → package name only, no extension
+- `allowImportingTsExtensions` is NOT enabled — would break tsc emit to `dist/`
 
 ## Last Session Outcome
 
-EP02-ST02 — Mastery counting + phase transition complete.
-- Created `packages/srs-engine/src/mastery.ts` — `updateMastery` pure function
-- Created `packages/srs-engine/__tests__/unit/mastery.test.ts` — 13 tests, all pass
-- Updated `src/index.ts` to export `updateMastery`
-- `pnpm build` + `pnpm test` exit 0
-- **Next**: commit EP02-ST02, then begin EP02-ST03 (SpacedRepetitionScheduler interface)
+EP02-ST03 — SpacedRepetitionScheduler interface + ReviewResult type complete.
+- Created `packages/srs-engine/src/scheduling/types.ts` — `ReviewResult` interface
+- Created `packages/srs-engine/src/scheduling/scheduler.interface.ts` — `SpacedRepetitionScheduler` interface
+- Updated `src/index.ts` to export both
+- `pnpm build` exits 0
+- **Next**: EP02-ST04 (FsrsScheduler adapter — implement the interface wrapping ts-fsrs)
 
 ## EP02 Story Status
 
@@ -24,7 +30,7 @@ EP02-ST02 — Mastery counting + phase transition complete.
 |---|---|---|
 | EP02-ST01 | Engine types | ✅ Done |
 | EP02-ST02 | Mastery counting + phase transition | ✅ Done |
-| EP02-ST03 | SpacedRepetitionScheduler interface | Pending |
+| EP02-ST03 | SpacedRepetitionScheduler interface | ✅ Done |
 | EP02-ST04 | FsrsScheduler adapter | Pending |
 | EP02-ST05 | SRS core demo script | Pending |
 

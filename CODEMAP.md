@@ -111,6 +111,8 @@ Spaced repetition scheduling engine. Skeleton created in EP01-ST03. Logic popula
 | `src/index.ts` | Public API entry point — re-exports all engine types and functions |
 | `src/types.ts` | All engine-owned types: `WordState`, `MasteryPhase`, `WordCategory`, `SrsConfig`, `QuizAnswer`, `FsrsCardState` |
 | `src/mastery.ts` | `updateMastery(state, isCorrect, config)` — pure function: mastery counting, Learning→srsM2_review transition, lapse reset |
+| `src/scheduling/types.ts` | `ReviewResult` interface — domain-private scheduling result type |
+| `src/scheduling/scheduler.interface.ts` | `SpacedRepetitionScheduler` interface — contract for all scheduler implementations |
 | `__tests__/setup.ts` | `afterEach(vi.useRealTimers)` — prevents fake timer bleed |
 | `__tests__/unit/` | Per-domain unit tests (EP02+) |
 | `__tests__/integration/` | Cross-domain lifecycle tests (EP07+) |
