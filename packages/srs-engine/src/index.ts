@@ -6,3 +6,5 @@ export type {
   QuizAnswer,
   SrsConfig,
 } from './types.js'
+
+export { updateMastery } from './mastery.js'

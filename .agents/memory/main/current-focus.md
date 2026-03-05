@@ -1,28 +1,29 @@
 # Current Focus
 
-**Branch**: feature/EP02-ST01-engine-types
+**Branch**: feature/EP02-ST02-mastery-counting
 **Updated**: 2026-03-06
 
 ## Active Work
 
 - **Epic**: EP02 — SRS Engine Core: Mastery + ANKI Scheduling
-- **Story**: EP02-ST01 ✅ — complete, pending commit
-- **Status**: ST01 ✅ — engine types defined and exported
+- **Story**: EP02-ST02 ✅ — complete, pending commit
+- **Status**: ST01 ✅ ST02 ✅ — mastery counting + phase transition done
 
 ## Last Session Outcome
 
-EP02-ST01 — Engine types complete.
-- Created `packages/srs-engine/src/types.ts` with all 6 engine types
-- Updated `src/index.ts` to re-export all types
-- `pnpm build` exits 0, no TypeScript errors
-- **Next**: commit EP02-ST01, then begin EP02-ST02 (mastery counting + phase transition)
+EP02-ST02 — Mastery counting + phase transition complete.
+- Created `packages/srs-engine/src/mastery.ts` — `updateMastery` pure function
+- Created `packages/srs-engine/__tests__/unit/mastery.test.ts` — 13 tests, all pass
+- Updated `src/index.ts` to export `updateMastery`
+- `pnpm build` + `pnpm test` exit 0
+- **Next**: commit EP02-ST02, then begin EP02-ST03 (SpacedRepetitionScheduler interface)
 
 ## EP02 Story Status
 
 | Story | Title | Status |
 |---|---|---|
 | EP02-ST01 | Engine types | ✅ Done |
-| EP02-ST02 | Mastery counting + phase transition | Pending |
+| EP02-ST02 | Mastery counting + phase transition | ✅ Done |
 | EP02-ST03 | SpacedRepetitionScheduler interface | Pending |
 | EP02-ST04 | FsrsScheduler adapter | Pending |
 | EP02-ST05 | SRS core demo script | Pending |

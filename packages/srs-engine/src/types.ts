@@ -1,4 +1,4 @@
-export type MasteryPhase = 'learning' | 'anki_review'
+export type MasteryPhase = 'learning' | 'srsM2_review'
 
 export type WordCategory = 'curated' | 'foundational'
 
