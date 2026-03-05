@@ -29,8 +29,9 @@ description: Master workflow for ANY story implementation. Ensures consistency a
 1. Self-review: check code standards (RULES.md §Code Standards)
 2. Write ST changelog using `ST-CHANGELOG-TEMPLATE.md` → save to `.agents/changelogs/EP##--slug/`
 3. Update `CODEMAP.md` if any files were added, removed, or repurposed
-4. Write memory:
+4. If this is the last story of the epic: update epic plan `**Status**` → `Impl-Complete`
+5. Write memory:
    - `current-focus.md` — story complete, what's next
    - `session-log.md` — if this is the end of the session
-5. Commit: `feat(EP##-ST##): <what>. <why in body>.` — one commit per story
-6. **STOP** — ask "Ready for next story?"
+6. Commit: `feat(EP##-ST##): <what>. <why in body>.` — one commit per story
+7. **STOP** — ask "Ready for next story?"
