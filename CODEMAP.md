@@ -119,7 +119,8 @@ Spaced repetition scheduling engine. Skeleton created in EP01-ST03. Logic popula
 | `src/__tests__/` | Unit tests co-located with source — one `__tests__/` per domain folder |
 | `src/__tests__/mastery.test.ts` | Unit tests for `mastery.ts` |
 | `__tests__/setup.ts` | `afterEach(vi.useRealTimers)` — prevents fake timer bleed |
-| `__tests__/integration/` | Cross-domain lifecycle tests (EP07+) |
+| `__tests__/integration/` | Cross-domain lifecycle tests |
+| `__tests__/integration/srs-lifecycle.test.ts` | Integration tests: Learning→srsM2_review, interval growth, 3-lapse reset (4 tests) |
 | `README.md` | Test run instructions |
 | `dist/` | Compiled output (git-ignored) |
 
