@@ -1,2 +1,8 @@
-// Public API — populated by EP02+
-export {}
+export type {
+  MasteryPhase,
+  WordCategory,
+  FsrsCardState,
+  WordState,
+  QuizAnswer,
+  SrsConfig,
+} from './types.js'

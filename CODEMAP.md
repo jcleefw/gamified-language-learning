@@ -108,7 +108,8 @@ Spaced repetition scheduling engine. Skeleton created in EP01-ST03. Logic popula
 | `package.json` | Package manifest — ESM, `@gll/srs-engine`, build/test/lint scripts |
 | `tsconfig.json` | Extends `../../tsconfig.base.json`; `rootDir: src`, `outDir: dist` |
 | `vitest.config.ts` | Vitest config — `globals: true`, `passWithNoTests: true`, setup file |
-| `src/index.ts` | Public API entry point — `export {}` stub, populated by EP02+ |
+| `src/index.ts` | Public API entry point — re-exports all engine types and functions |
+| `src/types.ts` | All engine-owned types: `WordState`, `MasteryPhase`, `WordCategory`, `SrsConfig`, `QuizAnswer`, `FsrsCardState` |
 | `__tests__/setup.ts` | `afterEach(vi.useRealTimers)` — prevents fake timer bleed |
 | `__tests__/unit/` | Per-domain unit tests (EP02+) |
 | `__tests__/integration/` | Cross-domain lifecycle tests (EP07+) |
