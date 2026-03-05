@@ -1,29 +1,31 @@
 # Current Focus
 
-**Branch**: feature/EP02-ST04-fsrs-scheduler
+**Branch**: feature/EP02-ST05-srs-demo
 **Updated**: 2026-03-06
 
 ## Active Work
 
 - **Epic**: EP02 — SRS Engine Core: Mastery + ANKI Scheduling
-- **Story**: EP02-ST04 ✅ — complete
-- **Status**: ST01 ✅ ST02 ✅ ST03 ✅ ST04 ✅ — FsrsScheduler adapter done
+- **Story**: EP02-ST05 ✅ — complete
+- **Status**: ST01 ✅ ST02 ✅ ST03 ✅ ST04 ✅ ST05 ✅ — EP02 Impl-Complete
+
+## Last Session Outcome
+
+EP02-ST05 — Demo script complete.
+- Created `scripts/demo-srs.ts` — exercises `updateMastery` + `FsrsScheduler` on one word
+- Added `"type": "module"` to root `package.json` (required for tsx to resolve ESM exports)
+- Added `tsx@^4` + `@gll/srs-engine: workspace:*` to root devDeps
+- Added `"demo": "tsx scripts/demo-srs.ts"` to root scripts
+- `pnpm demo` exits 0, prints Learning→ANKI progression with interval
+- EP02 status → `Impl-Complete`
+- **Next**: human PR to merge epic branch → main; then EP03 or EP06 per build sequence
 
 ## Import Convention (Locked)
 
 - Own source file imports → `.js` extension (required by tsc emit; TypeScript resolves to `.ts`)
 - External package imports → package name only, no extension
 - `allowImportingTsExtensions` is NOT enabled — would break tsc emit to `dist/`
-
-## Last Session Outcome
-
-EP02-ST04 — FsrsScheduler adapter complete.
-- Added `ts-fsrs@^5` to `packages/srs-engine/package.json` dependencies
-- Created `packages/srs-engine/src/scheduling/FsrsScheduler.ts` — ts-fsrs adapter; `enable_short_term: false` for day-based scheduling
-- Created `packages/srs-engine/src/scheduling/__tests__/FsrsScheduler.test.ts` — 11 tests, all pass
-- Updated `src/index.ts` to export `FsrsScheduler`
-- `pnpm build` exits 0; 24 tests pass
-- **Next**: EP02-ST05 (demo-srs.ts script — exercise `updateMastery` + `FsrsScheduler` on one word)
+- Root `package.json` has `"type": "module"` — tsx runs demo in ESM mode
 
 ## EP02 Story Status
 
@@ -33,7 +35,7 @@ EP02-ST04 — FsrsScheduler adapter complete.
 | EP02-ST02 | Mastery counting + phase transition | ✅ Done |
 | EP02-ST03 | SpacedRepetitionScheduler interface | ✅ Done |
 | EP02-ST04 | FsrsScheduler adapter | ✅ Done |
-| EP02-ST05 | SRS core demo script | Pending |
+| EP02-ST05 | SRS core demo script | ✅ Done |
 
 ## Key Decisions (ts-fsrs)
 

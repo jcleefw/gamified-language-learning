@@ -8,6 +8,7 @@
 
 | Date | Decision | Related |
 |------|----------|---------|
+| 03-06 | EP02-ST05: root `package.json` needs `"type": "module"` for tsx to resolve ESM-only `@gll/srs-engine` exports | EP02-ST05 |
 | 03-06 | EP02-ST04: `enable_short_term: false` required in ts-fsrs — default mode schedules new cards in minutes, not days | EP02-ST04 |
 | 03-06 | EP02: Unit tests live in `src/**/__tests__/` (co-located), not top-level `__tests__/unit/` — vitest include updated | EP02 review |
 | 03-05 | EP01-ST03: DS01 spec `workspace:*` for npm deps (typescript, vitest) is invalid — use version ranges | EP01-ST03 implementation |
