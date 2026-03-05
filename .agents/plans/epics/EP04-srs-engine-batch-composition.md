@@ -1,7 +1,8 @@
 # EP04 - SRS Engine: Batch Composition
 
-**Created**: 2026-03-05
+**Created**: 20260306T014133Z
 **Status**: Draft
+**Status Changed**: 20260306T014133Z
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 **Type**: Epic Plan
 **Depends on**: EP02

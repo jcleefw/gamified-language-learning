@@ -1,7 +1,8 @@
 # EP02 - SRS Engine Core: Mastery + ANKI Scheduling
 
-**Created**: 2026-03-05
+**Created**: 20260306T013219Z
 **Status**: Impl-Complete
+**Status Changed**: 20260306T031732Z
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 **Type**: Epic Plan
 **Depends on**: EP01

@@ -1,7 +1,8 @@
 # EP09 - Agentic Dev Workflow (GAP-05)
 
-**Created**: 2026-03-05
+**Created**: 20260305T135334Z
 **Status**: Completed
+**Status Changed**: 20260305T135334Z
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 **Type**: Epic Plan
 **Depends on**: N/A

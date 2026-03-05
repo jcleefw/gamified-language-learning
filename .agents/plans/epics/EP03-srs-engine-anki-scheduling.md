@@ -1,7 +1,8 @@
 # EP03 - SRS Engine: ANKI Scheduling
 
-**Created**: 2026-03-05
+**Created**: 20260306T013219Z
 **Status**: Withdrawn
+**Status Changed**: 20260306T013219Z
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 **Type**: Epic Plan
 **Depends on**: EP02
