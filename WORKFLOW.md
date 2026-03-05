@@ -24,6 +24,7 @@ Example: `20260302T143022Z-EP01-user-authentication.md`
 
 ```
 Epic (EP##)
+  ├── Phase (EP##-PH##)     ← optional planning grouping; NOT a story container
   ├── Design Spec (DS##)
   ├── UX Spec (UX##)
   ├── Test Plan (TP##)
@@ -43,6 +44,8 @@ Standalone (not attached to epics)
   └── Chore (CH##)
 ```
 
+> **Phase vs Story**: Phase is a planning label grouping related stories within an epic. Stories always belong to the Epic directly — not to a Phase. A Phase has no separate artifact file; it is declared as a section heading inside the Epic plan and Design Spec.
+
 ---
 
 ## Work Item Definitions
@@ -50,6 +53,7 @@ Standalone (not attached to epics)
 | Type | Prefix | Purpose | Location | Scope |
 |------|--------|---------|----------|-------|
 | Epic | `EP##` | Group related features (WHY/WHAT) | `.agents/plans/` | 1–4 weeks, 3–7 stories |
+| Phase | `EP##-PH##` | Planning grouping within an epic — describes implementation approach and sequencing. Not a story container; stories belong to the Epic directly. Declared as a section in the Epic plan and DS, not a separate file. | Within Epic plan / DS | Multiple stories, one sub-domain |
 | Story | `EP##-ST##` | One testable unit of work | `changelogs/EP##--slug/` | 1–3 days, one layer |
 | Design Spec | `EP##-DS##` | Technical HOW (data, APIs, algorithms) | `changelogs/EP##--slug/` | 1–3 stories |
 | UX Spec | `EP##-UX##` | Interaction design, wireframes | `changelogs/EP##--slug/` | One feature |
@@ -100,7 +104,7 @@ Draft → Accepted → In Progress → Impl-Complete → BDD Pending → Complet
 
 | Transition | Entry Criteria | Validator |
 |---|---|---|
-| `Accepted → In Progress` | Design spec ready, ADRs accepted, schema available (if DB epic), no upstream blockers | Agent self-check |
+| `Accepted → In Progress` | Design spec ready, ADRs accepted, schema available (if DB epic), all upstream deps are `Impl-Complete`. Multiple parallel epics (same `Depends on`) may enter `In Progress` simultaneously. | Agent self-check |
 | `In Progress → Impl-Complete` | All stories Done, local tests pass, changelog + CODEMAP + memory updated | Human approves |
 | `Impl-Complete → BDD Pending` | PRD agent writes BDD scenarios, human confirms before QA picks up | Human confirms |
 | `BDD Pending → Completed` | Agent creates PR; human monitors CI, merges when green | Human |
@@ -114,6 +118,21 @@ main → feature/EP##-slug → feature/EP##-ST##-slug
 ```
 
 Story branch merges to epic branch when Done. Epic branch merges to main via human-approved PR at Impl-Complete.
+
+### Parallel Epics
+
+When multiple epics share a dependency and can run concurrently, each branches independently from `main` after the shared dependency is merged:
+
+```
+main (EP02 merged)
+  ├── feature/EP03-batch-composition
+  ├── feature/EP04-active-window
+  └── feature/EP05-foundational-deck
+```
+
+- Each parallel epic produces its own PR and merges to `main` independently
+- The downstream epic (e.g., EP06 orchestrator) may only start after all parallel epic branches are merged
+- Parallel epics must not import from each other's feature branches
 
 ---
 
@@ -174,6 +193,7 @@ Titles → Design spec → Stories detailed → Epic Accepted → agent picks up
 - **Standalone TA/BUG/CH**: `TA01`, `BUG01`, `CH01`, ...
 
 ### Nested Numbering (Per Epic)
+- **PH##**: `EP01-PH01`, `EP01-PH02`, ... (per epic — planning label only, no file)
 - **DS##**: `EP01-DS01`, `EP01-DS02`, ... (per epic)
 - **UX##**: `EP01-UX01`, `EP01-UX02`, ... (per epic)
 - **TP##**: `EP01-TP01`, `EP01-TP02`, ... (per epic)
