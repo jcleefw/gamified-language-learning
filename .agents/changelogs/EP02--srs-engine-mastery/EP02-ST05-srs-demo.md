@@ -37,7 +37,34 @@ EP02 is now Impl-Complete.
 - All 24 engine unit tests still pass (`pnpm test`)
 - No new engine code — demo script only
 
+## Session 2 — 2026-03-06 (Integration test)
+
+### Summary
+
+Extended demo to 4 scenarios and converted it to a proper integration test in CI.
+
+### Files Modified
+
+#### `scripts/demo-srs.ts`
+- Expanded from 1 scenario to 4:
+  - A: wrong answers decrement mastery (floor=0)
+  - B: 10 corrects transition to `srsM2_review`
+  - C: 5 ANKI correct reviews show interval growth (3→14→57→90) — backdates `lastReview` to simulate elapsed time
+  - D: 3 lapses in `srsM2_review` reset to `learning` + mastery=0 + lapseCount=0
+
+#### `packages/srs-engine/__tests__/integration/srs-lifecycle.test.ts` *(new)*
+- 4 integration tests asserting the same 4 scenarios with explicit `expect()` calls
+- Picked up by vitest via existing `__tests__/integration/**/*.test.ts` include pattern
+- 28 tests total pass (13 unit mastery + 11 unit FsrsScheduler + 4 integration)
+
+#### `CODEMAP.md`
+- Added entry for `__tests__/integration/srs-lifecycle.test.ts`
+
+### Decision
+
+Demo script kept as human-readable stdout output (`pnpm demo`). Integration test owns CI correctness going forward.
+
 ## Next Steps
 
-- EP02 → Impl-Complete; human PR to merge epic branch into main
+- Human PR to merge `feature/EP02-ST05-srs-demo` → main
 - Next epic: EP03 (batch composition) or EP06 (SrsEngine class orchestration) per build sequence

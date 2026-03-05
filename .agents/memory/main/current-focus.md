@@ -11,18 +11,11 @@
 
 ## Last Session Outcome
 
-EP02-ST05 — Demo script complete.
-- Created `scripts/demo-srs.ts` — exercises `updateMastery` + `FsrsScheduler` on one word
-- Added `"type": "module"` to root `package.json` (required for tsx to resolve ESM exports)
-- Added `tsx@^4` + `@gll/srs-engine: workspace:*` to root devDeps
-- Added `"demo": "tsx scripts/demo-srs.ts"` to root scripts
-- `pnpm demo` exits 0, prints Learning→ANKI progression with interval
-- EP02 status → `Impl-Complete`
-- **Next**: improve `scripts/demo-srs.ts` to prove more behavior (separate conversation):
-  1. Simulate multiple ANKI reviews to show interval growth (3 → 8 → 21 → 55 → 90)
-  2. Simulate wrong answers in Learning phase — show mastery decrement
-  3. Simulate 3 lapses in ANKI phase — show phase reset back to Learning + mastery=0
-  - Then: human PR to merge epic branch → main
+EP02-ST05 — Demo extended + integration test added.
+- Extended `scripts/demo-srs.ts` to 4 scenarios (wrong-decrement, phase transition, interval growth, lapse reset)
+- Added `packages/srs-engine/__tests__/integration/srs-lifecycle.test.ts` — 4 integration tests, 28 total pass
+- Updated CODEMAP.md, changelog, recent-decisions
+- **Next**: human PR to merge `feature/EP02-ST05-srs-demo` → main
 
 ## Import Convention (Locked)
 

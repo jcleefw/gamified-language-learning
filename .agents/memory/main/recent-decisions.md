@@ -8,6 +8,8 @@
 
 | Date | Decision | Related |
 |------|----------|---------|
+| 03-06 | EP02-ST05: demo script converted to integration test — `__tests__/integration/srs-lifecycle.test.ts` owns CI correctness; demo kept for human-readable output | EP02-ST05 |
+| 03-06 | EP02-ST05: FSRS interval growth requires backdating `lastReview` by `scheduledDays` between calls — `scheduleReview` always passes `new Date()` so elapsed time must be simulated | EP02-ST05 |
 | 03-06 | EP02-ST05: root `package.json` needs `"type": "module"` for tsx to resolve ESM-only `@gll/srs-engine` exports | EP02-ST05 |
 | 03-06 | EP02-ST04: `enable_short_term: false` required in ts-fsrs — default mode schedules new cards in minutes, not days | EP02-ST04 |
 | 03-06 | EP02: Unit tests live in `src/**/__tests__/` (co-located), not top-level `__tests__/unit/` — vitest include updated | EP02 review |
