@@ -30,7 +30,12 @@ START → {Step 1} → {Decision?} → {Step 2} → END
 
 ## 5. Stories
 
-<!-- Each story = one independently testable unit -->
+<!-- Each story = one independently testable unit.
+     Use Phase headings to group stories when the epic has distinct sub-domains (EP##-PH01, EP##-PH02).
+     Omit Phase headings for simple epics with a single concern.
+     Stories always belong to the Epic directly — Phase is a label only. -->
+
+<!-- ### Phase 1: {Sub-domain name} (EP##-PH01) -->
 
 ### EP##-ST01: {Data Layer}
 **Scope**: {one layer}
@@ -39,6 +44,8 @@ START → {Step 1} → {Decision?} → {Step 2} → END
 - [ ] {Task}
 **Acceptance Criteria**:
 - [ ] {Criterion}
+
+<!-- ### Phase 2: {Sub-domain name} (EP##-PH02) -->
 
 ### EP##-ST02: {UI Component}
 **Scope**: {one component}
