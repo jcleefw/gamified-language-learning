@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { updateMastery } from '../../src/mastery.js'
-import type { WordState, SrsConfig } from '../../src/types.js'
+import { updateMastery } from '../mastery.js'
+import type { WordState, SrsConfig } from '../types.js'
 
 const baseConfig: SrsConfig = {
   masteryThreshold: { curated: 10, foundational: 5 },

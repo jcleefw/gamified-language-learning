@@ -167,7 +167,7 @@ state.fsrsState exists     → return min(state.fsrsState.scheduledDays, maxInte
 **Tasks**:
 - [ ] Add `ts-fsrs` to `packages/srs-engine/package.json` as a runtime dependency
 - [ ] Run `pnpm install` to resolve
-- [ ] Write tests first in `packages/srs-engine/__tests__/unit/scheduling/FsrsScheduler.test.ts`
+- [ ] Write tests first in `packages/srs-engine/src/scheduling/__tests__/FsrsScheduler.test.ts`
 - [ ] Implement `FsrsScheduler` in `packages/srs-engine/src/scheduling/FsrsScheduler.ts`
 - [ ] Export `FsrsScheduler` from `src/index.ts`
 - [ ] Run `pnpm test` — all tests pass

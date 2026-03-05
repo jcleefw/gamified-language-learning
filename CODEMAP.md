@@ -113,8 +113,9 @@ Spaced repetition scheduling engine. Skeleton created in EP01-ST03. Logic popula
 | `src/mastery.ts` | `updateMastery(state, isCorrect, config)` — pure function: mastery counting, Learning→srsM2_review transition, lapse reset |
 | `src/scheduling/types.ts` | `ReviewResult` interface — domain-private scheduling result type |
 | `src/scheduling/scheduler.interface.ts` | `SpacedRepetitionScheduler` interface — contract for all scheduler implementations |
+| `src/__tests__/` | Unit tests co-located with source — one `__tests__/` per domain folder |
+| `src/__tests__/mastery.test.ts` | Unit tests for `mastery.ts` |
 | `__tests__/setup.ts` | `afterEach(vi.useRealTimers)` — prevents fake timer bleed |
-| `__tests__/unit/` | Per-domain unit tests (EP02+) |
 | `__tests__/integration/` | Cross-domain lifecycle tests (EP07+) |
 | `README.md` | Test run instructions |
 | `dist/` | Compiled output (git-ignored) |
