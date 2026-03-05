@@ -85,6 +85,15 @@ Applies to all packages in `packages/` (engine packages and future shared packag
 
 ## Testing Protocol
 
+### Unit Test Protocol
+
+| Layer | TDD | Coverage | Done Gate |
+|---|---|---|---|
+| Engine packages | Strict TDD | All paths | Full package suite pass |
+| Backend routes | Pragmatic | Contract-level | Full package suite pass |
+| Frontend | Pragmatic | Happy path | Full package suite pass |
+| BDD | PRD scenarios + QA impl | Medium | Deferred to UI stage |
+
 ### The "Two-Strike" Failure Rule
 
 1. If a test/task fails at the **same step twice** → **STOP immediately**
@@ -110,6 +119,17 @@ For any story or task:
 **Do NOT auto-proceed.** The human reviews after each phase.
 
 **Exception**: Trivial fixes (typo, single-line syntax) may skip ceremony.
+
+**Story-level state**: No formal story states — PLAN/CODE/TEST/REVIEW phases + full package suite pass is sufficient. Ask "Ready for next story?" when done.
+
+---
+
+## Commit Discipline
+
+- One commit per story, at end of REVIEW phase, after full package suite passes.
+- Implementation + tests in one commit — never split.
+- Format: `feat(EP##-ST##): [what]. [why in body].`
+- Conventional types: `feat`, `fix`, `chore`, `docs`, `refactor`.
 
 ---
 

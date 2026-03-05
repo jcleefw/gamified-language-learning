@@ -96,6 +96,74 @@ Draft → Accepted → In Progress → Impl-Complete → BDD Pending → Complet
 
 ---
 
+## Epic Lifecycle Gates
+
+| Transition | Entry Criteria | Validator |
+|---|---|---|
+| `Accepted → In Progress` | Design spec ready, ADRs accepted, schema available (if DB epic), no upstream blockers | Agent self-check |
+| `In Progress → Impl-Complete` | All stories Done, local tests pass, changelog + CODEMAP + memory updated | Human approves |
+| `Impl-Complete → BDD Pending` | PRD agent writes BDD scenarios, human confirms before QA picks up | Human confirms |
+| `BDD Pending → Completed` | Agent creates PR; human monitors CI, merges when green | Human |
+
+---
+
+## Branching Model
+
+```
+main → feature/EP##-slug → feature/EP##-ST##-slug
+```
+
+Story branch merges to epic branch when Done. Epic branch merges to main via human-approved PR at Impl-Complete.
+
+---
+
+## Story Creation Sequence
+
+Titles → Design spec → Stories detailed → Epic Accepted → agent picks up ST##01.
+
+---
+
+## BDD Protocol
+
+- PRD agent: writes scenarios (owns **what**). QA agent: writes test impl (owns **how**).
+- Two-strike rule applies during QA local test build.
+- CI monitoring out of scope for agents — agents create PR only; human merges.
+
+---
+
+## Story Sizing
+
+- One layer per story max. Cross-layer = split before CODE.
+- Split triggers: layer bleed, multiple independent ACs, >~5 files found in PLAN.
+- Agent proposes split inline, waits for approval — no files created until approved.
+- PLAN phase only. CODE started = no splitting.
+
+---
+
+## PR Template
+
+```
+## What
+[Story ID + one-line summary]
+
+## Why
+[Acceptance criteria this closes]
+
+## Test evidence
+[Test command + pass/fail summary]
+
+## Linked artifacts
+[Story file, Design spec, ADR(s)]
+
+## Checklist
+- [ ] Full package suite passes
+- [ ] CODEMAP updated
+- [ ] Changelog entry written
+- [ ] Memory updated
+```
+
+---
+
 ## Work Item Numbering
 
 ### Sequential Numbering (Per Type)
