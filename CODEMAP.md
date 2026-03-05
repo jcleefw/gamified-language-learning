@@ -113,6 +113,8 @@ Spaced repetition scheduling engine. Skeleton created in EP01-ST03. Logic popula
 | `src/mastery.ts` | `updateMastery(state, isCorrect, config)` — pure function: mastery counting, Learning→srsM2_review transition, lapse reset |
 | `src/scheduling/types.ts` | `ReviewResult` interface — domain-private scheduling result type |
 | `src/scheduling/scheduler.interface.ts` | `SpacedRepetitionScheduler` interface — contract for all scheduler implementations |
+| `src/scheduling/FsrsScheduler.ts` | `FsrsScheduler` class — `SpacedRepetitionScheduler` impl wrapping `ts-fsrs`; 90-day cap, no mutation |
+| `src/scheduling/__tests__/FsrsScheduler.test.ts` | Unit tests for `FsrsScheduler` (11 tests, all paths + cap) |
 | `src/__tests__/` | Unit tests co-located with source — one `__tests__/` per domain folder |
 | `src/__tests__/mastery.test.ts` | Unit tests for `mastery.ts` |
 | `__tests__/setup.ts` | `afterEach(vi.useRealTimers)` — prevents fake timer bleed |

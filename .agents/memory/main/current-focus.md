@@ -1,13 +1,13 @@
 # Current Focus
 
-**Branch**: feature/EP02-ST03-scheduler-interface
+**Branch**: feature/EP02-ST04-fsrs-scheduler
 **Updated**: 2026-03-06
 
 ## Active Work
 
 - **Epic**: EP02 — SRS Engine Core: Mastery + ANKI Scheduling
-- **Story**: EP02-ST03 ✅ — complete
-- **Status**: ST01 ✅ ST02 ✅ ST03 ✅ — scheduler interface + ReviewResult defined
+- **Story**: EP02-ST04 ✅ — complete
+- **Status**: ST01 ✅ ST02 ✅ ST03 ✅ ST04 ✅ — FsrsScheduler adapter done
 
 ## Import Convention (Locked)
 
@@ -17,12 +17,13 @@
 
 ## Last Session Outcome
 
-EP02-ST03 — SpacedRepetitionScheduler interface + ReviewResult type complete.
-- Created `packages/srs-engine/src/scheduling/types.ts` — `ReviewResult` interface
-- Created `packages/srs-engine/src/scheduling/scheduler.interface.ts` — `SpacedRepetitionScheduler` interface
-- Updated `src/index.ts` to export both
-- `pnpm build` exits 0
-- **Next**: EP02-ST04 (FsrsScheduler adapter — implement the interface wrapping ts-fsrs)
+EP02-ST04 — FsrsScheduler adapter complete.
+- Added `ts-fsrs@^5` to `packages/srs-engine/package.json` dependencies
+- Created `packages/srs-engine/src/scheduling/FsrsScheduler.ts` — ts-fsrs adapter; `enable_short_term: false` for day-based scheduling
+- Created `packages/srs-engine/src/scheduling/__tests__/FsrsScheduler.test.ts` — 11 tests, all pass
+- Updated `src/index.ts` to export `FsrsScheduler`
+- `pnpm build` exits 0; 24 tests pass
+- **Next**: EP02-ST05 (demo-srs.ts script — exercise `updateMastery` + `FsrsScheduler` on one word)
 
 ## EP02 Story Status
 
@@ -31,8 +32,15 @@ EP02-ST03 — SpacedRepetitionScheduler interface + ReviewResult type complete.
 | EP02-ST01 | Engine types | ✅ Done |
 | EP02-ST02 | Mastery counting + phase transition | ✅ Done |
 | EP02-ST03 | SpacedRepetitionScheduler interface | ✅ Done |
-| EP02-ST04 | FsrsScheduler adapter | Pending |
+| EP02-ST04 | FsrsScheduler adapter | ✅ Done |
 | EP02-ST05 | SRS core demo script | Pending |
+
+## Key Decisions (ts-fsrs)
+
+- `enable_short_term: false` — without this, ts-fsrs schedules new cards in minutes (`scheduled_days=0`). Day-based scheduling required.
+- `Rating.Good` for correct, `Rating.Again` for wrong (lapse)
+- `FsrsCardState` ↔ `Card` mapping: `elapsedDays`↔`elapsed_days`, `scheduledDays`↔`scheduled_days`, `lastReview`↔`last_review`; `learning_steps=0`, `state=State.Review` when converting from `FsrsCardState`
+- Lapse count tracking (3-lapse reset) owned by `mastery.ts`, not `FsrsScheduler`
 
 ## Build Sequence (Accepted)
 

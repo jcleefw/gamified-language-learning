@@ -28,6 +28,10 @@ importers:
         version: 3.2.4(jiti@2.6.1)
 
   packages/srs-engine:
+    dependencies:
+      ts-fsrs:
+        specifier: ^5
+        version: 5.2.3
     devDependencies:
       typescript:
         specifier: ^5.7
@@ -900,6 +904,10 @@ packages:
     engines: {node: '>=18.12'}
     peerDependencies:
       typescript: '>=4.8.4'
+
+  ts-fsrs@5.2.3:
+    resolution: {integrity: sha512-R3IjceC9WfnvUin6Nx+DwqEzh3Qil6Gg2yEHqvocUcC7Nbi+xDrFg/1fKaYBT0tJedDnDAguXMSX0hijhi859w==}
+    engines: {node: '>=18.0.0'}
 
   turbo-darwin-64@2.8.13:
     resolution: {integrity: sha512-PmOvodQNiOj77+Zwoqku70vwVjKzL34RTNxxoARjp5RU5FOj/CGiC6vcDQhNtFPUOWSAaogHF5qIka9TBhX4XA==}
@@ -1812,6 +1820,8 @@ snapshots:
   ts-api-utils@2.4.0(typescript@5.9.3):
     dependencies:
       typescript: 5.9.3
+
+  ts-fsrs@5.2.3: {}
 
   turbo-darwin-64@2.8.13:
     optional: true
