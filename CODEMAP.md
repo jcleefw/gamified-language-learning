@@ -112,7 +112,7 @@ Spaced repetition scheduling engine. Skeleton created in EP01-ST03. Logic popula
 | `src/index.ts` | Public API entry point — re-exports all engine types and functions (added: Batch, Question, QuestionType, composeBatch) |
 | `src/types.ts` | All engine-owned types: `WordState`, `MasteryPhase`, `WordCategory`, `SrsConfig`, `QuizAnswer`, `FsrsCardState`, `QuestionType`, `Question`, `Batch` |
 | `src/mastery.ts` | `updateMastery(state, isCorrect, config)` — pure function: mastery counting, Learning→srsM2_review transition, lapse reset |
-| `src/batch.ts` | `composeBatch(wordStates, config, options)` — batch composition with priority ordering (carry-over → foundational revision → new words → foundational learning); placeholder types for ST02 distribution |
+| `src/batch.ts` | `composeBatch(wordStates, config, options)` — batch composition with priority ordering (carry-over → foundational revision → new words → foundational learning) and question type distribution (70% MC, 20% word-block, 10% audio); audio redistribution to MC when unavailable |
 | `src/scheduling/types.ts` | `ReviewResult` interface — domain-private scheduling result type |
 | `src/scheduling/scheduler.interface.ts` | `SpacedRepetitionScheduler` interface — contract for all scheduler implementations |
 | `src/scheduling/FsrsScheduler.ts` | `FsrsScheduler` class — `SpacedRepetitionScheduler` impl wrapping `ts-fsrs`; 90-day cap, no mutation |
