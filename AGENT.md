@@ -53,11 +53,39 @@ Your job is to scaffold, implement, and document work according to the governanc
 When starting a new conversation, read in this order:
 
 1. **AGENT.md** — Who you are (this file)
-2. **`.agents/memory/{branch}/current-focus.md`** — Where you left off
+2. **Resolve your branch** — Run `git rev-parse --abbrev-ref HEAD` to get the current branch name, then read `.agents/memory/{branch}/current-focus.md`. This file tells you exactly what to do next.
 3. **RULES.md** — What you must always do
 4. **PLAYBOOK.md** — How to invoke workflows/skills
 5. **CODEMAP.md** — Where things are (only if navigating unfamiliar territory)
 6. **CONTEXT.md** — Tech stack, architecture, domain model (only if working in relevant area)
+
+---
+
+## Worktree Awareness
+
+This project runs parallel epics using **git worktrees**. You may be running inside a worktree (not the main project folder).
+
+**How to tell**: Run `git worktree list`. If you see multiple entries, you are in a parallel development setup. Your working directory is an isolated copy of the repo on a dedicated feature branch — one epic per worktree.
+
+**What this means for you**:
+- You are responsible for **one epic only** — the one named in your `current-focus.md`
+- Do not modify files owned by other epics (they are running in parallel on other branches)
+- All worktrees share the same `.git` directory but have independent working trees
+
+### HARD STOP — Worktree Merge Rule
+
+When you are in a worktree, your job ends at PR creation. The human merges.
+
+```
+ALLOWED:   git add / git commit
+ALLOWED:   git push origin <branch>
+ALLOWED:   gh pr create   →  then STOP
+FORBIDDEN: git checkout main
+FORBIDDEN: git merge
+FORBIDDEN: gh pr merge
+```
+
+After opening the PR, say: "PR is open at [URL]. Waiting for your review and merge." Then stop.
 
 ---
 

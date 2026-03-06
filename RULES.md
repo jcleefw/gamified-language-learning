@@ -163,7 +163,13 @@ When a workflow step is marked `delegate: true` (or when output is large), isola
 
 ## Story Completion Protocol
 
-See **WORKFLOW.md §Epic Lifecycle** for full lifecycle. Checklist: code merged → tests pass → changelog generated → CODEMAP synced → memory updated → ask "Ready for next story?"
+See **WORKFLOW.md §Epic Lifecycle** for full lifecycle.
+
+**In a worktree (parallel epic branch):**
+Checklist: tests pass → changelog generated → CODEMAP synced → memory updated → `git push` → `gh pr create` → **STOP. Tell the human the PR is ready. Do NOT merge. Do NOT checkout main.**
+
+**On main (serial work):**
+Checklist: tests pass → changelog generated → CODEMAP synced → memory updated → commit → ask "Ready for next story?"
 
 ---
 

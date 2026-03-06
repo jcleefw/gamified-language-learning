@@ -1,21 +1,28 @@
 # Current Focus
 
-**Branch**: feature/EP02-ST05-srs-demo
-**Updated**: 2026-03-06
+**Branch**: main
+**Updated**: 20260306T000000Z
 
 ## Active Work
 
-- **Epic**: EP02 — SRS Engine Core: Mastery + ANKI Scheduling
-- **Story**: EP02-ST05 ✅ — complete
-- **Status**: ST01 ✅ ST02 ✅ ST03 ✅ ST04 ✅ ST05 ✅ — EP02 Impl-Complete
+- **Epic**: Parallel EP04 + EP05 + EP06 — all in progress on separate worktrees
+- **Status**: EP01 ✅ EP02 ✅ — parallel phase starting
 
 ## Last Session Outcome
 
-EP02-ST05 — Demo extended + integration test added.
-- Extended `scripts/demo-srs.ts` to 4 scenarios (wrong-decrement, phase transition, interval growth, lapse reset)
-- Added `packages/srs-engine/__tests__/integration/srs-lifecycle.test.ts` — 4 integration tests, 28 total pass
-- Updated CODEMAP.md, changelog, recent-decisions
-- **Next**: human PR to merge `feature/EP02-ST05-srs-demo` → main
+EP02 fully merged to main. Three worktrees created for parallel Stage 1 completion:
+
+| Worktree | Branch | Epic |
+|---|---|---|
+| `.worktrees/ep04` | `feature/EP04-srs-batch-composition` | EP04 — Batch Composition |
+| `.worktrees/ep05` | `feature/EP05-srs-active-window-stuck-words` | EP05 — Active Window + Stuck Words |
+| `.worktrees/ep06` | `feature/EP06-srs-foundational-deck` | EP06 — Foundational Deck |
+
+## Next Steps (this window — coordination only)
+
+1. Monitor EP04/EP05/EP06 PRs — merge in any order once each is done
+2. After all three land on main: start EP07 (SRS Engine Orchestrator) from here
+3. EP08 (Terminal Quiz Runner) follows EP07
 
 ## Import Convention (Locked)
 
