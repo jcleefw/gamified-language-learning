@@ -122,9 +122,11 @@ Spaced repetition scheduling engine. Skeleton created in EP01-ST03. Logic popula
 | `src/scheduling/FsrsScheduler.ts` | `FsrsScheduler` class — `SpacedRepetitionScheduler` impl wrapping `ts-fsrs`; 90-day cap, no mutation |
 | `src/scheduling/__tests__/FsrsScheduler.test.ts` | Unit tests for `FsrsScheduler` (11 tests, all paths + cap) |
 | `src/__tests__/` | Unit tests co-located with source — one `__tests__/` per domain folder |
+| `src/stuck-words.ts` | `detectStuckWords()`, `shelveWord()`, `unshelveWord()`, `isShelved()` — stuck word detection and shelving logic (EP05-ST02) |
 | `src/__tests__/mastery.test.ts` | Unit tests for `mastery.ts` |
 | `src/__tests__/batch.test.ts` | Unit tests for `batch.ts` — priority ordering (8 tests) |
 | `src/__tests__/active-window.test.ts` | Unit tests for `active-window.ts` — 20 tests: filtering, slots calculation, immutability, edge cases |
+| `src/__tests__/stuck-words.test.ts` | Unit tests for `stuck-words.ts` — 40 tests: detection threshold, shelving capacity, max-2 cap, time-aware logic, immutability |
 | `src/__tests__/batch.test.ts` | Unit tests for `batch.ts` |
 | `__tests__/setup.ts` | `afterEach(vi.useRealTimers)` — prevents fake timer bleed |
 | `__tests__/integration/` | Cross-domain lifecycle tests |

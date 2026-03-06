@@ -1,45 +1,55 @@
 # Current Focus
 
 **Branch**: feature/EP05-srs-active-window-stuck-words
-**Updated**: 20260306T130000Z
+**Updated**: 20260307T160000Z
 
-## Active Work
+## Status: COMPLETE
 
-- **Epic**: EP05 — SRS Engine: Active Window + Stuck Words
-- **Story**: EP05-ST01 ✅ → **EP05-ST02 next**
-- **Status**: ST01 done, committed, changelog written, CODEMAP updated
-
-## Last Session Outcome
-
-EP05-ST01 — Active window management implemented.
-- Created `packages/srs-engine/src/active-window.ts` — `getEligibleWords()` with 8-word limit + 4-new-per-batch cap
-- Added `batchesSinceLastProgress?: number` and `shelvedUntil?: Date | null` to `WordState` (needed by ST02)
-- 20 unit tests in `src/__tests__/active-window.test.ts` — all pass
-- Exported from `index.ts`
-- **Next**: EP05-ST02 — stuck word detection + shelving (`stuck-words.ts`)
+Both ST01 and ST02 implemented, committed, changelogs written, CODEMAP updated.
 
 ## EP05 Story Status
 
 | Story | Title | Status |
 |---|---|---|
-| EP05-ST01 | Active window management | ✅ Done |
-| EP05-ST02 | Stuck word detection + shelving | 🔲 Not started |
+| EP05-ST01 | Active window management | Done |
+| EP05-ST02 | Stuck word detection + shelving | Done |
+
+## What Was Built
+
+### ST01 — `packages/srs-engine/src/active-window.ts`
+- `getEligibleWords(allWords, config): EligibleWordsResult`
+- `active`: words with `phase === 'srsM2_review'`
+- `newSlots`: `Math.min(newWordsPerBatch, Math.max(0, activeWordLimit - active.length))`
+- `eligible`: all non-review words (shelved words NOT filtered — caller's responsibility)
+- 20 unit tests, all pass
+
+### ST02 — `packages/srs-engine/src/stuck-words.ts`
+- `detectStuckWords(wordStates, config): StuckWordsResult`
+- `shelveWord(word, durationMs): WordState` — immutable, sets `shelvedUntil`
+- `unshelveWord(word): WordState` — clears to null
+- `isShelved(word): boolean` — time-aware (checks future date)
+- 40 unit tests, all pass
+
+### Types (`types.ts`)
+- `WordState.batchesSinceLastProgress?: number`
+- `WordState.shelvedUntil?: Date | null`
+- `SrsConfig.shelveAfterBatches: number`
+- `SrsConfig.maxShelved: number`
 
 ## Key Design Decisions
 
-- **Active window marker**: `phase === 'srsM2_review'` = active in the window. No extra `isActive` flag needed. Words enter the active window when masteryCount reaches threshold and phase transitions to `srsM2_review`.
-- **newSlots formula**: `Math.min(newWordsPerBatch, Math.max(0, activeWordLimit - active.length))`
-- **ST02 fields pre-added to WordState**: `batchesSinceLastProgress` and `shelvedUntil` — optional, not used by ST01 logic
+- Active window marker = `srsM2_review` phase; no extra `isActive` flag
+- When `shelveCapacity > 0`: shelve oldest stuck words up to capacity
+- When `shelveCapacity === 0` and stuck words exist: `toShelve` returns newest stuck word; `canReShelve: false` — caller must check flag before acting
+- `getEligibleWords` does not filter shelved words from `eligible`
 
-## ST02 Starting Point
+## Known Gaps (Deferred to EP07)
 
-Build `packages/srs-engine/src/stuck-words.ts`:
-- `detectStuckWords(wordStates, config)` — flags words with no mastery progress after 3 consecutive batches
-- `shelveWord` / `unshelveWord` — sets `shelvedUntil` to `now + 1 day`
-- Max 2 shelved at a time; when cap reached, newest stuck word is shelved (3rd waits)
-- Shelved words re-enter as carry-over on next eligible batch
+- `batchesSinceLastProgress` increment/reset — handled in mastery update flow, not here
+- Shelved word re-entry as carry-over — batch composition wiring
+- Pre-existing integration test failure: `batch.js` missing from `index.ts` (unrelated to EP05)
 
-File ownership for ST02:
-- `src/stuck-words.ts` ← new file
-- `src/__tests__/stuck-words.test.ts` ← new test file
-- `src/index.ts` ← add exports
+## Next Steps
+
+- Raise PR for EP05 → merge to main
+- EP07: wire active-window + stuck-words into batch composition
