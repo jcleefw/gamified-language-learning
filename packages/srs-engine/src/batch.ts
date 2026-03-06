@@ -1,4 +1,4 @@
-import type { WordState, SrsConfig, Batch, Question } from './types.js'
+import type { WordState, SrsConfig, Batch, Question, QuestionType } from './types.js'
 
 export interface ComposeBatchOptions {
   audioAvailable?: boolean
@@ -18,6 +18,8 @@ export function composeBatch(
   config: SrsConfig,
   options?: ComposeBatchOptions
 ): Batch {
+  const audioAvailable: boolean = options?.audioAvailable !== false
+
   // Priority 1: Carry-over (curated, srsM2_review)
   const carryOver = wordStates.filter(
     (w): boolean => w.category === 'curated' && w.phase === 'srsM2_review'
@@ -41,20 +43,52 @@ export function composeBatch(
   // Concatenate in priority order and slice to batchSize
   const ordered = [...carryOver, ...foundationalRevision, ...newWords, ...foundationalLearning]
   const batchWordStates = ordered.slice(0, config.batchSize)
+  const actualBatchSize = batchWordStates.length
 
-  // Create questions (types assigned in ST02)
-  const questions: Question[] = batchWordStates.map((wordState): Question => ({
+  // Calculate question type slot counts (70% MC, 20% word-block, 10% audio)
+  let mcCount = Math.ceil(actualBatchSize * 0.7)
+  let wordBlockCount = Math.ceil(actualBatchSize * 0.2)
+  let audioCount = actualBatchSize - mcCount - wordBlockCount
+
+  // Redistribute audio slots to MC if audio unavailable
+  if (!audioAvailable) {
+    mcCount += audioCount
+    audioCount = 0
+  }
+
+  // Create question type assignments (round-robin: mc, wordBlock, audio, mc, wordBlock, audio, ...)
+  const typeAssignments: QuestionType[] = []
+  let mcAssigned = 0
+  let wordBlockAssigned = 0
+  let audioAssigned = 0
+
+  for (let i = 0; i < actualBatchSize; i++) {
+    // Try to assign in order: MC, word-block, audio
+    if (mcAssigned < mcCount) {
+      typeAssignments.push('mc')
+      mcAssigned++
+    } else if (wordBlockAssigned < wordBlockCount) {
+      typeAssignments.push('wordBlock')
+      wordBlockAssigned++
+    } else if (audioAssigned < audioCount) {
+      typeAssignments.push('audio')
+      audioAssigned++
+    }
+  }
+
+  // Create questions with assigned types
+  const questions: Question[] = batchWordStates.map((wordState, index): Question => ({
     wordId: wordState.wordId,
-    type: 'mc', // Placeholder; ST02 will assign proper distribution
+    type: typeAssignments[index]!,
   }))
 
   return {
     questions,
-    batchSize: batchWordStates.length,
+    batchSize: actualBatchSize,
     distributionBreakdown: {
-      mc: batchWordStates.length,
-      wordBlock: 0,
-      audio: 0,
+      mc: mcCount,
+      wordBlock: wordBlockCount,
+      audio: audioCount,
     },
   }
 }
