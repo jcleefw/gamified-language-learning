@@ -109,15 +109,17 @@ Spaced repetition scheduling engine. Skeleton created in EP01-ST03. Logic popula
 | `package.json` | Package manifest — ESM, `@gll/srs-engine`, build/test/lint scripts |
 | `tsconfig.json` | Extends `../../tsconfig.base.json`; `rootDir: src`, `outDir: dist` |
 | `vitest.config.ts` | Vitest config — `globals: true`, `passWithNoTests: true`, setup file |
-| `src/index.ts` | Public API entry point — re-exports all engine types and functions |
-| `src/types.ts` | All engine-owned types: `WordState`, `MasteryPhase`, `WordCategory`, `SrsConfig`, `QuizAnswer`, `FsrsCardState` |
+| `src/index.ts` | Public API entry point — re-exports all engine types and functions (added: Batch, Question, QuestionType, composeBatch) |
+| `src/types.ts` | All engine-owned types: `WordState`, `MasteryPhase`, `WordCategory`, `SrsConfig`, `QuizAnswer`, `FsrsCardState`, `QuestionType`, `Question`, `Batch` |
 | `src/mastery.ts` | `updateMastery(state, isCorrect, config)` — pure function: mastery counting, Learning→srsM2_review transition, lapse reset |
+| `src/batch.ts` | `composeBatch(wordStates, config, options)` — batch composition with priority ordering (carry-over → foundational revision → new words → foundational learning); placeholder types for ST02 distribution |
 | `src/scheduling/types.ts` | `ReviewResult` interface — domain-private scheduling result type |
 | `src/scheduling/scheduler.interface.ts` | `SpacedRepetitionScheduler` interface — contract for all scheduler implementations |
 | `src/scheduling/FsrsScheduler.ts` | `FsrsScheduler` class — `SpacedRepetitionScheduler` impl wrapping `ts-fsrs`; 90-day cap, no mutation |
 | `src/scheduling/__tests__/FsrsScheduler.test.ts` | Unit tests for `FsrsScheduler` (11 tests, all paths + cap) |
 | `src/__tests__/` | Unit tests co-located with source — one `__tests__/` per domain folder |
 | `src/__tests__/mastery.test.ts` | Unit tests for `mastery.ts` |
+| `src/__tests__/batch.test.ts` | Unit tests for `batch.ts` — priority ordering (8 tests) |
 | `__tests__/setup.ts` | `afterEach(vi.useRealTimers)` — prevents fake timer bleed |
 | `__tests__/integration/` | Cross-domain lifecycle tests |
 | `__tests__/integration/srs-lifecycle.test.ts` | Integration tests: Learning→srsM2_review, interval growth, 3-lapse reset (4 tests) |
