@@ -162,6 +162,8 @@ Quiz Session Request (Terminal Runner / API)
 - [ ] All unit tests pass; `pnpm test` exits green
 - [ ] `composeBatch`, `Batch`, `Question`, `QuestionType` exported from package public API
 
+**Out of scope**: Shuffling or randomising question display order. `composeBatch` always returns questions in deterministic priority order. If the calling layer (terminal runner, API, UI) wants to present questions in a different order, it applies its own shuffle — the engine does not.
+
 ---
 
 ## 6. Success Criteria

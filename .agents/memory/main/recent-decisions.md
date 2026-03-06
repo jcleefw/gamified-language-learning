@@ -8,6 +8,7 @@
 
 | Date | Decision | Related |
 |------|----------|---------|
+| 03-07 | EP04: `composeBatch` always returns deterministic priority order; shuffling questions for display is the caller's responsibility (UI/API layer) | EP04-DS01 |
 | 03-06 | Parallel epics via git worktrees — one worktree per epic, one Claude session per worktree | EP04/05/06 parallel dev |
 | 03-06 | Worktree agents: STOP at `gh pr create` — FORBIDDEN to checkout main, merge, or gh pr merge | WORKTREE.md |
 | 03-06 | Memory for feature branch agents goes to `.agents/memory/feature/{branch}/` NOT `main/` | WORKTREE.md |
@@ -77,56 +78,6 @@
 **Context**: EP02-ST02 placed `mastery.test.ts` in `packages/srs-engine/__tests__/unit/` — a top-level directory. RULES.md §Package Structure specifies unit tests are co-located per domain, in `__tests__/` subdirectories next to source.
 **Decision**: Moved to `src/__tests__/mastery.test.ts`. Future unit tests follow same pattern (e.g., `src/scheduling/__tests__/FsrsScheduler.test.ts`). Integration tests remain at package-root `__tests__/integration/`.
 **vitest.config.ts**: Updated `include` from `__tests__/**/*.test.ts` to `['src/**/__tests__/**/*.test.ts', '__tests__/integration/**/*.test.ts']`.
-
-### 2026-03-05: EP01-ST03 — Three DS01 Spec Gaps
-
-**Gap 1 — `workspace:*` for npm packages**
-DS01 specified `"typescript": "workspace:*"` and `"vitest": "workspace:*"` in `packages/srs-engine/devDependencies`. The `workspace:*` protocol is for internal workspace packages only — pnpm errors if applied to npm registry packages. Fixed with version ranges `"^5.7"` and `"^3"` matching root.
-
-**Gap 2 — tsconfig `include` conflicts with `rootDir`**
-DS01 included `"__tests__/**/*"` in tsconfig `include` alongside `rootDir: "src"`. TypeScript TS6059: files outside `rootDir` cannot be compiled. Fixed by removing `__tests__/**/*` from `include`. Vitest handles test file transformation via its own bundler — tsc does not compile tests.
-
-**Gap 3 — Vitest 3.x exits 1 with no tests**
-DS01 claimed "Vitest exits 0 on no test files found by default." Vitest 3.x exits 1 without `passWithNoTests: true`. Added to `vitest.config.ts`. All three commands now exit 0: `pnpm install`, `pnpm build`, `pnpm test`.
-
-### 2026-03-05: EP01-ST01 — Turbo 2.x `packageManager` Requirement
-**Context**: DS01 spec omitted `packageManager` from root `package.json`. Turbo 2.x fails with `Could not resolve workspaces — Missing packageManager field`.
-**Decision**: Add `"packageManager": "pnpm@10.30.1"` to root `package.json`. Pin to installed version.
-**Impact**: All future monorepo setups must include this field. DS01 spec has a gap but is frozen — noted here instead.
-
-### 2026-03-05: GAP-05 — Epic Lifecycle Gates
-
-**`Accepted → In Progress`**: Design spec ready, ADRs accepted, schema available (if DB epic), no unresolved upstream dependencies. Agent self-checks before starting.
-
-**`In Progress → Impl-Complete`**: All stories Done, local tests pass, changelog + CODEMAP + memory updated. Human approves transition.
-
-**`Impl-Complete → BDD Pending`**: PRD agent writes BDD scenarios (product owns what). Human confirms before QA agent picks up. QA agent writes test implementation. Two-strike rule applies to QA agent locally.
-
-**`BDD Pending → Completed`**: Agent creates PR only. Human monitors CI, human merges. CI monitoring is out of scope for agents.
-
-### 2026-03-05: GAP-05 — Branching Model
-
-Story branches (`feature/EP##-ST##-slug`) → merged to epic branch (`feature/EP##-slug`) when story Done → epic branch merged to `main` via human-approved PR at Impl-Complete.
-
-### 2026-03-05: GAP-05 — Story Creation Sequence
-
-Rough titles first → Design spec written → Stories fleshed out in full detail → Epic Accepted → agent picks up ST##01.
-
-### 2026-03-05: GAP-05 — Unit Test Protocol
-
-Engines: strict TDD, high coverage (all paths). Backend routes: pragmatic, contract-level. Frontend: pragmatic, happy path. Done gate for all layers: full package suite passes (Option B — catches regressions before story branch merge). BDD deferred to UI stage.
-
-### 2026-03-05: GAP-05 — Commit Discipline
-
-One commit per story at end of REVIEW phase. Implementation + tests together. Format: `feat(EP##-ST##): [what]` with why in body. Types: feat/fix/chore/docs/refactor.
-
-### 2026-03-05: GAP-05 — Story Sizing + Splitting
-
-One layer per story max. Split triggers: layer bleed, multiple independent ACs, >~5 files in PLAN. Agent proposes splits inline (no files created until human approves). Splitting in PLAN phase only — CODE started = no splitting.
-
-### 2026-03-05: GAP-05 — PR Template + Story States
-
-PR must contain: What (story ID + summary), Why (AC closed), Test evidence, Linked artifacts, Checklist (suite pass + CODEMAP + changelog + memory). Story states: no formal states — PLAN/CODE/TEST/REVIEW phases are sufficient.
 
 ---
 

@@ -45,3 +45,57 @@ Decisions rotated out of `recent-decisions.md` (older than 3 days).
 
 ### Word Pool Deck — Sandbox with Soft Signal
 **Decision**: No ANKI side effects. Soft signal: 3 wrong all-time → pull `next_review_at` forward, reset counter.
+
+---
+
+## 2026-03-05
+
+### 2026-03-05: EP01-ST03 — Three DS01 Spec Gaps
+
+**Gap 1 — `workspace:*` for npm packages**
+DS01 specified `"typescript": "workspace:*"` and `"vitest": "workspace:*"` in `packages/srs-engine/devDependencies`. The `workspace:*` protocol is for internal workspace packages only — pnpm errors if applied to npm registry packages. Fixed with version ranges `"^5.7"` and `"^3"` matching root.
+
+**Gap 2 — tsconfig `include` conflicts with `rootDir`**
+DS01 included `"__tests__/**/*"` in tsconfig `include` alongside `rootDir: "src"`. TypeScript TS6059: files outside `rootDir` cannot be compiled. Fixed by removing `__tests__/**/*` from `include`. Vitest handles test file transformation via its own bundler — tsc does not compile tests.
+
+**Gap 3 — Vitest 3.x exits 1 with no tests**
+DS01 claimed "Vitest exits 0 on no test files found by default." Vitest 3.x exits 1 without `passWithNoTests: true`. Added to `vitest.config.ts`. All three commands now exit 0: `pnpm install`, `pnpm build`, `pnpm test`.
+
+### 2026-03-05: EP01-ST01 — Turbo 2.x `packageManager` Requirement
+**Context**: DS01 spec omitted `packageManager` from root `package.json`. Turbo 2.x fails with `Could not resolve workspaces — Missing packageManager field`.
+**Decision**: Add `"packageManager": "pnpm@10.30.1"` to root `package.json`. Pin to installed version.
+**Impact**: All future monorepo setups must include this field. DS01 spec has a gap but is frozen — noted here instead.
+
+### 2026-03-05: GAP-05 — Epic Lifecycle Gates
+
+**`Accepted → In Progress`**: Design spec ready, ADRs accepted, schema available (if DB epic), no unresolved upstream dependencies. Agent self-checks before starting.
+
+**`In Progress → Impl-Complete`**: All stories Done, local tests pass, changelog + CODEMAP + memory updated. Human approves transition.
+
+**`Impl-Complete → BDD Pending`**: PRD agent writes BDD scenarios (product owns what). Human confirms before QA agent picks up. QA agent writes test implementation. Two-strike rule applies to QA agent locally.
+
+**`BDD Pending → Completed`**: Agent creates PR only. Human monitors CI, human merges. CI monitoring is out of scope for agents.
+
+### 2026-03-05: GAP-05 — Branching Model
+
+Story branches (`feature/EP##-ST##-slug`) → merged to epic branch (`feature/EP##-slug`) when story Done → epic branch merged to `main` via human-approved PR at Impl-Complete.
+
+### 2026-03-05: GAP-05 — Story Creation Sequence
+
+Rough titles first → Design spec written → Stories fleshed out in full detail → Epic Accepted → agent picks up ST##01.
+
+### 2026-03-05: GAP-05 — Unit Test Protocol
+
+Engines: strict TDD, high coverage (all paths). Backend routes: pragmatic, contract-level. Frontend: pragmatic, happy path. Done gate for all layers: full package suite passes (Option B — catches regressions before story branch merge). BDD deferred to UI stage.
+
+### 2026-03-05: GAP-05 — Commit Discipline
+
+One commit per story at end of REVIEW phase. Implementation + tests together. Format: `feat(EP##-ST##): [what]` with why in body. Types: feat/fix/chore/docs/refactor.
+
+### 2026-03-05: GAP-05 — Story Sizing + Splitting
+
+One layer per story max. Split triggers: layer bleed, multiple independent ACs, >~5 files in PLAN. Agent proposes splits inline (no files created until human approves). Splitting in PLAN phase only — CODE started = no splitting.
+
+### 2026-03-05: GAP-05 — PR Template + Story States
+
+PR must contain: What (story ID + summary), Why (AC closed), Test evidence, Linked artifacts, Checklist (suite pass + CODEMAP + changelog + memory). Story states: no formal states — PLAN/CODE/TEST/REVIEW phases are sufficient.
