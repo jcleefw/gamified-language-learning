@@ -4,15 +4,22 @@ description: Master workflow for ANY story implementation. Ensures consistency a
 # Code Change Workflow
 
 ## Step 0 — Session Start
-1. Read `.agents/memory/{branch}/current-focus.md` — identify active epic and story
-2. Read RULES.md
-3. **Branch setup** (first story of an epic only):
-   - If `feature/EP##-slug` does not exist → create it from `main`: `git checkout -b feature/EP##-slug main`
-   - Create story branch from epic branch: `git checkout -b feature/EP##-ST##-slug feature/EP##-slug`
-   - For subsequent stories: `git checkout -b feature/EP##-ST##-slug feature/EP##-slug` (epic branch already exists)
-   - **Parallel epics**: each cuts its own `feature/EP##-slug` from `main` independently — no cross-branch deps
-4. Confirm with user: "Picking up EP##-ST## on `feature/EP##-ST##-slug` — ready to start PLAN?"
-5. **STOP** — wait for user confirmation before continuing
+1. Run `git worktree list` — if more than one entry, read **WORKTREE.md** before continuing.
+2. Run `git rev-parse --abbrev-ref HEAD` — note your branch name.
+3. Read `.agents/memory/{branch}/current-focus.md` — identify active epic and story.
+4. Read RULES.md.
+5. **Branch setup — worktree vs serial**:
+
+   **In a worktree** (multiple entries in `git worktree list`):
+   - You are already on the correct epic branch. Do NOT create any new branch.
+   - All stories in this epic commit to this same branch. No story-level branches.
+
+   **On main (single worktree entry)**:
+   - First story of an epic: `git checkout -b feature/EP##-slug main`
+   - Subsequent stories: stay on the same epic branch. Do NOT create story-level branches.
+
+6. Confirm with user: "Picking up EP##-ST## on `{current-branch}` — ready to start PLAN?"
+7. **STOP** — wait for user confirmation before continuing.
 
 ## Step 1 — PLAN (`tdd-plan`)
 1. Read RULES.md
@@ -35,8 +42,11 @@ description: Master workflow for ANY story implementation. Ensures consistency a
 2. Write ST changelog using `ST-CHANGELOG-TEMPLATE.md` → save to `.agents/changelogs/EP##--slug/`
 3. Update `CODEMAP.md` if any files were added, removed, or repurposed
 4. If this is the last story of the epic: update epic plan `**Status**` → `Impl-Complete`
-5. Write memory:
+5. Write memory to `.agents/memory/{your-branch}/` (NOT `.agents/memory/main/`):
    - `current-focus.md` — story complete, what's next
    - `session-log.md` — if this is the end of the session
 6. Commit: `feat(EP##-ST##): <what>. <why in body>.` — one commit per story
-7. **STOP** — ask "Ready for next story?"
+7. **If more stories remain**: **STOP** — ask "Ready for next story?"
+8. **If this is the last story of the epic**:
+   - **In a worktree**: `git push origin {branch}` → `gh pr create --base main` → **STOP. Tell human PR is ready.**
+   - **On main**: **STOP** — ask human to review and confirm epic is complete.
