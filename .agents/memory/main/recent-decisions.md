@@ -1,13 +1,18 @@
 # Recent Decisions
 
 **Branch**: main
-**Updated**: 20260306T033504Z
+**Updated**: 20260306T140000Z
 **Rolling window**: Keep last 3 days only. Older decisions archived to `decisions-archive.md`.
 
 ## Decision Index (1-liner each)
 
 | Date | Decision | Related |
 |------|----------|---------|
+| 03-06 | Parallel epics via git worktrees — one worktree per epic, one Claude session per worktree | EP04/05/06 parallel dev |
+| 03-06 | Worktree agents: STOP at `gh pr create` — FORBIDDEN to checkout main, merge, or gh pr merge | WORKTREE.md |
+| 03-06 | Memory for feature branch agents goes to `.agents/memory/feature/{branch}/` NOT `main/` | WORKTREE.md |
+| 03-06 | No story-level branches in worktrees — all stories commit to single epic feature branch | code-change-workflow |
+| 03-06 | Project memory unified to `.agents/memory/` — skill-patterns moved out of Claude auto-memory | MEMORY.md cleanup |
 | 03-06 | EP02-ST05: demo script converted to integration test — `__tests__/integration/srs-lifecycle.test.ts` owns CI correctness; demo kept for human-readable output | EP02-ST05 |
 | 03-06 | EP02-ST05: FSRS interval growth requires backdating `lastReview` by `scheduledDays` between calls — `scheduleReview` always passes `new Date()` so elapsed time must be simulated | EP02-ST05 |
 | 03-06 | EP02-ST05: root `package.json` needs `"type": "module"` for tsx to resolve ESM-only `@gll/srs-engine` exports | EP02-ST05 |
@@ -37,18 +42,35 @@
 | 03-05 | Hono before DB — prove API layer with in-memory state first | roadmap slice |
 | 03-05 | DB persistence tech-agnostic: local SQLite first, D1 is deployment | roadmap slice |
 | 03-05 | 1 feature per stage, learning loop proven before content pipeline | roadmap slice |
-| 03-04 | Memory pointer via PostToolUse hook on ADR writes | `20260304T120000Z-agentic-memory-hook.md` |
-| 03-04 | D1 batch < 100ms — deferred to Gate 2, needs schema ADR | SRS PRD §8.3 |
-| 03-04 | Mid-quiz disconnect — discard batch, no localStorage v1 | SRS PRD §10 |
-| 03-04 | ANKI params — FSRS 0.90 retention + 90-day max interval | SRS PRD §13 |
-| 03-04 | Word pool — sandbox mode, soft signal at 3 wrong | SRS PRD §5.11 |
-| 03-03 | Headless Hono backend for orchestration | `20260303T195134Z-engineering-headless-hono-backend.md` |
-| 03-03 | Curation engine — prompt-builder + response-parser | `20260303T210000Z-engineering-curation-engine-package.md` |
-| 03-03 | TTS stays as calling-layer service, not a package | — |
-| 03-03 | Foundational decks out of curation engine | — |
-| 03-03 | Package structure conventions → RULES.md | — |
+| 03-04 | Memory pointer, D1 batch, mid-quiz, ANKI params, word pool decisions | archived → decisions-archive.md |
+| 03-03 | Hono backend, curation engine, TTS, foundational deck, package structure decisions | archived → decisions-archive.md |
 
 ## Recent Details (last 3 days only)
+
+### 2026-03-06: Parallel Epic Development via Git Worktrees
+
+**Context**: EP04, EP05, EP06 can run concurrently. Needed a way to isolate each epic so agents don't collide on files or git history.
+
+**Decision**: One git worktree per epic (`git worktree add .worktrees/ep0X -b feature/EP0X-slug`), one Claude session per worktree. Human coordinates from the main project dir on `main`.
+
+**Worktree rules** (captured in WORKTREE.md, AGENT.md, RULES.md, code-change-workflow.md):
+- Agent reads `WORKTREE.md` at session start if `git worktree list` shows >1 entry
+- No new branch creation inside a worktree — already on the right epic branch
+- No story-level branches — all stories commit to the single epic feature branch
+- Memory writes go to `.agents/memory/feature/{branch}/` (NOT `main/`)
+- Job ends at `gh pr create` — FORBIDDEN: `git checkout main`, `git merge`, `gh pr merge`
+
+**What went wrong before this decision**:
+- Agents created new branches in the main project dir instead of using the worktree
+- Agents wrote memory to `main/` folder instead of their feature branch folder
+- Agents merged directly to main instead of opening PRs
+- RULES.md said "code merged" in the completion checklist — agents interpreted this as a self-merge instruction
+
+**Files updated**: WORKTREE.md (new), AGENT.md, RULES.md, code-change-workflow.md
+
+### 2026-03-06: Memory Unified to `.agents/memory/`
+
+**Decision**: All project memory goes to `.agents/memory/{branch}/`. Claude auto-memory (`~/.claude/`) stripped of project content — now holds only cross-project user working preferences. `skill-patterns.md` moved to `.agents/memory/main/skill-patterns.md`.
 
 ### 2026-03-06: EP02 — Unit Test Location Convention Correction
 
@@ -105,31 +127,6 @@ One layer per story max. Split triggers: layer bleed, multiple independent ACs, 
 ### 2026-03-05: GAP-05 — PR Template + Story States
 
 PR must contain: What (story ID + summary), Why (AC closed), Test evidence, Linked artifacts, Checklist (suite pass + CODEMAP + changelog + memory). Story states: no formal states — PLAN/CODE/TEST/REVIEW phases are sufficient.
-
-### 2026-03-04: Automated Memory Pointer via PostToolUse Hook
-**Decision**: `PostToolUse` hook fires when `product-documentation/architecture/*.md` is written. Appends pointer to `recent-decisions.md`.
-**Related ADR**: `20260304T120000Z-agentic-memory-hook.md`
-
-### 2026-03-04: D1 Batch Assembly < 100ms — Deferred to Gate 2
-**Decision**: Achievable with proper schema design. Validate P95 at Gate 2. Needs schema ADR first.
-
-### 2026-03-04: Mid-Quiz Connection Loss — Discard Batch
-**Decision**: Discard in-progress batch. No localStorage in v1. Revisit at Gate 2.
-
-### 2026-03-04: ANKI Parameters — FSRS Defaults + 90-Day Cap
-**Decision**: FSRS desired retention 0.90 + 90-day max interval cap. Gate 1 validation: first-review accuracy ≥ 80%, ANKI fallback rate < 5%.
-
-### 2026-03-04: Word Pool Deck — Sandbox with Soft Signal
-**Decision**: No ANKI side effects. Soft signal: 3 wrong all-time → pull `next_review_at` forward, reset counter.
-
-### 2026-03-03: iOS Audio Autoplay — Hybrid Strategy
-**Decision**: Session-level `AudioContext` unlock + per-question autoplay attempt + visible play button fallback.
-
-### 2026-03-03: Headless Hono Backend
-**Decision**: Hono on Cloudflare Workers as orchestration layer. Nuxt = plug-and-play consumer.
-
-### 2026-03-03: Curation Engine — Prompt-Builder Pattern
-**Decision**: Engine builds prompts + parses responses. 100% synchronous and pure. Calling layer handles API.
 
 ---
 
