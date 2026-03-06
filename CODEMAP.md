@@ -113,6 +113,10 @@ Spaced repetition scheduling engine. Skeleton created in EP01-ST03. Logic popula
 | `src/types.ts` | All engine-owned types: `WordState`, `MasteryPhase`, `WordCategory`, `SrsConfig`, `QuizAnswer`, `FsrsCardState`, `QuestionType`, `Question`, `Batch` |
 | `src/mastery.ts` | `updateMastery(state, isCorrect, config)` — pure function: mastery counting, Learning→srsM2_review transition, lapse reset |
 | `src/batch.ts` | `composeBatch(wordStates, config, options)` — batch composition with priority ordering (carry-over → foundational revision → new words → foundational learning) and question type distribution (70% MC, 20% word-block, 10% audio); audio redistribution to MC when unavailable |
+| `src/index.ts` | Public API entry point — re-exports all engine types and functions |
+| `src/types.ts` | All engine-owned types: `WordState`, `MasteryPhase`, `WordCategory`, `SrsConfig`, `QuizAnswer`, `FsrsCardState` — extended by EP05 with `batchesSinceLastProgress?`, `shelvedUntil?` |
+| `src/mastery.ts` | `updateMastery(state, isCorrect, config)` — pure function: mastery counting, Learning→srsM2_review transition, lapse reset |
+| `src/active-window.ts` | `getEligibleWords(allWords, config)` — identifies active words (srsM2_review phase), calculates new-word slots, filters eligible candidates (EP05-ST01) |
 | `src/scheduling/types.ts` | `ReviewResult` interface — domain-private scheduling result type |
 | `src/scheduling/scheduler.interface.ts` | `SpacedRepetitionScheduler` interface — contract for all scheduler implementations |
 | `src/scheduling/FsrsScheduler.ts` | `FsrsScheduler` class — `SpacedRepetitionScheduler` impl wrapping `ts-fsrs`; 90-day cap, no mutation |
@@ -120,6 +124,8 @@ Spaced repetition scheduling engine. Skeleton created in EP01-ST03. Logic popula
 | `src/__tests__/` | Unit tests co-located with source — one `__tests__/` per domain folder |
 | `src/__tests__/mastery.test.ts` | Unit tests for `mastery.ts` |
 | `src/__tests__/batch.test.ts` | Unit tests for `batch.ts` — priority ordering (8 tests) |
+| `src/__tests__/active-window.test.ts` | Unit tests for `active-window.ts` — 20 tests: filtering, slots calculation, immutability, edge cases |
+| `src/__tests__/batch.test.ts` | Unit tests for `batch.ts` |
 | `__tests__/setup.ts` | `afterEach(vi.useRealTimers)` — prevents fake timer bleed |
 | `__tests__/integration/` | Cross-domain lifecycle tests |
 | `__tests__/integration/srs-lifecycle.test.ts` | Integration tests: Learning→srsM2_review, interval growth, 3-lapse reset (4 tests) |
