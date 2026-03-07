@@ -1,8 +1,8 @@
 # EP05 - SRS Engine: Active Window + Stuck Words
 
 **Created**: 20260306T014133Z
-**Status**: Draft
-**Status Changed**: 20260306T014133Z
+**Status**: Impl-Complete
+**Status Changed**: 20260307T143000Z
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 **Type**: Epic Plan
 **Depends on**: EP02

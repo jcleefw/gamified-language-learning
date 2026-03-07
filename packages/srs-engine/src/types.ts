@@ -21,6 +21,8 @@ export interface WordState {
   correctCount: number
   wrongCount: number
   fsrsState?: FsrsCardState
+  batchesSinceLastProgress?: number
+  shelvedUntil?: Date | null
 }
 
 export interface QuizAnswer {

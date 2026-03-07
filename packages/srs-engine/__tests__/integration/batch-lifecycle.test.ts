@@ -1,3 +1,17 @@
+/**
+ * Integration: batch composition with real `updateMastery`-promoted word states
+ *
+ * Tests the cross-module boundary between mastery promotion (updateMastery) and
+ * batch assembly (composeBatch). Unit tests for composeBatch use hand-crafted
+ * WordState fixtures; these tests verify that words promoted through a real
+ * updateMastery progression are correctly classified and ordered by composeBatch.
+ *
+ * Scenarios:
+ * - Promoted (srsM2_review) words appear before learning words regardless of input order
+ * - Foundational srsM2_review words are ordered after curated srsM2_review words (carry-over → foundational revision → new)
+ * - distributionBreakdown (mc + wordBlock + audio) sums to batchSize with a real mixed pool
+ * - Audio redistribution: audio slots collapse to 0 and fold into mc when audioAvailable=false
+ */
 import { describe, it, expect } from 'vitest'
 import { updateMastery, composeBatch } from '../../src/index.js'
 import type { SrsConfig, WordState } from '../../src/index.js'

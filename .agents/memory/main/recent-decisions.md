@@ -8,6 +8,10 @@
 
 | Date | Decision | Related |
 |------|----------|---------|
+| 03-07 | EP05: `batchesSinceLastProgress` is caller-managed — not set by `updateMastery`; calling layer increments/resets after each batch | EP05-ST02 |
+| 03-07 | EP05: Active window marker = `srsM2_review` phase; no extra `isActive` flag on `WordState` | EP05-ST01 |
+| 03-07 | EP05: Stuck word cap — newest stuck word shelved when cap reached; 3rd+ words simply wait (no displacement) | EP05 Design |
+| 03-07 | EP05: `pnpm build` required after adding new source files before `tsx` scripts can resolve them from `dist/` | EP05-ST03 |
 | 03-07 | EP04: `composeBatch` always returns deterministic priority order; shuffling questions for display is the caller's responsibility (UI/API layer) | EP04-DS01 |
 | 03-06 | Parallel epics via git worktrees — one worktree per epic, one Claude session per worktree | EP04/05/06 parallel dev |
 | 03-06 | Worktree agents: STOP at `gh pr create` — FORBIDDEN to checkout main, merge, or gh pr merge | WORKTREE.md |

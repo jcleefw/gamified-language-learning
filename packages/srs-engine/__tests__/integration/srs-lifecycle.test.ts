@@ -1,3 +1,17 @@
+/**
+ * Integration: SRS lifecycle across `updateMastery` + `FsrsScheduler`
+ *
+ * Tests the cross-module boundary between mastery counting (updateMastery) and
+ * FSRS scheduling (FsrsScheduler). These scenarios cannot be covered by unit
+ * tests because they depend on the output of one module being valid input to
+ * another across a realistic progression.
+ *
+ * Scenarios:
+ * - Wrong answers in Learning floor at mastery=0 (no negative mastery)
+ * - 10 correct answers in Learning promote word to srsM2_review phase
+ * - FSRS review intervals grow monotonically across successive correct reviews
+ * - 3 lapses in srsM2_review reset word back to Learning (mastery=0, lapseCount=0)
+ */
 import { describe, it, expect } from 'vitest'
 import { updateMastery, FsrsScheduler } from '../../src/index.js'
 import type { SrsConfig, WordState } from '../../src/index.js'

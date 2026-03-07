@@ -98,34 +98,13 @@ Project navigation index. Use this to orient before reading files.
 
 ---
 
-## `packages/` — Internal Packages (EP01+)
+## `packages/` — Internal Packages
 
-### `packages/srs-engine/` — `@gll/srs-engine`
+Each package owns its own CODEMAP. Navigate there for file-level detail.
 
-Spaced repetition scheduling engine. Skeleton created in EP01-ST03. Logic populated by EP02+.
-
-| Path | Purpose |
-|------|---------|
-| `package.json` | Package manifest — ESM, `@gll/srs-engine`, build/test/lint scripts |
-| `tsconfig.json` | Extends `../../tsconfig.base.json`; `rootDir: src`, `outDir: dist` |
-| `vitest.config.ts` | Vitest config — `globals: true`, `passWithNoTests: true`, setup file |
-| `src/index.ts` | Public API entry point — re-exports all engine types and functions (added: Batch, Question, QuestionType, composeBatch) |
-| `src/types.ts` | All engine-owned types: `WordState`, `MasteryPhase`, `WordCategory`, `SrsConfig`, `QuizAnswer`, `FsrsCardState`, `QuestionType`, `Question`, `Batch` |
-| `src/mastery.ts` | `updateMastery(state, isCorrect, config)` — pure function: mastery counting, Learning→srsM2_review transition, lapse reset |
-| `src/batch.ts` | `composeBatch(wordStates, config, options)` — batch composition with priority ordering (carry-over → foundational revision → new words → foundational learning) and question type distribution (70% MC, 20% word-block, 10% audio); audio redistribution to MC when unavailable |
-| `src/scheduling/types.ts` | `ReviewResult` interface — domain-private scheduling result type |
-| `src/scheduling/scheduler.interface.ts` | `SpacedRepetitionScheduler` interface — contract for all scheduler implementations |
-| `src/scheduling/FsrsScheduler.ts` | `FsrsScheduler` class — `SpacedRepetitionScheduler` impl wrapping `ts-fsrs`; 90-day cap, no mutation |
-| `src/scheduling/__tests__/FsrsScheduler.test.ts` | Unit tests for `FsrsScheduler` (11 tests, all paths + cap) |
-| `src/__tests__/` | Unit tests co-located with source — one `__tests__/` per domain folder |
-| `src/__tests__/mastery.test.ts` | Unit tests for `mastery.ts` |
-| `src/__tests__/batch.test.ts` | Unit tests for `batch.ts` — priority ordering (8 tests) |
-| `__tests__/setup.ts` | `afterEach(vi.useRealTimers)` — prevents fake timer bleed |
-| `__tests__/integration/` | Cross-domain lifecycle tests |
-| `__tests__/integration/srs-lifecycle.test.ts` | Integration tests: Learning→srsM2_review, interval growth, 3-lapse reset (4 tests) |
-| `__tests__/integration/batch-lifecycle.test.ts` | Integration tests: `composeBatch` with real `updateMastery`-driven word states — priority ordering, distribution sum, audio redistribution (4 tests) |
-| `README.md` | Test run instructions |
-| `dist/` | Compiled output (git-ignored) |
+| Package | Purpose |
+|---------|---------|
+| `packages/srs-engine/` | `@gll/srs-engine` — SRS scheduling engine → [CODEMAP](packages/srs-engine/CODEMAP.md) |
 
 ---
 
@@ -137,9 +116,8 @@ Spaced repetition scheduling engine. Skeleton created in EP01-ST03. Logic popula
 
 ## Update Instructions
 
-**When adding files**: Add to this map under the correct section.
-**When removing files**: Remove the entry from this map.
-**When renaming**: Update both the path and description.
-**When restructuring**: Update the entire relevant section.
+**Root CODEMAP**: Update only when root-level files, `.agents/` structure, `product-documentation/`, or packages change.
+**Package/folder detail**: Update the folder-level `CODEMAP.md` (e.g. `packages/srs-engine/CODEMAP.md`) — not this file.
+**Every non-`__tests__` folder** owns its own `CODEMAP.md`. When adding a new package or subfolder, create its CODEMAP.
 
-Do NOT let CODEMAP.md drift from actual project structure.
+Do NOT let any CODEMAP drift from actual structure.
