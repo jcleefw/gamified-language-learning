@@ -23,6 +23,32 @@ export function getActiveFoundationalWords(
   return { active, availableSlots, eligible }
 }
 
+export interface FoundationalAllocation {
+  slots: number
+  poolDepleted: boolean
+}
+
+export function getFoundationalAllocation(
+  totalBatchSize: number,
+  foundationalWords: WordState[],
+  config: SrsConfig,
+): FoundationalAllocation {
+  const poolDepleted =
+    foundationalWords.length === 0 ||
+    foundationalWords.every(
+      (word) => word.masteryCount >= config.masteryThreshold.foundational,
+    )
+
+  const rate = poolDepleted
+    ? config.foundationalAllocation.postDepletion
+    : config.foundationalAllocation.active
+
+  return {
+    slots: Math.round(totalBatchSize * rate),
+    poolDepleted,
+  }
+}
+
 export function applyFoundationalWrongRule(
   wordState: WordState,
   config: SrsConfig,
