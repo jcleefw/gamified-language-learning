@@ -19,13 +19,20 @@ Read this before starting any task. **These rules override all other instruction
 
 ### CODEMAP.md Updates
 
-**ALWAYS update CODEMAP.md** when:
-- Adding files or directories
-- Changing file purposes
-- Modifying entry points or main exports
-- Restructuring dependencies
+Every non-`__tests__` folder owns its own `CODEMAP.md`. Update the **folder-level** CODEMAP, not root, unless the change affects root-level structure or packages.
 
-**Before finishing any code task**, check if CODEMAP.md needs updating.
+**ALWAYS update the relevant CODEMAP** when:
+- Adding or removing files in a folder
+- Changing file purposes or exported APIs
+- Modifying entry points or main exports
+- Adding a new folder (create a `CODEMAP.md` for it)
+- Restructuring dependencies between folders
+
+**Root `CODEMAP.md`**: Update only when root files, `.agents/` structure, `product-documentation/`, or the packages list change.
+
+**`__tests__/` folders**: Excluded from CODEMAP. Integration test files must be self-documenting via a file-level doc comment.
+
+**Before finishing any code task**, check if the folder's CODEMAP needs updating.
 
 ---
 
@@ -139,11 +146,15 @@ For any story or task:
 
 Use CODEMAP.md as a navigation aid — **not as a mandatory first step for every interaction**.
 
+Each non-`__tests__` folder has its own `CODEMAP.md`. Navigate to the most specific one.
+
 | Situation | Action |
 |-----------|--------|
-| Navigating unfamiliar territory | Read CODEMAP first → identify relevant files → read those |
+| Navigating unfamiliar territory | Read the folder-level CODEMAP first → identify relevant files → read those |
+| Working within a package | Read `packages/<name>/CODEMAP.md`, not root |
+| Working within a subfolder | Read `packages/<name>/src/<folder>/CODEMAP.md` |
 | You know the exact file | Go direct — skip CODEMAP |
-| Unsure which files matter | Read CODEMAP (Golden Rule #4: when unsure, stop and ask) |
+| Unsure which files matter | Read the nearest CODEMAP (Golden Rule #4: when unsure, stop and ask) |
 
 **NEVER**: List directory → read everything → figure out what matters
 
