@@ -1,4 +1,4 @@
-import { updateMastery, FsrsScheduler, composeBatch } from '@gll/srs-engine'
+import { updateMastery, FsrsScheduler, composeBatch, getEligibleWords, detectStuckWords, shelveWord, unshelveWord, isShelved } from '@gll/srs-engine'
 import type { SrsConfig, WordState } from '@gll/srs-engine'
 
 const config: SrsConfig = {
@@ -178,6 +178,80 @@ console.log(`  mc              : ${String(batchWithAudio.distributionBreakdown.m
 console.log(`  wordBlock       : ${String(batchWithAudio.distributionBreakdown.wordBlock).padStart(6)}                 ${String(batchWithoutAudio.distributionBreakdown.wordBlock).padStart(6)}`)
 console.log(`  audio           : ${String(batchWithAudio.distributionBreakdown.audio).padStart(6)}                 ${String(batchWithoutAudio.distributionBreakdown.audio).padStart(6)}`)
 console.log(`  total           : ${String(batchWithAudio.batchSize).padStart(6)}                 ${String(batchWithoutAudio.batchSize).padStart(6)}`)
+
+// ── Scenario G: Active window slot calculation ───────────────────────────────
+
+header('Scenario G: Active window slot calculation (activeWordLimit=5, newWordsPerBatch=3)')
+
+// Use a tighter config so we can demonstrate newSlots=0 without 20 words
+const windowConfig: SrsConfig = { ...config, activeWordLimit: 5, newWordsPerBatch: 3 }
+
+// Build pool: 3 curated driven to srsM2_review, 2 curated left in learning
+const activeWord1 = promoteToReview(makeWord('hola', 'curated'), windowConfig)
+const activeWord2 = promoteToReview(makeWord('gracias', 'curated'), windowConfig)
+const activeWord3 = promoteToReview(makeWord('adios', 'curated'), windowConfig)
+const learningWord1 = makeWord('buenas', 'curated')
+const learningWord2 = makeWord('por favor', 'curated')
+
+const poolG1: WordState[] = [activeWord1, activeWord2, activeWord3, learningWord1, learningWord2]
+const resultG1 = getEligibleWords(poolG1, windowConfig)
+console.log(`  3 active, 2 learning:`)
+console.log(`    active.length  = ${resultG1.active.length}`)
+console.log(`    newSlots       = ${resultG1.newSlots}   (min(3, 5-3) = 2)`)
+console.log(`    eligible.length= ${resultG1.eligible.length}`)
+
+// Fill the active window to show newSlots = 0
+const activeWord4 = promoteToReview(makeWord('si', 'curated'), windowConfig)
+const activeWord5 = promoteToReview(makeWord('no', 'curated'), windowConfig)
+
+const poolG2: WordState[] = [activeWord1, activeWord2, activeWord3, activeWord4, activeWord5, learningWord1]
+const resultG2 = getEligibleWords(poolG2, windowConfig)
+console.log(`  5 active (at limit), 1 learning:`)
+console.log(`    active.length  = ${resultG2.active.length}`)
+console.log(`    newSlots       = ${resultG2.newSlots}   (window full → 0)`)
+console.log(`    eligible.length= ${resultG2.eligible.length}`)
+
+// ── Scenario H: Stuck word detection + shelving ──────────────────────────────
+
+header('Scenario H: Stuck word detection + shelving (shelveAfterBatches=5, maxShelved=2)')
+
+// Use a config with maxShelved=2 to demonstrate cap behaviour cleanly
+const shelveConfig: SrsConfig = { ...config, shelveAfterBatches: 5, maxShelved: 2 }
+
+// Build pool; set batchesSinceLastProgress directly (caller-managed field)
+const stuckWord1: WordState = { ...makeWord('uno', 'foundational'), batchesSinceLastProgress: 5 }
+const stuckWord2: WordState = { ...makeWord('dos', 'foundational'), batchesSinceLastProgress: 5 }
+const almostStuck: WordState = { ...makeWord('tres', 'foundational'), batchesSinceLastProgress: 2 }
+const fineWord: WordState   = { ...makeWord('cuatro', 'foundational'), batchesSinceLastProgress: 0 }
+
+const poolH: WordState[] = [stuckWord1, stuckWord2, almostStuck, fineWord]
+const resultH = detectStuckWords(poolH, shelveConfig)
+console.log(`  detectStuckWords (no words shelved yet):`)
+console.log(`    stuck.length   = ${resultH.stuck.length}  (batchesSinceLastProgress >= 5)`)
+console.log(`    toShelve       = [${resultH.toShelve.map((w) => w.wordId).join(', ')}]`)
+console.log(`    canReShelve    = ${resultH.canReShelve}`)
+
+// shelveWord + isShelved
+const shelvedW1 = shelveWord(stuckWord1, 86_400_000)
+console.log(`  shelveWord('uno', 1 day):`)
+console.log(`    isShelved(shelvedW1)   = ${isShelved(shelvedW1)}`)
+
+// unshelveWord
+const unshelvedW1 = unshelveWord(shelvedW1)
+console.log(`  unshelveWord('uno'):`)
+console.log(`    isShelved(unshelvedW1) = ${isShelved(unshelvedW1)}`)
+
+// Cap behaviour: pre-shelve 2 words, then detect 3rd stuck word
+const preShelved1: WordState = shelveWord({ ...makeWord('seis', 'curated'), batchesSinceLastProgress: 5 }, 86_400_000)
+const preShelved2: WordState = shelveWord({ ...makeWord('siete', 'curated'), batchesSinceLastProgress: 5 }, 86_400_000)
+const thirdStuck: WordState  = { ...makeWord('ocho', 'curated'), batchesSinceLastProgress: 5 }
+
+const poolHCap: WordState[] = [preShelved1, preShelved2, thirdStuck]
+const resultHCap = detectStuckWords(poolHCap, shelveConfig)
+console.log(`  cap behaviour (2 already shelved, 1 new stuck word):`)
+console.log(`    stuck.length   = ${resultHCap.stuck.length}`)
+console.log(`    toShelve       = [${resultHCap.toShelve.map((w) => w.wordId).join(', ')}]  (newest stuck word)`)
+console.log(`    canReShelve    = ${resultHCap.canReShelve}  (cap reached)`)
 
 console.log()
 console.log('Demo complete.')
