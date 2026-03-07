@@ -52,3 +52,20 @@ export interface SrsConfig {
   desiredRetention: number
   maxIntervalDays: number
 }
+
+export type QuestionType = 'mc' | 'wordBlock' | 'audio'
+
+export interface Question {
+  wordId: string
+  type: QuestionType
+}
+
+export interface Batch {
+  questions: Question[]
+  batchSize: number
+  distributionBreakdown: {
+    mc: number
+    wordBlock: number
+    audio: number
+  }
+}

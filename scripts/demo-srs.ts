@@ -1,4 +1,4 @@
-import { updateMastery, FsrsScheduler } from '@gll/srs-engine'
+import { updateMastery, FsrsScheduler, composeBatch } from '@gll/srs-engine'
 import type { SrsConfig, WordState } from '@gll/srs-engine'
 
 const config: SrsConfig = {
@@ -112,6 +112,72 @@ for (let lapse = 1; lapse <= 3; lapse++) {
     `  lapse ${lapse}: mastery=${wordD.masteryCount} | phase=${wordD.phase} | lapseCount=${wordD.lapseCount}`,
   )
 }
+
+// ── Scenario E: composeBatch — priority ordering with real word states ───────
+
+header('Scenario E: composeBatch priority ordering (real word states)')
+
+// Build pool via updateMastery — no hand-crafted phases
+function makeWord(wordId: string, category: 'curated' | 'foundational'): WordState {
+  return { wordId, category, masteryCount: 0, phase: 'learning', lapseCount: 0, correctCount: 0, wrongCount: 0 }
+}
+
+function promoteToReview(word: WordState, cfg: SrsConfig): WordState {
+  let w = word
+  while (w.phase === 'learning') w = updateMastery(w, true, cfg)
+  return w
+}
+
+// Carry-over: curated words already in srsM2_review
+const carryOver1 = promoteToReview(makeWord('hola', 'curated'), config)
+const carryOver2 = promoteToReview(makeWord('gracias', 'curated'), config)
+
+// Foundational revision: foundational word in srsM2_review (5 correct needed)
+const foundRev1 = promoteToReview(makeWord('uno', 'foundational'), config)
+
+// New words: curated, still in learning
+const newWord1 = makeWord('buenas', 'curated')
+const newWord2 = makeWord('adios', 'curated')
+const newWord3 = makeWord('por favor', 'curated')
+
+// Foundational learning: foundational, still in learning
+const foundLearn1 = makeWord('dos', 'foundational')
+const foundLearn2 = makeWord('tres', 'foundational')
+// Extra words to fill batchSize=10 so audio slot appears
+const newWord4 = makeWord('si', 'curated')
+const newWord5 = makeWord('no', 'curated')
+
+const pool: WordState[] = [
+  newWord1, newWord2, foundLearn1, carryOver1, foundRev1, newWord3, carryOver2, foundLearn2, newWord4, newWord5,
+]
+
+const batchE = composeBatch(pool, config)
+
+const bucketLabel = (wordId: string): string => {
+  if (wordId === carryOver1.wordId || wordId === carryOver2.wordId) return '[carry-over]'
+  if (wordId === foundRev1.wordId) return '[found.revision]'
+  if ([newWord1.wordId, newWord2.wordId, newWord3.wordId, newWord4.wordId, newWord5.wordId].includes(wordId)) return '[new word]'
+  return '[found.learning]'
+}
+
+console.log(`  Pool: ${pool.length} words → batch: ${batchE.batchSize} questions`)
+for (const q of batchE.questions) {
+  console.log(`  ${bucketLabel(q.wordId).padEnd(18)} wordId=${q.wordId.padEnd(12)} type=${q.type}`)
+}
+console.log(`  Distribution: mc=${batchE.distributionBreakdown.mc} | wordBlock=${batchE.distributionBreakdown.wordBlock} | audio=${batchE.distributionBreakdown.audio}`)
+
+// ── Scenario F: audio redistribution — side-by-side comparison ──────────────
+
+header('Scenario F: audio redistribution (audioAvailable true vs false)')
+
+const batchWithAudio    = composeBatch(pool, config, { audioAvailable: true })
+const batchWithoutAudio = composeBatch(pool, config, { audioAvailable: false })
+
+console.log('                    audioAvailable=true   audioAvailable=false')
+console.log(`  mc              : ${String(batchWithAudio.distributionBreakdown.mc).padStart(6)}                 ${String(batchWithoutAudio.distributionBreakdown.mc).padStart(6)}`)
+console.log(`  wordBlock       : ${String(batchWithAudio.distributionBreakdown.wordBlock).padStart(6)}                 ${String(batchWithoutAudio.distributionBreakdown.wordBlock).padStart(6)}`)
+console.log(`  audio           : ${String(batchWithAudio.distributionBreakdown.audio).padStart(6)}                 ${String(batchWithoutAudio.distributionBreakdown.audio).padStart(6)}`)
+console.log(`  total           : ${String(batchWithAudio.batchSize).padStart(6)}                 ${String(batchWithoutAudio.batchSize).padStart(6)}`)
 
 console.log()
 console.log('Demo complete.')
