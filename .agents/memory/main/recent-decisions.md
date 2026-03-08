@@ -8,6 +8,7 @@
 
 | Date | Decision | Related |
 |------|----------|---------|
+| 03-09 | All exported and non-trivial private functions require a docstring — plain English, max 80 chars/line | code-review SKILL |
 | 03-07 | EP05: `batchesSinceLastProgress` is caller-managed — not set by `updateMastery`; calling layer increments/resets after each batch | EP05-ST02 |
 | 03-07 | EP05: Active window marker = `srsM2_review` phase; no extra `isActive` flag on `WordState` | EP05-ST01 |
 | 03-07 | EP05: Stuck word cap — newest stuck word shelved when cap reached; 3rd+ words simply wait (no displacement) | EP05 Design |
