@@ -8,7 +8,8 @@ Impl-Complete — PR open, waiting for human review and merge
 
 ## Files Owned
 - `packages/srs-engine/src/srs-engine.ts` (new)
-- `packages/srs-engine/src/__tests__/srs-engine.test.ts` (new)
+- `packages/srs-engine/src/__tests__/srs-engine.test.ts` (new — unit: config validation + composeBatch)
+- `packages/srs-engine/__tests__/integration/srs-engine-orchestrator.test.ts` (new — 5 lifecycle scenarios)
 - `packages/srs-engine/src/CODEMAP.md` (updated)
 - `packages/srs-engine/src/index.ts` (updated)
 
