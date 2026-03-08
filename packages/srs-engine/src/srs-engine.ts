@@ -8,6 +8,7 @@ import { FsrsScheduler } from './scheduling/FsrsScheduler.js'
 
 const SHELVE_DURATION_MS = 24 * 60 * 60 * 1000 // 24 hours
 
+/** Orchestrates word learning sessions — composes quiz batches and processes answers. */
 export class SrsEngine {
   private readonly config: SrsConfig
   private readonly scheduler: FsrsScheduler
