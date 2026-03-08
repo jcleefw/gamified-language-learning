@@ -74,19 +74,21 @@ export class SrsEngine {
 }
 
 function validateConfig(config: SrsConfig): void {
-  if (config.batchSize <= 0) throw new Error('SrsConfig: batchSize must be > 0')
-  if (config.masteryThreshold.curated <= 0)
-    throw new Error('SrsConfig: masteryThreshold.curated must be > 0')
-  if (config.masteryThreshold.foundational <= 0)
-    throw new Error('SrsConfig: masteryThreshold.foundational must be > 0')
-  if (config.lapseThreshold <= 0) throw new Error('SrsConfig: lapseThreshold must be > 0')
-  if (config.activeWordLimit <= 0) throw new Error('SrsConfig: activeWordLimit must be > 0')
-  if (config.newWordsPerBatch <= 0) throw new Error('SrsConfig: newWordsPerBatch must be > 0')
-  if (config.shelveAfterBatches <= 0) throw new Error('SrsConfig: shelveAfterBatches must be > 0')
-  if (config.maxShelved <= 0) throw new Error('SrsConfig: maxShelved must be > 0')
-  if (config.continuousWrongThreshold <= 0)
-    throw new Error('SrsConfig: continuousWrongThreshold must be > 0')
+  const fieldsToCheck: [number, string][] = [
+    [config.batchSize, 'batchSize'],
+    [config.masteryThreshold.curated, 'masteryThreshold.curated'],
+    [config.masteryThreshold.foundational, 'masteryThreshold.foundational'],
+    [config.lapseThreshold, 'lapseThreshold'],
+    [config.activeWordLimit, 'activeWordLimit'],
+    [config.newWordsPerBatch, 'newWordsPerBatch'],
+    [config.shelveAfterBatches, 'shelveAfterBatches'],
+    [config.maxShelved, 'maxShelved'],
+    [config.continuousWrongThreshold, 'continuousWrongThreshold'],
+    [config.maxIntervalDays, 'maxIntervalDays'],
+  ]
+  for (const [value, name] of fieldsToCheck) {
+    if (value <= 0) throw new Error(`SrsConfig: ${name} must be > 0`)
+  }
   if (config.desiredRetention <= 0 || config.desiredRetention > 1)
     throw new Error('SrsConfig: desiredRetention must be between 0 (exclusive) and 1 (inclusive)')
-  if (config.maxIntervalDays <= 0) throw new Error('SrsConfig: maxIntervalDays must be > 0')
 }
