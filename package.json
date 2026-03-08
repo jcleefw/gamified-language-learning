@@ -12,6 +12,7 @@
     "test": "turbo test",
     "test:watch": "turbo watch test",
     "lint": "eslint .",
+    "typecheck": "turbo typecheck",
     "demo": "tsx scripts/demo-srs.ts"
   },
   "devDependencies": {

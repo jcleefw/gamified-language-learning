@@ -1,7 +1,7 @@
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/node_modules/**', '**/.nuxt/**'] },
+  { ignores: ['**/dist/**', '**/node_modules/**', '**/.nuxt/**', '.worktrees/**'] },
   {
     files: ['packages/**/*.ts'],
     extends: [...tseslint.configs.strictTypeChecked],

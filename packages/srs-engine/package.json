@@ -15,7 +15,8 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint src __tests__"
+    "lint": "eslint src __tests__",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "ts-fsrs": "^5"
