@@ -6,6 +6,10 @@ export interface EligibleWordsResult {
   eligible: WordState[]
 }
 
+/**
+ * Returns which words are already in active review, how many new words can be added,
+ * and which words are waiting to fill those new slots.
+ */
 export function getEligibleWords(
   allWords: WordState[],
   config: SrsConfig,

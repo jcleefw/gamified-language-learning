@@ -1,5 +1,10 @@
 import type { WordState, SrsConfig } from './types.js'
 
+/**
+ * Updates a word's mastery count and phase after an answer.
+ * Promotes to SRS review once the mastery threshold is reached,
+ * and demotes back to learning if too many lapses occur in review.
+ */
 export function updateMastery(
   state: WordState,
   isCorrect: boolean,

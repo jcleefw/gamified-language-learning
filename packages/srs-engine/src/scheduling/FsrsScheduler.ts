@@ -21,6 +21,10 @@ export class FsrsScheduler implements SpacedRepetitionScheduler {
     this.maxIntervalDays = config.maxIntervalDays
   }
 
+  /**
+   * Calculates the next review interval for a word based on
+   * whether the answer was correct, using the FSRS algorithm.
+   */
   scheduleReview(state: WordState, isCorrect: boolean): ReviewResult {
     const card = state.fsrsState
       ? this.toFsrsCard(state.fsrsState)
@@ -37,6 +41,7 @@ export class FsrsScheduler implements SpacedRepetitionScheduler {
     }
   }
 
+  /** Returns how many days until this word should be reviewed next. */
   getNextInterval(state: WordState): number {
     if (!state.fsrsState) {
       return 1
@@ -48,6 +53,7 @@ export class FsrsScheduler implements SpacedRepetitionScheduler {
     return {
       stability: fsrsState.stability,
       difficulty: fsrsState.difficulty,
+      // TODO: elapsed_days is deprecated in ts-fsrs — migrate when API stabilises
       elapsed_days: fsrsState.elapsedDays,
       scheduled_days: fsrsState.scheduledDays,
       learning_steps: 0,

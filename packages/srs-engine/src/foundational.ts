@@ -8,6 +8,10 @@ export interface FoundationalActiveResult {
 
 const FOUNDATIONAL_ACTIVE_LIMIT = 3
 
+/**
+ * Returns which foundational words are currently being learned, how many more can be added,
+ * and which foundational words are waiting to start.
+ */
 export function getActiveFoundationalWords(
   words: WordState[],
   _config: SrsConfig,
@@ -28,6 +32,10 @@ export interface FoundationalAllocation {
   poolDepleted: boolean
 }
 
+/**
+ * Decides how many slots in a batch should go to foundational words.
+ * Uses a lower share once all foundational words have been mastered.
+ */
 export function getFoundationalAllocation(
   totalBatchSize: number,
   foundationalWords: WordState[],
@@ -49,6 +57,10 @@ export function getFoundationalAllocation(
   }
 }
 
+/**
+ * Handles a wrong answer for a foundational word. Increments the consecutive wrong count,
+ * and resets mastery back to zero if the threshold is reached.
+ */
 export function applyFoundationalWrongRule(
   wordState: WordState,
   config: SrsConfig,

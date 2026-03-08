@@ -18,6 +18,10 @@ export class SrsEngine {
     this.scheduler = new FsrsScheduler(config)
   }
 
+  /**
+   * Builds the next quiz batch, skipping shelved words
+   * and respecting the active word limit.
+   */
   composeBatch(wordStates: WordState[], options?: ComposeBatchOptions): Batch {
     const unshelved = wordStates.filter((w) => !isShelved(w))
     const { active, newSlots, eligible } = getEligibleWords(unshelved, this.config)
@@ -25,6 +29,10 @@ export class SrsEngine {
     return composeBatch(forBatch, this.config, options)
   }
 
+  /**
+   * Applies a set of quiz answers to word states. Updates mastery,
+   * schedules future reviews, and shelves any words that are stuck.
+   */
   processAnswers(answers: QuizAnswer[], wordStates: WordState[]): WordState[] {
     const answersMap = new Map(answers.map((a) => [a.wordId, a]))
 
@@ -73,6 +81,7 @@ export class SrsEngine {
   }
 }
 
+/** Throws if any config value is out of the expected range. */
 function validateConfig(config: SrsConfig): void {
   const fieldsToCheck: [number, string][] = [
     [config.batchSize, 'batchSize'],
