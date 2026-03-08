@@ -1,4 +1,4 @@
-import { updateMastery, FsrsScheduler, composeBatch, getEligibleWords, detectStuckWords, shelveWord, unshelveWord, isShelved } from '@gll/srs-engine'
+import { updateMastery, FsrsScheduler, composeBatch, getEligibleWords, detectStuckWords, shelveWord, unshelveWord, isShelved, getActiveFoundationalWords, applyFoundationalWrongRule, getFoundationalAllocation } from '@gll/srs-engine'
 import type { SrsConfig, WordState } from '@gll/srs-engine'
 
 const config: SrsConfig = {
@@ -252,6 +252,83 @@ console.log(`  cap behaviour (2 already shelved, 1 new stuck word):`)
 console.log(`    stuck.length   = ${resultHCap.stuck.length}`)
 console.log(`    toShelve       = [${resultHCap.toShelve.map((w) => w.wordId).join(', ')}]  (newest stuck word)`)
 console.log(`    canReShelve    = ${resultHCap.canReShelve}  (cap reached)`)
+
+// ── Scenario I: Foundational active limit ────────────────────────────────────
+
+header('Scenario I: Foundational active limit (max 3 active)')
+
+const foundActive1 = makeWord('uno', 'foundational')
+const foundActive2 = makeWord('dos', 'foundational')
+const foundActive3 = makeWord('tres', 'foundational')
+const foundInactive = promoteToReview(makeWord('cuatro', 'foundational'), config)
+
+// 3 foundational words in learning → all 3 active, no slots left
+const poolI1: WordState[] = [foundActive1, foundActive2, foundActive3, foundInactive]
+const resultI1 = getActiveFoundationalWords(poolI1, config)
+console.log(`  3 foundational in learning, 1 in srsM2_review:`)
+console.log(`    active.length    = ${resultI1.active.length}`)
+console.log(`    availableSlots   = ${resultI1.availableSlots}   (3 - 3 = 0)`)
+
+// 1 foundational word in learning → 2 slots available
+const poolI2: WordState[] = [foundActive1, foundInactive]
+const resultI2 = getActiveFoundationalWords(poolI2, config)
+console.log(`  1 foundational in learning, 1 in srsM2_review:`)
+console.log(`    active.length    = ${resultI2.active.length}`)
+console.log(`    availableSlots   = ${resultI2.availableSlots}   (3 - 1 = 2)`)
+
+// ── Scenario J: Continuous wrong rule ────────────────────────────────────────
+
+header('Scenario J: Continuous wrong rule (3 consecutive wrongs → mastery reset)')
+
+// Build foundational word to mastery=4 via updateMastery
+let wordJ = makeWord('cinco', 'foundational')
+for (let i = 0; i < 4; i++) wordJ = updateMastery(wordJ, true, config)
+console.log(`  After 4 correct: mastery=${wordJ.masteryCount} | phase=${wordJ.phase}`)
+
+// Apply 3 consecutive wrongs via applyFoundationalWrongRule
+for (let wrong = 1; wrong <= 3; wrong++) {
+  wordJ = applyFoundationalWrongRule(wordJ, config)
+  console.log(
+    `  wrong ${wrong}: mastery=${wordJ.masteryCount} | consecutiveWrongCount=${wordJ.consecutiveWrongCount ?? 0} | phase=${wordJ.phase}`,
+  )
+}
+
+// Correct answer after 2 wrongs resets consecutiveWrongCount
+let wordJ2 = makeWord('seis', 'foundational')
+for (let i = 0; i < 3; i++) wordJ2 = updateMastery(wordJ2, true, config)
+wordJ2 = applyFoundationalWrongRule(wordJ2, config)
+wordJ2 = applyFoundationalWrongRule(wordJ2, config)
+console.log(`  After 2 wrongs: mastery=${wordJ2.masteryCount} | consecutiveWrongCount=${wordJ2.consecutiveWrongCount ?? 0}`)
+wordJ2 = updateMastery(wordJ2, true, config)
+console.log(`  After correct:  mastery=${wordJ2.masteryCount} | consecutiveWrongCount=${wordJ2.consecutiveWrongCount ?? 0}`)
+
+// ── Scenario K: Foundational batch allocation ────────────────────────────────
+
+header('Scenario K: Foundational batch allocation (active vs depleted pool)')
+
+const allocConfig: SrsConfig = { ...config, foundationalAllocation: { active: 0.2, postDepletion: 0.05 } }
+
+// Active pool: some foundational words below threshold
+const foundBelow1 = makeWord('uno', 'foundational')
+const foundBelow2 = makeWord('dos', 'foundational')
+const foundAbove = promoteToReview(makeWord('tres', 'foundational'), allocConfig)
+
+const activePool = [foundBelow1, foundBelow2, foundAbove]
+const allocActive = getFoundationalAllocation(allocConfig.batchSize, activePool, allocConfig)
+console.log(`  Active pool (2 below threshold, 1 above):`)
+console.log(`    slots        = ${allocActive.slots}   (Math.round(10 × 0.2) = 2)`)
+console.log(`    poolDepleted = ${allocActive.poolDepleted}`)
+
+// Depleted pool: all foundational words above threshold
+const depletedPool = [
+  promoteToReview(makeWord('uno', 'foundational'), allocConfig),
+  promoteToReview(makeWord('dos', 'foundational'), allocConfig),
+  promoteToReview(makeWord('tres', 'foundational'), allocConfig),
+]
+const allocDepleted = getFoundationalAllocation(allocConfig.batchSize, depletedPool, allocConfig)
+console.log(`  Depleted pool (all above threshold):`)
+console.log(`    slots        = ${allocDepleted.slots}   (Math.round(10 × 0.05) = 1)`)
+console.log(`    poolDepleted = ${allocDepleted.poolDepleted}`)
 
 console.log()
 console.log('Demo complete.')
