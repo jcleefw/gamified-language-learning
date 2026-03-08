@@ -29,6 +29,9 @@ When this skill is loaded, perform a structured review. Do not edit any files.
 - Is the intent clear without needing comments?
 - Are names accurate and unambiguous?
 - Are functions doing more than one thing?
+- Do all exported classes, and exported and non-trivial private functions have a docstring?
+  - Docstrings must be human-readable (plain English, no jargon)
+  - Max 80 characters per line
 
 ## Output Format
 

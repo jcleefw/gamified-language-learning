@@ -29,3 +29,5 @@ export {
   applyFoundationalWrongRule,
   getFoundationalAllocation,
 } from './foundational.js'
+
+export { SrsEngine } from './srs-engine.js'

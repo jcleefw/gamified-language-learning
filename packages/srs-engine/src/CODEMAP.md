@@ -10,7 +10,7 @@ Source root navigation index. All public exports flow through `index.ts`.
 
 | File | Purpose |
 |------|---------|
-| `index.ts` | Public entry point — re-exports all engine types and functions: `WordState`, `MasteryPhase`, `WordCategory`, `SrsConfig`, `QuizAnswer`, `FsrsCardState`, `QuestionType`, `Question`, `Batch`, `updateMastery`, `composeBatch`, `getEligibleWords`, `FsrsScheduler`, `detectStuckWords`, `shelveWord`, `unshelveWord`, `isShelved`, `getActiveFoundationalWords`, `applyFoundationalWrongRule`, `getFoundationalAllocation`, `FoundationalActiveResult`, `FoundationalAllocation` |
+| `index.ts` | Public entry point — re-exports all engine types and functions: `WordState`, `MasteryPhase`, `WordCategory`, `SrsConfig`, `QuizAnswer`, `FsrsCardState`, `QuestionType`, `Question`, `Batch`, `updateMastery`, `composeBatch`, `getEligibleWords`, `FsrsScheduler`, `detectStuckWords`, `shelveWord`, `unshelveWord`, `isShelved`, `getActiveFoundationalWords`, `applyFoundationalWrongRule`, `getFoundationalAllocation`, `FoundationalActiveResult`, `FoundationalAllocation`, `SrsEngine` |
 | `types.ts` | Shared types across the package: `WordState`, `MasteryPhase`, `WordCategory`, `SrsConfig`, `QuizAnswer`, `FsrsCardState`, `QuestionType`, `Question`, `Batch` — includes EP05 extensions `batchesSinceLastProgress?`, `shelvedUntil?`, EP06 extension `consecutiveWrongCount?` |
 
 ---
@@ -24,6 +24,7 @@ Source root navigation index. All public exports flow through `index.ts`.
 | `active-window.ts` | `getEligibleWords(allWords, config)` — identifies active words (srsM2_review phase), calculates new-word slots, filters eligible candidates |
 | `stuck-words.ts` | `detectStuckWords()`, `shelveWord()`, `unshelveWord()`, `isShelved()` — stuck word detection and shelving logic; max-2 shelved cap |
 | `foundational.ts` | `getActiveFoundationalWords(words, config)` — 3-active cap for foundational words; `applyFoundationalWrongRule(wordState, config)` — mastery reset on 3rd consecutive wrong (Learning phase only); `getFoundationalAllocation(totalBatchSize, foundationalWords, config)` — batch slot allocation (20% active, 5% depleted) |
+| `srs-engine.ts` | `SrsEngine` class — orchestrator; `new SrsEngine(config)` validates config on construction; `composeBatch(wordStates, options?)` filters shelved words and delegates to `batch.ts`; `processAnswers(answers, wordStates)` sequences mastery → FSRS → foundational rule → stuck-word detection |
 
 ---
 
