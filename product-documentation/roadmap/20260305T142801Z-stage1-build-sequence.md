@@ -227,8 +227,9 @@ Stage 10: Stage 5 auth → Admin UI
 | E-07 | SRS engine: answer processing + SrsEngine class | `srs-engine.ts` — orchestrator class, `processAnswers`, config validation | 0.25 day |
 | E-08 | Terminal quiz runner + seed data | `scripts/quiz-runner.ts` — end-to-end proof in terminal | 0.5 day |
 | E-09 | Agentic dev workflow (GAP-05) | Commit discipline, test protocol, stage transitions — doc or skill | 0.5 day |
+| EP10 | GitHub Actions CI — test + lint | `.github/workflows/ci.yml` — runs `pnpm test`, `pnpm lint`, `tsc --noEmit` on every PR push | 0.25 day |
 
-**Total: ~4 days** (fits 1-week window at 4 days/week)
+**Total: ~4.25 days** (fits 1-week window at 4 days/week)
 
 ---
 
