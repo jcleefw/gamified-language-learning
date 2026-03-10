@@ -18,7 +18,8 @@ The SRS engine is pure logic with no observable output until something calls it 
 ## Scope
 
 **In scope**:
-- `data/seed/deck-001.ts` (or `.json`) — 1 fake conversation deck, ~15–20 words, with fields matching `WordState` requirements
+- Seed data from real sample files: `data/samples/foundations-consonants.ts` (44 Thai consonants) and `data/samples/conversations-2026-03-08.json` (conversation decks with `uniqueWords`)
+- Content type definitions (`FoundationalCharacter`, `Conversation`, `ConversationWord` — language-agnostic) and mapper functions that transform raw content → `WordState[]`
 - `scripts/quiz-runner.ts` — terminal script using `tsx`; composes a batch, accepts answers (stdin preferred; hardcoded fallback acceptable), prints updated mastery states, loops to next batch
 - Demonstrates: carry-over words, stuck word shelving, phase transition (Learning → ANKI)
 - All data in-memory — no database, no network, no file persistence
@@ -26,17 +27,17 @@ The SRS engine is pure logic with no observable output until something calls it 
 **Out of scope**:
 - Pretty terminal UI (chalk/ink) — plain `console.log` is sufficient
 - Saving quiz state between process runs — in-memory only
-- Real vocabulary content — fake/placeholder words are fine
+- Full conversation breakdown/component rendering — only `uniqueWords` used for quiz words
 
 ---
 
 ## Stories
 
-### EP08-ST01: Seed data
-**Scope**: Create `data/seed/deck-001.ts` with ~15–20 words as `WordState[]`; fields cover all data the engine needs (id, mastery, phase, lapse count, foundational flag, audio availability, etc.); no unit test required (data file)
+### EP08-ST01: Content types + seed data mappers
+**Scope**: Define `FoundationalCharacter`, `Conversation`, `ConversationWord` types (language-agnostic) in `packages/srs-engine/data/`; implement mapper functions (`characterToWordState`, `conversationWordsToWordStates`, `slugifyWord`) that transform real sample files into `WordState[]`; unit tests for mappers; only 5 consonants for the foundational deck
 
 ### EP08-ST02: Terminal quiz runner
-**Scope**: Implement `scripts/quiz-runner.ts` — instantiate `SrsEngine` with default config, load seed data, loop: `composeBatch` → print questions → accept stdin answers → `processAnswers` → print updated states; run at least 3 batch iterations to demonstrate carry-over and phase progression; `pnpm run quiz` (or `tsx scripts/quiz-runner.ts`) executes it
+**Scope**: Implement `scripts/quiz-runner.ts` — instantiate `SrsEngine` with default config, load real seed data via mappers, loop: `composeBatch` → print questions → accept stdin answers → `processAnswers` → print updated states; run at least 3 batch iterations to demonstrate carry-over and phase progression; `pnpm run quiz` (or `tsx scripts/quiz-runner.ts`) executes it
 
 ---
 

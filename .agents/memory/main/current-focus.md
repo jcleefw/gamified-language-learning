@@ -1,40 +1,54 @@
 # Current Focus
 
 **Branch**: main
-**Updated**: 20260308T040300Z
+**Updated**: 20260311T000000Z
 
-## Active Work
+## Stage Status
 
-- **Epic**: EP06 — SRS Engine: Foundational Deck
-- **Status**: Impl-Complete — all 5 stories delivered, awaiting human PR review
+- **Stage 1**: Complete ✅ — all 10 epics (EP01–EP10) delivered and merged
+- **Stage 2**: Planning complete — roadmap written, epic plan files pending
 
-## EP06 Completed Stories
+## Stage 1 — Delivered Epics
 
-- **EP06-ST01**: `foundational.ts` — `getActiveFoundationalWords`, `applyFoundationalWrongRule`; `WordState.consecutiveWrongCount` ✅
-- **EP06-ST02**: `foundational.ts` — `getFoundationalAllocation`; exported via `index.ts`, CODEMAP updated ✅
-- **EP06-ST03**: Demo script Scenarios I, J, K (active limit, wrong rule, batch allocation) ✅
-- **EP06-ST04**: Integration test `foundational-lifecycle.test.ts` (5 tests) ✅
-- **EP06-ST05**: Integration test `foundational-allocation-lifecycle.test.ts` (4 tests) ✅
+| Epic | Title | Status |
+|------|-------|--------|
+| EP01 | Monorepo scaffolding | ✅ Merged |
+| EP02 | SRS engine: mastery + phase transitions (absorbed EP03 ANKI scheduling) | ✅ Merged |
+| EP04 | SRS engine: batch composition | ✅ Merged |
+| EP05 | SRS engine: active window + stuck words | ✅ Merged |
+| EP06 | SRS engine: foundational deck | ✅ Merged |
+| EP07 | SRS engine: answer processing + SrsEngine class | ✅ Merged |
+| EP08 | Terminal quiz runner + seed data | ✅ On branch `feature/EP08-terminal-quiz-runner` — merge pending |
+| EP09 | Agentic dev workflow (GAP-05) | ✅ Delivered as workflow docs |
+| EP10 | GitHub Actions CI | ✅ Merged |
 
-## What Was Built
+**Housekeeping**: EP08 epic plan (`plans/epics/EP08-terminal-quiz-runner.md`) status still shows Draft — update to Completed after merge.
 
-- `packages/srs-engine/src/foundational.ts` — 3 pure functions: `getActiveFoundationalWords`, `applyFoundationalWrongRule`, `getFoundationalAllocation`
-- `packages/srs-engine/src/types.ts` — `WordState.consecutiveWrongCount`, `SrsConfig.foundationalAllocation`, `SrsConfig.continuousWrongThreshold`
-- `packages/srs-engine/src/index.ts` — exports for all new functions + types
-- `packages/srs-engine/__tests__/integration/foundational-lifecycle.test.ts` — 5 integration tests
-- `packages/srs-engine/__tests__/integration/foundational-allocation-lifecycle.test.ts` — 4 integration tests
-- `scripts/demo-srs.ts` — Scenarios I, J, K added
+## Stage 2 — Next Up
 
-## Test State
+**Roadmap**: `product-documentation/roadmap/20260311T000000Z-stage2-build-sequence.md`
 
-140/140 tests passing across 11 test files.
+| Epic | Title | Effort |
+|------|-------|--------|
+| EP11 | `@gll/api-contract` — shared HTTP types (types-only package) | 0.25 day |
+| EP12 | `apps/server` — Hono server scaffold | 0.5 day |
+| EP13 | `apps/server` — SRS routes + in-memory state | 1 day |
+| EP14 | CI Stage 2 update | 0.25 day |
 
-## Recently Merged
+**Blocking prerequisite**: EP08 must be merged before EP11 starts.
 
-- **EP04** — SRS Engine: Batch Composition — merged to main ✅
-- **EP05** — SRS Engine: Active Window + Stuck Words — merged to main ✅
+## Stage 2 Locked Decisions
+
+- App location: `apps/server`
+- Package scope: `@gll/api-contract`
+- Deck ID: random hash generated at seed time, printed to console on startup — fixed for process lifetime
+- Batch ID: `crypto.randomUUID()`, server-generated
+- `targetText`: in-memory `Map<wordId, wordDetail>` seeded from mappers
+- `options[]` (MC distractors): omitted in Stage 2 (field optional in ADR)
 
 ## Next Steps
 
-- Raise PR: `feature/EP06--srs-engine-foundational-deck` → `main`
-- EP07: Wire active-window + stuck-words into batch composition
+1. Merge EP08 PR → `main`
+2. Update EP08 epic plan status to Completed
+3. Write EP11–EP14 epic plan files
+4. Begin EP11
