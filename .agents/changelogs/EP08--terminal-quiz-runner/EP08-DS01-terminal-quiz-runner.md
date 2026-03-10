@@ -1,7 +1,7 @@
 # EP08-DS01: Terminal Quiz Runner + Real Seed Data Specification
 
 **Date**: 20260308T141850Z
-**Status**: In Progress (ST01 complete, ST02 pending)
+**Status**: Complete ✅
 **Epic**: [EP08 - Terminal Quiz Runner + Seed Data](../../plans/epics/EP08-terminal-quiz-runner.md)
 
 ---
@@ -164,23 +164,23 @@ START
 - `packages/srs-engine/data/samples/conversations-2026-03-08.json`
 
 **Tasks**:
-- [ ] Create `scripts/quiz-runner.ts` — interactive quiz loop using `readline`
-- [ ] Load real seed data: import consonants + read conversation JSON; adapt `thai` → `native` on raw JSON before passing to mapper; map to `WordState[]`
-- [ ] Instantiate `SrsEngine` with production-like config (batchSize=15, masteryThreshold curated=10 / foundational=5, activeWordLimit=8)
-- [ ] Loop: `composeBatch` → display questions → collect stdin answers (c/w/q) → `processAnswers` → print summary
-- [ ] Print per-batch summary: words answered, mastery changes, phase transitions, shelved words
-- [ ] Add `"quiz": "tsx scripts/quiz-runner.ts"` to root `package.json`
-- [ ] No unit tests (interactive script)
+- [x] Create `scripts/quiz-runner.ts` — interactive quiz loop using `readline`
+- [x] Load real seed data: import consonants + read conversation JSON; adapt `thai` → `native` on raw JSON before passing to mapper; map to `WordState[]`
+- [x] Instantiate `SrsEngine` with production-like config (batchSize=15, masteryThreshold curated=10 / foundational=5, activeWordLimit=8)
+- [x] Loop: `composeBatch` → display questions → collect stdin answers (c/w/q) → `processAnswers` → print summary
+- [x] Print per-batch summary: words answered, mastery changes, phase transitions, shelved words
+- [x] Add `"quiz": "tsx scripts/quiz-runner.ts"` to root `package.json`
+- [x] No unit tests (interactive script)
 
 **Acceptance Criteria**:
-- [ ] `pnpm run quiz` starts the interactive runner without errors
-- [ ] First batch contains a mix of foundational and curated words
-- [ ] Answering 'c' or 'w' updates mastery and proceeds to next question
-- [ ] After a full batch, updated mastery states are printed
-- [ ] At least one word demonstrates carry-over across batches (visible in output)
-- [ ] At least one foundational word can reach mastery threshold (5 correct) within a session
-- [ ] Answering 'q' exits cleanly
-- [ ] All data remains in-memory (no files written, no network calls)
+- [x] `pnpm run quiz` starts the interactive runner without errors
+- [x] First batch contains a mix of foundational and curated words
+- [x] Answering 'c' or 'w' updates mastery and proceeds to next question
+- [x] After a full batch, updated mastery states are printed
+- [x] At least one word demonstrates carry-over across batches (visible in output)
+- [x] At least one foundational word can reach mastery threshold (5 correct) within a session
+- [x] Answering 'q' exits cleanly
+- [x] All data remains in-memory (no files written, no network calls)
 
 ## 6. Success Criteria
 
