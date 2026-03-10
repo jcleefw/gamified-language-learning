@@ -76,7 +76,6 @@ describe('foundational-lifecycle integration', () => {
 
     const result = getActiveFoundationalWords(
       [partial1, partial2, promoted],
-      config,
     );
 
     expect(result.active.length).toBe(2);
@@ -93,7 +92,6 @@ describe('foundational-lifecycle integration', () => {
 
     const result = getActiveFoundationalWords(
       [word1, word2, word3, word4],
-      config,
     );
 
     expect(result.active.length).toBe(4);

@@ -37,7 +37,7 @@ function makeWord(overrides: Partial<WordState> = {}): WordState {
 describe('getActiveFoundationalWords', () => {
   it('returns 3 available slots when no foundational words are active', () => {
     const words = [makeWord({ category: 'curated', phase: 'learning' })];
-    const result = getActiveFoundationalWords(words, baseConfig);
+    const result = getActiveFoundationalWords(words);
     expect(result.active).toHaveLength(0);
     expect(result.availableSlots).toBe(3);
   });
@@ -47,7 +47,7 @@ describe('getActiveFoundationalWords', () => {
       makeWord({ category: 'foundational', phase: 'learning', wordId: 'f1' }),
       makeWord({ category: 'foundational', phase: 'learning', wordId: 'f2' }),
     ];
-    const result = getActiveFoundationalWords(words, baseConfig);
+    const result = getActiveFoundationalWords(words);
     expect(result.active).toHaveLength(2);
     expect(result.availableSlots).toBe(1);
   });
@@ -58,7 +58,7 @@ describe('getActiveFoundationalWords', () => {
       makeWord({ category: 'foundational', phase: 'learning', wordId: 'f2' }),
       makeWord({ category: 'foundational', phase: 'learning', wordId: 'f3' }),
     ];
-    const result = getActiveFoundationalWords(words, baseConfig);
+    const result = getActiveFoundationalWords(words);
     expect(result.active).toHaveLength(3);
     expect(result.availableSlots).toBe(0);
   });
@@ -71,7 +71,7 @@ describe('getActiveFoundationalWords', () => {
         wordId: `f${i.toString()}`,
       }),
     );
-    const result = getActiveFoundationalWords(words, baseConfig);
+    const result = getActiveFoundationalWords(words);
     expect(result.active).toHaveLength(4);
     expect(result.availableSlots).toBe(0);
   });
@@ -82,7 +82,7 @@ describe('getActiveFoundationalWords', () => {
       makeWord({ category: 'curated', phase: 'learning', wordId: 'c2' }),
       makeWord({ category: 'foundational', phase: 'learning', wordId: 'f1' }),
     ];
-    const result = getActiveFoundationalWords(words, baseConfig);
+    const result = getActiveFoundationalWords(words);
     expect(result.active).toHaveLength(1);
     expect(result.active[0].wordId).toBe('f1');
     expect(result.availableSlots).toBe(2);
@@ -97,7 +97,7 @@ describe('getActiveFoundationalWords', () => {
         wordId: 'f2',
       }),
     ];
-    const result = getActiveFoundationalWords(words, baseConfig);
+    const result = getActiveFoundationalWords(words);
     expect(result.active).toHaveLength(1);
     expect(result.eligible).toHaveLength(1);
     expect(result.eligible[0].wordId).toBe('f2');
