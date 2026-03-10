@@ -53,7 +53,7 @@ Your job is to scaffold, implement, and document work according to the governanc
 When starting a new conversation, read in this order:
 
 1. **AGENT.md** — Who you are (this file)
-2. **WORKTREE.md** — If `git worktree list` shows more than one entry, read this before anything else. It tells you how to orient yourself and what is forbidden.
+2. **WORKTREE.md** — When i tell you you're working in a worktree, then read this before anything else. It tells you how to orient yourself and what is forbidden.
 3. **Resolve your branch** — Run `git rev-parse --abbrev-ref HEAD` to get the current branch name, then read `.agents/memory/{branch}/current-focus.md`. This file tells you exactly what to do next.
 4. **RULES.md** — What you must always do
 5. **PLAYBOOK.md** — How to invoke workflows/skills
@@ -66,7 +66,7 @@ When starting a new conversation, read in this order:
 
 This project runs parallel epics using **git worktrees**. You may be running inside a worktree (not the main project folder).
 
-**How to tell**: Run `git worktree list`. If you see multiple entries, you are in a parallel development setup. Your working directory is an isolated copy of the repo on a dedicated feature branch — one epic per worktree.
+**How to tell**: I will tell you when you're in a worktree. Your working directory is an isolated copy of the repo on a dedicated feature branch — one epic per worktree.
 
 **What this means for you**:
 - You are responsible for **one epic only** — the one named in your `current-focus.md`

@@ -4,22 +4,9 @@ description: Master workflow for ANY story implementation. Ensures consistency a
 # Code Change Workflow
 
 ## Step 0 — Session Start
-1. Run `git worktree list` — if more than one entry, read **WORKTREE.md** before continuing.
-2. Run `git rev-parse --abbrev-ref HEAD` — note your branch name.
-3. Read `.agents/memory/{branch}/current-focus.md` — identify active epic and story.
-4. Read RULES.md.
-5. **Branch setup — worktree vs serial**:
-
-   **In a worktree** (multiple entries in `git worktree list`):
-   - You are already on the correct epic branch. Do NOT create any new branch.
-   - All stories in this epic commit to this same branch. No story-level branches.
-
-   **On main (single worktree entry)**:
-   - First story of an epic: `git checkout -b feature/EP##-slug main`
-   - Subsequent stories: stay on the same epic branch. Do NOT create story-level branches.
-
-6. Confirm with user: "Picking up EP##-ST## on `{current-branch}` — ready to start PLAN?"
-7. **STOP** — wait for user confirmation before continuing.
+1. If you're NOT told you're in a worktree, SKIP this. else run `git worktree list` — if more than one entry, read **WORKTREE.md** before continuing.
+2. Confirm with user: "Picking up EP##-ST## on `{current-branch}` — ready to start PLAN?"
+3. **STOP** — wait for user confirmation before continuing.
 
 ## Step 1 — PLAN (`tdd-plan`)
 1. Read RULES.md
