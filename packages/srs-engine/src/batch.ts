@@ -58,7 +58,7 @@ export function composeBatch(
 
   // Calculate question type slot counts (70% MC, 20% word-block, 10% audio)
   let mcCount = Math.ceil(actualBatchSize * 0.7);
-  let wordBlockCount = Math.ceil(actualBatchSize * 0.2);
+  const wordBlockCount = Math.ceil(actualBatchSize * 0.2);
   let audioCount = actualBatchSize - mcCount - wordBlockCount;
 
   // Redistribute audio slots to MC if audio unavailable
@@ -91,7 +91,7 @@ export function composeBatch(
   const questions: Question[] = batchWordStates.map(
     (wordState, index): Question => ({
       wordId: wordState.wordId,
-      type: typeAssignments[index]!,
+      type: typeAssignments[index],
     }),
   );
 

@@ -14,7 +14,6 @@ const FOUNDATIONAL_ACTIVE_LIMIT = 3;
  */
 export function getActiveFoundationalWords(
   words: WordState[],
-  _config: SrsConfig,
 ): FoundationalActiveResult {
   const active = words.filter(
     (word) => word.category === 'foundational' && word.phase === 'learning',

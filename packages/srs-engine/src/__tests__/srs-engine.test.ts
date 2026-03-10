@@ -160,7 +160,7 @@ describe('SrsEngine — composeBatch', () => {
     const config = { ...baseConfig, newWordsPerBatch: 2, activeWordLimit: 20 };
     const engine = new SrsEngine(config);
     const words = Array.from({ length: 5 }, (_, i) =>
-      makeLearning({ wordId: `w${i}` }),
+      makeLearning({ wordId: `w${i.toString()}` }),
     );
     const batch = engine.composeBatch(words);
     expect(batch.questions.length).toBe(2);

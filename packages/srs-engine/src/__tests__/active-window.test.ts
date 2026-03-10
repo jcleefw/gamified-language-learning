@@ -19,7 +19,7 @@ const baseConfig: SrsConfig = {
 
 function makeWord(overrides: Partial<WordState> = {}): WordState {
   return {
-    wordId: `word-${Math.random()}`,
+    wordId: `word-${Math.random().toString()}`,
     category: 'curated',
     masteryCount: 0,
     phase: 'learning',
@@ -80,7 +80,7 @@ describe('getEligibleWords', () => {
 
     it('returns 4 slots when 4 active words (8-4=4 available, cap is 4)', () => {
       const words = Array.from({ length: 4 }, (_, i) =>
-        makeWord({ wordId: `review-${i}`, phase: 'srsM2_review' }),
+        makeWord({ wordId: `review-${i.toString()}`, phase: 'srsM2_review' }),
       ).concat(makeWord({ phase: 'learning' }));
       const result = getEligibleWords(words, baseConfig);
       expect(result.newSlots).toBe(4);
@@ -88,7 +88,7 @@ describe('getEligibleWords', () => {
 
     it('returns 0 slots when exactly 8 active words (activeWordLimit reached)', () => {
       const words = Array.from({ length: 8 }, (_, i) =>
-        makeWord({ wordId: `review-${i}`, phase: 'srsM2_review' }),
+        makeWord({ wordId: `review-${i.toString()}`, phase: 'srsM2_review' }),
       );
       const result = getEligibleWords(words, baseConfig);
       expect(result.newSlots).toBe(0);
@@ -96,7 +96,7 @@ describe('getEligibleWords', () => {
 
     it('returns 2 slots when 6 active words (8-6=2 available, cap is 4)', () => {
       const words = Array.from({ length: 6 }, (_, i) =>
-        makeWord({ wordId: `review-${i}`, phase: 'srsM2_review' }),
+        makeWord({ wordId: `review-${i.toString()}`, phase: 'srsM2_review' }),
       ).concat(makeWord({ phase: 'learning' }));
       const result = getEligibleWords(words, baseConfig);
       expect(result.newSlots).toBe(2);
@@ -104,7 +104,7 @@ describe('getEligibleWords', () => {
 
     it('returns 1 slot when 7 active words (8-7=1 available, cap is 4)', () => {
       const words = Array.from({ length: 7 }, (_, i) =>
-        makeWord({ wordId: `review-${i}`, phase: 'srsM2_review' }),
+        makeWord({ wordId: `review-${i.toString()}`, phase: 'srsM2_review' }),
       );
       const result = getEligibleWords(words, baseConfig);
       expect(result.newSlots).toBe(1);
@@ -220,7 +220,7 @@ describe('getEligibleWords', () => {
 
     it('returns correct result with exactly 8 active and 0 eligible', () => {
       const words = Array.from({ length: 8 }, (_, i) =>
-        makeWord({ wordId: `review-${i}`, phase: 'srsM2_review' }),
+        makeWord({ wordId: `review-${i.toString()}`, phase: 'srsM2_review' }),
       );
       const result = getEligibleWords(words, baseConfig);
       expect(result.active).toHaveLength(8);

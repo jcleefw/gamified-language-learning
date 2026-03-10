@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   detectStuckWords,
   shelveWord,
   unshelveWord,
   isShelved,
-  type StuckWordsResult,
 } from '../stuck-words.js';
 import type { WordState, SrsConfig } from '../types.js';
 
@@ -25,7 +24,7 @@ const baseConfig: SrsConfig = {
 
 function makeWord(overrides: Partial<WordState> = {}): WordState {
   return {
-    wordId: `word-${Math.random()}`,
+    wordId: `word-${Math.random().toString()}`,
     category: 'curated',
     masteryCount: 0,
     phase: 'learning',

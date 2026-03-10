@@ -81,6 +81,7 @@ export class FsrsScheduler implements SpacedRepetitionScheduler {
     return {
       stability: card.stability,
       difficulty: card.difficulty,
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
       elapsedDays: card.elapsed_days,
       scheduledDays: card.scheduled_days,
       reps: card.reps,

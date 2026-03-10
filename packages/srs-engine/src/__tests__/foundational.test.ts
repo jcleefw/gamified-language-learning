@@ -23,7 +23,7 @@ const baseConfig: SrsConfig = {
 
 function makeWord(overrides: Partial<WordState> = {}): WordState {
   return {
-    wordId: `word-${Math.random()}`,
+    wordId: `word-${Math.random().toString()}`,
     category: 'curated',
     masteryCount: 0,
     phase: 'learning',
@@ -68,7 +68,7 @@ describe('getActiveFoundationalWords', () => {
       makeWord({
         category: 'foundational',
         phase: 'learning',
-        wordId: `f${i}`,
+        wordId: `f${i.toString()}`,
       }),
     );
     const result = getActiveFoundationalWords(words, baseConfig);

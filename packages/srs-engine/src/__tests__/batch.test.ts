@@ -161,7 +161,7 @@ describe('composeBatch — priority ordering', () => {
   it('respects batchSize limit', () => {
     const words = Array.from({ length: 25 }, (_, i) =>
       makeWordState({
-        wordId: `word-${i}`,
+        wordId: `word-${i.toString()}`,
         category: 'curated',
         phase: 'learning',
       }),
@@ -175,7 +175,7 @@ describe('composeBatch — priority ordering', () => {
   it('returns fewer questions when pool is smaller than batchSize', () => {
     const words = Array.from({ length: 10 }, (_, i) =>
       makeWordState({
-        wordId: `word-${i}`,
+        wordId: `word-${i.toString()}`,
         category: 'curated',
         phase: 'learning',
       }),
@@ -214,7 +214,7 @@ describe('composeBatch — question type distribution', () => {
   it('distributes question types with ~70% MC, ~20% word-block, ~10% audio', () => {
     const words = Array.from({ length: 100 }, (_, i) =>
       makeWordState({
-        wordId: `word-${i}`,
+        wordId: `word-${i.toString()}`,
         category: 'curated',
         phase: 'learning',
       }),
@@ -235,7 +235,7 @@ describe('composeBatch — question type distribution', () => {
   it('assigns correct number of each question type in questions array', () => {
     const words = Array.from({ length: 20 }, (_, i) =>
       makeWordState({
-        wordId: `word-${i}`,
+        wordId: `word-${i.toString()}`,
         category: 'curated',
         phase: 'learning',
       }),
@@ -262,7 +262,7 @@ describe('composeBatch — question type distribution', () => {
   it('sums to batchSize: mc + wordBlock + audio = batchSize', () => {
     const words = Array.from({ length: 50 }, (_, i) =>
       makeWordState({
-        wordId: `word-${i}`,
+        wordId: `word-${i.toString()}`,
         category: 'curated',
         phase: 'learning',
       }),
@@ -284,7 +284,7 @@ describe('composeBatch — audio redistribution', () => {
   it('redistributes audio slots to MC when audioAvailable is false', () => {
     const words = Array.from({ length: 30 }, (_, i) =>
       makeWordState({
-        wordId: `word-${i}`,
+        wordId: `word-${i.toString()}`,
         category: 'curated',
         phase: 'learning',
       }),
@@ -321,7 +321,7 @@ describe('composeBatch — audio redistribution', () => {
   it('defaults to audioAvailable=true when option not provided', () => {
     const words = Array.from({ length: 20 }, (_, i) =>
       makeWordState({
-        wordId: `word-${i}`,
+        wordId: `word-${i.toString()}`,
         category: 'curated',
         phase: 'learning',
       }),
@@ -344,7 +344,7 @@ describe('composeBatch — audio redistribution', () => {
   it('assigns audio types to actual questions only when audioAvailable=true', () => {
     const words = Array.from({ length: 15 }, (_, i) =>
       makeWordState({
-        wordId: `word-${i}`,
+        wordId: `word-${i.toString()}`,
         category: 'curated',
         phase: 'learning',
       }),
@@ -371,7 +371,7 @@ describe('composeBatch — audio redistribution', () => {
   it('maintains batchSize when redistributing audio', () => {
     const words = Array.from({ length: 25 }, (_, i) =>
       makeWordState({
-        wordId: `word-${i}`,
+        wordId: `word-${i.toString()}`,
         category: 'curated',
         phase: 'learning',
       }),
