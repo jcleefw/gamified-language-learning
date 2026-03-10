@@ -24,13 +24,13 @@ Implement a **Headless API** using **Hono on Cloudflare Workers** as the primary
 
 ### Key Responsibilities
 
-| Layer | Responsibility |
-|---|---|
-| **Auth** | Centralized session/JWT management. Nuxt and future clients authenticate against the API. |
-| **Orchestration** | Calls the extracted logical engines (`srs-engine`, `curation-engine`) and maps their output to JSON responses. |
-| **Secrets Management** | Holds the Gemini API keys and R2/D1 credentials. Secrets are never exposed to the frontend. |
-| **Quota Control** | Enforces the 10 RPD (Requests Per Day) limit for Gemini free tier to prevent bill shock or quota exhaustion. |
-| **I/O Gateway** | The only layer allowed to read/write to Cloudflare D1 and R2. |
+| Layer                  | Responsibility                                                                                                 |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Auth**               | Centralized session/JWT management. Nuxt and future clients authenticate against the API.                      |
+| **Orchestration**      | Calls the extracted logical engines (`srs-engine`, `curation-engine`) and maps their output to JSON responses. |
+| **Secrets Management** | Holds the Gemini API keys and R2/D1 credentials. Secrets are never exposed to the frontend.                    |
+| **Quota Control**      | Enforces the 10 RPD (Requests Per Day) limit for Gemini free tier to prevent bill shock or quota exhaustion.   |
+| **I/O Gateway**        | The only layer allowed to read/write to Cloudflare D1 and R2.                                                  |
 
 ### Architectural Position
 
@@ -64,12 +64,14 @@ Implement a **Headless API** using **Hono on Cloudflare Workers** as the primary
 ## Consequences
 
 **Positive**:
+
 - Extremely clean "separation of concerns."
 - Unified auth for all possible future frontends.
 - Faster backend development cycles using Postman/CURL.
 - Zero risk of leaking Gemini API keys to the browser.
 
 **Negative / Risks**:
+
 - **CORS Management**: Since Nuxt (Pages) and Hono (Workers) might live on different subdomains, CORS must be configured correctly.
 - **Latency**: An extra network hop between the frontend and the database-calling worker (though negligible on the Cloudflare Edge).
 - **Nuxt Complexity**: Moving Auth away from `nuxt-auth-utils` to a custom Backend JWT/Session strategy requires manual wiring in the Vue app.
@@ -83,6 +85,8 @@ Implement a **Headless API** using **Hono on Cloudflare Workers** as the primary
 - **JWT vs. Session**: Should we use stateless JWTs or stateful session cookies managed by the Hono middleware?
 
 ---
-*Related ADRs:*
+
+_Related ADRs:_
+
 - [Cloudflare Platform](20260301T161844Z-infra-cloudflare-platform.md)
 - [SRS Engine Package](20260302T160536Z-engineering-srs-engine-package.md)

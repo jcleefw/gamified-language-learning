@@ -11,6 +11,7 @@ Created `foundational-allocation-lifecycle.test.ts` — 4 cross-module integrati
 ## Files Created
 
 ### `packages/srs-engine/__tests__/integration/foundational-allocation-lifecycle.test.ts`
+
 - File-level doc comment listing all 4 scenarios
 - Helpers: `makeLearningWord(wordId, category)`, `promoteToReview(word, cfg)`
 - Config: `foundationalAllocation: { active: 0.2, postDepletion: 0.05 }` for meaningful slot math

@@ -23,31 +23,38 @@ Wait for their response. Then read the relevant files.
 Evaluate the test suite across these dimensions. Only report findings where there is a genuine issue — do not manufacture problems.
 
 **Test Pyramid Balance**
+
 - What is the ratio of unit / integration / e2e tests?
 - Is the pyramid inverted (too many e2e, not enough unit)? Is there missing coverage at any layer?
 
 **Coverage Gaps**
+
 - What critical paths (auth, data mutation, error states, edge cases) have no test coverage?
 - Are there features or services with zero test coverage?
 
 **Test Quality**
+
 - Are tests testing behavior or implementation details?
 - Do tests assert on outcomes, or only on internal calls?
 - Are there tests so tightly coupled to implementation that refactoring will break them?
 
 **Flakiness Risk**
+
 - Are there tests with timing dependencies, hardcoded waits, or non-deterministic assertions?
 - Are there tests that depend on external services without proper mocking?
 
 **Test Data Management**
+
 - Is test data managed consistently? Are there hardcoded IDs or environment-specific assumptions?
 - Are there privacy risks in test data?
 
 **CI Integration**
+
 - Are tests run on every PR? Is the test suite gating merges and deployments?
 - Is the test run time reasonable? Are there slow tests that should be parallelised or reclassified?
 
 **Automation Gaps**
+
 - What should be automated but isn't?
 - Are there manual testing processes that are repeated frequently enough to warrant automation?
 
@@ -84,15 +91,19 @@ What was reviewed, why, and what was the scope of the audit?
 List findings grouped by severity:
 
 ### Critical (fix before shipping)
+
 Missing coverage on critical paths, broken CI gating, or flaky tests blocking deployments.
 
 ### High (fix soon)
+
 Significant coverage gaps, poor test quality patterns, or CI inefficiencies that compound over time.
 
 ### Medium (address in next sprint)
+
 Suboptimal test structure or missing automation that is not blocking but should be resolved.
 
 ### Low / Observations
+
 Minor style, naming, or organisational issues. Worth noting but not blocking.
 
 ## Decision
@@ -105,9 +116,9 @@ Why are these changes warranted? What risk or cost do they address?
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| [Alternative 1] | | | |
+| Option          | Pros | Cons | Why Not Chosen |
+| --------------- | ---- | ---- | -------------- |
+| [Alternative 1] |      |      |                |
 
 ## Consequences
 
@@ -133,9 +144,11 @@ Unresolved items. Include owner and target date if known.
 ## File Output
 
 Save to:
+
 ```
 product-documentation/architecture/YYYYMMDDTHHMMSSZ-qa-review-<short-description>.md
 ```
+
 Example: `product-documentation/architecture/20260226T143000Z-qa-review-content-api.md`
 
 ---
@@ -145,6 +158,7 @@ Example: `product-documentation/architecture/20260226T143000Z-qa-review-content-
 After saving, ask: "What would you like to do next?"
 
 Suggest relevant steps based on findings:
+
 - If a full test strategy redesign is warranted: `/architect/qa-design`
 - If implementation of new tests is next: `/dev/tdd-plan` then `/dev/tdd-implement`
 - If BE code quality is implicated: `/architect/be-review`

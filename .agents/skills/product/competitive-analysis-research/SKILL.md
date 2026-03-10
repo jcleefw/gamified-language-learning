@@ -37,6 +37,7 @@ Prioritize: official product pages, changelog/release notes, user reviews (G2, C
 Produce a raw research dump organized by competitor. Do not editorialize or synthesize — that is the write-up phase's job.
 
 For each competitor:
+
 ```
 ## [Competitor Name]
 - Feature: [what they have]
@@ -71,9 +72,11 @@ Use the current UTC timestamp and a 2–4 word kebab-case description of the fea
 ## File Output
 
 Save the raw research dump to:
+
 ```
 product-documentation/competitive-analysis/YYYYMMDDTHHMMSSZ-<short-description>-research.md
 ```
+
 Example: `product-documentation/competitive-analysis/20260226T143000Z-export-feature-research.md`
 
 Use the current UTC timestamp, a 2–4 word kebab-case description of the product area, and the `-research` suffix to distinguish from the write-up.

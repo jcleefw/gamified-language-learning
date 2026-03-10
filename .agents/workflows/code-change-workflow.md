@@ -1,14 +1,17 @@
 ---
 description: Master workflow for ANY story implementation. Ensures consistency and quality. Always follow this sequence — do not skip steps or auto-proceed.
 ---
+
 # Code Change Workflow
 
 ## Step 0 — Session Start
+
 1. If you're NOT told you're in a worktree, SKIP this. else run `git worktree list` — if more than one entry, read **WORKTREE.md** before continuing.
 2. Confirm with user: "Picking up EP##-ST## on `{current-branch}` — ready to start PLAN?"
 3. **STOP** — wait for user confirmation before continuing.
 
 ## Step 1 — PLAN (`tdd-plan`)
+
 1. Read RULES.md
 2. Read the story spec (DS## §Stories section for the target ST##)
 3. Run `tdd-plan`: investigate codebase, identify files, produce implementation plan
@@ -16,6 +19,7 @@ description: Master workflow for ANY story implementation. Ensures consistency a
 5. **STOP** — wait for user approval before continuing
 
 ## Step 2 — CODE + TEST (`tdd-implement`)
+
 1. Run `tdd-implement`: execute the approved plan in red-green-refactor cycles
 2. Each cycle:
    - Red → **STOP** → Green → **STOP** → Refactor → **STOP**
@@ -25,6 +29,7 @@ description: Master workflow for ANY story implementation. Ensures consistency a
    - **STOP** — wait for user approval before continuing
 
 ## Step 3 — REVIEW
+
 1. Self-review: check code standards (RULES.md §Code Standards)
 2. Write ST changelog using `ST-CHANGELOG-TEMPLATE.md` → save to `.agents/changelogs/EP##--slug/`
 3. Update `CODEMAP.md` if any files were added, removed, or repurposed

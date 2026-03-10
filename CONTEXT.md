@@ -9,21 +9,22 @@ Human product docs → [product-documentation/PRODUCT-BRIEF.md](product-document
 
 ## Technology Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Frontend Framework** | Vue 3 + Nuxt | PWA, SSR, routing, auth utilities |
-| **Styling** | PandaCSS | Design tokens, atomic styles, mobile-first |
-| **UI Components** | Ark UI | Headless atomic components |
-| **Backend Runtime** | Cloudflare Workers | Serverless, globally distributed |
-| **Database** | Cloudflare D1 (SQLite) | Relational data, structured queries |
-| **File Storage** | Cloudflare R2 | Audio files (TTS output) |
-| **Async Processing** | Cloudflare Queues | TTS generation pipeline |
-| **Auth** | nuxt-auth-utils | Google OAuth + credentials, JWT sessions |
-| **AI / TTS** | Gemini API | Conversation generation, word breakdown, TTS audio |
-| **Package Manager** | pnpm | Monorepo-friendly |
-| **Deployment** | Cloudflare Pages | PWA hosting |
+| Layer                  | Technology             | Purpose                                            |
+| ---------------------- | ---------------------- | -------------------------------------------------- |
+| **Frontend Framework** | Vue 3 + Nuxt           | PWA, SSR, routing, auth utilities                  |
+| **Styling**            | PandaCSS               | Design tokens, atomic styles, mobile-first         |
+| **UI Components**      | Ark UI                 | Headless atomic components                         |
+| **Backend Runtime**    | Cloudflare Workers     | Serverless, globally distributed                   |
+| **Database**           | Cloudflare D1 (SQLite) | Relational data, structured queries                |
+| **File Storage**       | Cloudflare R2          | Audio files (TTS output)                           |
+| **Async Processing**   | Cloudflare Queues      | TTS generation pipeline                            |
+| **Auth**               | nuxt-auth-utils        | Google OAuth + credentials, JWT sessions           |
+| **AI / TTS**           | Gemini API             | Conversation generation, word breakdown, TTS audio |
+| **Package Manager**    | pnpm                   | Monorepo-friendly                                  |
+| **Deployment**         | Cloudflare Pages       | PWA hosting                                        |
 
 **ADRs (accepted decisions)**:
+
 - [FE Framework](product-documentation/architecture/20260226T133833Z-fe-framework-toolchain.md) — Vue 3 + Nuxt + PandaCSS
 - [PWA Strategy](product-documentation/architecture/20260227T000000Z-fe-pwa-platform-strategy.md) — No app store, URL distribution
 - [Monorepo Tooling](product-documentation/architecture/20260227T022513Z-engineering-monorepo-tooling.md)
@@ -67,6 +68,7 @@ Four subsystems, each with its own PRD:
 ## Domain Model (Key Concepts)
 
 ### Word Entity
+
 - **Global word**: Mastery is per-word, not per-deck
 - If a word already mastered when encountered in new deck → goes to revision deck (no active slot)
 - Word entity has: `id`, `text`, `language`, `masteryCount`, `phase`, `lapseCount`, `srsState`
@@ -74,26 +76,31 @@ Four subsystems, each with its own PRD:
 ### Learning Phases
 
 **Phase 1: Learning (Active Window)**
+
 - Curated words: 10 correct to master
 - Foundational words: 5 correct to master
 - Wrong: mastery−1, word reappears in session
 
 **Phase 2: Review (ANKI)**
+
 - Graduated words follow intervals: 1d → 3d → 7d → ...
 - Lapse rule: 3 ANKI failures → reset to Phase 1 with mastery count 0
 
 ### Active Window (8-word limit)
+
 - Max 8 unmastered curated words at any time
 - 4 new words enter per batch when slots freed
 - Carry-over: unmastered words from prior batch get highest priority
 - Stuck words: no progress after 3 batches → shelved 1 day (counts toward 8-word limit, max 2 shelved)
 
 ### Foundational Deck
+
 - 3 words active at a time, mixed into curated batches (20% of 15 questions = 3 questions)
 - Cannot skip; same 3 persist until all mastered
 - Post-depletion: 20% → 5% allocation; native writing unlocked
 
 ### Batch Composition (15 questions per batch)
+
 - Question type split: 70% multiple choice, 20% word block, 10% audio recognition
 - Type shifts post-foundational-depletion (native writing word blocks added)
 - Audio questions only served when word audio status = `available`
@@ -119,18 +126,22 @@ Foundational words have lower MASTERY_THRESHOLD (5 vs 10)
 ## TTS Audio System
 
 **Rate limits (Gemini free tier)**:
+
 - 10 RPD (requests per day), 3 RPM (per minute)
 
 **Quota allocation**:
+
 - 5 RPD for content curation, 5 RPD for SRS active window (first-come-first-served)
 
 **Generation strategy** (lazy):
+
 - Audio generated when word enters 8-word active window (not on deck creation)
 - Async: Worker queues request → Gemini API → R2 storage
 
 **Audio status enum**: `available` | `pending` | `failed`
 
 **Graceful degradation**:
+
 - Quiz: audio unavailable → redistribute those question slots to MC/word block; no error shown
 - Curation: audio unavailable → hide player, show "Audio generation in progress"
 
@@ -140,11 +151,11 @@ Foundational words have lower MASTERY_THRESHOLD (5 vs 10)
 
 ## User Roles
 
-| Role | Capabilities |
-|------|-------------|
-| **Learner** | Quiz, SRS learning, dashboard |
-| **Curator** | Learner + create/edit/publish conversations |
-| **Admin** | Curator + user management (CRUD, role assignment, deactivation) |
+| Role        | Capabilities                                                    |
+| ----------- | --------------------------------------------------------------- |
+| **Learner** | Quiz, SRS learning, dashboard                                   |
+| **Curator** | Learner + create/edit/publish conversations                     |
+| **Admin**   | Curator + user management (CRUD, role assignment, deactivation) |
 
 **Auth**: Google OAuth one-click (auto-creates learner) + credential-based (admin-managed accounts)
 **Sessions**: JWT, 7-day expiry, via `nuxt-auth-utils`
@@ -162,6 +173,7 @@ Draft → Published → Unpublished
 - **Unpublished**: Hidden from learners; active words finish naturally; mastered words remain in global pool
 
 **Editing rules**:
+
 - Minor edits: propagate (existing learner state preserved)
 - Destructive edits (word entity changes): create new word entities (existing mastery unaffected)
 
@@ -188,8 +200,7 @@ Draft → Published → Unpublished
 
 ## Open Questions
 
-| Question | PRD |
-|----------|-----|
-| Foundational deck content ownership per language? | Content Curation |
+| Question                                                                   | PRD               |
+| -------------------------------------------------------------------------- | ----------------- |
+| Foundational deck content ownership per language?                          | Content Curation  |
 | D1 batch assembly < 100ms at scale? (Deferred to Gate 2, needs schema ADR) | SRS Learning Path |
-

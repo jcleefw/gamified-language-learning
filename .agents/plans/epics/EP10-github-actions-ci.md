@@ -2,7 +2,9 @@
 
 **Created**: 20260308T060000Z
 **Status**: Impl-Complete
+
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
+
 **Type**: Epic Plan
 **Depends on**: EP01
 **Parallel with**: N/A
@@ -17,12 +19,14 @@ All Stage 1 engine work (EP02–EP08) runs tests locally only. There is no autom
 ## Scope
 
 **In scope**:
+
 - `.github/workflows/ci.yml` — runs on every PR and push to `main`
 - Three CI steps: `pnpm lint`, `pnpm typecheck` (`tsc --noEmit`), `pnpm test`
 - Root `typecheck` script + Turbo `typecheck` task (neither exists today)
 - Node 22, pnpm 10 (matching `.tool-versions` and `packageManager`)
 
 **Out of scope**:
+
 - Commitlint — can be added later
 - Deployment workflows (staging, production) — Stage 2+
 - Branch preview deploys — Stage 4+
@@ -34,9 +38,11 @@ All Stage 1 engine work (EP02–EP08) runs tests locally only. There is no autom
 ## Stories
 
 ### EP10-ST01: Add `typecheck` script and Turbo task
+
 **Scope**: Add `"typecheck": "turbo typecheck"` to root `package.json`, add `"typecheck": "tsc --noEmit"` to `packages/srs-engine/package.json`, add `typecheck` task to `turbo.json`. Verify `pnpm typecheck` passes locally.
 
 ### EP10-ST02: Create GitHub Actions CI workflow
+
 **Scope**: `.github/workflows/ci.yml` — triggers on `push` (all branches) and `pull_request` (to `main`). Single job: checkout → setup Node 22 → setup pnpm 10 → `pnpm install --frozen-lockfile` → `pnpm lint` → `pnpm typecheck` → `pnpm test`. Uses `pnpm/action-setup` and `actions/setup-node` with pnpm cache.
 
 ---

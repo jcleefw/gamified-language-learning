@@ -11,17 +11,21 @@ Implemented foundational deck active limit (3-word cap) and continuous wrong rul
 ## Files Modified
 
 ### `packages/srs-engine/src/types.ts`
+
 - Added `consecutiveWrongCount?: number` to `WordState` interface
 
 ### `packages/srs-engine/src/foundational.ts` (new)
+
 - `FoundationalActiveResult` interface
 - `getActiveFoundationalWords(words, config)` — filters foundational words in learning phase, calculates available slots (max 3), identifies eligible candidates
 - `applyFoundationalWrongRule(wordState, config)` — increments consecutive wrong counter; resets mastery to 0 on 3rd consecutive wrong; guards against non-foundational words
 
 ### `packages/srs-engine/src/index.ts`
+
 - Added exports for `FoundationalActiveResult`, `getActiveFoundationalWords`, `applyFoundationalWrongRule`
 
 ### `packages/srs-engine/src/__tests__/foundational.test.ts` (new)
+
 - 11 unit tests: 6 for active limit (0/2/3/4 active, mixed categories, eligible filtering) + 5 for wrong rule (1st/2nd/3rd wrong, non-foundational guard, undefined counter)
 
 ## Behavior Preserved / New Behavior

@@ -1,12 +1,12 @@
-import type { WordState, SrsConfig } from './types.js'
+import type { WordState, SrsConfig } from './types.js';
 
 export interface FoundationalActiveResult {
-  active: WordState[]
-  availableSlots: number
-  eligible: WordState[]
+  active: WordState[];
+  availableSlots: number;
+  eligible: WordState[];
 }
 
-const FOUNDATIONAL_ACTIVE_LIMIT = 3
+const FOUNDATIONAL_ACTIVE_LIMIT = 3;
 
 /**
  * Returns which foundational words are currently being learned, how many more can be added,
@@ -18,18 +18,18 @@ export function getActiveFoundationalWords(
 ): FoundationalActiveResult {
   const active = words.filter(
     (word) => word.category === 'foundational' && word.phase === 'learning',
-  )
-  const availableSlots = Math.max(0, FOUNDATIONAL_ACTIVE_LIMIT - active.length)
+  );
+  const availableSlots = Math.max(0, FOUNDATIONAL_ACTIVE_LIMIT - active.length);
   const eligible = words.filter(
     (word) => word.category === 'foundational' && word.phase !== 'learning',
-  )
+  );
 
-  return { active, availableSlots, eligible }
+  return { active, availableSlots, eligible };
 }
 
 export interface FoundationalAllocation {
-  slots: number
-  poolDepleted: boolean
+  slots: number;
+  poolDepleted: boolean;
 }
 
 /**
@@ -45,16 +45,16 @@ export function getFoundationalAllocation(
     foundationalWords.length === 0 ||
     foundationalWords.every(
       (word) => word.masteryCount >= config.masteryThreshold.foundational,
-    )
+    );
 
   const rate = poolDepleted
     ? config.foundationalAllocation.postDepletion
-    : config.foundationalAllocation.active
+    : config.foundationalAllocation.active;
 
   return {
     slots: Math.round(totalBatchSize * rate),
     poolDepleted,
-  }
+  };
 }
 
 /**
@@ -66,10 +66,10 @@ export function applyFoundationalWrongRule(
   config: SrsConfig,
 ): WordState {
   if (wordState.category !== 'foundational') {
-    return wordState
+    return wordState;
   }
 
-  const newConsecutiveWrongCount = (wordState.consecutiveWrongCount ?? 0) + 1
+  const newConsecutiveWrongCount = (wordState.consecutiveWrongCount ?? 0) + 1;
 
   if (newConsecutiveWrongCount >= config.continuousWrongThreshold) {
     return {
@@ -77,11 +77,11 @@ export function applyFoundationalWrongRule(
       masteryCount: 0,
       consecutiveWrongCount: 0,
       phase: 'learning',
-    }
+    };
   }
 
   return {
     ...wordState,
     consecutiveWrongCount: newConsecutiveWrongCount,
-  }
+  };
 }

@@ -7,6 +7,7 @@ model: sonnet
 Define metrics for: $ARGUMENTS
 
 If no input is provided, stop and ask:
+
 1. "What feature or initiative are we defining metrics for?"
 2. "What is the primary goal — acquisition, activation, retention, revenue, or referral?"
 3. "Do we have a baseline or current benchmark to compare against?"
@@ -26,28 +27,33 @@ If no input is provided, stop and ask:
 ## Output Structure
 
 ### North Star for This Feature
+
 One sentence: "This feature succeeds when [primary metric] moves from [baseline] to [target] within [timeframe]."
 
 ### Metric Set
 
-| Metric | Type | Definition | Baseline | Target | Timeframe |
-|---|---|---|---|---|---|
-| | Primary | | | | |
-| | Secondary | | | | |
-| | Guardrail | | | | |
-| | Leading | | | | |
-| | Lagging | | | | |
+| Metric | Type      | Definition | Baseline | Target | Timeframe |
+| ------ | --------- | ---------- | -------- | ------ | --------- |
+|        | Primary   |            |          |        |           |
+|        | Secondary |            |          |        |           |
+|        | Guardrail |            |          |        |           |
+|        | Leading   |            |          |        |           |
+|        | Lagging   |            |          |        |           |
 
 ### Instrumentation Plan
+
 What events need to be tracked to measure these metrics? For each metric:
+
 - Event name and properties to capture
 - Where in the user flow it fires
 - Who owns implementation (product / eng / analytics)
 
 ### Anti-metrics
+
 What could game these metrics without actually delivering value? Note these so the team avoids optimizing for them.
 
 ### Open Questions
+
 What do we not know that would affect how we define or interpret these metrics?
 
 ---

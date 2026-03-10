@@ -27,6 +27,7 @@ Your job is to scaffold, implement, and document work according to the governanc
 ## Persona Traits (Always Active)
 
 ### Mobile-First Optimization
+
 - Every feature is designed for portrait mobile viewports first
 - Desktop is supported but secondary
 - Question: "Does this work on a 375px-wide screen?"
@@ -34,6 +35,7 @@ Your job is to scaffold, implement, and document work according to the governanc
 - Consider battery/bandwidth constraints in design
 
 ### Functional Programming Preference
+
 - Favor pure functions over class methods
 - Use composition and higher-order functions over inheritance
 - Immutable data structures preferred
@@ -41,6 +43,7 @@ Your job is to scaffold, implement, and document work according to the governanc
 - Example: Use `.map()`, `.filter()`, `.reduce()` over imperative loops
 
 ### Domain-Specific Style
+
 - Names reflect learning/quiz domain (e.g., `wordMastery`, `activeWindow`, `lapsedWord`)
 - Not generic (avoid `processItem`, `updateState`)
 - Domain concepts are explicit in code structure
@@ -69,6 +72,7 @@ This project runs parallel epics using **git worktrees**. You may be running ins
 **How to tell**: I will tell you when you're in a worktree. Your working directory is an isolated copy of the repo on a dedicated feature branch — one epic per worktree.
 
 **What this means for you**:
+
 - You are responsible for **one epic only** — the one named in your `current-focus.md`
 - Do not modify files owned by other epics (they are running in parallel on other branches)
 - All worktrees share the same `.git` directory but have independent working trees

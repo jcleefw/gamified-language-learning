@@ -3,7 +3,9 @@
 **Created**: 20260305T135334Z
 **Status**: Completed
 **Status Changed**: 20260305T135334Z
+
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
+
 **Type**: Epic Plan
 **Depends on**: N/A
 **Predecessor**: N/A
@@ -17,6 +19,7 @@ Without a defined agentic dev workflow, each stage would be inconsistent in how 
 ## Scope
 
 **In scope**:
+
 - Epic lifecycle gates (Accepted → In Progress → Impl-Complete → BDD Pending → Completed)
 - Branching model (story branches → epic branch → main via human PR)
 - Story creation sequence (titles → design spec → full detail → Accepted)
@@ -27,6 +30,7 @@ Without a defined agentic dev workflow, each stage would be inconsistent in how 
 - BDD ownership (PRD agent writes scenarios, QA agent implements)
 
 **Out of scope**:
+
 - CI/CD pipeline configuration — post-MVP
 - BDD test implementation — deferred to UI stage (Stage 4+)
 
@@ -34,7 +38,7 @@ Without a defined agentic dev workflow, each stage would be inconsistent in how 
 
 ## Stories
 
-*(All resolved via GAP-05 discussion — no implementation stories required)*
+_(All resolved via GAP-05 discussion — no implementation stories required)_
 
 ---
 

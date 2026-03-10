@@ -9,6 +9,7 @@
 ## 1. Feature Overview
 
 The `composeBatch` function builds a quiz batch of exactly `batchSize` questions (default 15) from a pool of `WordState` objects following strict priority ordering and question type distribution rules. The function:
+
 - Orders words by mastery progression: carry-over words → foundational revision → new words → foundational learning
 - Distributes questions across three types: 70% multiple choice (MC), 20% word-block, 10% audio
 - Handles audio unavailability by redistributing audio slots to MC
@@ -18,14 +19,14 @@ The `composeBatch` function builds a quiz batch of exactly `batchSize` questions
 
 ## 2. Core Requirements
 
-| Requirement | Decision | Rationale |
-|-------------|----------|-----------|
-| Batch size | Configurable via `SrsConfig.batchSize` (default 15) | Allows testing with small batches and production with standard batches |
-| Priority ordering | carry-over → foundational revision → new words → foundational learning | Maximizes retention: review mastered words, deepen foundational knowledge, introduce new material |
-| Distribution ratios | 70% MC / 20% word-block / 10% audio | MC builds confidence, word-block tests active recall, audio adds multi-sensory learning |
-| Audio redistribution | Audio slots → MC when `audioAvailable: false` | Ensures all question slots filled without breaking distribution |
-| Integer rounding | Round up MC/word-block; remainder goes to whichever is closest | Acceptable per AC; ensures batchSize consistency |
-| Type safety | Explicit enum for `QuestionType` | Prevents typos, enables IDE autocomplete |
+| Requirement          | Decision                                                               | Rationale                                                                                         |
+| -------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Batch size           | Configurable via `SrsConfig.batchSize` (default 15)                    | Allows testing with small batches and production with standard batches                            |
+| Priority ordering    | carry-over → foundational revision → new words → foundational learning | Maximizes retention: review mastered words, deepen foundational knowledge, introduce new material |
+| Distribution ratios  | 70% MC / 20% word-block / 10% audio                                    | MC builds confidence, word-block tests active recall, audio adds multi-sensory learning           |
+| Audio redistribution | Audio slots → MC when `audioAvailable: false`                          | Ensures all question slots filled without breaking distribution                                   |
+| Integer rounding     | Round up MC/word-block; remainder goes to whichever is closest         | Acceptable per AC; ensures batchSize consistency                                                  |
+| Type safety          | Explicit enum for `QuestionType`                                       | Prevents typos, enables IDE autocomplete                                                          |
 
 ---
 
@@ -63,7 +64,7 @@ export interface ComposeBatchOptions {
 export function composeBatch(
   wordStates: WordState[],
   config: SrsConfig,
-  options?: ComposeBatchOptions
+  options?: ComposeBatchOptions,
 ): Batch;
 ```
 
@@ -109,10 +110,12 @@ Quiz Session Request (Terminal Runner / API)
 **Scope**: Define `Batch`, `Question`, `QuestionType` types; implement priority ordering logic in `composeBatch`; unit tests for ordering
 
 **Read List**:
+
 - `packages/srs-engine/src/types.ts` (existing `WordState`, `SrsConfig`)
 - `packages/srs-engine/src/__tests__/mastery.test.ts` (test pattern reference)
 
 **Tasks**:
+
 - [ ] Add type definitions to `packages/srs-engine/src/types.ts`: `QuestionType`, `Question`, `Batch`
 - [ ] Create `packages/srs-engine/src/batch.ts` with `composeBatch` function skeleton
 - [ ] Implement priority ordering algorithm:
@@ -124,6 +127,7 @@ Quiz Session Request (Terminal Runner / API)
 - [ ] Test: Edge case — fewer words than batchSize returns available words
 
 **Acceptance Criteria**:
+
 - [ ] Priority ordering algorithm correctly groups and concatenates words in order
 - [ ] Batch size respects `config.batchSize` (or available words if fewer)
 - [ ] Unit tests pass for ordering with 4 priority categories
@@ -137,10 +141,12 @@ Quiz Session Request (Terminal Runner / API)
 **Scope**: Implement 70/20/10 MC/word-block/audio split on ordered questions; redistribute audio to MC when unavailable; unit tests for distribution and redistribution
 
 **Read List**:
+
 - `packages/srs-engine/src/batch.ts` (from ST01)
 - `packages/srs-engine/src/types.ts` (reference `SrsConfig.questionTypeSplit`)
 
 **Tasks**:
+
 - [ ] Implement distribution algorithm:
   - Calculate slot counts: `mc = Math.ceil(batchSize * 0.70)`, `wordBlock = Math.ceil(batchSize * 0.20)`, `audio = batchSize - mc - wordBlock`
   - Assign types to questions round-robin or sequential
@@ -156,6 +162,7 @@ Quiz Session Request (Terminal Runner / API)
 - [ ] Export `composeBatch` and new types from `packages/srs-engine/src/index.ts`
 
 **Acceptance Criteria**:
+
 - [ ] Question type split is ~70% MC, ~20% word-block, ~10% audio (integer rounding acceptable)
 - [ ] When `audioAvailable: false`, audio slots redirect to MC
 - [ ] `distributionBreakdown` accurately reflects actual allocation

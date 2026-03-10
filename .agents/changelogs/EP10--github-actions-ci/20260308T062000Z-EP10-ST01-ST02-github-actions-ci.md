@@ -11,15 +11,19 @@ Added `typecheck` script and Turbo task across the monorepo (ST01), then created
 ## Files Modified
 
 ### `packages/srs-engine/package.json`
+
 - Added `"typecheck": "tsc --noEmit"` script
 
 ### `turbo.json`
+
 - Added `typecheck` task with `dependsOn: ["^build"]`
 
 ### `package.json` (root)
+
 - Added `"typecheck": "turbo typecheck"` script
 
 ### `.github/workflows/ci.yml` (new)
+
 - Created CI workflow: checkout → pnpm install → lint → typecheck → test
 - Triggers on push (all branches) and PR to main
 - Concurrency group cancels in-progress runs on same branch

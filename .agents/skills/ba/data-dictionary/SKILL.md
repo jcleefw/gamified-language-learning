@@ -7,6 +7,7 @@ model: haiku
 Create a data dictionary for: $ARGUMENTS
 
 If no input is provided, stop and ask:
+
 1. "What domain, feature, or system are we documenting?"
 2. "Provide any existing schema, field list, or data description to work from — or describe the data from scratch."
 
@@ -17,13 +18,15 @@ If no input is provided, stop and ask:
 For each entity:
 
 ### Entity: [EntityName]
+
 **Description**: What does this entity represent? What is its purpose in the system?
 
-| Field | Type | Required | Default | Validation Rules | Description |
-|---|---|---|---|---|---|
-| `field_name` | string / int / bool / date / enum / UUID / ... | Yes / No | — | Max 255 chars, unique | Human-readable description of what this field stores |
+| Field        | Type                                           | Required | Default | Validation Rules      | Description                                          |
+| ------------ | ---------------------------------------------- | -------- | ------- | --------------------- | ---------------------------------------------------- |
+| `field_name` | string / int / bool / date / enum / UUID / ... | Yes / No | —       | Max 255 chars, unique | Human-readable description of what this field stores |
 
 **Relationships**:
+
 - [EntityName] has many [OtherEntity]
 - [EntityName] belongs to [OtherEntity]
 - [Field] references [OtherEntity].[field]
@@ -35,6 +38,7 @@ For each entity:
 ## Field Type Reference
 
 Use consistent type names:
+
 - `string` — text, specify max length if relevant
 - `integer` / `decimal(p,s)` — numeric
 - `boolean` — true/false

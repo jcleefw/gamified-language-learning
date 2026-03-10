@@ -12,18 +12,18 @@ Wire the SRS engine end-to-end using real Thai language content. Two mapper func
 
 ## 2. Core Requirements
 
-| Requirement | Decision | Rationale |
-|-------------|----------|-----------|
-| Content types location | `packages/srs-engine/data/types.ts` | Co-located with sample files; not exported from `@gll/srs-engine` — internal to data layer |
-| Mapper location | `packages/srs-engine/data/mappers.ts` | Pure functions; testable independently |
-| Word ID strategy | `foundational:{char.id}` for consonants (e.g. `foundational:ko-kai`), `curated:{word.native}` for conversation words (e.g. `curated:หิว`) | Native character is the source of truth for uniqueness — romanization stripping loses tone information which changes meaning in tonal languages; IDs are machine-generated, never typed by users |
-| Foundational deck size | 5 consonants (first 5 from sample: ก ข ค ง จ) | Enough to prove foundational mechanics without bloating test runs |
-| Foundational category | All `FoundationalCharacter` entries → `category: 'foundational'` | Consonants are high-frequency building blocks |
-| Curated category | All conversation `uniqueWords` → `category: 'curated'` | Vocabulary from conversation decks |
-| Deduplication | Conversation words deduped by `native` field across all conversations | Same word appearing in multiple conversations = one `WordState` |
-| Runner input | stdin via Node `readline` | Interactive; proves engine API ergonomics |
-| Runner answer format | `c` = correct, `w` = wrong, `q` = quit | Minimal keystrokes for testing |
-| Runner iterations | Loop until user quits or all words mastered | Open-ended; no fixed batch count |
+| Requirement            | Decision                                                                                                                                  | Rationale                                                                                                                                                                                        |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Content types location | `packages/srs-engine/data/types.ts`                                                                                                       | Co-located with sample files; not exported from `@gll/srs-engine` — internal to data layer                                                                                                       |
+| Mapper location        | `packages/srs-engine/data/mappers.ts`                                                                                                     | Pure functions; testable independently                                                                                                                                                           |
+| Word ID strategy       | `foundational:{char.id}` for consonants (e.g. `foundational:ko-kai`), `curated:{word.native}` for conversation words (e.g. `curated:หิว`) | Native character is the source of truth for uniqueness — romanization stripping loses tone information which changes meaning in tonal languages; IDs are machine-generated, never typed by users |
+| Foundational deck size | 5 consonants (first 5 from sample: ก ข ค ง จ)                                                                                             | Enough to prove foundational mechanics without bloating test runs                                                                                                                                |
+| Foundational category  | All `FoundationalCharacter` entries → `category: 'foundational'`                                                                          | Consonants are high-frequency building blocks                                                                                                                                                    |
+| Curated category       | All conversation `uniqueWords` → `category: 'curated'`                                                                                    | Vocabulary from conversation decks                                                                                                                                                               |
+| Deduplication          | Conversation words deduped by `native` field across all conversations                                                                     | Same word appearing in multiple conversations = one `WordState`                                                                                                                                  |
+| Runner input           | stdin via Node `readline`                                                                                                                 | Interactive; proves engine API ergonomics                                                                                                                                                        |
+| Runner answer format   | `c` = correct, `w` = wrong, `q` = quit                                                                                                    | Minimal keystrokes for testing                                                                                                                                                                   |
+| Runner iterations      | Loop until user quits or all words mastered                                                                                               | Open-ended; no fixed batch count                                                                                                                                                                 |
 
 ## 3. Data Structures
 
@@ -34,75 +34,77 @@ Wire the SRS engine end-to-end using real Thai language content. Two mapper func
  *  PRD §5.10: base = id, character, name, romanization, language, type.
  *  Language-specific metadata varies (Thai: class/soundClass/IPA; other langs: TBD). */
 export interface FoundationalCharacter {
-  id: string
-  char: string
-  name: string
-  romanization: string
-  language: string
-  nameThai?: string           // Stage 1 only — Thai-specific; move to metadata in Stage 2
-  type: 'consonant' | 'vowel' | 'tone'
-  audioFile?: string
-  metadata?: Record<string, unknown>   // language-specific; not typed per-language in Stage 1
+  id: string;
+  char: string;
+  name: string;
+  romanization: string;
+  language: string;
+  nameThai?: string; // Stage 1 only — Thai-specific; move to metadata in Stage 2
+  type: 'consonant' | 'vowel' | 'tone';
+  audioFile?: string;
+  metadata?: Record<string, unknown>; // language-specific; not typed per-language in Stage 1
 }
 
 /** A single word extracted from a conversation breakdown.
  *  `native` is the canonical native-script field — language-agnostic API.
  *  Consumers adapt their language-specific field (e.g. `thai`) to `native` before passing in. */
 export interface ConversationWord {
-  native: string            // native script character(s) — source of truth for identity
-  romanization: string
-  english: string
-  type: string              // 'verb' | 'noun' | 'adjective' | 'particle' | etc.
+  native: string; // native script character(s) — source of truth for identity
+  romanization: string;
+  english: string;
+  type: string; // 'verb' | 'noun' | 'adjective' | 'particle' | etc.
 }
 
 /** A conversation deck with dialogue lines and extracted vocabulary. */
 export interface Conversation {
-  topic: string
-  lines: ConversationLine[]
-  difficulty: string
-  register: string
-  uniqueWords: ConversationWord[]
+  topic: string;
+  lines: ConversationLine[];
+  difficulty: string;
+  register: string;
+  uniqueWords: ConversationWord[];
 }
 
 /** Defined for completeness; not consumed by any mapper or runner in Stage 1.
  *  Only `uniqueWords` is used. Include if future ST needs full line rendering. */
 export interface ConversationLine {
-  speaker: string
-  native: string            // native script — language-agnostic
-  english: string
-  romanization: string
+  speaker: string;
+  native: string; // native script — language-agnostic
+  english: string;
+  romanization: string;
 }
 ```
 
 ### Mapper Functions (`packages/srs-engine/data/mappers.ts`)
 
 ```typescript
-import type { WordState } from '../src/types.js'
-import type { FoundationalCharacter, ConversationWord } from './types.js'
+import type { WordState } from '../src/types.js';
+import type { FoundationalCharacter, ConversationWord } from './types.js';
 
 /** Convert a FoundationalCharacter to a fresh WordState (foundational, learning phase). */
-export function characterToWordState(char: FoundationalCharacter): WordState
+export function characterToWordState(char: FoundationalCharacter): WordState;
 
 /** Convert conversation uniqueWords to fresh WordStates (curated, learning phase).
  *  Deduplicates by `native` field — first occurrence wins.
  *  Word ID = `curated:${word.native}` (native character as unique key). */
-export function conversationWordsToWordStates(words: ConversationWord[]): WordState[]
+export function conversationWordsToWordStates(
+  words: ConversationWord[],
+): WordState[];
 ```
 
 **WordState mapping:**
 
-| Source field | WordState field | Value |
-|-------------|----------------|-------|
-| `FoundationalCharacter.id` | `wordId` | `foundational:{char.id}` (e.g. `foundational:ko-kai`) |
-| — | `category` | `'foundational'` |
-| — | `masteryCount` | `0` |
-| — | `phase` | `'learning'` |
-| — | `lapseCount` | `0` |
-| — | `correctCount` | `0` |
-| — | `wrongCount` | `0` |
-| `ConversationWord.native` | `wordId` | `curated:${word.native}` (e.g. `curated:หิว`) |
-| — | `category` | `'curated'` |
-| — | all other fields | same defaults as above |
+| Source field               | WordState field  | Value                                                 |
+| -------------------------- | ---------------- | ----------------------------------------------------- |
+| `FoundationalCharacter.id` | `wordId`         | `foundational:{char.id}` (e.g. `foundational:ko-kai`) |
+| —                          | `category`       | `'foundational'`                                      |
+| —                          | `masteryCount`   | `0`                                                   |
+| —                          | `phase`          | `'learning'`                                          |
+| —                          | `lapseCount`     | `0`                                                   |
+| —                          | `correctCount`   | `0`                                                   |
+| —                          | `wrongCount`     | `0`                                                   |
+| `ConversationWord.native`  | `wordId`         | `curated:${word.native}` (e.g. `curated:หิว`)         |
+| —                          | `category`       | `'curated'`                                           |
+| —                          | all other fields | same defaults as above                                |
 
 ## 4. User Workflows
 
@@ -134,11 +136,13 @@ START
 
 **Scope**: Data types and pure mapper functions
 **Read List**:
+
 - `packages/srs-engine/src/types.ts` (WordState shape)
 - `packages/srs-engine/data/samples/foundations-consonants.ts` (input format)
 - `packages/srs-engine/data/samples/conversations-2026-03-08.json` (input format)
 
 **Tasks**:
+
 - [x] Create `packages/srs-engine/data/types.ts` — `FoundationalCharacter`, `ConversationWord` (with `native`), `Conversation`, `ConversationLine`
 - [x] Create `packages/srs-engine/data/mappers.ts` — `characterToWordState()`, `conversationWordsToWordStates()`
 - [x] Create `packages/srs-engine/data/__tests__/mappers.test.ts`
@@ -146,6 +150,7 @@ START
 - [x] Update `packages/srs-engine/data/CODEMAP.md`
 
 **Acceptance Criteria**:
+
 - [x] `characterToWordState()` produces a valid `WordState` with `category: 'foundational'`, `phase: 'learning'`, all counters at 0
 - [x] `wordId` format is `foundational:{id}` for characters (e.g. `foundational:ko-kai`), `curated:{word.native}` for conversation words (e.g. `curated:หิว`)
 - [x] `conversationWordsToWordStates()` deduplicates by `native` — duplicate words across conversations produce one `WordState`
@@ -157,6 +162,7 @@ START
 
 **Scope**: Interactive terminal script proving engine end-to-end
 **Read List**:
+
 - `scripts/demo-srs.ts` (existing script conventions)
 - `packages/srs-engine/src/srs-engine.ts` (SrsEngine API)
 - `packages/srs-engine/data/mappers.ts` (ST01 output)
@@ -164,6 +170,7 @@ START
 - `packages/srs-engine/data/samples/conversations-2026-03-08.json`
 
 **Tasks**:
+
 - [x] Create `scripts/quiz-runner.ts` — interactive quiz loop using `readline`
 - [x] Load real seed data: import consonants + read conversation JSON; adapt `thai` → `native` on raw JSON before passing to mapper; map to `WordState[]`
 - [x] Instantiate `SrsEngine` with production-like config (batchSize=15, masteryThreshold curated=10 / foundational=5, activeWordLimit=8)
@@ -173,6 +180,7 @@ START
 - [x] No unit tests (interactive script)
 
 **Acceptance Criteria**:
+
 - [x] `pnpm run quiz` starts the interactive runner without errors
 - [x] First batch contains a mix of foundational and curated words
 - [x] Answering 'c' or 'w' updates mastery and proceeds to next question

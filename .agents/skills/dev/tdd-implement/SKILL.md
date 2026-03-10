@@ -1,6 +1,6 @@
 ---
 name: tdd-implement
-description: "Executes a TDD implementation plan from tdd-plan, writing code in red-green-refactor cycles. Use after tdd-plan has produced an implementation plan. Run with Sonnet."
+description: 'Executes a TDD implementation plan from tdd-plan, writing code in red-green-refactor cycles. Use after tdd-plan has produced an implementation plan. Run with Sonnet.'
 model: sonnet
 ---
 
@@ -13,18 +13,21 @@ When this skill is loaded, execute the implementation plan produced by `tdd-plan
 Work through each test in the plan's **test plan** in order. For each:
 
 ### Red
+
 - Write the failing test exactly as described in the plan.
 - Run it. Confirm it fails for the right reason (not a syntax error or wrong import).
 - Show the test and the failure output.
 - Stop. Wait for user confirmation before continuing.
 
 ### Green
+
 - Write the minimum implementation code to make the test pass.
 - Run the test. Confirm it passes.
 - Show the implementation change.
 - Stop. Wait for user confirmation before continuing.
 
 ### Refactor
+
 - Clean up if needed. Run the full test suite to confirm nothing broke.
 - Show what changed.
 - Stop. Wait for user confirmation before continuing.
@@ -56,6 +59,7 @@ Wait for the user's response. They may provide a direction, a hint, or choose to
 ## Completion
 
 When all tests in the plan pass:
+
 - Run the full test suite one final time.
 - Confirm every item in the plan's **implementation steps** is done.
 - Report: tests written, tests passing, files changed.

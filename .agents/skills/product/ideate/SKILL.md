@@ -90,9 +90,11 @@ Assumptions that need validation. Open questions that would affect the approach.
 ## File Output
 
 Save the idea brief to:
+
 ```
 product-documentation/ideas/YYYYMMDDTHHMMSSZ-<short-description>.md
 ```
+
 Example: `product-documentation/ideas/20260226T143000Z-gamified-streaks.md`
 
 Use the current UTC timestamp and a 2–4 word kebab-case description of the idea.

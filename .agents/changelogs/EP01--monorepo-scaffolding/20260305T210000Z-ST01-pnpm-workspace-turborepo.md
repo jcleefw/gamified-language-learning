@@ -11,13 +11,16 @@ Created the three root config files that establish pnpm workspace and Turborepo 
 ## Files Modified
 
 ### `pnpm-workspace.yaml`
+
 - New file. Declares `packages/*` and `apps/*` as workspace members.
 
 ### `package.json`
+
 - New file. Root scripts (`build`, `test`, `test:watch`, `lint`) + devDependencies (turbo, typescript, vitest, eslint, typescript-eslint).
 - Added `"packageManager": "pnpm@10.30.1"` — required by Turbo 2.x, not in DS01 spec.
 
 ### `turbo.json`
+
 - New file. Task graph: `build` (outputs `dist/**`), `test` (no cache), `lint`.
 
 ## Behavior Preserved / New Behavior

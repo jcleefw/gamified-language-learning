@@ -13,22 +13,26 @@ Persistent cross-session context storage for AI agents.
 Each branch has four memory files:
 
 ### 1. `current-focus.md`
+
 **What**: Your active work
 **When Updated**: After completing a story or when changing focus
 **What to Read**: Session start (tells you where you left off)
 
 Contents:
+
 - Active epic and story
 - Current status
 - Last session outcome
 - Immediate next steps
 
 ### 2. `recent-decisions.md`
+
 **What**: Architecture and technical decisions made on this branch
 **When Updated**: When a decision is made that affects multiple stories
 **What to Read**: When designing features or reviewing PRs
 
 Contents:
+
 - Decision title and timestamp
 - Context (why the decision was needed)
 - Decision and rationale
@@ -37,19 +41,23 @@ Contents:
 - only keep the last 3 entries, the rest can be moved to product-documentation/recent-decisions-archive/decision-made-{YYYY-MM-DD}.md. Use start of the week Sunday as the date.
 
 ### 3. `blocked-items.md`
+
 **What**: Known blockers and resolution history
 **When Updated**: When blockers are identified or resolve
 
 Contents:
+
 - Current blockers (story, root cause, what's needed)
 - Unblocking history (resolved blockers)
 
 ### 4. `session-log.md`
+
 **What**: Summary of last session on this branch
 **When Updated**: End of each session
 **What to Read**: When starting a new session or onboarding
 
 Contents:
+
 - Per-session summaries (goal, completed, blockers)
 - Files modified
 - Session statistics
@@ -60,12 +68,14 @@ Contents:
 ## Branch Memory Strategy
 
 ### Feature Branch (e.g., `feature-auth`)
+
 1. Create `.agents/memory/feature-auth/` with same structure as `main/`
 2. Work on stories, updating memory files
 3. When ready to merge: run consolidation script
 4. Memory from feature branch merges into `main/`
 
 ### Main Branch
+
 - Accumulates consolidated memory from all merged branches
 - Single source of truth for project-wide decisions
 - Preserved indefinitely

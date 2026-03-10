@@ -3,7 +3,9 @@
 **Created**: 20260305T135334Z
 **Status**: Completed
 **Status Changed**: 20260305T230055Z
+
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
+
 **Type**: Epic Plan
 **Depends on**: N/A
 **Predecessor**: N/A
@@ -17,6 +19,7 @@ No project structure exists. All Stage 1 work (and every subsequent stage) requi
 ## Scope
 
 **In scope**:
+
 - `pnpm` workspaces root config (`pnpm-workspace.yaml`, root `package.json`)
 - Turborepo setup (`turbo.json` — build + test pipeline)
 - Root `tsconfig.json` (strict, path aliases, base for all packages)
@@ -25,6 +28,7 @@ No project structure exists. All Stage 1 work (and every subsequent stage) requi
 - Initial `packages/srs-engine/` scaffold (empty `src/index.ts`, `package.json`, `tsconfig.json`)
 
 **Out of scope**:
+
 - Any application packages (`apps/web`, `apps/backend`) — not needed until Stage 2+
 - Cloudflare Wrangler config — Stage 2
 - CI/CD pipeline setup — post-MVP
@@ -34,12 +38,15 @@ No project structure exists. All Stage 1 work (and every subsequent stage) requi
 ## Stories
 
 ### EP01-ST01: pnpm workspace + Turborepo
+
 **Scope**: Root `package.json`, `pnpm-workspace.yaml`, `turbo.json` with build + test tasks declared
 
 ### EP01-ST02: Root tsconfig + ESLint flat config
+
 **Scope**: `tsconfig.json` (strict base), `eslint.config.js` (TypeScript strict rules, flat config format)
 
 ### EP01-ST03: Vitest workspace + srs-engine package scaffold
+
 **Scope**: Root `vitest.workspace.ts`, `packages/srs-engine/` skeleton (package.json, tsconfig.json, src/index.ts, `__tests__/` dirs), `pnpm test` returns 0 tests found (not an error)
 
 ---

@@ -11,33 +11,42 @@ Created root Vitest workspace config and full `packages/srs-engine/` skeleton. `
 ## Files Modified
 
 ### `vitest.workspace.ts` (new)
+
 - Root workspace config pointing Vitest to `packages/*/vitest.config.ts`
 
 ### `packages/srs-engine/package.json` (new)
+
 - `@gll/srs-engine` package — ESM, private, devDeps with version ranges (`^5.7`, `^3`)
 - DS01 specified `workspace:*` for npm deps — corrected to version ranges (pnpm `workspace:*` is for internal packages only)
 
 ### `packages/srs-engine/tsconfig.json` (new)
+
 - Extends `../../tsconfig.base.json`, `rootDir: src`, `outDir: dist`
 - DS01 included `__tests__/**/*` in `include` — removed (conflicts with `rootDir: src`; Vitest handles test TS via its own bundler)
 
 ### `packages/srs-engine/vitest.config.ts` (new)
+
 - Includes `__tests__/**/*.test.ts`, `globals: true`, `setupFiles`
 - Added `passWithNoTests: true` — Vitest 3.x exits 1 on no test files by default (DS01 claimed exit 0)
 
 ### `packages/srs-engine/__tests__/setup.ts` (new)
+
 - `afterEach(() => vi.useRealTimers())` — prevents fake timer bleed between tests
 
 ### `packages/srs-engine/src/index.ts` (new)
+
 - `export {}` stub — public API populated by EP02+
 
 ### `packages/srs-engine/README.md` (new)
+
 - Test run instructions (full package, watch mode, single file, single test by name)
 
 ### `packages/srs-engine/__tests__/unit/.gitkeep` (new)
+
 - Directory placeholder for EP02+ unit tests
 
 ### `packages/srs-engine/__tests__/integration/.gitkeep` (new)
+
 - Directory placeholder for EP07+ integration tests
 
 ## Behavior Preserved / New Behavior
@@ -49,11 +58,11 @@ Created root Vitest workspace config and full `packages/srs-engine/` skeleton. `
 
 ## DS01 Spec Gaps Corrected
 
-| Gap | DS01 Said | Actual / Fix |
-|-----|-----------|--------------|
-| `devDependencies` protocol | `"typescript": "workspace:*"` | `"typescript": "^5.7"` — `workspace:*` is for internal packages only |
-| tsconfig `include` | `["src/**/*", "__tests__/**/*"]` | `["src/**/*"]` — `__tests__` conflicts with `rootDir: src` |
-| Vitest no-test exit code | "exits 0 by default" | Exits 1 — added `passWithNoTests: true` |
+| Gap                        | DS01 Said                        | Actual / Fix                                                         |
+| -------------------------- | -------------------------------- | -------------------------------------------------------------------- |
+| `devDependencies` protocol | `"typescript": "workspace:*"`    | `"typescript": "^5.7"` — `workspace:*` is for internal packages only |
+| tsconfig `include`         | `["src/**/*", "__tests__/**/*"]` | `["src/**/*"]` — `__tests__` conflicts with `rootDir: src`           |
+| Vitest no-test exit code   | "exits 0 by default"             | Exits 1 — added `passWithNoTests: true`                              |
 
 ## Next Steps
 

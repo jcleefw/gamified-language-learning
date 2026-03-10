@@ -55,23 +55,23 @@ pnpm manages the workspace protocol and dependency resolution. Turborepo defines
 
 Two port ranges, separated by design:
 
-| Context | Service | Base Port | Formula |
-|---|---|---|---|
-| Dev | `apps/web` | 3000 | `3000 + PORT_OFFSET` |
-| Dev | `packages/backend` | 3001 | `3001 + PORT_OFFSET` |
-| BDD | `apps/web` | 4800 | `4800 + PORT_OFFSET` |
-| BDD | `packages/backend` | 4801 | `4801 + PORT_OFFSET` |
+| Context | Service            | Base Port | Formula              |
+| ------- | ------------------ | --------- | -------------------- |
+| Dev     | `apps/web`         | 3000      | `3000 + PORT_OFFSET` |
+| Dev     | `packages/backend` | 3001      | `3001 + PORT_OFFSET` |
+| BDD     | `apps/web`         | 4800      | `4800 + PORT_OFFSET` |
+| BDD     | `packages/backend` | 4801      | `4801 + PORT_OFFSET` |
 
 `PORT_OFFSET` is set in `.env.local` (gitignored) per worktree. `3xxx` = dev at a glance, `4xxx` = BDD at a glance in process lists and browser tabs.
 
 **Worktree offset assignments (documented in `WORKTREES.md` and `.env.example`):**
 
-| Worktree | Offset | Dev web | Dev api | BDD web | BDD api |
-|---|---|---|---|---|---|
-| main | 0 | 3000 | 3001 | 4800 | 4801 |
-| feature-a | 20 | 3020 | 3021 | 4820 | 4821 |
-| feature-b | 40 | 3040 | 3041 | 4840 | 4841 |
-| feature-c | 60 | 3060 | 3061 | 4860 | 4861 |
+| Worktree  | Offset | Dev web | Dev api | BDD web | BDD api |
+| --------- | ------ | ------- | ------- | ------- | ------- |
+| main      | 0      | 3000    | 3001    | 4800    | 4801    |
+| feature-a | 20     | 3020    | 3021    | 4820    | 4821    |
+| feature-b | 40     | 3040    | 3041    | 4840    | 4841    |
+| feature-c | 60     | 3060    | 3061    | 4860    | 4861    |
 
 Maximum offset: 99 (beyond that, dev ports enter 41xx and collide with BDD range).
 
@@ -90,22 +90,22 @@ export default {
   trailingComma: 'all',
   tabWidth: 2,
   useTabs: false,
-}
+};
 ```
 
 Applies to all file types in the repo. Editor settings (`.vscode/settings.json`) configure format-on-save for all relevant extensions.
 
 **ESLint** — single root `eslint.config.ts` (ESLint v9 flat config). Glob-scoped layers applied in order:
 
-| Layer | Scope | Rules |
-|---|---|---|
-| `[1]` Ignored paths | — | `node_modules`, `dist`, `.nuxt`, `styled-system/` |
-| `[2]` Base | `**/*.{ts,vue,js}` | `unicorn`, `sonarjs`, `import-x` |
-| `[3]` TypeScript strict | `apps/**`, `packages/backend/**`, `packages/design-system/**` | `@typescript-eslint` strict |
-| `[4]` Vue | `apps/web/**/*.vue` | `eslint-plugin-vue`, `vuejs-accessibility` |
-| `[5]` Node.js | `packages/backend/**` | `eslint-plugin-n` |
-| `[6]` TypeScript relaxed | `packages/bdd/**`, `packages/logger/**` | `@typescript-eslint` recommended (overrides `[3]`) |
-| `[7]` Tests | `**/*.test.ts`, `**/*.spec.ts` | Minor overrides (e.g. allow non-null assertions) |
+| Layer                    | Scope                                                         | Rules                                              |
+| ------------------------ | ------------------------------------------------------------- | -------------------------------------------------- |
+| `[1]` Ignored paths      | —                                                             | `node_modules`, `dist`, `.nuxt`, `styled-system/`  |
+| `[2]` Base               | `**/*.{ts,vue,js}`                                            | `unicorn`, `sonarjs`, `import-x`                   |
+| `[3]` TypeScript strict  | `apps/**`, `packages/backend/**`, `packages/design-system/**` | `@typescript-eslint` strict                        |
+| `[4]` Vue                | `apps/web/**/*.vue`                                           | `eslint-plugin-vue`, `vuejs-accessibility`         |
+| `[5]` Node.js            | `packages/backend/**`                                         | `eslint-plugin-n`                                  |
+| `[6]` TypeScript relaxed | `packages/bdd/**`, `packages/logger/**`                       | `@typescript-eslint` recommended (overrides `[3]`) |
+| `[7]` Tests              | `**/*.test.ts`, `**/*.spec.ts`                                | Minor overrides (e.g. allow non-null assertions)   |
 
 ESLint plugins included:
 
@@ -119,21 +119,21 @@ ESLint plugins included:
 
 **TypeScript** — shared `tsconfig.base.json` at root. Per-package `tsconfig.json` extends the base.
 
-| Package | Strictness |
-|---|---|
-| `apps/web` | strict |
-| `packages/backend` | strict |
-| `packages/design-system` | strict |
+| Package                  | Strictness                 |
+| ------------------------ | -------------------------- |
+| `apps/web`               | strict                     |
+| `packages/backend`       | strict                     |
+| `packages/design-system` | strict                     |
 | Unit tests (`*.test.ts`) | strict (revisit if needed) |
-| `packages/bdd` | relaxed |
-| `packages/logger` | relaxed |
+| `packages/bdd`           | relaxed                    |
+| `packages/logger`        | relaxed                    |
 
 ### Code Quality Gates
 
-| Gate | What runs | When | Blocks? |
-|---|---|---|---|
+| Gate       | What runs                                                    | When         | Blocks?                       |
+| ---------- | ------------------------------------------------------------ | ------------ | ----------------------------- |
 | Pre-commit | Prettier `--write` on staged files (via Husky + lint-staged) | Every commit | Yes — reformats and re-stages |
-| CI | ESLint (read-only), TypeScript type-check | Every PR | Yes — fails build |
+| CI         | ESLint (read-only), TypeScript type-check                    | Every PR     | Yes — fails build             |
 
 ESLint **never** runs auto-fix in CI. This eliminates the conflict between local auto-fix results and CI check results. Prettier runs pre-commit only; CI checks that output is already formatted.
 
@@ -143,18 +143,18 @@ ESLint **never** runs auto-fix in CI. This eliminates the conflict between local
 
 Commit types permitted:
 
-| Type | Use |
-|---|---|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `chore` | Maintenance, dependency updates |
-| `docs` | Documentation changes |
-| `refactor` | Code restructuring without behaviour change |
-| `test` | Test additions or changes |
-| `perf` | Performance improvements |
-| `ci` | CI/CD pipeline changes |
-| `build` | Build system changes |
-| `agentic` | Skills, workflows, session files, and any markdown that improves agentic tooling |
+| Type       | Use                                                                              |
+| ---------- | -------------------------------------------------------------------------------- |
+| `feat`     | New feature                                                                      |
+| `fix`      | Bug fix                                                                          |
+| `chore`    | Maintenance, dependency updates                                                  |
+| `docs`     | Documentation changes                                                            |
+| `refactor` | Code restructuring without behaviour change                                      |
+| `test`     | Test additions or changes                                                        |
+| `perf`     | Performance improvements                                                         |
+| `ci`       | CI/CD pipeline changes                                                           |
+| `build`    | Build system changes                                                             |
+| `agentic`  | Skills, workflows, session files, and any markdown that improves agentic tooling |
 
 The `agentic:` type covers all changes under `.agents/`, `sessions/`, and agentic documentation in `product-documentation/`. It distinguishes AI infrastructure work from product code in the commit history.
 
@@ -186,20 +186,21 @@ All packages import from `packages/logger` — no direct Consola or `console.log
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| pnpm workspaces only (no Turborepo) | Simpler setup | No incremental builds, no pipeline caching, no explicit dependency ordering | Design-system changes trigger full rebuilds; pipeline ordering is implicit and error-prone |
-| Per-package ESLint configs | Isolated, self-contained | Duplication, config drift across packages | Single flat config with glob layers handles all variation without repetition |
-| Husky with commitlint pre-commit | Catches bad commits locally | Husky identified as a blocker; commitlint pre-commit can be bypassed with `--no-verify` anyway | CI enforcement is sufficient and less disruptive |
-| Nx instead of Turborepo | More features (code generation, affected graph) | Significantly heavier, opinionated project structure, steeper learning curve | Overkill for this package count |
-| Pino (shared logger) | Extremely fast, structured JSON | User preference against; not isomorphic without config | Excluded by preference |
-| Winston | Mature, flexible | User preference against | Excluded by preference |
+| Option                              | Pros                                            | Cons                                                                                           | Why Not Chosen                                                                             |
+| ----------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| pnpm workspaces only (no Turborepo) | Simpler setup                                   | No incremental builds, no pipeline caching, no explicit dependency ordering                    | Design-system changes trigger full rebuilds; pipeline ordering is implicit and error-prone |
+| Per-package ESLint configs          | Isolated, self-contained                        | Duplication, config drift across packages                                                      | Single flat config with glob layers handles all variation without repetition               |
+| Husky with commitlint pre-commit    | Catches bad commits locally                     | Husky identified as a blocker; commitlint pre-commit can be bypassed with `--no-verify` anyway | CI enforcement is sufficient and less disruptive                                           |
+| Nx instead of Turborepo             | More features (code generation, affected graph) | Significantly heavier, opinionated project structure, steeper learning curve                   | Overkill for this package count                                                            |
+| Pino (shared logger)                | Extremely fast, structured JSON                 | User preference against; not isomorphic without config                                         | Excluded by preference                                                                     |
+| Winston                             | Mature, flexible                                | User preference against                                                                        | Excluded by preference                                                                     |
 
 ---
 
 ## Consequences
 
 **Positive:**
+
 - Incremental builds via Turborepo — design-system changes don't rebuild the world
 - Single ESLint config — one place to update rules, no drift
 - Port strategy survives multi-worktree + BDD simultaneously without collision
@@ -207,11 +208,13 @@ All packages import from `packages/logger` — no direct Consola or `console.log
 - Shared logger enforces consistent log format across browser and server
 
 **Negative / Risks:**
+
 - Turborepo `turbo.json` pipeline must be maintained as packages are added — missing a dependency in the pipeline causes incorrect build ordering
 - `PORT_OFFSET` convention relies on developers setting `.env.local` correctly — no automated enforcement
 - Flat ESLint config ordering is load-bearing — a misconfigured layer order silently applies wrong rules to a package
 
 **Neutral:**
+
 - No Storybook — Histoire confirmed separately in the FE toolchain ADR
 - No monorepo-wide test runner defined here — test strategy scoped to QA ADR
 
@@ -219,14 +222,15 @@ All packages import from `packages/logger` — no direct Consola or `console.log
 
 ## Open Questions
 
-| Question | Owner | Target |
-|---|---|---|
+| Question                                                                             | Owner         | Target                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ~~Should `packages/shared-types` be added for cross-package TypeScript interfaces?~~ | ~~Architect~~ | **Resolved**: No. Each engine defines and exports its own types. Calling layer maps between packages. See SRS engine ADR §Types Ownership and curation engine ADR §Types Ownership. |
-| Remote caching for Turborepo (Vercel Remote Cache) — worth enabling for CI speed? | Architect | After first CI pipeline is running |
-| Maximum worktree count before offset table needs revision | Dev | When offset 60 is first used |
+| Remote caching for Turborepo (Vercel Remote Cache) — worth enabling for CI speed?    | Architect     | After first CI pipeline is running                                                                                                                                                  |
+| Maximum worktree count before offset table needs revision                            | Dev           | When offset 60 is first used                                                                                                                                                        |
 
 ---
 
-*Related ADRs:*
+_Related ADRs:_
+
 - [20260227T000000Z-fe-pwa-platform-strategy.md](20260227T000000Z-fe-pwa-platform-strategy.md)
 - [20260226T133833Z-fe-framework-toolchain.md](20260226T133833Z-fe-framework-toolchain.md)

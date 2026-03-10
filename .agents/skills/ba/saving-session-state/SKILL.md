@@ -1,6 +1,6 @@
 ---
 name: saving-session-state
-description: "Saves the current discussion session state to a timestamped file for resumption in a new thread. Use when ending a discussion session, before starting a new conversation, or when asked to save progress."
+description: 'Saves the current discussion session state to a timestamped file for resumption in a new thread. Use when ending a discussion session, before starting a new conversation, or when asked to save progress.'
 ---
 
 # Save Session State
@@ -23,36 +23,45 @@ When this skill is loaded, immediately perform the following:
 # Session State — YYYYMMDDTHHMMSSZ-short-description
 
 ## Context
+
 > What is the project/feature being discussed? Provide enough background that a new thread can understand the situation without reading prior conversations.
 
 ## Decisions Made (User-Directed)
+
 > List every decision explicitly made by the user. These are authoritative and must not be changed.
 > Format: `- **[Topic]**: [Decision] (User)`
 
 ## Decisions Made (Agent-Suggested, User-Approved)
+
 > List decisions that the agent proposed and the user agreed to or did not contest.
 > Format: `- **[Topic]**: [Decision] (Agent-suggested, approved)`
 
 ## Points Discussed But Not Decided
+
 > List topics that were raised and discussed but no clear decision was reached.
 > Format: `- **[Topic]**: [Summary of discussion so far]`
 
 ## Open Questions (To Be Discussed)
+
 > List questions that were explicitly deferred or flagged for future discussion.
 > Format: `- **[Topic]**: [The question and any context]`
 
 ## Detailed Discussion Record
+
 > For each major topic discussed, provide a detailed summary:
+>
 > - What was the user's original statement
 > - What clarifications were asked
 > - What the user answered
 > - What the final understanding is
-> This section is the most important — it must contain enough detail to reconstruct the full context.
+>   This section is the most important — it must contain enough detail to reconstruct the full context.
 
 ## Current State of the Spec/Design
+
 > Provide a consolidated snapshot of the current understanding of the design/spec. This should stand alone — a new thread should not need prior session files to understand the current state.
 
 ## Next Steps
+
 > What should be tackled next when a new session starts?
 ```
 

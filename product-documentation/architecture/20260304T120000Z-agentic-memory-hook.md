@@ -23,20 +23,24 @@ The result is `recent-decisions.md` lagging behind the actual ADR state in `prod
 
 **claude-mem (github.com/thedotmack/claude-mem)**
 Auto-captures all tool use via lifecycle hooks into SQLite + Chroma. Enables semantic search via MCP tools and a running HTTP worker.
+
 - Rejected: Claude Code-specific hooks + MCP tools violate Golden Rule #1 (platform agnostic)
 - Rejected: auto-captures everything — high noise, low signal
 - Rejected: requires external services (Bun worker, Chroma, SQLite daemon)
 
 **`stop` hook (fires after every agent turn)**
 Could prompt a memory write at session end.
+
 - Rejected: fires on every turn, not just turns where something worth remembering happened; requires the hook to infer what happened — messy and fragile
 
 **`/wrap` skill (manual session-close)**
 A lightweight skill prompting "any decisions this session?" before closing.
+
 - Rejected: still manual trigger — same forgetting problem in a different wrapper
 
 **`_index.md` compact memory index**
 A CODEMAP-style one-liner index for memory files.
+
 - Rejected: duplicates the CODEMAP pattern, adds a new file to maintain, doesn't fix the capture trigger
 
 ---

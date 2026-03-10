@@ -11,6 +11,7 @@
 ## Files Modified
 
 ### {path/to/file}
+
 - {Description of change}
 
 ## Behavior Preserved / New Behavior

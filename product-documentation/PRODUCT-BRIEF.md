@@ -65,11 +65,13 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 ## System Components
 
 ### 1. User Management & Authentication
+
 **PRD**: [20260226T150000Z-user-management-auth.md](prds/20260226T150000Z-user-management-auth.md)
 
 **Purpose**: Secure access control with three user roles—admin, curator, learner.
 
 **Key Features**:
+
 - Google OAuth one-click sign-in (auto-creates learner accounts)
 - Credential-based authentication for admin-managed accounts
 - Role-based access: admin > curator > learner (hierarchical capabilities)
@@ -77,6 +79,7 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 - Admin CRUD for all users (create, deactivate, role assignment)
 
 **User Roles**:
+
 - **Learner**: Accesses quiz/SRS learning path only
 - **Curator**: Learner capabilities + content creation tools
 - **Admin**: Curator capabilities + user management
@@ -84,17 +87,20 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 ---
 
 ### 2. Content Curation (Admin/Curator Path)
+
 **PRD**: [20260226T140000Z-content-curation.md](prds/20260226T140000Z-content-curation.md)
 
 **Purpose**: Curator workflow to generate, review, and publish conversation-based vocabulary decks.
 
 **Workflow**:
+
 1. **Conversation Generation**: AI-generated dialogue (1–6 lines) from a freeform topic, configurable by difficulty/formality
 2. **Word Breakdown**: AI extracts per-line word-by-word translations with parts of speech
 3. **TTS Audio**: Optional multi-speaker audio generation (full conversation + per-word)
 4. **Publishing**: Draft → Published → Unpublished lifecycle (no approval gate)
 
 **Key Features**:
+
 - Language-specific nuance detection (e.g., Thai gender particles)
 - System prompt management (generic + language-specific layers)
 - Foundational deck curation (consonants/vowels/tones—fixed word sets, not AI-generated)
@@ -102,6 +108,7 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 - Non-destructive editing after publishing (minor edits propagate, destructive changes create new word entities)
 
 **Content Lifecycle**:
+
 - **Draft**: Visible only to creator/editors
 - **Published**: Available to all learners
 - **Unpublished**: Hidden from learners; active words finish naturally, mastered words remain in global pool
@@ -111,6 +118,7 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 ---
 
 ### 3. SRS Learning Path (Learner Path)
+
 **PRD**: [20260226T100000Z-srs-learning-path.md](prds/20260226T100000Z-srs-learning-path.md)
 
 **Purpose**: Gamified quiz system with spaced repetition (ANKI algorithm) to maximize vocabulary retention.
@@ -118,11 +126,13 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 **Core Mechanics**:
 
 #### Quiz Structure
+
 - **Batch size**: 15 questions per session (configurable)
 - **Question types**: Multiple choice (70%), word block selection (20%), audio recognition (10%)
 - **Type distribution shifts** post-foundational-depletion to include native writing word blocks
 
 #### Active Word Management
+
 - **8-word active window**: Maximum unmastered words at any time (configurable)
 - **4 new words per batch**: Sliding window—new words enter when old ones reach mastery
 - **Carry-over priority**: Unmastered words from prior batches get top priority
@@ -130,35 +140,42 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 #### Two-Phase Mastery Model
 
 **Phase 1: Learning** (in active window)
+
 - Curated words: 10 correct answers to mastery (configurable, +1/-1 per answer)
 - Foundational words: 5 correct answers to mastery
 - Wrong answers: Correct answer shown, word reappears in same session, mastery -1 (min 0)
 
 **Phase 2: Review** (ANKI)
+
 - Graduated words follow ANKI intervals (1d → 3d → 7d → etc.)
 - Lapse rule: 3 ANKI failures → returns to Phase 1 with reset mastery count
 
 #### Foundational Deck
+
 - **3 foundational words active** at a time, mixed into curated batches (20% of questions = 3/15)
 - Cannot skip ahead; same 3 persist until all mastered
 - Post-depletion: 20% → 5% allocation, native writing unlocked
 - Continuous wrong rule: 3 wrong in a row → reset to 0, top priority next batch
 
 #### Stuck Words
+
 - No progress after 3 batches → shelved for 1 day (max 2 shelved words at once)
 - Shelved words count toward 8-active limit
 
 #### Word Entity Model
+
 - **Global word entity**: Mastery and SRS state are per-word, not per-deck
 - If a word is already mastered when encountered in a new deck → slots into revision deck (no active slot consumed)
 
 **Deck Types**:
+
 - **Curated deck**: Active learning from a conversation (can skip ahead)
 - **Revision deck**: Mastered words from a conversation, ANKI-scheduled
 - **Word pool deck**: All learned words across all conversations (user-initiated review)
 - **Foundational deck**: Consonants/vowels/tones (cannot skip, separate mastery tracking)
 
 **Success Metrics**:
+
 - ≥ 80% retention on first ANKI review
 - ≥ 2 batches per session (average)
 - < 15% deck abandonment before 50% mastery
@@ -166,28 +183,33 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 ---
 
 ### 4. Gemini TTS Audio Generation System
+
 **PRD**: [20260302T000000Z-gemini-tts-generation.md](prds/20260302T000000Z-gemini-tts-generation.md)
 
 **Purpose**: Centralized rate-limited TTS audio generation shared between content curation and SRS quiz.
 
 **Strategy**: Free Tier + Hard Limit + Lazy Per-Word Generation
+
 - **Free tier limits**: 10 requests per day (RPD), 3 requests per minute (RPM)
 - **Quota allocation**: Shared pool—5 RPD for content curation + 5 RPD for SRS active words (first-come-first-served)
 - **Lazy generation**: Audio generated only when a word enters the 8-active learning window
 - **Graceful degradation**: When quota exhausted, audio status = `pending`, quiz redistributes question types, no user-facing error
 
 **Audio Scopes**:
+
 - Full conversation audio (content curation)
 - Per-word audio (SRS quiz—active window only)
 - _(Per-sentence audio deferred pending cost review)_
 
 **Technical Design**:
+
 - Centralized `TTSService` with pre-flight quota check
 - D1 quota counter table (`tts_quota`) with UTC daily reset
 - Cloudflare Queue for async generation (Worker → Gemini API → R2 storage)
 - Audio status tracking: `available`, `pending`, `failed`
 
 **Graceful Degradation**:
+
 - **Quiz**: If word audio unavailable → redistribute audio question slots to MC/word block (no error shown)
 - **Curation**: If conversation audio unavailable → hide player, show "Audio generation in progress"
 
@@ -198,6 +220,7 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 ## Platform & Technology Stack
 
 ### Frontend
+
 - **Framework**: Vue 3 + Nuxt
 - **Styling**: PandaCSS
 - **Components**: Ark UI (headless, atomic design structure)
@@ -208,6 +231,7 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 **Capacitor Upgrade Path**: If native APIs needed (haptics, iOS audio edge cases), wrap Vue app without rewrite
 
 ### Backend
+
 - **Platform**: Cloudflare Workers (serverless)
 - **Database**: Cloudflare D1 (SQLite)
 - **Storage**: Cloudflare R2 (audio files)
@@ -215,11 +239,13 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 - **Authentication**: `nuxt-auth-utils` (Google OAuth + credentials, JWT sessions)
 
 ### AI Services
+
 - **Conversation generation**: Gemini API
 - **Word breakdown**: Gemini API
 - **TTS audio**: Gemini TTS (rate-limited, quota-managed)
 
 ### Deployment
+
 - **Infra ADR**: [20260301T161844Z-infra-cloudflare-platform.md](architecture/20260301T161844Z-infra-cloudflare-platform.md)
 - **Always-online**: No offline mode in v1 (PWA is online-only)
 - **Mid-quiz connection loss**: Answers stored in memory, synced on reconnect (discarded if app closed)
@@ -229,9 +255,11 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 ## User Personas & Journeys
 
 ### Primary User: Learner
+
 **Profile**: Tourist, hobbyist, or serious student learning a language. Reads English or Romanic script. Engages in short sessions (5–15 minutes), often mobile.
 
 **Journey**:
+
 1. Sign in via Google OAuth (one click, auto-creates learner account)
 2. View dashboard with ongoing decks and progress stats
 3. Select a curated deck (e.g., "Ordering Coffee")
@@ -241,9 +269,11 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 7. Return daily/near-daily for spaced repetition effectiveness
 
 ### Secondary User: Curator
+
 **Profile**: Language expert creating content. Works on desktop in 15–60 minute sessions. Curates one or more decks per session.
 
 **Journey**:
+
 1. Sign in (Google OAuth or credentials)
 2. Create conversation: provide topic, configure difficulty/formality
 3. Review/edit AI-generated conversation lines
@@ -253,9 +283,11 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 7. Publish deck → immediately available to learners
 
 ### Tertiary User: Admin
+
 **Profile**: Super user managing the platform. All curator capabilities + user management.
 
 **Admin-Specific Actions**:
+
 - Create credential-based accounts with temporary passwords
 - Assign/change user roles
 - Deactivate users (with content handling prompt if curator has published decks)
@@ -279,22 +311,27 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 ## Success Metrics (Cross-System)
 
 ### Learning Effectiveness
+
 - Mastered words correct on first ANKI review: **≥ 80%**
 - Foundational deck completion rate (10+ session users): **> 70%**
 
 ### Engagement
+
 - Average batches per session: **≥ 2**
 - Deck abandonment before 50% mastery: **< 15%**
 
 ### Curation Health
+
 - Time to publish-ready deck: **< 15 minutes**
 - Published conversations with complete breakdowns: **100%**
 
 ### System Health
+
 - TTS quota rejection rate: **< 5%**
 - ANKI fallback rate (3-lapse words): **< 5% of mastered words**
 
 **Review Gates**:
+
 - **Gate 1**: Solo user × 7 days (gut-check all metrics)
 - **Gate 2**: 200 active users × 30 days (statistical validation)
 - **Gate 3**: Quarterly thereafter
@@ -319,46 +356,49 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 
 ## Dependencies & ADRs
 
-| Document | Purpose | Status |
-|---|---|---|
-| [User Management PRD](prds/20260226T150000Z-user-management-auth.md) | Auth & roles | Complete |
-| [Content Curation PRD](prds/20260226T140000Z-content-curation.md) | Curator workflow | Complete |
-| [SRS Learning Path PRD](prds/20260226T100000Z-srs-learning-path.md) | Quiz & mastery engine | Complete |
-| [Gemini TTS PRD](prds/20260302T000000Z-gemini-tts-generation.md) | Audio generation system | Complete |
-| [PWA Platform ADR](architecture/20260227T000000Z-fe-pwa-platform-strategy.md) | PWA delivery strategy | Accepted |
-| [FE Framework ADR](architecture/20260226T133833Z-fe-framework-toolchain.md) | Vue 3 + Nuxt + PandaCSS | Accepted |
-| [Engineering ADR](architecture/20260227T022513Z-engineering-monorepo-tooling.md) | Monorepo tooling | Accepted |
-| [Infra ADR](architecture/20260301T161844Z-infra-cloudflare-platform.md) | Cloudflare platform | Accepted |
+| Document                                                                         | Purpose                 | Status   |
+| -------------------------------------------------------------------------------- | ----------------------- | -------- |
+| [User Management PRD](prds/20260226T150000Z-user-management-auth.md)             | Auth & roles            | Complete |
+| [Content Curation PRD](prds/20260226T140000Z-content-curation.md)                | Curator workflow        | Complete |
+| [SRS Learning Path PRD](prds/20260226T100000Z-srs-learning-path.md)              | Quiz & mastery engine   | Complete |
+| [Gemini TTS PRD](prds/20260302T000000Z-gemini-tts-generation.md)                 | Audio generation system | Complete |
+| [PWA Platform ADR](architecture/20260227T000000Z-fe-pwa-platform-strategy.md)    | PWA delivery strategy   | Accepted |
+| [FE Framework ADR](architecture/20260226T133833Z-fe-framework-toolchain.md)      | Vue 3 + Nuxt + PandaCSS | Accepted |
+| [Engineering ADR](architecture/20260227T022513Z-engineering-monorepo-tooling.md) | Monorepo tooling        | Accepted |
+| [Infra ADR](architecture/20260301T161844Z-infra-cloudflare-platform.md)          | Cloudflare platform     | Accepted |
 
 ---
 
 ## Open Questions (Cross-Cutting)
 
-| Question | Owner | Target | PRD Reference |
-|---|---|---|---|
-| ~~iOS audio autoplay UX—does tap-to-play feel natural?~~ | ~~Dev~~ | ~~First quiz prototype~~ — **Resolved**: Hybrid approach (session-level unlock + autoplay attempt + tap fallback). See PWA ADR. | SRS Learning Path |
-| Mid-quiz connection loss—is discarding in-progress batch acceptable? | Product | Gate 1 review | SRS Learning Path |
-| ANKI parameters—use defaults or tune for mobile sessions? | Product | Gate 1 review | SRS Learning Path |
-| Foundational deck content creation—who owns per-language decks? | Curator/Product | Before language launch | Content Curation |
-| D1 batch assembly performance—< 100ms achievable at scale? | Dev | Before Gate 2 | SRS Learning Path |
-| TTS quota exhaustion timing—acceptable to hit limit before end of day? | Product | Post-launch monitoring | Gemini TTS |
+| Question                                                               | Owner           | Target                                                                                                                          | PRD Reference     |
+| ---------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| ~~iOS audio autoplay UX—does tap-to-play feel natural?~~               | ~~Dev~~         | ~~First quiz prototype~~ — **Resolved**: Hybrid approach (session-level unlock + autoplay attempt + tap fallback). See PWA ADR. | SRS Learning Path |
+| Mid-quiz connection loss—is discarding in-progress batch acceptable?   | Product         | Gate 1 review                                                                                                                   | SRS Learning Path |
+| ANKI parameters—use defaults or tune for mobile sessions?              | Product         | Gate 1 review                                                                                                                   | SRS Learning Path |
+| Foundational deck content creation—who owns per-language decks?        | Curator/Product | Before language launch                                                                                                          | Content Curation  |
+| D1 batch assembly performance—< 100ms achievable at scale?             | Dev             | Before Gate 2                                                                                                                   | SRS Learning Path |
+| TTS quota exhaustion timing—acceptable to hit limit before end of day? | Product         | Post-launch monitoring                                                                                                          | Gemini TTS        |
 
 ---
 
 ## Next Steps
 
 ### Phase 1: Foundation (Weeks 1–2)
+
 - User management & auth (Google OAuth + credentials)
 - D1 schema for users, roles, sessions
 - Basic admin UI for user CRUD
 
 ### Phase 2: Content Curation (Weeks 3–4)
+
 - Curator UI (conversation generation, breakdown, editing)
 - Gemini API integration (conversation + breakdown generation)
 - Publishing workflow (draft → published → unpublished)
 - TTS infrastructure (rate limiter, quota counter, R2 storage)
 
 ### Phase 3: SRS Learning Path (Weeks 5–7)
+
 - Quiz batch assembly engine (active window, batch composition priority)
 - Mastery tracking (Phase 1 learning, Phase 2 ANKI)
 - Foundational deck integration (3-word active set, 20% allocation)
@@ -366,12 +406,14 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 - Learner dashboard and quiz UI
 
 ### Phase 4: Integration & Testing (Week 8)
+
 - End-to-end flows (curator creates deck → learner completes quiz → words mastered)
 - TTS lazy generation on active window entry
 - Audio question type redistribution
 - Gate 1 solo user testing (7 days)
 
 ### Phase 5: Observability & Launch Prep (Week 9)
+
 - Metrics instrumentation (learning effectiveness, engagement, curation speed)
 - Logging and monitoring (TTS quota, ANKI fallback rate, stuck words)
 - PWA manifest and install prompt
@@ -383,4 +425,4 @@ The platform consists of four major subsystems, each detailed in its own PRD:
 
 ---
 
-*Last Updated: 2026-03-02*
+_Last Updated: 2026-03-02_

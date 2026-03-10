@@ -1,7 +1,7 @@
-import type { FsrsCardState } from '../types.js'
+import type { FsrsCardState } from '../types.js';
 
 export interface ReviewResult {
-  nextIntervalDays: number
-  updatedFsrsState: FsrsCardState
-  isLapse: boolean
+  nextIntervalDays: number;
+  updatedFsrsState: FsrsCardState;
+  isLapse: boolean;
 }

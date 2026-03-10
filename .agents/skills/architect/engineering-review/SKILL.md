@@ -23,41 +23,49 @@ Wait for their response. Then read the relevant files (package.json, pnpm-worksp
 Evaluate the setup across these dimensions. Only report findings where there is a genuine issue — do not manufacture problems.
 
 **Repo Topology**
+
 - Are package boundaries well-defined and appropriately sized?
 - Is workspace configuration correct and consistent?
 - Are there circular dependencies or boundary violations?
 
 **Package Manager & Dependency Strategy**
+
 - Are dependency versions consistent across packages where they should be?
 - Are there unnecessary duplicate dependencies due to hoisting or resolution issues?
 - Are workspace protocols used correctly?
 
 **Shared Tooling Config**
+
 - Are configs shared and extended consistently, or duplicated across packages?
 - Are there config drift issues where packages have diverged from the baseline?
 - Is the canonical config location clear and documented?
 
 **Build System**
+
 - Is build orchestration consistent and reproducible?
 - Are there missing or incorrect build dependencies causing ordering issues?
 - Is incremental build or caching configured correctly (if used)?
 
 **Code Quality Gates**
+
 - Are lint, format, and type-check enforced at the right points (pre-commit vs. CI)?
 - Are there gaps — files excluded from linting, rules disabled without justification?
 - Is the enforcement consistent across all packages?
 
 **Commit Standards**
+
 - Is there a commit convention and is it enforced?
 - Are commits consistent with the declared convention in practice?
 - Is changelog generation (if any) working correctly?
 
 **Logging Strategy**
+
 - Is logging consistent across packages — format, levels, transports?
 - Is there a shared logger, or is logging duplicated and divergent?
 - Are there PII, security, or noise concerns in current log output?
 
 **Dev Workflow Conventions**
+
 - Are branch and PR conventions documented and followed?
 - Are automated checks comprehensive — are there obvious gaps?
 - Is developer setup documented and reproducible?
@@ -95,15 +103,19 @@ What was reviewed, why, and what was the scope of the audit?
 List findings grouped by severity:
 
 ### Critical (fix before shipping)
+
 Issues that will cause build failures, broken workflows, or significant developer impact.
 
 ### High (fix soon)
+
 Structural problems that will compound over time or create maintenance burden.
 
 ### Medium (address in next refactor)
+
 Suboptimal patterns that are not urgent but should be resolved.
 
 ### Low / Observations
+
 Minor style, naming, or convention issues. Worth noting but not blocking.
 
 ## Decision
@@ -116,9 +128,9 @@ Why are these changes warranted? What risk or cost do they address?
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| [Alternative 1] | | | |
+| Option          | Pros | Cons | Why Not Chosen |
+| --------------- | ---- | ---- | -------------- |
+| [Alternative 1] |      |      |                |
 
 ## Consequences
 
@@ -143,9 +155,11 @@ Unresolved items. Include owner and target date if known.
 ## File Output
 
 Save to:
+
 ```
 product-documentation/architecture/YYYYMMDDTHHMMSSZ-engineering-review-<short-description>.md
 ```
+
 Example: `product-documentation/architecture/20260226T143000Z-engineering-review-monorepo-setup.md`
 
 ---
@@ -155,6 +169,7 @@ Example: `product-documentation/architecture/20260226T143000Z-engineering-review
 After saving, ask: "What would you like to do next?"
 
 Suggest relevant steps based on findings:
+
 - If a redesign is warranted: `/architect/engineering-design`
 - If FE structure is implicated: `/architect/fe-review`
 - If BE structure is implicated: `/architect/be-review`

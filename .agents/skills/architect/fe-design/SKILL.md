@@ -23,30 +23,37 @@ Wait for their response.
 Cover these dimensions. Skip any that are already clear from the user's description. Ask 2–3 questions per round, working conversationally until all relevant dimensions are covered.
 
 **User Interaction**
+
 - What are the key user flows? What does the user do, and what does the UI respond with?
 - Are there complex interactive states (loading, error, empty, optimistic updates)?
 
 **Component Boundaries**
+
 - What are the natural units of reuse? Are any components shared across features?
 - What level of composition is needed — simple hierarchy or deeply nested/contextual components?
 
 **State Management**
+
 - What state needs to persist across navigation? What is local-only?
 - Are there real-time or collaborative requirements?
 
 **Rendering Strategy**
+
 - What are the performance requirements? (Core Web Vitals targets, perceived load time)
 - Does content need to be server-rendered for SEO or initial load performance?
 
 **Data Fetching**
+
 - What data does the UI need? Where does it come from?
 - What are the caching, invalidation, and optimistic update requirements?
 
 **Styling and Design System**
+
 - Is there an existing design system or component library to extend?
 - What are the responsive/accessibility requirements?
 
 **Tech Stack Constraints**
+
 - What frameworks, libraries, or tools are already in use or mandated?
 - What must this be compatible with?
 
@@ -88,10 +95,10 @@ Why this approach? What makes it the right fit given the constraints? Reference 
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| [Alternative 1] | | | |
-| [Alternative 2] | | | |
+| Option          | Pros | Cons | Why Not Chosen |
+| --------------- | ---- | ---- | -------------- |
+| [Alternative 1] |      |      |                |
+| [Alternative 2] |      |      |                |
 
 ## Consequences
 
@@ -116,9 +123,11 @@ Unresolved decisions or assumptions that need validation. Include owner and targ
 ## File Output
 
 Save to:
+
 ```
 product-documentation/architecture/YYYYMMDDTHHMMSSZ-fe-<short-description>.md
 ```
+
 Example: `product-documentation/architecture/20260226T143000Z-fe-content-curation-ui.md`
 
 ---
@@ -128,6 +137,7 @@ Example: `product-documentation/architecture/20260226T143000Z-fe-content-curatio
 After saving, ask: "What would you like to do next?"
 
 Suggest relevant steps based on the ADR content:
+
 - If BE contracts are needed: `/architect/be-design`
 - If infrastructure is affected: `/architect/infra-design`
 - If test strategy is needed: `/architect/qa-design`

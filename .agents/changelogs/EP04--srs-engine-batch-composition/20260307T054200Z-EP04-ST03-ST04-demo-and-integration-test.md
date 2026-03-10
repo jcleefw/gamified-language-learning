@@ -15,12 +15,14 @@ Added observable end-to-end coverage for `composeBatch`: a terminal demo (ST03) 
 ## Files Modified
 
 ### `scripts/demo-srs.ts`
+
 - Added `composeBatch` to import from `@gll/srs-engine`
 - Added `makeWord` and `promoteToReview` helpers to build pool via `updateMastery`
 - **Scenario E**: 10-word mixed pool (2 carry-over, 1 found.revision, 5 new, 2 found.learning); prints each question with bucket label and question type; confirms priority order visually
 - **Scenario F**: same pool passed to `composeBatch` twice (`audioAvailable: true` vs `false`); prints distribution breakdown side-by-side showing `audio: 1 → 0`, `mc: 7 → 8`
 
 ### `packages/srs-engine/__tests__/integration/batch-lifecycle.test.ts` (new file)
+
 - 4 integration tests, all using `promoteToReview()` via real `updateMastery` calls
 - Test 1: promoted words appear before learning words regardless of input order
 - Test 2: curated `srsM2_review` precedes foundational `srsM2_review` precedes new words
@@ -35,12 +37,12 @@ Added observable end-to-end coverage for `composeBatch`: a terminal demo (ST03) 
 
 ## Test Results
 
-| Metric | Value |
-|--------|-------|
-| Total tests | 47/47 pass |
-| New integration tests | 4/4 pass |
-| TypeScript | No errors |
-| Demo | Runs clean (`pnpm tsx scripts/demo-srs.ts`) |
+| Metric                | Value                                       |
+| --------------------- | ------------------------------------------- |
+| Total tests           | 47/47 pass                                  |
+| New integration tests | 4/4 pass                                    |
+| TypeScript            | No errors                                   |
+| Demo                  | Runs clean (`pnpm tsx scripts/demo-srs.ts`) |
 
 ## Next Steps
 

@@ -1,7 +1,14 @@
-import tseslint from 'typescript-eslint'
+import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/node_modules/**', '**/.nuxt/**', '.worktrees/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/.nuxt/**',
+      '.worktrees/**',
+    ],
+  },
   {
     files: ['packages/**/*.ts'],
     extends: [...tseslint.configs.strictTypeChecked],
@@ -9,11 +16,17 @@ export default tseslint.config(
       parserOptions: { project: true },
     },
     rules: {
-      '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
-      '@typescript-eslint/explicit-function-return-type': ['error', {
-        allowExpressions: true,
-        allowHigherOrderFunctions: true,
-      }],
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports' },
+      ],
+      '@typescript-eslint/explicit-function-return-type': [
+        'error',
+        {
+          allowExpressions: true,
+          allowHigherOrderFunctions: true,
+        },
+      ],
       'no-console': 'error',
     },
   },
@@ -24,4 +37,4 @@ export default tseslint.config(
       '@typescript-eslint/no-non-null-assertion': 'off',
     },
   },
-)
+);

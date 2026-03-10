@@ -7,6 +7,7 @@ model: sonnet
 Perform a gap analysis for: $ARGUMENTS
 
 If no input is provided, stop and ask:
+
 1. "What is the area being analyzed — a process, system, capability, or data flow?"
 2. "Describe the current state (what exists today) and the desired state (what must be true after)."
 3. "What is the business driver for this change?"
@@ -26,37 +27,44 @@ If no input is provided, stop and ask:
 ## Output Structure
 
 ### Context
+
 - **Business driver**: Why is this analysis being done?
 - **Scope**: What is in scope? What is out of scope?
 
 ### Current State Summary
+
 Concise description of how things work today. Include pain points and known limitations.
 
 ### Desired State Summary
+
 Concise description of what must be true after the change. Grounded in business outcomes, not solution design.
 
 ### Gap Register
 
-| ID | Dimension | Current State | Desired State | Gap Description | Type | Impact |
-|---|---|---|---|---|---|---|
+| ID    | Dimension                                   | Current State | Desired State    | Gap Description                 | Type                           | Impact           |
+| ----- | ------------------------------------------- | ------------- | ---------------- | ------------------------------- | ------------------------------ | ---------------- |
 | G-001 | [Process / Data / System / People / Policy] | [What exists] | [What is needed] | [What is missing or misaligned] | Missing / Partial / Misaligned | High / Med / Low |
 
 **Gap Types:**
+
 - **Missing** — capability does not exist at all
 - **Partial** — capability exists but does not fully meet the need
 - **Misaligned** — capability exists but works differently than required
 
 ### Prioritized Gaps
+
 Rank gaps by: impact on the business objective × effort to close.
 
-| Priority | Gap ID | Rationale |
-|---|---|---|
-| 1 | G-001 | Blocks the primary objective; relatively low effort |
+| Priority | Gap ID | Rationale                                           |
+| -------- | ------ | --------------------------------------------------- |
+| 1        | G-001  | Blocks the primary objective; relatively low effort |
 
 ### Recommendations
+
 For each high-priority gap: what needs to happen to close it? State the recommendation as an action, not a solution design.
 
 ### Out of Scope Gaps
+
 Gaps identified but not in scope for this effort — document them to avoid losing the signal.
 
 ---

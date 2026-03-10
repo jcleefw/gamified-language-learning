@@ -1,12 +1,18 @@
-import { FSRS, Rating, State, createEmptyCard, generatorParameters } from 'ts-fsrs'
-import type { Card } from 'ts-fsrs'
-import type { FsrsCardState, SrsConfig, WordState } from '../types.js'
-import type { SpacedRepetitionScheduler } from './scheduler.interface.js'
-import type { ReviewResult } from './types.js'
+import {
+  FSRS,
+  Rating,
+  State,
+  createEmptyCard,
+  generatorParameters,
+} from 'ts-fsrs';
+import type { Card } from 'ts-fsrs';
+import type { FsrsCardState, SrsConfig, WordState } from '../types.js';
+import type { SpacedRepetitionScheduler } from './scheduler.interface.js';
+import type { ReviewResult } from './types.js';
 
 export class FsrsScheduler implements SpacedRepetitionScheduler {
-  private readonly fsrs: FSRS
-  private readonly maxIntervalDays: number
+  private readonly fsrs: FSRS;
+  private readonly maxIntervalDays: number;
 
   constructor(config: Pick<SrsConfig, 'desiredRetention' | 'maxIntervalDays'>) {
     // enable_short_term: false — without this, ts-fsrs schedules new cards in minutes (scheduled_days=0).
@@ -16,9 +22,9 @@ export class FsrsScheduler implements SpacedRepetitionScheduler {
         request_retention: config.desiredRetention,
         maximum_interval: config.maxIntervalDays,
         enable_short_term: false,
-      })
-    )
-    this.maxIntervalDays = config.maxIntervalDays
+      }),
+    );
+    this.maxIntervalDays = config.maxIntervalDays;
   }
 
   /**
@@ -28,25 +34,25 @@ export class FsrsScheduler implements SpacedRepetitionScheduler {
   scheduleReview(state: WordState, isCorrect: boolean): ReviewResult {
     const card = state.fsrsState
       ? this.toFsrsCard(state.fsrsState)
-      : createEmptyCard(new Date())
+      : createEmptyCard(new Date());
 
-    const rating = isCorrect ? Rating.Good : Rating.Again
-    const result = this.fsrs.next(card, new Date(), rating)
-    const newCard = result.card
+    const rating = isCorrect ? Rating.Good : Rating.Again;
+    const result = this.fsrs.next(card, new Date(), rating);
+    const newCard = result.card;
 
     return {
       nextIntervalDays: Math.min(newCard.scheduled_days, this.maxIntervalDays),
       updatedFsrsState: this.toFsrsCardState(newCard),
       isLapse: !isCorrect,
-    }
+    };
   }
 
   /** Returns how many days until this word should be reviewed next. */
   getNextInterval(state: WordState): number {
     if (!state.fsrsState) {
-      return 1
+      return 1;
     }
-    return Math.min(state.fsrsState.scheduledDays, this.maxIntervalDays)
+    return Math.min(state.fsrsState.scheduledDays, this.maxIntervalDays);
   }
 
   private toFsrsCard(fsrsState: FsrsCardState): Card {
@@ -62,10 +68,13 @@ export class FsrsScheduler implements SpacedRepetitionScheduler {
       state: State.Review,
       due:
         fsrsState.lastReview !== null
-          ? new Date(fsrsState.lastReview.getTime() + fsrsState.scheduledDays * 86_400_000)
+          ? new Date(
+              fsrsState.lastReview.getTime() +
+                fsrsState.scheduledDays * 86_400_000,
+            )
           : new Date(),
       last_review: fsrsState.lastReview ?? undefined,
-    }
+    };
   }
 
   private toFsrsCardState(card: Card): FsrsCardState {
@@ -77,6 +86,6 @@ export class FsrsScheduler implements SpacedRepetitionScheduler {
       reps: card.reps,
       lapses: card.lapses,
       lastReview: card.last_review ?? null,
-    }
+    };
   }
 }

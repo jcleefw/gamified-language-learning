@@ -68,22 +68,23 @@ Histoire is Vue-native (built by Akryum, the Vue tooling ecosystem). Story files
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| React + Chakra UI v3 / Ark UI | Mature CSS-in-JS story, Chakra is well-known | User wants to learn Vue; same Chakra theme inheritance risk | Learning objective is Vue |
-| Vue + Vite (no Nuxt) | Full control, minimal config | No project structure conventions; user wants opinionated defaults | User explicitly wants conventions |
-| Nuxt UI v3 | Official Nuxt component library, built on Reka UI | Ships with Tailwind v4 — hard rejection | Tailwind is a hard no |
-| Reka UI (formerly Radix Vue) + PandaCSS | Strong Vue-first investment, Radix lineage | Less integrated with PandaCSS; Ark UI + Panda is a more coherent stack | Ark UI + PandaCSS preferred for coherence |
-| Chakra UI Vue | Familiar Chakra mental model | Less maintained, inherits default theme user explicitly rejected | Inherited defaults problem |
-| Vue SFC scoped styles | Collocated, idiomatic Vue | Not typed; same frustration as CSS modules in practice | Typed styling is a hard requirement |
-| Tailwind CSS | Utility-first, widely adopted | DOM pollution with utility classes — explicit rejection | Hard no |
-| Storybook | Mature, widely adopted | Framework adaptation layer for Vue; Histoire is Vue-native | Histoire is the right fit |
+| Option                                  | Pros                                              | Cons                                                                   | Why Not Chosen                            |
+| --------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------- |
+| React + Chakra UI v3 / Ark UI           | Mature CSS-in-JS story, Chakra is well-known      | User wants to learn Vue; same Chakra theme inheritance risk            | Learning objective is Vue                 |
+| Vue + Vite (no Nuxt)                    | Full control, minimal config                      | No project structure conventions; user wants opinionated defaults      | User explicitly wants conventions         |
+| Nuxt UI v3                              | Official Nuxt component library, built on Reka UI | Ships with Tailwind v4 — hard rejection                                | Tailwind is a hard no                     |
+| Reka UI (formerly Radix Vue) + PandaCSS | Strong Vue-first investment, Radix lineage        | Less integrated with PandaCSS; Ark UI + Panda is a more coherent stack | Ark UI + PandaCSS preferred for coherence |
+| Chakra UI Vue                           | Familiar Chakra mental model                      | Less maintained, inherits default theme user explicitly rejected       | Inherited defaults problem                |
+| Vue SFC scoped styles                   | Collocated, idiomatic Vue                         | Not typed; same frustration as CSS modules in practice                 | Typed styling is a hard requirement       |
+| Tailwind CSS                            | Utility-first, widely adopted                     | DOM pollution with utility classes — explicit rejection                | Hard no                                   |
+| Storybook                               | Mature, widely adopted                            | Framework adaptation layer for Vue; Histoire is Vue-native             | Histoire is the right fit                 |
 
 ---
 
 ## Consequences
 
 **Positive:**
+
 - Zero inherited defaults — every token and style is intentional
 - Type-safe styling enforced at compile time via PandaCSS
 - Accessible component primitives via Ark UI + Zag.js state machines
@@ -92,12 +93,14 @@ Histoire is Vue-native (built by Akryum, the Vue tooling ecosystem). Story files
 - PandaCSS `styled-system/` generated types become the machine-readable source of truth for agents
 
 **Negative / Risks:**
+
 - Ark UI's Vue support is secondary to React — potential lag in Vue-specific fixes or features
 - PandaCSS + Ark requires more upfront work than a pre-styled component library (no out-of-the-box buttons or inputs)
 - Nuxt limits unknown — meta-framework may impose constraints not yet visible; flagged as an open risk
 - No design files established yet — token setup is a dependency for the first component
 
 **Neutral:**
+
 - Monorepo setup (pnpm workspaces, frontend/backend/design-system packages) will be established in a separate ADR
 - Design system initialization (Figma → tokens → `panda.config.ts`) is a prerequisite before first atom is built
 
@@ -105,13 +108,13 @@ Histoire is Vue-native (built by Akryum, the Vue tooling ecosystem). Story files
 
 ## Open Questions
 
-| Question | Owner | Notes |
-|---|---|---|
-| What are Nuxt's actual limits for this project? | User + implementation | Explore during build — if Nuxt imposes constraints, fall back to Vite |
-| Do design files (Figma, etc.) exist, or will tokens be defined during implementation? | User | Affects whether a Figma → PandaCSS codegen step is needed |
-| ~~Monorepo structure: how are frontend, backend, and design-system packages organized?~~ | ~~Deferred~~ | **Resolved**: See [Monorepo Tooling ADR](20260227T022513Z-engineering-monorepo-tooling.md) |
-| Agent design system compliance: `.claude/rules/design-system.md` setup | Deferred | Separate ADR — design system ADR |
-| ~~iOS audio autoplay restrictions~~ | ~~Deferred~~ | **Resolved**: Hybrid approach — session-level `AudioContext` unlock + per-question autoplay attempt + visible tap-to-play fallback. See PWA ADR. |
+| Question                                                                                 | Owner                 | Notes                                                                                                                                            |
+| ---------------------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| What are Nuxt's actual limits for this project?                                          | User + implementation | Explore during build — if Nuxt imposes constraints, fall back to Vite                                                                            |
+| Do design files (Figma, etc.) exist, or will tokens be defined during implementation?    | User                  | Affects whether a Figma → PandaCSS codegen step is needed                                                                                        |
+| ~~Monorepo structure: how are frontend, backend, and design-system packages organized?~~ | ~~Deferred~~          | **Resolved**: See [Monorepo Tooling ADR](20260227T022513Z-engineering-monorepo-tooling.md)                                                       |
+| Agent design system compliance: `.claude/rules/design-system.md` setup                   | Deferred              | Separate ADR — design system ADR                                                                                                                 |
+| ~~iOS audio autoplay restrictions~~                                                      | ~~Deferred~~          | **Resolved**: Hybrid approach — session-level `AudioContext` unlock + per-question autoplay attempt + visible tap-to-play fallback. See PWA ADR. |
 
 ---
 

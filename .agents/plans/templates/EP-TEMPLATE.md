@@ -2,7 +2,9 @@
 
 **Created**: {TIMESTAMP}
 **Status**: Draft
+
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
+
 **Type**: Epic Plan
 **Depends on**: {EP## or N/A}
 **Parallel with**: {EP## or N/A — epics that can be built concurrently once shared deps complete}
@@ -17,10 +19,12 @@
 ## Scope
 
 **In scope**:
+
 - {Feature 1}
 - {Feature 2}
 
 **Out of scope**:
+
 - {Explicitly excluded}
 
 ---
@@ -34,9 +38,11 @@
 <!-- ### Phase 1: {Sub-domain name} (EP##-PH01) -->
 
 ### EP##-ST01: {Story Title}
+
 **Scope**: {One-line — one layer only}
 
 ### EP##-ST02: {Story Title}
+
 **Scope**: {One-line — one layer only}
 
 <!-- ### Phase 2: {Sub-domain name} (EP##-PH02) -->

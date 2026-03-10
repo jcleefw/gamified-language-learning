@@ -22,6 +22,7 @@ git rev-parse --abbrev-ref HEAD  # confirms which branch YOU are on
 ```
 
 Example output:
+
 ```
 /path/to/project                     [main]          ← coordination window (human)
 /path/to/project/.worktrees/ep05     [feature/EP05-srs-active-window-stuck-words]  ← your window
@@ -105,11 +106,11 @@ DONE WITH EPIC
 
 ## Worktree ↔ Epic ↔ Branch Map
 
-| Worktree path | Branch | Epic |
-|---|---|---|
-| `.worktrees/ep05` | `feature/EP05-srs-active-window-stuck-words` | EP05 — Active Window + Stuck Words |
-| `.worktrees/ep06` | `feature/EP06-srs-foundational-deck` | EP06 — Foundational Deck |
-| *(main project dir)* | `main` | Coordination only — no implementation here |
+| Worktree path        | Branch                                       | Epic                                       |
+| -------------------- | -------------------------------------------- | ------------------------------------------ |
+| `.worktrees/ep05`    | `feature/EP05-srs-active-window-stuck-words` | EP05 — Active Window + Stuck Words         |
+| `.worktrees/ep06`    | `feature/EP06-srs-foundational-deck`         | EP06 — Foundational Deck                   |
+| _(main project dir)_ | `main`                                       | Coordination only — no implementation here |
 
 > Update this table when new worktrees are created.
 
@@ -118,18 +119,23 @@ DONE WITH EPIC
 ## Common Mistakes and Fixes
 
 ### "I can't find my memory file"
+
 Your memory folder is `.agents/memory/feature/{your-full-branch-name}/`. Run `git rev-parse --abbrev-ref HEAD` to get the exact branch name. The folder must match exactly.
 
 ### "Should I create a new branch for each story?"
+
 No. One worktree = one branch = one epic. All stories within the epic commit to the same feature branch. Story separation is via commit messages, not branches.
 
 ### "git checkout main says 'branch already checked out'"
+
 Correct — main is locked to the main project directory. You cannot and should not check it out in a worktree. Stay on your feature branch.
 
 ### "I finished the epic. What do I push?"
+
 Push your feature branch: `git push origin $(git rev-parse --abbrev-ref HEAD)`. Then create the PR. Do not push to main.
 
 ### "There are files from another epic in my directory"
+
 Because worktrees share git history, you can see files committed to other branches only after those PRs are merged to main. Do not copy, edit, or delete them.
 
 ---

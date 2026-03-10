@@ -11,22 +11,27 @@ Implemented `FsrsScheduler` — a concrete `SpacedRepetitionScheduler` wrapping 
 ## Files Modified
 
 ### `packages/srs-engine/package.json`
+
 - Added `ts-fsrs: "^5"` as a runtime dependency
 
-### `packages/srs-engine/src/scheduling/FsrsScheduler.ts` *(new)*
+### `packages/srs-engine/src/scheduling/FsrsScheduler.ts` _(new)_
+
 - `FsrsScheduler` class implementing `SpacedRepetitionScheduler`
 - Constructor accepts `Pick<SrsConfig, 'desiredRetention' | 'maxIntervalDays'>`
 - `scheduleReview`: correct → `Rating.Good`, wrong → `Rating.Again`; caps at `maxIntervalDays`; does not mutate input
 - `getNextInterval`: returns 1 for no prior state; returns capped `scheduledDays` otherwise
 - `enable_short_term: false` — required for day-based scheduling from first review (ts-fsrs default uses minutes)
 
-### `packages/srs-engine/src/scheduling/__tests__/FsrsScheduler.test.ts` *(new)*
+### `packages/srs-engine/src/scheduling/__tests__/FsrsScheduler.test.ts` _(new)_
+
 - 11 unit tests covering all spec paths: isLapse flags, increasing intervals, 90-day cap, fresh card, no-mutation, getNextInterval
 
 ### `packages/srs-engine/src/index.ts`
+
 - Added `export { FsrsScheduler }` from scheduling module
 
 ### `CODEMAP.md`
+
 - Added entries for `FsrsScheduler.ts` and `FsrsScheduler.test.ts`
 
 ## Behavior Preserved / New Behavior

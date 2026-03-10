@@ -11,6 +11,7 @@ Added `packages/srs-engine/__tests__/integration/active-window-lifecycle.test.ts
 ## Files Added
 
 ### `packages/srs-engine/__tests__/integration/active-window-lifecycle.test.ts`
+
 - File-level doc comment describing the 4 integration scenarios
 - Test 1: Words promoted via `updateMastery` are counted as active by `getEligibleWords`; non-promoted words appear in `eligible`
 - Test 2: `newSlots` decreases correctly as the active window fills to `activeWordLimit` (partial fill → 2 slots; full → 0 slots)

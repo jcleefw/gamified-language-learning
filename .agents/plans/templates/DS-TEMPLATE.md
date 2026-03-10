@@ -12,9 +12,9 @@
 
 ## 2. Core Requirements
 
-| Requirement | Decision | Rationale |
-|-------------|----------|-----------|
-| {Name} | {Decision} | {Why} |
+| Requirement | Decision   | Rationale |
+| ----------- | ---------- | --------- |
+| {Name}      | {Decision} | {Why}     |
 
 ## 3. Data Structures
 
@@ -38,21 +38,25 @@ START → {Step 1} → {Decision?} → {Step 2} → END
 <!-- ### Phase 1: {Sub-domain name} (EP##-PH01) -->
 
 ### EP##-ST01: {Data Layer}
+
 **Scope**: {one layer}
 **Read List**: {FILES THE AGENT SHOULD READ — token-saving}
 **Tasks**:
+
 - [ ] {Task}
-**Acceptance Criteria**:
+      **Acceptance Criteria**:
 - [ ] {Criterion}
 
 <!-- ### Phase 2: {Sub-domain name} (EP##-PH02) -->
 
 ### EP##-ST02: {UI Component}
+
 **Scope**: {one component}
 **Read List**: {FILES}
 **Tasks**:
+
 - [ ] {Task}
-**Acceptance Criteria**:
+      **Acceptance Criteria**:
 - [ ] {Criterion}
 
 ## 6. Success Criteria

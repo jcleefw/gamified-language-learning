@@ -15,6 +15,7 @@ unchanged while satisfying the language-agnostic mapper API.
 ## Files Modified
 
 ### `scripts/quiz-runner.ts` _(created)_
+
 - Loads first 5 consonants from `foundations-consonants.ts` via `characterToWordState()`
 - Reads `conversations-2026-03-08.json`, adapts `raw.thai → native`, converts via `conversationWordsToWordStates()`
 - Builds a `wordDetails` lookup map (wordId → native/romanization/english) for display
@@ -25,6 +26,7 @@ unchanged while satisfying the language-agnostic mapper API.
 - Exits cleanly on `q` or when no eligible words remain; closes readline in `finally` block
 
 ### `package.json` _(modified)_
+
 - Added `"quiz": "tsx scripts/quiz-runner.ts"` to root scripts
 
 ## Behavior Preserved / New Behavior

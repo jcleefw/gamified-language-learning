@@ -2,7 +2,9 @@
 
 **Date**: {TIMESTAMP}
 **Status**: Changes Requested
+
 <!-- Status: Changes Requested | Passed | Conditional Pass -->
+
 **Epic**: [EP## - {Name}]({path})
 **Scope**: {what was reviewed}
 
@@ -10,8 +12,8 @@
 
 ## Reviewed Files
 
-| File | Story | Verdict |
-|------|-------|---------|
+| File   | Story  | Verdict      |
+| ------ | ------ | ------------ |
 | {file} | {ST##} | ✅ / ⚠️ / 🚨 |
 
 ---
@@ -39,9 +41,9 @@
 
 ## Resolution Log
 
-| # | Issue | Resolution | Justification | Changelog |
-|---|-------|-----------|---------------|-----------|
-| 1 | {issue} | ✅ Fixed / 🔄 Revised / ⏭️ Deferred / ❌ Won't Fix | {why, if not fixed} | {EP##-ST## or —} |
+| #   | Issue   | Resolution                                         | Justification       | Changelog        |
+| --- | ------- | -------------------------------------------------- | ------------------- | ---------------- |
+| 1   | {issue} | ✅ Fixed / 🔄 Revised / ⏭️ Deferred / ❌ Won't Fix | {why, if not fixed} | {EP##-ST## or —} |
 
 <!-- Resolution statuses:
   ✅ Fixed      — Implemented as suggested

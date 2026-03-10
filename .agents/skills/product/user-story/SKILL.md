@@ -13,6 +13,7 @@ If no input is provided, stop and ask: "What feature or requirement should this 
 ## Output Structure
 
 ### Story
+
 ```
 As a [specific user type],
 I want to [action or capability],
@@ -22,6 +23,7 @@ So that [outcome or benefit].
 Use a specific user type — not "user". If multiple user types are relevant, write a story for each.
 
 ### Acceptance Criteria
+
 Write as a numbered checklist using "Given / When / Then" format:
 
 ```
@@ -30,17 +32,21 @@ Write as a numbered checklist using "Given / When / Then" format:
 ```
 
 Include at minimum:
+
 - The happy path
 - One error/failure state
 - One boundary condition
 
 ### Edge Cases
+
 List scenarios that are not covered by the acceptance criteria above but could cause issues:
+
 - Input edge cases (empty, very long, special characters)
 - State edge cases (first-time user, no data, concurrent use)
 - Permission edge cases (unauthorized, expired session)
 
 ### Out of Scope
+
 List what this story explicitly does not cover, to avoid misinterpretation.
 
 ---
@@ -64,9 +70,11 @@ Use the current UTC timestamp and a 2–4 word kebab-case description of the sto
 ## File Output
 
 Save the completed document to:
+
 ```
 product-documentation/user-stories/YYYYMMDDTHHMMSSZ-<short-description>.md
 ```
+
 Example: `product-documentation/user-stories/20260226T143000Z-export-csv-report.md`
 
 Use the current UTC timestamp and a 2–4 word kebab-case description of the story.

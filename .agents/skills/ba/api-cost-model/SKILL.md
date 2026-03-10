@@ -7,6 +7,7 @@ model: sonnet
 Model API usage costs for: $ARGUMENTS
 
 If no input is provided, stop and ask:
+
 1. "Which API and pricing tier are we modeling? (e.g., Gemini TTS, Standard tier)"
 2. "What is the billing unit? (e.g., per character, per request, per token)"
 3. "What is the expected usage? Give low/medium/high estimates if possible (e.g., requests per day, data volume per request)."
@@ -32,29 +33,29 @@ If no input is provided, stop and ask:
 
 #### Pricing Inputs
 
-| Parameter | Value |
-|---|---|
-| Provider | |
-| Billing unit | (e.g., per 1M characters) |
-| Price per unit | |
-| Free tier limit | |
-| Volume discount thresholds | |
+| Parameter                  | Value                     |
+| -------------------------- | ------------------------- |
+| Provider                   |                           |
+| Billing unit               | (e.g., per 1M characters) |
+| Price per unit             |                           |
+| Free tier limit            |                           |
+| Volume discount thresholds |                           |
 
 #### Usage Assumptions
 
 | Scenario | [dimension 1] | [dimension 2] | Requests/day | Units/request | Units/day |
-|---|---|---|---|---|---|
-| Low | | | | | |
-| Medium | | | | | |
-| High | | | | | |
+| -------- | ------------- | ------------- | ------------ | ------------- | --------- |
+| Low      |               |               |              |               |           |
+| Medium   |               |               |              |               |           |
+| High     |               |               |              |               |           |
 
 #### Cost Projections
 
 | Scenario | Daily | Monthly | Annual | Notes |
-|---|---|---|---|---|
-| Low | | | | |
-| Medium | | | | |
-| High | | | | |
+| -------- | ----- | ------- | ------ | ----- |
+| Low      |       |         |        |       |
+| Medium   |       |         |        |       |
+| High     |       |         |        |       |
 
 #### Key Observations
 

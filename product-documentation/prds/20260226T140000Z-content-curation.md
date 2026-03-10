@@ -159,25 +159,25 @@ Currently no curation tool exists for this product. Without one, no content reac
 
 All targets are starting points. To be validated after **Gate 1** (solo user × 7 days).
 
-| Category | Metric | Target | Type |
-|---|---|---|---|
-| Curation Speed | Time to publish-ready deck (conversation + breakdown + audio) | < 15 minutes | Leading |
-| Content Quality | Published conversations with complete breakdowns | 100% | Leading |
-| Content Volume | Decks published per curator per week | ≥ 5 [Assumed] | Leading |
-| Language Coverage | Languages with at least 10 published decks | ≥ 2 within 30 days of launch [Assumed] | Lagging |
-| Content Health | Published decks subsequently unpublished | < 10% | Lagging |
-| Collaboration | Conversations with collaboration enabled | Tracking only (no target) | Leading |
+| Category          | Metric                                                        | Target                                 | Type    |
+| ----------------- | ------------------------------------------------------------- | -------------------------------------- | ------- |
+| Curation Speed    | Time to publish-ready deck (conversation + breakdown + audio) | < 15 minutes                           | Leading |
+| Content Quality   | Published conversations with complete breakdowns              | 100%                                   | Leading |
+| Content Volume    | Decks published per curator per week                          | ≥ 5 [Assumed]                          | Leading |
+| Language Coverage | Languages with at least 10 published decks                    | ≥ 2 within 30 days of launch [Assumed] | Lagging |
+| Content Health    | Published decks subsequently unpublished                      | < 10%                                  | Lagging |
+| Collaboration     | Conversations with collaboration enabled                      | Tracking only (no target)              | Leading |
 
 ---
 
 ## 7. Open Questions
 
-| # | Question | Owner | Target Date |
-|---|---|---|---|
-| 1 | TTS cost analysis — is word-level and sentence-level TTS viable for MVP? | User | DONE |
-| 2 | TTS audio consistency — how consistent are separately generated audio segments (full conversation vs. per-sentence vs. per-word)? | User | TBD (implementation spike) | DONE
-| 3 | Foundational deck JSON schema — what is the formal schema for languages beyond Thai? | User | TBD (per-language) |
+| #   | Question                                                                                                                          | Owner | Target Date                |
+| --- | --------------------------------------------------------------------------------------------------------------------------------- | ----- | -------------------------- | ---- |
+| 1   | TTS cost analysis — is word-level and sentence-level TTS viable for MVP?                                                          | User  | DONE                       |
+| 2   | TTS audio consistency — how consistent are separately generated audio segments (full conversation vs. per-sentence vs. per-word)? | User  | TBD (implementation spike) | DONE |
+| 3   | Foundational deck JSON schema — what is the formal schema for languages beyond Thai?                                              | User  | TBD (per-language)         |
 
 ---
 
-*This PRD covers the admin/curator content curation workflow. For learner-facing quiz and SRS mechanics, see `PRD-srs-learning-path.md`. User management & auth will be covered in a separate PRD.*
+_This PRD covers the admin/curator content curation workflow. For learner-facing quiz and SRS mechanics, see `PRD-srs-learning-path.md`. User management & auth will be covered in a separate PRD._

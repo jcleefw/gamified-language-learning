@@ -10,27 +10,27 @@
 
 ## Unit Tests
 
-| File | Tests |
-|------|-------|
+| File     | Tests         |
+| -------- | ------------- |
 | `{path}` | {Description} |
 
 ## Integration / E2E Tests
 
-| Feature | Coverage |
-|---------|----------|
+| Feature     | Coverage    |
+| ----------- | ----------- |
 | `{feature}` | {Scenarios} |
 
 ## Test Data
 
-| ID | Field 1 | Field 2 |
-|----|---------|---------|
+| ID   | Field 1 | Field 2 |
+| ---- | ------- | ------- |
 | {id} | {value} | {value} |
 
 ## Coverage Goals
 
-| Area | Target |
-|------|--------|
-| Unit tests | {target} |
+| Area          | Target   |
+| ------------- | -------- |
+| Unit tests    | {target} |
 | E2E scenarios | {target} |
 
 ## Execution

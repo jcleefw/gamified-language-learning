@@ -3,7 +3,9 @@
 **Created**: 20260306T014133Z
 **Status**: Draft
 **Status Changed**: 20260306T014133Z
+
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
+
 **Type**: Epic Plan
 **Depends on**: EP07
 **Parallel with**: N/A
@@ -18,6 +20,7 @@ The SRS engine is pure logic with no observable output until something calls it 
 ## Scope
 
 **In scope**:
+
 - Seed data from real sample files: `data/samples/foundations-consonants.ts` (44 Thai consonants) and `data/samples/conversations-2026-03-08.json` (conversation decks with `uniqueWords`)
 - Content type definitions (`FoundationalCharacter`, `Conversation`, `ConversationWord` — language-agnostic) and mapper functions that transform raw content → `WordState[]`
 - `scripts/quiz-runner.ts` — terminal script using `tsx`; composes a batch, accepts answers (stdin preferred; hardcoded fallback acceptable), prints updated mastery states, loops to next batch
@@ -25,6 +28,7 @@ The SRS engine is pure logic with no observable output until something calls it 
 - All data in-memory — no database, no network, no file persistence
 
 **Out of scope**:
+
 - Pretty terminal UI (chalk/ink) — plain `console.log` is sufficient
 - Saving quiz state between process runs — in-memory only
 - Full conversation breakdown/component rendering — only `uniqueWords` used for quiz words
@@ -34,9 +38,11 @@ The SRS engine is pure logic with no observable output until something calls it 
 ## Stories
 
 ### EP08-ST01: Content types + seed data mappers
+
 **Scope**: Define `FoundationalCharacter`, `Conversation`, `ConversationWord` types (language-agnostic) in `packages/srs-engine/data/`; implement mapper functions (`characterToWordState`, `conversationWordsToWordStates`, `slugifyWord`) that transform real sample files into `WordState[]`; unit tests for mappers; only 5 consonants for the foundational deck
 
 ### EP08-ST02: Terminal quiz runner
+
 **Scope**: Implement `scripts/quiz-runner.ts` — instantiate `SrsEngine` with default config, load real seed data via mappers, loop: `composeBatch` → print questions → accept stdin answers → `processAnswers` → print updated states; run at least 3 batch iterations to demonstrate carry-over and phase progression; `pnpm run quiz` (or `tsx scripts/quiz-runner.ts`) executes it
 
 ---

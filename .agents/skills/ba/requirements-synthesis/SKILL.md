@@ -7,6 +7,7 @@ model: sonnet
 Synthesize the following stakeholder input into requirements: $ARGUMENTS
 
 If no input is provided, stop and ask:
+
 1. "Paste the raw input — interview notes, workshop outputs, email threads, or stakeholder feedback."
 2. "How many stakeholders or sessions does this cover?"
 3. "Is there an existing requirements baseline to merge into, or are we starting fresh?"
@@ -27,6 +28,7 @@ If no input is provided, stop and ask:
 ## Output Structure
 
 ### Synthesis Summary
+
 - Sources: how many stakeholders / sessions / documents
 - Total raw statements extracted: [N]
 - After de-duplication: [N] distinct requirements
@@ -34,38 +36,43 @@ If no input is provided, stop and ask:
 
 ### Functional Requirements
 
-| ID | Requirement | Source(s) | Confidence | Notes |
-|---|---|---|---|---|
-| FR-001 | The system shall... | [Stakeholder A, Session 1] | High / Medium / Low | |
+| ID     | Requirement         | Source(s)                  | Confidence          | Notes |
+| ------ | ------------------- | -------------------------- | ------------------- | ----- |
+| FR-001 | The system shall... | [Stakeholder A, Session 1] | High / Medium / Low |       |
 
 **Confidence levels:**
+
 - **High** — explicitly stated by stakeholder, unambiguous
 - **Medium** — implied or inferred from context
 - **Low** — derived from a single offhand comment or edge case
 
 ### Non-Functional Requirements
 
-| ID | Category | Requirement | Source(s) | Confidence |
-|---|---|---|---|---|
-| NFR-001 | Performance / Security / Usability / ... | | | |
+| ID      | Category                                 | Requirement | Source(s) | Confidence |
+| ------- | ---------------------------------------- | ----------- | --------- | ---------- |
+| NFR-001 | Performance / Security / Usability / ... |             |           |            |
 
 ### Conflicts
+
 Where stakeholders expressed contradictory needs:
 
-| ID | Conflict | Stakeholder A position | Stakeholder B position | Recommended resolution path |
-|---|---|---|---|---|
-| C-001 | | | | Escalate to [owner] / Validate with data / Design decision |
+| ID    | Conflict | Stakeholder A position | Stakeholder B position | Recommended resolution path                                |
+| ----- | -------- | ---------------------- | ---------------------- | ---------------------------------------------------------- |
+| C-001 |          |                        |                        | Escalate to [owner] / Validate with data / Design decision |
 
 ### Out of Scope
+
 Requirements captured but excluded from scope — document the reason:
 
 | Statement | Source | Reason excluded |
-|---|---|---|
+| --------- | ------ | --------------- |
 
 ### Assumptions Made During Synthesis
+
 Every interpretation you made that was not explicitly stated. Each assumption is a risk.
 
 ### Open Questions
+
 What is still unclear and needs a follow-up? Include who should answer it.
 
 ---
