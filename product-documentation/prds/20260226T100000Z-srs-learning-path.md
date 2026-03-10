@@ -40,6 +40,7 @@ The cost of not solving this: learners forget 80%+ of vocabulary within weeks wi
 **Primary user**: A language learner (tourist, hobbyist, or serious student) who reads English or a Romanic script. They open the app in short sessions (5–15 minutes), pick a conversation topic in their target language, and learn vocabulary through gamified quizzes.
 
 **Secondary users**:
+
 - **Curator**: Creates conversation topics, configures difficulty and formality, reviews AI-generated content.
 - **Admin**: Manages users and roles.
 
@@ -156,19 +157,20 @@ The cost of not solving this: learners forget 80%+ of vocabulary within weeks wi
 
 All targets are starting points. To be validated after **Gate 1** (solo user × 7 days).
 
-| Category | Metric | Target | Type |
-|---|---|---|---|
-| Learning Effectiveness | Mastered words correct on first ANKI review | ≥ 80% | Leading |
-| Learning Effectiveness | Average words mastered per session trend | Increasing | Lagging |
-| Learning Effectiveness | Foundational deck completion rate (10+ session users) | > 70% | Lagging |
-| Engagement | Average batches per session | ≥ 2 | Leading |
-| Engagement | Deck abandonment before 50% mastery | < 15% | Lagging |
-| Engagement | Shelved word quota hit rate | < 10% of batches | Leading |
-| System Health | ANKI fallback rate (3-lapse words) | < 5% of mastered words | Lagging |
-| System Health | Stuck word shelving trigger rate | < 20% of sessions | Leading |
-| System Health | Peek button usage rate | < 25% of questions | Leading |
+| Category               | Metric                                                | Target                 | Type    |
+| ---------------------- | ----------------------------------------------------- | ---------------------- | ------- |
+| Learning Effectiveness | Mastered words correct on first ANKI review           | ≥ 80%                  | Leading |
+| Learning Effectiveness | Average words mastered per session trend              | Increasing             | Lagging |
+| Learning Effectiveness | Foundational deck completion rate (10+ session users) | > 70%                  | Lagging |
+| Engagement             | Average batches per session                           | ≥ 2                    | Leading |
+| Engagement             | Deck abandonment before 50% mastery                   | < 15%                  | Lagging |
+| Engagement             | Shelved word quota hit rate                           | < 10% of batches       | Leading |
+| System Health          | ANKI fallback rate (3-lapse words)                    | < 5% of mastered words | Lagging |
+| System Health          | Stuck word shelving trigger rate                      | < 20% of sessions      | Leading |
+| System Health          | Peek button usage rate                                | < 25% of questions     | Leading |
 
 **Review gates**:
+
 - **Gate 1**: Solo user × 7 days — gut-check all metrics, adjust obvious problems.
 - **Gate 2**: 200 active users × 30 days — statistically meaningful validation.
 - **Gate 3**: Quarterly thereafter.
@@ -248,24 +250,24 @@ Learners authenticate via **Google OAuth** or **email/password credentials** usi
 
 ## 12. Dependencies
 
-| Dependency | Document | Status |
-|---|---|---|
-| Content curation pipeline (provides conversation decks and word breakdowns) | [Content Curation PRD](20260226T140000Z-content-curation.md) | Complete |
-| User management & authentication | [User Mgmt PRD](20260226T150000Z-user-management-auth.md) | Complete |
-| Gemini TTS audio generation | [Gemini TTS PRD](20260302T000000Z-gemini-tts-generation.md) | Draft |
-| PWA platform strategy | [PWA ADR](../architecture/20260227T000000Z-fe-pwa-platform-strategy.md) | Accepted |
-| Frontend framework & toolchain | [FE ADR](../architecture/20260226T133833Z-fe-framework-toolchain.md) | Accepted |
-| Monorepo & engineering tooling | [Engineering ADR](../architecture/20260227T022513Z-engineering-monorepo-tooling.md) | Accepted |
-| Infrastructure (D1, R2, Workers) | [Infra ADR](../architecture/20260301T161844Z-infra-cloudflare-platform.md) | Accepted |
+| Dependency                                                                  | Document                                                                            | Status   |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------- |
+| Content curation pipeline (provides conversation decks and word breakdowns) | [Content Curation PRD](20260226T140000Z-content-curation.md)                        | Complete |
+| User management & authentication                                            | [User Mgmt PRD](20260226T150000Z-user-management-auth.md)                           | Complete |
+| Gemini TTS audio generation                                                 | [Gemini TTS PRD](20260302T000000Z-gemini-tts-generation.md)                         | Draft    |
+| PWA platform strategy                                                       | [PWA ADR](../architecture/20260227T000000Z-fe-pwa-platform-strategy.md)             | Accepted |
+| Frontend framework & toolchain                                              | [FE ADR](../architecture/20260226T133833Z-fe-framework-toolchain.md)                | Accepted |
+| Monorepo & engineering tooling                                              | [Engineering ADR](../architecture/20260227T022513Z-engineering-monorepo-tooling.md) | Accepted |
+| Infrastructure (D1, R2, Workers)                                            | [Infra ADR](../architecture/20260301T161844Z-infra-cloudflare-platform.md)          | Accepted |
 
 ---
 
 ## 13. Open Questions
 
-| Question | Owner | Target |
-|---|---|---|
-| ~~iOS audio autoplay — does tap-to-play UX feel natural in quiz flow?~~ | Dev | ~~First quiz prototype~~ — **Resolved**: Hybrid approach (session-level `AudioContext` unlock + per-question autoplay attempt + visible tap-to-play fallback). See PWA ADR. |
-| ~~Mid-quiz connection loss~~ — **Resolved**: Discard in-progress batch if app closed before reconnection. No localStorage persistence in v1. Revisit at Gate 2 with real usage data. | Product | ~~Gate 1 review~~ Resolved |
-| ~~ANKI algorithm parameters — use Anki defaults or tune for shorter mobile sessions?~~ — **Resolved**: FSRS defaults (desired retention 0.90) + 90-day max interval cap. Tuning knobs: raise retention to 0.92–0.95 if first-review accuracy < 80%; lower max interval if ANKI fallback rate > 5%. Both configurable via `SrsConfig`. | Product | ~~Gate 1 review~~ Resolved |
-| Foundational deck content — who creates the initial consonant/vowel/tone decks per language? | Curator / Product | Before first language launch |
-| Batch assembly performance — is < 100ms achievable with D1 at scale? | Dev | Before Gate 2 |
+| Question                                                                                                                                                                                                                                                                                                                              | Owner             | Target                                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~iOS audio autoplay — does tap-to-play UX feel natural in quiz flow?~~                                                                                                                                                                                                                                                               | Dev               | ~~First quiz prototype~~ — **Resolved**: Hybrid approach (session-level `AudioContext` unlock + per-question autoplay attempt + visible tap-to-play fallback). See PWA ADR. |
+| ~~Mid-quiz connection loss~~ — **Resolved**: Discard in-progress batch if app closed before reconnection. No localStorage persistence in v1. Revisit at Gate 2 with real usage data.                                                                                                                                                  | Product           | ~~Gate 1 review~~ Resolved                                                                                                                                                  |
+| ~~ANKI algorithm parameters — use Anki defaults or tune for shorter mobile sessions?~~ — **Resolved**: FSRS defaults (desired retention 0.90) + 90-day max interval cap. Tuning knobs: raise retention to 0.92–0.95 if first-review accuracy < 80%; lower max interval if ANKI fallback rate > 5%. Both configurable via `SrsConfig`. | Product           | ~~Gate 1 review~~ Resolved                                                                                                                                                  |
+| Foundational deck content — who creates the initial consonant/vowel/tone decks per language?                                                                                                                                                                                                                                          | Curator / Product | Before first language launch                                                                                                                                                |
+| Batch assembly performance — is < 100ms achievable with D1 at scale?                                                                                                                                                                                                                                                                  | Dev               | Before Gate 2                                                                                                                                                               |

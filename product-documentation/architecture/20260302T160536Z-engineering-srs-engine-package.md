@@ -26,28 +26,28 @@ Extract all SRS learning logic into **`packages/srs-engine`** — a pure, side-e
 
 ### What Goes In
 
-| Responsibility | Description | PRD Reference |
-|---|---|---|
-| **Mastery counting** | +1 correct / -1 wrong, floor at 0, configurable thresholds (5 foundational, 10 curated) | §5.4 |
-| **Phase transitions** | Learning → ANKI review on mastery threshold; ANKI → Learning on 3 lapses (mastery reset to 0) | §5.4, §5.5 |
-| **ANKI scheduling** | Interval calculation, ease factor, lapse tracking — via `ts-fsrs` behind an internal abstraction | §5.5 |
-| **Batch composition** | Build a batch of 15 questions: priority ordering (carry-over → foundational revision → new words → foundational learning), question type distribution (70/20/10 or post-depletion split), audio unavailability redistribution | §5.1, §5.3 |
-| **Active window management** | 8-word limit, 4-new-per-batch cap, sliding window entry on mastery | §5.2 |
-| **Stuck word logic** | No progress after 3 batches → shelved 1 day, max 2 shelved, re-entry as carry-over | §5.9 |
-| **Foundational deck mechanics** | 3 active at a time, continuous wrong rule (3 wrong → reset), 20% → 5% allocation shift on depletion | §5.6 |
-| **Answer processing** | Process a completed batch of answers, return updated mastery states. Wrong words carry over to next batch via existing priority rules — no mid-batch re-insertion | §5.7 |
-| **Configuration validation** | Validate that provided config values are sane (e.g., batch size > 0, thresholds > 0) | §5.14 |
+| Responsibility                  | Description                                                                                                                                                                                                                   | PRD Reference |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| **Mastery counting**            | +1 correct / -1 wrong, floor at 0, configurable thresholds (5 foundational, 10 curated)                                                                                                                                       | §5.4          |
+| **Phase transitions**           | Learning → ANKI review on mastery threshold; ANKI → Learning on 3 lapses (mastery reset to 0)                                                                                                                                 | §5.4, §5.5    |
+| **ANKI scheduling**             | Interval calculation, ease factor, lapse tracking — via `ts-fsrs` behind an internal abstraction                                                                                                                              | §5.5          |
+| **Batch composition**           | Build a batch of 15 questions: priority ordering (carry-over → foundational revision → new words → foundational learning), question type distribution (70/20/10 or post-depletion split), audio unavailability redistribution | §5.1, §5.3    |
+| **Active window management**    | 8-word limit, 4-new-per-batch cap, sliding window entry on mastery                                                                                                                                                            | §5.2          |
+| **Stuck word logic**            | No progress after 3 batches → shelved 1 day, max 2 shelved, re-entry as carry-over                                                                                                                                            | §5.9          |
+| **Foundational deck mechanics** | 3 active at a time, continuous wrong rule (3 wrong → reset), 20% → 5% allocation shift on depletion                                                                                                                           | §5.6          |
+| **Answer processing**           | Process a completed batch of answers, return updated mastery states. Wrong words carry over to next batch via existing priority rules — no mid-batch re-insertion                                                             | §5.7          |
+| **Configuration validation**    | Validate that provided config values are sane (e.g., batch size > 0, thresholds > 0)                                                                                                                                          | §5.14         |
 
 ### What Stays Out
 
-| Responsibility | Where It Lives | Why |
-|---|---|---|
-| D1 queries (read word states, write mastery updates) | Calling layer (Nuxt server routes / Workers) | Engine has no I/O |
-| Audio file serving / TTS generation | TTS system / R2 | Separate concern |
-| Vue composables (`useQuizBatch`, `useWordMastery`) | `apps/web` | Framework-specific |
-| Authentication / session management | `nuxt-auth-utils` | Infrastructure concern |
-| Deck CRUD (create, publish, unpublish) | Calling layer / curation engine | Content management, not learning logic |
-| Question rendering / UI | `apps/web` components | Presentation layer |
+| Responsibility                                       | Where It Lives                               | Why                                    |
+| ---------------------------------------------------- | -------------------------------------------- | -------------------------------------- |
+| D1 queries (read word states, write mastery updates) | Calling layer (Nuxt server routes / Workers) | Engine has no I/O                      |
+| Audio file serving / TTS generation                  | TTS system / R2                              | Separate concern                       |
+| Vue composables (`useQuizBatch`, `useWordMastery`)   | `apps/web`                                   | Framework-specific                     |
+| Authentication / session management                  | `nuxt-auth-utils`                            | Infrastructure concern                 |
+| Deck CRUD (create, publish, unpublish)               | Calling layer / curation engine              | Content management, not learning logic |
+| Question rendering / UI                              | `apps/web` components                        | Presentation layer                     |
 
 ### Package Structure
 
@@ -91,11 +91,11 @@ const engine = new SrsEngine({
   foundationalAllocation: { active: 0.2, postDepletion: 0.05 },
   desiredRetention: 0.9,
   maxInterval: 90, // days — prevents words from vanishing for months
-})
+});
 
 // Core operations
-engine.composeBatch(wordStates)        // → Batch (15 questions, typed, ordered)
-engine.processAnswers(answers, states) // → UpdatedWordState[]
+engine.composeBatch(wordStates); // → Batch (15 questions, typed, ordered)
+engine.processAnswers(answers, states); // → UpdatedWordState[]
 ```
 
 Exact method signatures deferred to ADR #4 (API surface design).
@@ -142,12 +142,12 @@ This allows swapping to a custom implementation without changing the engine's pu
 
 ### Dependencies
 
-| Dependency | Type | Purpose |
-|---|---|---|
-| `ts-fsrs` | Runtime | ANKI scheduling (behind abstraction) |
-| `date-fns` | Runtime (if needed) | Date math for interval calculations |
-| `vitest` | Dev | Unit + integration tests |
-| `typescript` | Dev | Type checking, build |
+| Dependency   | Type                | Purpose                              |
+| ------------ | ------------------- | ------------------------------------ |
+| `ts-fsrs`    | Runtime             | ANKI scheduling (behind abstraction) |
+| `date-fns`   | Runtime (if needed) | Date math for interval calculations  |
+| `vitest`     | Dev                 | Unit + integration tests             |
+| `typescript` | Dev                 | Type checking, build                 |
 
 Hard rule: **no framework dependencies** (no Vue, no Nuxt, no Cloudflare bindings, no HTTP libraries, no database drivers).
 
@@ -175,20 +175,21 @@ Semver with changelog generated from commits. Even as an internal `workspace:*` 
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| Keep SRS logic in `src/server/services/` | No package overhead, simpler project structure | Coupled to Nuxt/Cloudflare, untestable without mocking I/O, not portable | Violates the portability requirement — the engine can't be extracted or reused |
+| Option                                                   | Pros                                            | Cons                                                                                      | Why Not Chosen                                                                        |
+| -------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Keep SRS logic in `src/server/services/`                 | No package overhead, simpler project structure  | Coupled to Nuxt/Cloudflare, untestable without mocking I/O, not portable                  | Violates the portability requirement — the engine can't be extracted or reused        |
 | Engine advises, calling layer assembles batch (Option B) | Clearer responsibility split for batch assembly | Quiz rules split across two locations, calling layer must understand composition priority | Same D1 cost, but more maintenance burden on the calling layer and risk of rule drift |
-| Shared types package for engine types | Single source of truth for `WordState` etc. | Creates a dependency — engine is no longer self-contained | Undermines portability; engine should be takeable as-is |
-| Zero runtime dependencies | Maximum portability | Reinventing date math and scheduling algorithms | Impractical; ts-fsrs and date-fns are small, well-scoped, and justified |
-| No integration tests (unit only) | Faster test suite | Lifecycle bugs (phase transitions, state resets) only caught in production | 5-10 scenario tests are lightweight and catch a critical class of bugs |
-| Factory function (`createSrsEngine()`) over class | More functional style | Equivalent technically; class syntax preferred | Coding style preference for `new SrsEngine()` / `SrsEngine.create()` |
+| Shared types package for engine types                    | Single source of truth for `WordState` etc.     | Creates a dependency — engine is no longer self-contained                                 | Undermines portability; engine should be takeable as-is                               |
+| Zero runtime dependencies                                | Maximum portability                             | Reinventing date math and scheduling algorithms                                           | Impractical; ts-fsrs and date-fns are small, well-scoped, and justified               |
+| No integration tests (unit only)                         | Faster test suite                               | Lifecycle bugs (phase transitions, state resets) only caught in production                | 5-10 scenario tests are lightweight and catch a critical class of bugs                |
+| Factory function (`createSrsEngine()`) over class        | More functional style                           | Equivalent technically; class syntax preferred                                            | Coding style preference for `new SrsEngine()` / `SrsEngine.create()`                  |
 
 ---
 
 ## Consequences
 
 **Positive:**
+
 - SRS logic is testable in complete isolation — no D1, no Workers, no Vue mocking
 - Package is portable across frontends (Vue/React/Angular) and runtimes (Node/Bun/Deno/Workers)
 - Single authority for all quiz rules — no logic drift between engine and calling layer
@@ -196,11 +197,13 @@ Semver with changelog generated from commits. Even as an internal `workspace:*` 
 - Semver changelog provides clear upgrade path if published externally
 
 **Negative / Risks:**
+
 - Calling layer must map between D1 row shapes and engine types — boilerplate mapping code
 - ts-fsrs may not perfectly match the PRD's lapse/fallback rules — may need custom adapter logic or eventual replacement
 - Class-based API decision is preliminary — exact method signatures deferred to ADR #4
 
 **Neutral:**
+
 - Turborepo pipeline must include `srs-engine` as a dependency of `apps/web` and/or `packages/backend` — requires `turbo.json` update
 - ESLint flat config needs a new glob layer for `packages/srs-engine/**` (TypeScript strict)
 
@@ -208,16 +211,17 @@ Semver with changelog generated from commits. Even as an internal `workspace:*` 
 
 ## Open Questions
 
-| Question | Owner | Target |
-|---|---|---|
-| Exact method signatures and class API design | Architect | ADR #4 (API surface design) |
-| Does `ts-fsrs` support the 3-lapse fallback rule natively, or does the adapter need custom logic? | Dev | Before implementation |
-| Should `SrsEngine.create()` be offered alongside `new SrsEngine()` for ergonomics? | Dev | ADR #4 |
-| Package name — `@projectname/srs-engine` or unscoped `srs-engine`? | Dev | Before `package.json` creation |
+| Question                                                                                          | Owner     | Target                         |
+| ------------------------------------------------------------------------------------------------- | --------- | ------------------------------ |
+| Exact method signatures and class API design                                                      | Architect | ADR #4 (API surface design)    |
+| Does `ts-fsrs` support the 3-lapse fallback rule natively, or does the adapter need custom logic? | Dev       | Before implementation          |
+| Should `SrsEngine.create()` be offered alongside `new SrsEngine()` for ergonomics?                | Dev       | ADR #4                         |
+| Package name — `@projectname/srs-engine` or unscoped `srs-engine`?                                | Dev       | Before `package.json` creation |
 
 ---
 
-*Related ADRs:*
+_Related ADRs:_
+
 - [Monorepo Tooling](20260227T022513Z-engineering-monorepo-tooling.md)
 - [Infra — Cloudflare Platform](20260301T161844Z-infra-cloudflare-platform.md)
 - Curation Engine Package — ADR #2 (pending)

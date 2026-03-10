@@ -23,37 +23,45 @@ Wait for their response.
 Cover these dimensions. Skip any that are already clear from the user's description. Ask 2–3 questions per round, working conversationally until all relevant dimensions are covered.
 
 **Data Model**
+
 - What are the core entities? How do they relate to each other?
 - What data needs to persist, and what is transient?
 
 **API Surface**
+
 - What does the FE (or external consumer) need from this service?
 - What protocol is appropriate — REST, GraphQL, RPC, event-driven?
 - What are the versioning and backwards-compatibility requirements?
 
 **Service Boundaries**
+
 - Is this a new service or an extension of an existing one?
 - What are the integration points with other services or third-party APIs?
 - Where are the transactional boundaries?
 
 **Authentication and Authorization**
+
 - Who can call this? What permissions or roles apply?
 - Is there row-level or resource-level access control?
 
 **Scale and Performance**
+
 - What are the expected request volumes and data sizes?
 - Are there latency requirements? What are the SLA targets?
 - Are there read-heavy or write-heavy patterns to design for?
 
 **Async and Background Work**
+
 - Are there long-running operations, scheduled jobs, or event-driven workflows?
 - What is the failure and retry strategy for async work?
 
 **Observability**
+
 - What needs to be logged, metered, or traced?
 - What does "healthy" look like, and how will we know when it's not?
 
 **Tech Stack Constraints**
+
 - What languages, frameworks, databases, or services are already in use or mandated?
 
 ---
@@ -94,10 +102,10 @@ Why this approach? What makes it the right fit given the constraints? Reference 
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| [Alternative 1] | | | |
-| [Alternative 2] | | | |
+| Option          | Pros | Cons | Why Not Chosen |
+| --------------- | ---- | ---- | -------------- |
+| [Alternative 1] |      |      |                |
+| [Alternative 2] |      |      |                |
 
 ## Consequences
 
@@ -123,9 +131,11 @@ Unresolved decisions or assumptions that need validation. Include owner and targ
 ## File Output
 
 Save to:
+
 ```
 product-documentation/architecture/YYYYMMDDTHHMMSSZ-be-<short-description>.md
 ```
+
 Example: `product-documentation/architecture/20260226T143000Z-be-content-curation-api.md`
 
 ---
@@ -135,6 +145,7 @@ Example: `product-documentation/architecture/20260226T143000Z-be-content-curatio
 After saving, ask: "What would you like to do next?"
 
 Suggest relevant steps based on the ADR content:
+
 - If FE contracts need designing: `/architect/fe-design`
 - If infrastructure is affected: `/architect/infra-design`
 - If test strategy is needed: `/architect/qa-design`

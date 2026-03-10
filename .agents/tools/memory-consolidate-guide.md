@@ -15,6 +15,7 @@ Before or after merging a feature branch to main.
 ```
 
 **What It Does**:
+
 1. Merges decisions from feature branch into main's decision log
 2. Updates current-focus.md with branch's last state
 3. Merges session logs
@@ -28,6 +29,7 @@ Before or after merging a feature branch to main.
 ## Consolidation Mechanics
 
 ### Decision Consolidation
+
 ```
 feature-branch/recent-decisions.md
      ↓
@@ -37,6 +39,7 @@ main/recent-decisions.md [APPEND]
 ```
 
 ### Current Focus Update
+
 ```
 feature-branch/current-focus.md
      ↓
@@ -46,6 +49,7 @@ main/current-focus.md [OVERWRITE with last state]
 ```
 
 ### Session Log Merge
+
 ```
 feature-branch/session-log.md
      ↓
@@ -55,6 +59,7 @@ main/session-log.md [APPEND]
 ```
 
 ### Blocked Items
+
 ```
 feature-branch/blocked-items.md
      ↓
@@ -68,6 +73,7 @@ main/blocked-items.md [UNBLOCKING HISTORY updated when resolved]
 ## Example Workflow
 
 ### Day 1: Feature Development
+
 ```bash
 git checkout -b feature-user-auth
 # (memory auto-created at .agents/memory/feature-user-auth/)
@@ -75,6 +81,7 @@ git checkout -b feature-user-auth
 ```
 
 ### Day 2: Merge to Main
+
 ```bash
 git checkout main
 git merge feature-user-auth
@@ -95,12 +102,14 @@ rm -rf .agents/memory/feature-user-auth
 ## Manual Memory Management
 
 ### Create a New Branch Memory
+
 ```bash
 mkdir -p .agents/memory/my-feature-branch
 cp .agents/memory/main/*.md .agents/memory/my-feature-branch/
 ```
 
 ### Reset Branch Memory
+
 ```bash
 rm -rf .agents/memory/{branch}
 mkdir -p .agents/memory/{branch}
@@ -108,6 +117,7 @@ cp .agents/memory/main/*.md .agents/memory/{branch}/
 ```
 
 ### Clean Up Old Branch Memory
+
 ```bash
 rm -rf .agents/memory/old-branch-name
 git add .agents/memory/

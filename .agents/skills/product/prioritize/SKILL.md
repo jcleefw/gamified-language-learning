@@ -7,6 +7,7 @@ model: sonnet
 Prioritize the following: $ARGUMENTS
 
 If no input is provided, stop and ask:
+
 1. "Paste the list of features or items to prioritize."
 2. "Which framework should I use: RICE, MoSCoW, or Impact/Effort? (Default: RICE if unsure)"
 3. "What is the strategic goal or constraint this prioritization should optimize for?"
@@ -16,21 +17,27 @@ If no input is provided, stop and ask:
 ## Framework Definitions
 
 ### RICE
+
 Score = (Reach × Impact × Confidence) / Effort
+
 - **Reach**: How many users affected per quarter? (number)
 - **Impact**: How much does it move the needle? (3=massive, 2=significant, 1=low, 0.5=minimal)
 - **Confidence**: How sure are we? (100%=high, 80%=medium, 50%=low)
 - **Effort**: Person-weeks to build
 
 ### MoSCoW
+
 Classify each item as:
+
 - **Must Have** — launch-blocking; product fails without it
 - **Should Have** — high value, not launch-blocking
 - **Could Have** — nice to have, cut if time-pressed
 - **Won't Have** — explicitly out of scope for this cycle
 
 ### Impact/Effort
+
 Score each on two axes (High/Low):
+
 - **Impact**: user value + business value
 - **Effort**: time + complexity + risk
 
@@ -41,15 +48,19 @@ Quadrants: Quick Wins (High/Low), Major Bets (High/High), Fill-Ins (Low/Low), Th
 ## Output Structure
 
 ### Scores / Classification
+
 Table showing each item with its score or classification and the key inputs used.
 
 ### Ranked List
+
 Ordered list with brief rationale for each item's position.
 
 ### Calls to Validate
+
 List any scores or classifications that rest on weak assumptions and need validation before the ranking should be trusted.
 
 ### Items to Drop
+
 Flag any items that scored so low they should be removed from consideration entirely, with a one-line reason.
 
 ---

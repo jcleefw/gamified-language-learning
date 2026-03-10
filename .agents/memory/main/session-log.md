@@ -8,6 +8,7 @@
 **Goal**: Implement EP04-ST01 & EP04-ST02 (batch composition with priority ordering and question type distribution).
 
 **Completed**:
+
 - **EP04-DS01**: Created design specification (Accepted)
 - **EP04-ST01**: Batch types + priority ordering
   - Added `QuestionType`, `Question`, `Batch` types to `types.ts`
@@ -24,11 +25,13 @@
 - **Memory**: Updated current-focus.md and session-log.md
 
 **Test Results**:
+
 - Unit tests: 43/43 pass
 - TypeScript: No errors
 - Coverage: Priority ordering + distribution + audio fallback
 
 **Next**:
+
 - Create changelog entry (20260306T...-EP04-ST01-ST02-batch-composition.md)
 - Merge feature/EP04-srs-batch-composition → main (human-approved PR)
 - Begin EP05 or EP06 (parallel epics)

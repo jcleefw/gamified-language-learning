@@ -8,15 +8,15 @@
 
 Example: `20260302T143022Z-EP01-user-authentication.md`
 
-| Element | Convention | Example |
-|---------|-----------|---------|
-| Slug | camelCase (converted to kebab in filenames for readability) | `userAuthFlow` → file: `user-auth-flow` |
-| Components | PascalCase | `UserCard.tsx`, `WordQuizBatch.vue` |
-| Utilities | camelCase | `formatDate.ts`, `parseWordBreakdown.ts` |
-| CSS variables | kebab-case | `--primary-foreground`, `--quiz-bg-dark` |
-| Constants | UPPER_SNAKE_CASE | `MAX_ACTIVE_WORDS`, `ANKI_INITIAL_INTERVAL` |
-| Database tables | snake_case | `user_sessions`, `word_mastery` |
-| Database columns | snake_case | `created_at`, `mastery_count` |
+| Element          | Convention                                                  | Example                                     |
+| ---------------- | ----------------------------------------------------------- | ------------------------------------------- |
+| Slug             | camelCase (converted to kebab in filenames for readability) | `userAuthFlow` → file: `user-auth-flow`     |
+| Components       | PascalCase                                                  | `UserCard.tsx`, `WordQuizBatch.vue`         |
+| Utilities        | camelCase                                                   | `formatDate.ts`, `parseWordBreakdown.ts`    |
+| CSS variables    | kebab-case                                                  | `--primary-foreground`, `--quiz-bg-dark`    |
+| Constants        | UPPER_SNAKE_CASE                                            | `MAX_ACTIVE_WORDS`, `ANKI_INITIAL_INTERVAL` |
+| Database tables  | snake_case                                                  | `user_sessions`, `word_mastery`             |
+| Database columns | snake_case                                                  | `created_at`, `mastery_count`               |
 
 ---
 
@@ -50,21 +50,21 @@ Standalone (not attached to epics)
 
 ## Work Item Definitions
 
-| Type | Prefix | Purpose | Location | Scope |
-|------|--------|---------|----------|-------|
-| Epic | `EP##` | Group related features (WHY/WHAT) | `.agents/plans/` | 1–4 weeks, 3–7 stories |
-| Phase | `EP##-PH##` | Planning grouping within an epic — describes implementation approach and sequencing. Not a story container; stories belong to the Epic directly. Declared as a section in the Epic plan and DS, not a separate file. | Within Epic plan / DS | Multiple stories, one sub-domain |
-| Story | `EP##-ST##` | One testable unit of work | `changelogs/EP##--slug/` | 1–3 days, one layer |
-| Design Spec | `EP##-DS##` | Technical HOW (data, APIs, algorithms) | `changelogs/EP##--slug/` | 1–3 stories |
-| UX Spec | `EP##-UX##` | Interaction design, wireframes | `changelogs/EP##--slug/` | One feature |
-| Test Plan | `EP##-TP##` | Test strategy + acceptance criteria | `changelogs/EP##--slug/` | One story/feature |
-| Task | `TA##` / `EP##-TA##` | Generic work (refactor, docs, infra) | `changelogs/standalone/` or epic | 1–2 days |
-| Bug | `BUG##` / `EP##-BUG##` | Defect report + fix | `changelogs/standalone/` or epic | Varies |
-| Chore | `CH##` / `EP##-CH##` | Maintenance, cleanup | `changelogs/standalone/` or epic | 1–2 days |
-| RFC | `RFC##` | Proposal BEFORE a decision | `.agents/plans/rfcs/` | — |
-| ADR | `ADR##` | Decision record AFTER decision | `.agents/plans/adrs/` or epic | — |
-| AGN | `AGN##` | Agentic governance improvements | `changelogs/agentic/` | — |
-| Review | `EP##-RV##` | Code/design review | `changelogs/EP##--slug/` | — |
+| Type        | Prefix                 | Purpose                                                                                                                                                                                                              | Location                         | Scope                            |
+| ----------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | -------------------------------- |
+| Epic        | `EP##`                 | Group related features (WHY/WHAT)                                                                                                                                                                                    | `.agents/plans/`                 | 1–4 weeks, 3–7 stories           |
+| Phase       | `EP##-PH##`            | Planning grouping within an epic — describes implementation approach and sequencing. Not a story container; stories belong to the Epic directly. Declared as a section in the Epic plan and DS, not a separate file. | Within Epic plan / DS            | Multiple stories, one sub-domain |
+| Story       | `EP##-ST##`            | One testable unit of work                                                                                                                                                                                            | `changelogs/EP##--slug/`         | 1–3 days, one layer              |
+| Design Spec | `EP##-DS##`            | Technical HOW (data, APIs, algorithms)                                                                                                                                                                               | `changelogs/EP##--slug/`         | 1–3 stories                      |
+| UX Spec     | `EP##-UX##`            | Interaction design, wireframes                                                                                                                                                                                       | `changelogs/EP##--slug/`         | One feature                      |
+| Test Plan   | `EP##-TP##`            | Test strategy + acceptance criteria                                                                                                                                                                                  | `changelogs/EP##--slug/`         | One story/feature                |
+| Task        | `TA##` / `EP##-TA##`   | Generic work (refactor, docs, infra)                                                                                                                                                                                 | `changelogs/standalone/` or epic | 1–2 days                         |
+| Bug         | `BUG##` / `EP##-BUG##` | Defect report + fix                                                                                                                                                                                                  | `changelogs/standalone/` or epic | Varies                           |
+| Chore       | `CH##` / `EP##-CH##`   | Maintenance, cleanup                                                                                                                                                                                                 | `changelogs/standalone/` or epic | 1–2 days                         |
+| RFC         | `RFC##`                | Proposal BEFORE a decision                                                                                                                                                                                           | `.agents/plans/rfcs/`            | —                                |
+| ADR         | `ADR##`                | Decision record AFTER decision                                                                                                                                                                                       | `.agents/plans/adrs/` or epic    | —                                |
+| AGN         | `AGN##`                | Agentic governance improvements                                                                                                                                                                                      | `changelogs/agentic/`            | —                                |
+| Review      | `EP##-RV##`            | Code/design review                                                                                                                                                                                                   | `changelogs/EP##--slug/`         | —                                |
 
 > All `changelogs/` paths are under `.agents/changelogs/`.
 
@@ -78,17 +78,20 @@ Draft → Accepted → In Progress → Impl-Complete → BDD Pending → Complet
 ```
 
 **Stage 1: Implementation**
+
 - All stories, design specs, tasks, and chores are completed
 - Code is merged and ready for testing
 - Scope is FROZEN — no new requirements
 
 **Stage 2: BDD (Behavior-Driven Development)**
+
 - Write BDD tests against acceptance criteria
 - Verify all stories meet acceptance criteria
 - Bugs found → create standalone `BUG##` (do not modify epic scope)
 - Once all tests pass → Completed
 
 **Lifecycle States**:
+
 - **Draft**: Being planned
 - **Accepted**: Approved by product; ready to start
 - **In Progress**: Implementation underway
@@ -102,12 +105,12 @@ Draft → Accepted → In Progress → Impl-Complete → BDD Pending → Complet
 
 ## Epic Lifecycle Gates
 
-| Transition | Entry Criteria | Validator |
-|---|---|---|
-| `Accepted → In Progress` | Design spec ready, ADRs accepted, schema available (if DB epic), all upstream deps are `Impl-Complete`. Multiple parallel epics (same `Depends on`) may enter `In Progress` simultaneously. | Agent self-check |
-| `In Progress → Impl-Complete` | All stories Done, local tests pass, changelog + CODEMAP + memory updated | Human approves |
-| `Impl-Complete → BDD Pending` | PRD agent writes BDD scenarios, human confirms before QA picks up | Human confirms |
-| `BDD Pending → Completed` | Agent creates PR; human monitors CI, merges when green | Human |
+| Transition                    | Entry Criteria                                                                                                                                                                              | Validator        |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| `Accepted → In Progress`      | Design spec ready, ADRs accepted, schema available (if DB epic), all upstream deps are `Impl-Complete`. Multiple parallel epics (same `Depends on`) may enter `In Progress` simultaneously. | Agent self-check |
+| `In Progress → Impl-Complete` | All stories Done, local tests pass, changelog + CODEMAP + memory updated                                                                                                                    | Human approves   |
+| `Impl-Complete → BDD Pending` | PRD agent writes BDD scenarios, human confirms before QA picks up                                                                                                                           | Human confirms   |
+| `BDD Pending → Completed`     | Agent creates PR; human monitors CI, merges when green                                                                                                                                      | Human            |
 
 ---
 
@@ -186,6 +189,7 @@ Titles → Design spec → Stories detailed → Epic Accepted → agent picks up
 ## Work Item Numbering
 
 ### Sequential Numbering (Per Type)
+
 - **EP##**: `EP01`, `EP02`, `EP03`, ... (continues forever)
 - **RFC##**: `RFC01`, `RFC02`, ... (continues forever)
 - **ADR##**: `ADR01`, `ADR02`, ... (continues forever)
@@ -193,6 +197,7 @@ Titles → Design spec → Stories detailed → Epic Accepted → agent picks up
 - **Standalone TA/BUG/CH**: `TA01`, `BUG01`, `CH01`, ...
 
 ### Nested Numbering (Per Epic)
+
 - **PH##**: `EP01-PH01`, `EP01-PH02`, ... (per epic — planning label only, no file)
 - **DS##**: `EP01-DS01`, `EP01-DS02`, ... (per epic)
 - **UX##**: `EP01-UX01`, `EP01-UX02`, ... (per epic)
@@ -213,4 +218,3 @@ See **RULES.md §Story Completion Protocol** for the full checklist.
 ## Changelog Directory
 
 Files go in `.agents/changelogs/{EP##--slug|standalone|agentic}/` named `{TIMESTAMP}-{PREFIX}-{slug}.md`.
-

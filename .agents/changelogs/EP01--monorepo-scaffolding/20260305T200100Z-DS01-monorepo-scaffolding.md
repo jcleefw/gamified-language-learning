@@ -9,6 +9,7 @@
 ## 1. Feature Overview
 
 Establish the pnpm + Turborepo monorepo foundation. Three config layers:
+
 1. Workspace + build orchestration (`pnpm-workspace.yaml`, `turbo.json`, root `package.json`)
 2. Shared code quality tooling (`tsconfig.base.json`, `eslint.config.ts`)
 3. Test infrastructure + first package skeleton (`vitest.workspace.ts`, `packages/srs-engine/`)
@@ -19,24 +20,25 @@ All subsequent packages and apps extend from this foundation without modificatio
 
 ## 2. Core Requirements
 
-| Requirement | Decision | Rationale |
-|---|---|---|
-| Package manager | pnpm 9.x | Established in ADR. Workspace protocol for internal deps. |
-| Build orchestration | Turbo 2.x | Incremental builds, dependency graph, output caching. |
-| TypeScript | 5.7.x | Latest stable; `strict: true` across all engine packages. |
-| Test runner | Vitest 3.x | Fast, native ESM, Turborepo-friendly. |
-| ESLint | 9.x flat config | Single root `eslint.config.ts`; glob-scoped layers per ADR. |
-| Module format | ESM (`"type": "module"`) | All packages use native ESM. |
-| Internal package scope | `@gll/` | Project-specific scope; signals internal-only, not published to npm. |
-| tsconfig name | `tsconfig.base.json` (root), `tsconfig.json` (per-package) | Per-package extends base; avoids `tsconfig.base.json` name collision in IDEs. |
-| Node minimum | 20 LTS | Required by Vitest 3.x and ESLint 9.x. |
-| `pnpm test` exit on 0 tests | Green (not error) | Vitest exits 0 on "no test files found" by default. |
+| Requirement                 | Decision                                                   | Rationale                                                                     |
+| --------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Package manager             | pnpm 9.x                                                   | Established in ADR. Workspace protocol for internal deps.                     |
+| Build orchestration         | Turbo 2.x                                                  | Incremental builds, dependency graph, output caching.                         |
+| TypeScript                  | 5.7.x                                                      | Latest stable; `strict: true` across all engine packages.                     |
+| Test runner                 | Vitest 3.x                                                 | Fast, native ESM, Turborepo-friendly.                                         |
+| ESLint                      | 9.x flat config                                            | Single root `eslint.config.ts`; glob-scoped layers per ADR.                   |
+| Module format               | ESM (`"type": "module"`)                                   | All packages use native ESM.                                                  |
+| Internal package scope      | `@gll/`                                                    | Project-specific scope; signals internal-only, not published to npm.          |
+| tsconfig name               | `tsconfig.base.json` (root), `tsconfig.json` (per-package) | Per-package extends base; avoids `tsconfig.base.json` name collision in IDEs. |
+| Node minimum                | 20 LTS                                                     | Required by Vitest 3.x and ESLint 9.x.                                        |
+| `pnpm test` exit on 0 tests | Green (not error)                                          | Vitest exits 0 on "no test files found" by default.                           |
 
 ---
 
 ## 3. File Shapes
 
 ### Root `package.json`
+
 ```json
 {
   "name": "gamified-language-learning",
@@ -59,6 +61,7 @@ All subsequent packages and apps extend from this foundation without modificatio
 ```
 
 ### `pnpm-workspace.yaml`
+
 ```yaml
 packages:
   - 'packages/*'
@@ -66,6 +69,7 @@ packages:
 ```
 
 ### `turbo.json`
+
 ```json
 {
   "$schema": "https://turbo.build/schema.json",
@@ -86,6 +90,7 @@ packages:
 ```
 
 ### `tsconfig.base.json`
+
 ```json
 {
   "compilerOptions": {
@@ -103,8 +108,9 @@ packages:
 ```
 
 ### `eslint.config.ts` (Stage 1 — packages only, no Vue/Node rules yet)
+
 ```typescript
-import tseslint from 'typescript-eslint'
+import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   { ignores: ['**/dist/**', '**/node_modules/**', '**/.nuxt/**'] },
@@ -115,11 +121,17 @@ export default tseslint.config(
       parserOptions: { project: true },
     },
     rules: {
-      '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
-      '@typescript-eslint/explicit-function-return-type': ['error', {
-        allowExpressions: true,
-        allowHigherOrderFunctions: true,
-      }],
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports' },
+      ],
+      '@typescript-eslint/explicit-function-return-type': [
+        'error',
+        {
+          allowExpressions: true,
+          allowHigherOrderFunctions: true,
+        },
+      ],
       'no-console': 'error',
     },
   },
@@ -130,17 +142,19 @@ export default tseslint.config(
       '@typescript-eslint/no-non-null-assertion': 'off',
     },
   },
-)
+);
 ```
 
 ### `vitest.workspace.ts`
-```typescript
-import { defineWorkspace } from 'vitest/config'
 
-export default defineWorkspace(['packages/*/vitest.config.ts'])
+```typescript
+import { defineWorkspace } from 'vitest/config';
+
+export default defineWorkspace(['packages/*/vitest.config.ts']);
 ```
 
 ### `packages/srs-engine/package.json`
+
 ```json
 {
   "name": "@gll/srs-engine",
@@ -169,6 +183,7 @@ export default defineWorkspace(['packages/*/vitest.config.ts'])
 ```
 
 ### `packages/srs-engine/tsconfig.json`
+
 ```json
 {
   "extends": "../../tsconfig.base.json",
@@ -181,8 +196,9 @@ export default defineWorkspace(['packages/*/vitest.config.ts'])
 ```
 
 ### `packages/srs-engine/vitest.config.ts`
+
 ```typescript
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
@@ -190,21 +206,23 @@ export default defineConfig({
     globals: true,
     setupFiles: ['__tests__/setup.ts'],
   },
-})
+});
 ```
 
 ### `packages/srs-engine/__tests__/setup.ts`
+
 ```typescript
-import { afterEach, vi } from 'vitest'
+import { afterEach, vi } from 'vitest';
 
 // Reset fake timers after each test to prevent bleed
 afterEach(() => {
-  vi.useRealTimers()
-})
+  vi.useRealTimers();
+});
 ```
 
 ### `packages/srs-engine/README.md`
-```markdown
+
+````markdown
 # @gll/srs-engine
 
 Spaced repetition scheduling engine. Internal package — not published to npm.
@@ -212,39 +230,47 @@ Spaced repetition scheduling engine. Internal package — not published to npm.
 ## Running tests
 
 **All tests (whole package):**
+
 ```bash
 pnpm test
 ```
+````
 
 **Watch mode (re-runs on file change):**
+
 ```bash
 pnpm test:watch
 ```
 
 **Single test file:**
+
 ```bash
 npx vitest run __tests__/unit/<filename>.test.ts
 ```
 
 **Single test by name:**
+
 ```bash
 npx vitest run -t "your test name or describe label"
 ```
 
 **From repo root (any command above via filter):**
+
 ```bash
 pnpm --filter @gll/srs-engine test
 pnpm --filter @gll/srs-engine exec vitest run __tests__/unit/<filename>.test.ts
 ```
-```
+
+````
 
 ### `packages/srs-engine/src/index.ts`
 ```typescript
 // Public API — populated by EP02+
 export {}
-```
+````
 
 ### Directory layout after EP01
+
 ```
 /
 ├── packages/
@@ -313,12 +339,14 @@ npx vitest run -t "calculates next review interval"
 **Scope**: Root package manager and build orchestration setup
 **Read List**: None — all files are new
 **Tasks**:
+
 - [ ] Create `pnpm-workspace.yaml`
 - [ ] Create root `package.json` with scripts + devDependencies (turbo, typescript, vitest, eslint, typescript-eslint); include `test:watch` script
 - [ ] Create `turbo.json` with build + test + lint tasks
 - [ ] Run `pnpm install` — verify zero errors
 
 **Acceptance Criteria**:
+
 - [ ] `pnpm install` exits 0 with no errors
 - [ ] `pnpm build` (Turborepo, no source yet) exits 0 (no-op acceptable)
 - [ ] `node_modules/.pnpm` lockfile created at root
@@ -330,11 +358,13 @@ npx vitest run -t "calculates next review interval"
 **Scope**: Shared TypeScript base config and ESLint root config
 **Read List**: `package.json` (verify devDeps installed)
 **Tasks**:
+
 - [ ] Create `tsconfig.base.json` with strict ESNext settings
 - [ ] Create `eslint.config.ts` with TypeScript strict layer for `packages/**`
 - [ ] Verify `eslint .` runs without config parse errors (no source files to lint yet — that is OK)
 
 **Acceptance Criteria**:
+
 - [ ] `npx tsc --version` reports 5.7.x
 - [ ] `eslint .` exits without config errors (no TS files to lint yet — acceptable)
 
@@ -345,6 +375,7 @@ npx vitest run -t "calculates next review interval"
 **Scope**: Root Vitest workspace config and `packages/srs-engine/` skeleton
 **Read List**: `tsconfig.base.json`, `package.json`
 **Tasks**:
+
 - [ ] Create `vitest.workspace.ts`
 - [ ] Create `packages/srs-engine/package.json`
 - [ ] Create `packages/srs-engine/tsconfig.json` extending `../../tsconfig.base.json`
@@ -356,6 +387,7 @@ npx vitest run -t "calculates next review interval"
 - [ ] Run `pnpm test` from root — verify exits 0 with 0 tests
 
 **Acceptance Criteria**:
+
 - [ ] `pnpm install` still exits 0 after adding srs-engine package
 - [ ] `pnpm build` compiles srs-engine (`dist/index.js`, `dist/index.d.ts` created)
 - [ ] `pnpm test` exits 0 (0 test files, no failures)
@@ -375,6 +407,6 @@ npx vitest run -t "calculates next review interval"
 
 ## 7. Deferred Decisions
 
-| Topic | Deferred To | Notes |
-|---|---|---|
+| Topic                 | Deferred To            | Notes                                                                                                                                                           |
+| --------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Env variable strategy | First app/service epic | `srs-engine` is pure logic — no runtime env deps. Pattern (Vite `import.meta.env` vs Node `process.env` + zod validation) decided per package type when needed. |

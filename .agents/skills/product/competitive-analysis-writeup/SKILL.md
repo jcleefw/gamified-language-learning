@@ -13,33 +13,40 @@ If no input is provided, stop and ask: "Paste the raw research output from /comp
 ## Output Structure
 
 ### Executive Summary
+
 2–3 sentences: What is the competitive landscape for this feature area? What is the most important strategic implication?
 
 ### Feature Comparison Matrix
 
-| Capability | [Competitor A] | [Competitor B] | [Competitor C] | Us (current) |
-|---|---|---|---|---|
-| [Feature 1] | ✓ / ✗ / partial | | | |
-| [Feature 2] | | | | |
+| Capability  | [Competitor A]  | [Competitor B] | [Competitor C] | Us (current) |
+| ----------- | --------------- | -------------- | -------------- | ------------ |
+| [Feature 1] | ✓ / ✗ / partial |                |                |              |
+| [Feature 2] |                 |                |                |              |
 
 Use ✓ (full), ~ (partial), ✗ (absent) for clarity.
 
 ### Competitor Profiles
+
 For each competitor, one concise paragraph:
+
 - What they do well in this area
 - Where they fall short
 - How they position it
 
 ### Whitespace Analysis
+
 What gaps exist that no competitor addresses well? Rank by:
+
 - **High value / low coverage** — strong opportunity
 - **High value / high coverage** — table stakes; we must match
 - **Low value / low coverage** — ignore for now
 
 ### Strategic Implications
+
 What should we do differently, match, or avoid given this landscape? Be concrete — "we should" or "we should not" statements.
 
 ### Assumptions & Confidence
+
 List any findings that are uncertain or outdated. Note what would change the analysis if those assumptions are wrong.
 
 ---

@@ -1,4 +1,4 @@
-import type { FoundationalCharacter } from '../types.js'
+import type { FoundationalCharacter } from '../types.js';
 
 /**
  * Thai consonants with stroke order data
@@ -817,13 +817,17 @@ export const consonants: FoundationalCharacter[] = [
 /**
  * Get consonant by ID
  */
-export function getConsonantById(id: string): FoundationalCharacter | undefined {
+export function getConsonantById(
+  id: string,
+): FoundationalCharacter | undefined {
   return consonants.find((c) => c.id === id);
 }
 
 /**
  * Get consonant by character
  */
-export function getConsonantByChar(char: string): FoundationalCharacter | undefined {
+export function getConsonantByChar(
+  char: string,
+): FoundationalCharacter | undefined {
   return consonants.find((c) => c.char === char);
 }

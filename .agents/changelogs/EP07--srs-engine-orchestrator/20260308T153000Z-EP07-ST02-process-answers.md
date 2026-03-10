@@ -11,6 +11,7 @@ Implemented `processAnswers` on `SrsEngine` — orchestrates mastery update, FSR
 ## Files Modified
 
 ### `packages/srs-engine/src/srs-engine.ts`
+
 - `processAnswers(answers, wordStates)` — per answered word:
   1. `updateMastery` — mastery count + phase transition
   2. FSRS `scheduleReview` — only when word was `srsM2_review` **before** the answer (avoids scheduling freshly promoted words)
@@ -20,10 +21,12 @@ Implemented `processAnswers` on `SrsEngine` — orchestrates mastery update, FSR
   6. `detectStuckWords` on full updated array → shelve eligible words (24h duration constant)
 
 ### `packages/srs-engine/src/__tests__/srs-engine.test.ts` (new)
+
 - **Config validation**: 14 unit tests covering all invalid config fields
 - **composeBatch**: 3 unit tests (basic batch, shelved exclusion, newWordsPerBatch limit)
 
 ### `packages/srs-engine/__tests__/integration/srs-engine-orchestrator.test.ts` (new)
+
 - **Scenario 1** — Learning → srsM2_review: promotion at threshold, no FSRS on fresh promotion
 - **Scenario 2** — 3-lapse srsM2_review → Learning: demotion after lapseThreshold, FSRS applied, lapse accumulation
 - **Scenario 3** — Stuck word shelving: shelved after threshold, not shelved on progress, maxShelved cap respected

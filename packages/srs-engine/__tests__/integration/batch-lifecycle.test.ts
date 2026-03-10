@@ -12,9 +12,9 @@
  * - distributionBreakdown (mc + wordBlock + audio) sums to batchSize with a real mixed pool
  * - Audio redistribution: audio slots collapse to 0 and fold into mc when audioAvailable=false
  */
-import { describe, it, expect } from 'vitest'
-import { updateMastery, composeBatch } from '../../src/index.js'
-import type { SrsConfig, WordState } from '../../src/index.js'
+import { describe, it, expect } from 'vitest';
+import { updateMastery, composeBatch } from '../../src/index.js';
+import type { SrsConfig, WordState } from '../../src/index.js';
 
 const config: SrsConfig = {
   masteryThreshold: { curated: 10, foundational: 5 },
@@ -29,9 +29,12 @@ const config: SrsConfig = {
   foundationalAllocation: { active: 5, postDepletion: 0 },
   desiredRetention: 0.9,
   maxIntervalDays: 90,
-}
+};
 
-function makeLearningWord(wordId: string, category: WordState['category']): WordState {
+function makeLearningWord(
+  wordId: string,
+  category: WordState['category'],
+): WordState {
   return {
     wordId,
     category,
@@ -40,81 +43,89 @@ function makeLearningWord(wordId: string, category: WordState['category']): Word
     lapseCount: 0,
     correctCount: 0,
     wrongCount: 0,
-  }
+  };
 }
 
 function promoteToReview(word: WordState): WordState {
-  let w = word
-  while (w.phase === 'learning') w = updateMastery(w, true, config)
-  return w
+  let w = word;
+  while (w.phase === 'learning') w = updateMastery(w, true, config);
+  return w;
 }
 
 describe('batch-lifecycle integration', () => {
   it('words promoted via updateMastery appear before learning words in batch', () => {
-    const carryOver = promoteToReview(makeLearningWord('hola', 'curated'))
-    const newWord = makeLearningWord('buenas', 'curated')
+    const carryOver = promoteToReview(makeLearningWord('hola', 'curated'));
+    const newWord = makeLearningWord('buenas', 'curated');
 
-    const batch = composeBatch([newWord, carryOver], config)
+    const batch = composeBatch([newWord, carryOver], config);
 
     // carry-over must come first regardless of input order
-    expect(batch.questions[0].wordId).toBe('hola')
-    expect(batch.questions[1].wordId).toBe('buenas')
-  })
+    expect(batch.questions[0].wordId).toBe('hola');
+    expect(batch.questions[1].wordId).toBe('buenas');
+  });
 
   it('foundational srsM2_review words appear after curated srsM2_review words', () => {
-    const curatedCarryOver      = promoteToReview(makeLearningWord('hola', 'curated'))
-    const foundationalRevision  = promoteToReview(makeLearningWord('uno', 'foundational'))
-    const newWord               = makeLearningWord('buenas', 'curated')
+    const curatedCarryOver = promoteToReview(
+      makeLearningWord('hola', 'curated'),
+    );
+    const foundationalRevision = promoteToReview(
+      makeLearningWord('uno', 'foundational'),
+    );
+    const newWord = makeLearningWord('buenas', 'curated');
 
-    const batch = composeBatch([foundationalRevision, newWord, curatedCarryOver], config)
+    const batch = composeBatch(
+      [foundationalRevision, newWord, curatedCarryOver],
+      config,
+    );
 
-    expect(batch.questions[0].wordId).toBe('hola')        // curated carry-over first
-    expect(batch.questions[1].wordId).toBe('uno')         // foundational revision second
-    expect(batch.questions[2].wordId).toBe('buenas')      // new word third
-  })
+    expect(batch.questions[0].wordId).toBe('hola'); // curated carry-over first
+    expect(batch.questions[1].wordId).toBe('uno'); // foundational revision second
+    expect(batch.questions[2].wordId).toBe('buenas'); // new word third
+  });
 
   it('distributionBreakdown sums to batchSize with a real mixed pool', () => {
     const pool: WordState[] = [
-      promoteToReview(makeLearningWord('hola',     'curated')),
-      promoteToReview(makeLearningWord('gracias',  'curated')),
-      promoteToReview(makeLearningWord('uno',      'foundational')),
-      makeLearningWord('buenas',    'curated'),
-      makeLearningWord('adios',     'curated'),
+      promoteToReview(makeLearningWord('hola', 'curated')),
+      promoteToReview(makeLearningWord('gracias', 'curated')),
+      promoteToReview(makeLearningWord('uno', 'foundational')),
+      makeLearningWord('buenas', 'curated'),
+      makeLearningWord('adios', 'curated'),
       makeLearningWord('por favor', 'curated'),
-      makeLearningWord('si',        'curated'),
-      makeLearningWord('no',        'curated'),
-      makeLearningWord('dos',       'foundational'),
-      makeLearningWord('tres',      'foundational'),
-    ]
+      makeLearningWord('si', 'curated'),
+      makeLearningWord('no', 'curated'),
+      makeLearningWord('dos', 'foundational'),
+      makeLearningWord('tres', 'foundational'),
+    ];
 
-    const batch = composeBatch(pool, config)
-    const { mc, wordBlock, audio } = batch.distributionBreakdown
+    const batch = composeBatch(pool, config);
+    const { mc, wordBlock, audio } = batch.distributionBreakdown;
 
-    expect(mc + wordBlock + audio).toBe(batch.batchSize)
-    expect(batch.batchSize).toBe(10)
-  })
+    expect(mc + wordBlock + audio).toBe(batch.batchSize);
+    expect(batch.batchSize).toBe(10);
+  });
 
   it('audio redistribution produces audio=0 with a real mixed pool', () => {
     const pool: WordState[] = [
-      promoteToReview(makeLearningWord('hola',    'curated')),
+      promoteToReview(makeLearningWord('hola', 'curated')),
       promoteToReview(makeLearningWord('gracias', 'curated')),
-      makeLearningWord('buenas',    'curated'),
-      makeLearningWord('adios',     'curated'),
+      makeLearningWord('buenas', 'curated'),
+      makeLearningWord('adios', 'curated'),
       makeLearningWord('por favor', 'curated'),
-      makeLearningWord('si',        'curated'),
-      makeLearningWord('no',        'curated'),
-      makeLearningWord('dos',       'foundational'),
-      makeLearningWord('tres',      'foundational'),
-      makeLearningWord('cuatro',    'foundational'),
-    ]
+      makeLearningWord('si', 'curated'),
+      makeLearningWord('no', 'curated'),
+      makeLearningWord('dos', 'foundational'),
+      makeLearningWord('tres', 'foundational'),
+      makeLearningWord('cuatro', 'foundational'),
+    ];
 
-    const withAudio    = composeBatch(pool, config, { audioAvailable: true })
-    const withoutAudio = composeBatch(pool, config, { audioAvailable: false })
+    const withAudio = composeBatch(pool, config, { audioAvailable: true });
+    const withoutAudio = composeBatch(pool, config, { audioAvailable: false });
 
-    expect(withoutAudio.distributionBreakdown.audio).toBe(0)
+    expect(withoutAudio.distributionBreakdown.audio).toBe(0);
     expect(withoutAudio.distributionBreakdown.mc).toBe(
-      withAudio.distributionBreakdown.mc + withAudio.distributionBreakdown.audio
-    )
-    expect(withoutAudio.batchSize).toBe(withAudio.batchSize)
-  })
-})
+      withAudio.distributionBreakdown.mc +
+        withAudio.distributionBreakdown.audio,
+    );
+    expect(withoutAudio.batchSize).toBe(withAudio.batchSize);
+  });
+});

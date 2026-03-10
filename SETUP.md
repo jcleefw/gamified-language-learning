@@ -17,11 +17,11 @@ Visit: `http://localhost:3000`
 
 ## Prerequisites
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| Node.js | ≥ 20.x | LTS recommended |
-| pnpm | ≥ 9.x | `npm install -g pnpm` |
-| Wrangler CLI | ≥ 3.x | `pnpm add -g wrangler` — Cloudflare Workers tooling |
+| Tool         | Version | Notes                                               |
+| ------------ | ------- | --------------------------------------------------- |
+| Node.js      | ≥ 20.x  | LTS recommended                                     |
+| pnpm         | ≥ 9.x   | `npm install -g pnpm`                               |
+| Wrangler CLI | ≥ 3.x   | `pnpm add -g wrangler` — Cloudflare Workers tooling |
 
 ---
 
@@ -152,12 +152,12 @@ pnpm wrangler d1 migrations apply --remote
 
 ## Related Documentation
 
-| File | Purpose |
-|------|---------|
-| [README.md](./README.md) | Project overview |
-| [AGENT.md](./AGENT.md) | AI persona |
-| [RULES.md](./RULES.md) | Coding rules |
-| [CONTEXT.md](./CONTEXT.md) | Architecture and patterns |
-| [WORKFLOW.md](./WORKFLOW.md) | Work item organization |
-| [PLAYBOOK.md](./PLAYBOOK.md) | Agent command reference |
-| [CODEMAP.md](./CODEMAP.md) | Project navigation |
+| File                         | Purpose                   |
+| ---------------------------- | ------------------------- |
+| [README.md](./README.md)     | Project overview          |
+| [AGENT.md](./AGENT.md)       | AI persona                |
+| [RULES.md](./RULES.md)       | Coding rules              |
+| [CONTEXT.md](./CONTEXT.md)   | Architecture and patterns |
+| [WORKFLOW.md](./WORKFLOW.md) | Work item organization    |
+| [PLAYBOOK.md](./PLAYBOOK.md) | Agent command reference   |
+| [CODEMAP.md](./CODEMAP.md)   | Project navigation        |

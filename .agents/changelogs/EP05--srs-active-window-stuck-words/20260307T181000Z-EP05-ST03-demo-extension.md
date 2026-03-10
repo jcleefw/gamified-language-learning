@@ -11,11 +11,13 @@ Extended `scripts/demo-srs.ts` with two new scenarios demonstrating the EP05 mod
 ## Files Modified
 
 ### `scripts/demo-srs.ts`
+
 - Added `getEligibleWords`, `detectStuckWords`, `shelveWord`, `unshelveWord`, `isShelved` to the import from `@gll/srs-engine`
 - Added **Scenario G**: Active window slot calculation using a local `windowConfig` (`activeWordLimit=5`) to show `newSlots` decreasing to 0 as the window fills; reuses existing `makeWord`/`promoteToReview` helpers
 - Added **Scenario H**: Stuck word detection and shelving — sets `batchesSinceLastProgress` directly (caller-managed field), calls `detectStuckWords`, demonstrates `shelveWord`/`isShelved`/`unshelveWord` transitions, and shows cap behaviour (`canReShelve=false`) using a local `shelveConfig` (`maxShelved=2`)
 
 ### `packages/srs-engine` (build)
+
 - Ran `pnpm build` to emit `dist/active-window.js` and `dist/stuck-words.js` (had not been built since EP05 implementation)
 
 ## Behavior Preserved / New Behavior

@@ -2,7 +2,7 @@
 
 **An opinionated guide to getting the best code out of Claude Code.**
 
-This isn't documentation — it's a workflow discipline. It assumes you're already set up and want to know *how to think* about using Claude Code, not just what buttons to press. For official docs, start at [docs.anthropic.com/en/docs/claude-code/overview](https://docs.anthropic.com/en/docs/claude-code/overview).
+This isn't documentation — it's a workflow discipline. It assumes you're already set up and want to know _how to think_ about using Claude Code, not just what buttons to press. For official docs, start at [docs.anthropic.com/en/docs/claude-code/overview](https://docs.anthropic.com/en/docs/claude-code/overview).
 
 ---
 
@@ -14,7 +14,7 @@ Claude Code is not an autocomplete engine. It's an agent with tools: it reads fi
 2. **The context it has access to** (memory, CLAUDE.md, skills)
 3. **The guardrails you've set** (hooks, permissions, subagents)
 
-Your job isn't to type code faster. It's to become a *technical director* — setting intent, reviewing output, and building the infrastructure that makes every future session better.
+Your job isn't to type code faster. It's to become a _technical director_ — setting intent, reviewing output, and building the infrastructure that makes every future session better.
 
 ---
 
@@ -87,8 +87,9 @@ Use glob patterns in the frontmatter to scope rules:
 
 ```markdown
 ---
-globs: ["db/migrate/**/*.rb"]
+globs: ['db/migrate/**/*.rb']
 ---
+
 - Always use `safety_assured` blocks with a comment explaining why
 - Never use `change` method — use explicit `up` and `down`
 - Run `bin/rails db:migrate:status` after generating
@@ -105,32 +106,39 @@ This is how you encode your team's hard-won institutional knowledge into every C
 A great Claude Code prompt has three layers:
 
 **Intent** — What you want to achieve, not how to achieve it:
+
 > "Add rate limiting to the API endpoints in `app/controllers/api/v2/`"
 
 **Constraints** — The boundaries and quality bars:
+
 > "Use the `rack-attack` gem. Write request specs first. Limit to 100 requests per minute per API key."
 
 **Verification** — How Claude (and you) will know it worked:
+
 > "All existing tests should still pass. Run `bundle exec rspec spec/requests/api/v2/` to verify."
 
 ### 2.2 Prompting Patterns That Work
 
 **The TDD prompt** — Force test-first thinking:
+
 > "Write a failing test for [feature]. Show me the test. Then implement the minimum code to make it pass. Then refactor. Stop after each step for my review."
 
 **The exploration prompt** — When you're not sure what you want yet:
+
 > "Explore how authentication is currently handled across the codebase. Map the flow from request to response. Don't change anything yet."
 
 **The constraint-heavy prompt** — When precision matters:
+
 > "Refactor the `OrderProcessor` service. Keep the public interface identical. Don't touch the database schema. Every method should be under 10 lines. Write tests for any behavior you change."
 
 **The "think hard" prompt** — For architectural decisions:
+
 > "I need to add multi-tenancy to this application. Think through the tradeoffs between schema-per-tenant, row-level security, and the Apartment gem approach. Consider our current Postgres setup and ECS deployment. Don't implement anything — just give me your analysis."
 
 ### 2.3 What Not to Do
 
 - **Don't be vague.** "Fix the tests" gives Claude no signal. "The `OrdersControllerTest` is failing because `create_order` returns a 422 — investigate why and fix the root cause" does.
-- **Don't over-specify implementation.** Tell Claude *what* and *why*, not *how*. It often finds better approaches than the one you'd dictate.
+- **Don't over-specify implementation.** Tell Claude _what_ and _why_, not _how_. It often finds better approaches than the one you'd dictate.
 - **Don't dump your entire mental context.** If Claude needs background, put it in CLAUDE.md or a skill, not in every prompt.
 
 📖 [Prompting best practices](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/claude-4-best-practices)
@@ -152,11 +160,13 @@ Claude reads, writes, runs commands, and edits files. You approve each tool use.
 Claude can only read — no edits, no commands that modify state. It uses `AskUserQuestion` to gather requirements and clarify goals before proposing a plan.
 
 **When to use:**
+
 - Before starting any multi-file feature
 - Exploring an unfamiliar codebase
 - When you want Claude to research before acting
 
 **How to enter:**
+
 - `Shift+Tab` to cycle through modes (Normal → Auto-Accept → Plan)
 - `--permission-mode plan` flag at startup
 - Headless: `claude -p "Analyze the authentication flow and create a plan" --permission-mode plan`
@@ -219,6 +229,7 @@ When implementing a feature:
 3. **Refactor:** Clean up while keeping tests green
 
 Rules:
+
 - Never write implementation code before a failing test exists
 - Run the test suite after every change: `bin/rails test`
 - If a test is hard to write, the design is wrong — simplify the interface first
@@ -236,7 +247,9 @@ description: Research a topic thoroughly
 context: fork
 agent: Explore
 ---
+
 Research $ARGUMENTS thoroughly:
+
 1. Find relevant files using Glob and Grep
 2. Read and analyze the code
 3. Summarize findings with specific file references
@@ -251,10 +264,13 @@ Results get summarized and returned to your main conversation. The research does
 name: review-pr
 description: Review the current PR changes
 ---
+
 ## Current Changes
+
 !`git diff main...HEAD --stat`
 
 ## Detailed Diff
+
 !`git diff main...HEAD`
 
 Review these changes for correctness, style, and potential issues.
@@ -300,12 +316,17 @@ mkdir -p .claude/agents
 
 ```markdown
 # .claude/agents/test-runner.md
+
 ---
+
 name: test-runner
 description: Use PROACTIVELY to run tests and fix failures
 tools: Bash, Read, Write, Edit, Glob, Grep
+
 ---
+
 You are a test automation expert. When invoked:
+
 1. Run the relevant test suite
 2. If tests fail, analyze failures and fix them
 3. Re-run to confirm the fix
@@ -334,6 +355,7 @@ Use when: tasks are genuinely independent and can be merged later, like implemen
 ### 5.4 Chaining Subagents
 
 For multi-step workflows:
+
 > "Use the code-analyzer subagent to find performance issues, then use the optimizer subagent to fix them"
 
 Claude passes relevant context between stages.
@@ -348,18 +370,18 @@ Hooks are scripts that run at specific lifecycle points. They're how you encode 
 
 ### 6.1 Hook Events
 
-| Event | When it fires | Use case |
-|---|---|---|
-| `PreToolUse` | Before any tool executes | Validate, block, or modify tool inputs |
-| `PostToolUse` | After any tool executes | Log, audit, inject follow-up context |
-| `PostToolUseFailure` | When a tool fails | Custom error handling |
-| `UserPromptSubmit` | When you send a message | Inject context, modify prompts |
-| `SessionStart` | Session begins/resumes | Setup, environment checks |
-| `SessionEnd` | Session ends | Cleanup, reporting |
-| `Stop` | Claude tries to stop | Force continuation ("block" + reason) |
-| `SubagentStart/Stop` | Subagent lifecycle | Logging, validation |
-| `PreCompact` | Before context compaction | Save critical state |
-| `PermissionRequest` | Permission prompt shown | Auto-approve or deny patterns |
+| Event                | When it fires             | Use case                               |
+| -------------------- | ------------------------- | -------------------------------------- |
+| `PreToolUse`         | Before any tool executes  | Validate, block, or modify tool inputs |
+| `PostToolUse`        | After any tool executes   | Log, audit, inject follow-up context   |
+| `PostToolUseFailure` | When a tool fails         | Custom error handling                  |
+| `UserPromptSubmit`   | When you send a message   | Inject context, modify prompts         |
+| `SessionStart`       | Session begins/resumes    | Setup, environment checks              |
+| `SessionEnd`         | Session ends              | Cleanup, reporting                     |
+| `Stop`               | Claude tries to stop      | Force continuation ("block" + reason)  |
+| `SubagentStart/Stop` | Subagent lifecycle        | Logging, validation                    |
+| `PreCompact`         | Before context compaction | Save critical state                    |
+| `PermissionRequest`  | Permission prompt shown   | Auto-approve or deny patterns          |
 
 ### 6.2 Where to Configure Hooks
 
@@ -524,10 +546,12 @@ Use this to save critical state before compaction wipes it:
   "hooks": {
     "PreCompact": [
       {
-        "hooks": [{
-          "type": "command",
-          "command": "./scripts/save-session-state.sh"
-        }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/save-session-state.sh"
+          }
+        ]
       }
     ]
   }
@@ -555,7 +579,7 @@ Also works for MCP resources: `@server:resource`
 
 ## 9. Output Styles: Changing How Claude Thinks
 
-Output styles modify Claude's system prompt — they change its *persona*, not just its formatting.
+Output styles modify Claude's system prompt — they change its _persona_, not just its formatting.
 
 ### 9.1 Built-in Styles
 
@@ -571,7 +595,7 @@ Output styles modify Claude's system prompt — they change its *persona*, not j
 
 Saved as markdown in `~/.claude/output-styles/`. You can also create them manually.
 
-**Key distinction:** Output styles modify the system prompt and "turn off" the default software engineering instructions. CLAUDE.md adds context as a user message *alongside* the default prompt. `--append-system-prompt` appends to the system prompt without replacing anything.
+**Key distinction:** Output styles modify the system prompt and "turn off" the default software engineering instructions. CLAUDE.md adds context as a user message _alongside_ the default prompt. `--append-system-prompt` appends to the system prompt without replacing anything.
 
 📖 [Output styles documentation](https://docs.anthropic.com/en/docs/claude-code/output-styles)
 
@@ -623,19 +647,19 @@ After every significant task, ask yourself: what should I codify?
 
 ## 11. Essential Slash Commands Reference
 
-| Command | Purpose |
-|---|---|
-| `/compact` | Manually compact context (add custom focus instructions) |
-| `/clear` | Clear conversation, start fresh |
-| `/memory` | Open memory file selector for editing |
-| `/model` | Switch models mid-session |
-| `/agents` | Manage subagents |
-| `/mcp` | Manage MCP server connections |
-| `/config` | Access configuration menu |
-| `/context` | Check what's loaded, token usage, skill budget |
-| `/output-style` | Switch output styles |
-| `/resume` | Resume a previous session |
-| `/doctor` | Health check your installation and settings |
+| Command         | Purpose                                                  |
+| --------------- | -------------------------------------------------------- |
+| `/compact`      | Manually compact context (add custom focus instructions) |
+| `/clear`        | Clear conversation, start fresh                          |
+| `/memory`       | Open memory file selector for editing                    |
+| `/model`        | Switch models mid-session                                |
+| `/agents`       | Manage subagents                                         |
+| `/mcp`          | Manage MCP server connections                            |
+| `/config`       | Access configuration menu                                |
+| `/context`      | Check what's loaded, token usage, skill budget           |
+| `/output-style` | Switch output styles                                     |
+| `/resume`       | Resume a previous session                                |
+| `/doctor`       | Health check your installation and settings              |
 
 ---
 
@@ -653,15 +677,15 @@ Thinking mode is enabled by default for Opus. Phrases like "think hard" or "ultr
 
 ## 13. Keyboard Shortcuts Worth Memorizing
 
-| Shortcut | Action |
-|---|---|
+| Shortcut    | Action                                               |
+| ----------- | ---------------------------------------------------- |
 | `Shift+Tab` | Cycle permission modes (Normal → Auto-Accept → Plan) |
-| `Ctrl+G` | Open plan in external editor |
-| `Ctrl+B` | Background current task |
-| `Ctrl+O` | Toggle verbose mode (see thinking) |
-| `Ctrl+R` | Quick-resume recent session |
-| `Ctrl+C` | Interrupt current operation |
-| `Escape` | Cancel current input |
+| `Ctrl+G`    | Open plan in external editor                         |
+| `Ctrl+B`    | Background current task                              |
+| `Ctrl+O`    | Toggle verbose mode (see thinking)                   |
+| `Ctrl+R`    | Quick-resume recent session                          |
+| `Ctrl+C`    | Interrupt current operation                          |
+| `Escape`    | Cancel current input                                 |
 
 ---
 
@@ -685,21 +709,21 @@ Thinking mode is enabled by default for Opus. Phrases like "think hard" or "ultr
 
 ## Quick Reference: Documentation Links
 
-| Topic | URL |
-|---|---|
-| Overview | [docs.anthropic.com/en/docs/claude-code/overview](https://docs.anthropic.com/en/docs/claude-code/overview) |
-| Setup | [docs.anthropic.com/en/docs/claude-code/setup](https://docs.anthropic.com/en/docs/claude-code/setup) |
-| Common Workflows | [docs.anthropic.com/en/docs/claude-code/common-workflows](https://docs.anthropic.com/en/docs/claude-code/common-workflows) |
-| Memory Management | [docs.anthropic.com/en/docs/claude-code/memory](https://docs.anthropic.com/en/docs/claude-code/memory) |
-| Skills & Slash Commands | [docs.anthropic.com/en/docs/claude-code/slash-commands](https://docs.anthropic.com/en/docs/claude-code/slash-commands) |
-| Subagents | [docs.anthropic.com/en/docs/claude-code/sub-agents](https://docs.anthropic.com/en/docs/claude-code/sub-agents) |
-| Hooks Reference | [docs.anthropic.com/en/docs/claude-code/hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) |
-| Output Styles | [docs.anthropic.com/en/docs/claude-code/output-styles](https://docs.anthropic.com/en/docs/claude-code/output-styles) |
+| Topic                    | URL                                                                                                                                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Overview                 | [docs.anthropic.com/en/docs/claude-code/overview](https://docs.anthropic.com/en/docs/claude-code/overview)                                                                                 |
+| Setup                    | [docs.anthropic.com/en/docs/claude-code/setup](https://docs.anthropic.com/en/docs/claude-code/setup)                                                                                       |
+| Common Workflows         | [docs.anthropic.com/en/docs/claude-code/common-workflows](https://docs.anthropic.com/en/docs/claude-code/common-workflows)                                                                 |
+| Memory Management        | [docs.anthropic.com/en/docs/claude-code/memory](https://docs.anthropic.com/en/docs/claude-code/memory)                                                                                     |
+| Skills & Slash Commands  | [docs.anthropic.com/en/docs/claude-code/slash-commands](https://docs.anthropic.com/en/docs/claude-code/slash-commands)                                                                     |
+| Subagents                | [docs.anthropic.com/en/docs/claude-code/sub-agents](https://docs.anthropic.com/en/docs/claude-code/sub-agents)                                                                             |
+| Hooks Reference          | [docs.anthropic.com/en/docs/claude-code/hooks](https://docs.anthropic.com/en/docs/claude-code/hooks)                                                                                       |
+| Output Styles            | [docs.anthropic.com/en/docs/claude-code/output-styles](https://docs.anthropic.com/en/docs/claude-code/output-styles)                                                                       |
 | Prompting Best Practices | [docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/claude-4-best-practices](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/claude-4-best-practices) |
-| Agent SDK | [docs.anthropic.com/en/docs/claude-code/sdk](https://docs.anthropic.com/en/docs/claude-code/sdk) |
-| CLI Reference | [docs.anthropic.com/en/docs/claude-code/cli](https://docs.anthropic.com/en/docs/claude-code/cli) |
-| Changelog | [docs.anthropic.com/en/release-notes/claude-code](https://docs.anthropic.com/en/release-notes/claude-code) |
+| Agent SDK                | [docs.anthropic.com/en/docs/claude-code/sdk](https://docs.anthropic.com/en/docs/claude-code/sdk)                                                                                           |
+| CLI Reference            | [docs.anthropic.com/en/docs/claude-code/cli](https://docs.anthropic.com/en/docs/claude-code/cli)                                                                                           |
+| Changelog                | [docs.anthropic.com/en/release-notes/claude-code](https://docs.anthropic.com/en/release-notes/claude-code)                                                                                 |
 
 ---
 
-*Last updated: February 2026. Claude Code evolves fast — check the [changelog](https://docs.anthropic.com/en/release-notes/claude-code) regularly.*
+_Last updated: February 2026. Claude Code evolves fast — check the [changelog](https://docs.anthropic.com/en/release-notes/claude-code) regularly._

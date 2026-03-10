@@ -6,12 +6,12 @@ Read this before starting any task. **These rules override all other instruction
 
 ## Golden Rules (Override Everything)
 
-| # | Rule | Meaning |
-|---|------|---------|
-| 1 | **Platform Agnostic** | This governance system works with ANY AI coding agent (Claude Code, Cursor, Windsurf, or future tools). No platform lock-in. All artifacts live in `.agents/` — the universal governance root. |
-| 2 | **Token Cautious** | Every file read, every directory scan, every exploratory action costs tokens. Read less, read smarter. Prefer targeted reads over exploration. When isolation available (forked contexts, subagents), use it. |
-| 3 | **Automate With Human In The Loop** | Do enough to reduce toil (scaffolding, templates, naming). But every significant action needs approval. Never auto-proceed through phases. Never auto-commit. Never auto-deploy. |
-| 4 | **When Unsure, Stop And Ask** | If requirements are ambiguous, if a file seems wrong, if a pattern is unclear — STOP. Ask ONE specific question. Do not guess. Do not assume. Do not "try and see." |
+| #   | Rule                                | Meaning                                                                                                                                                                                                       |
+| --- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Platform Agnostic**               | This governance system works with ANY AI coding agent (Claude Code, Cursor, Windsurf, or future tools). No platform lock-in. All artifacts live in `.agents/` — the universal governance root.                |
+| 2   | **Token Cautious**                  | Every file read, every directory scan, every exploratory action costs tokens. Read less, read smarter. Prefer targeted reads over exploration. When isolation available (forked contexts, subagents), use it. |
+| 3   | **Automate With Human In The Loop** | Do enough to reduce toil (scaffolding, templates, naming). But every significant action needs approval. Never auto-proceed through phases. Never auto-commit. Never auto-deploy.                              |
+| 4   | **When Unsure, Stop And Ask**       | If requirements are ambiguous, if a file seems wrong, if a pattern is unclear — STOP. Ask ONE specific question. Do not guess. Do not assume. Do not "try and see."                                           |
 
 ---
 
@@ -22,6 +22,7 @@ Read this before starting any task. **These rules override all other instruction
 Every non-`__tests__` folder owns its own `CODEMAP.md`. Update the **folder-level** CODEMAP, not root, unless the change affects root-level structure or packages.
 
 **ALWAYS update the relevant CODEMAP** when:
+
 - Adding or removing files in a folder
 - Changing file purposes or exported APIs
 - Modifying entry points or main exports
@@ -78,15 +79,15 @@ Every non-`__tests__` folder owns its own `CODEMAP.md`. Update the **folder-leve
 
 Applies to all packages in `packages/` (engine packages and future shared packages).
 
-| Convention | Rule |
-|---|---|
-| **Class files** | PascalCase (`CurationEngine.ts`, `FsrsScheduler.ts`) |
-| **Utility files** | camelCase (`conversationPrompt.ts`, `deduplication.ts`) — consistent with [Naming Conventions](#naming-conventions) |
-| **Unit tests** | Co-located per domain in `__tests__/` subdirectories next to source — not a top-level `__tests__/unit/` tree |
-| **Integration tests** | Package root `__tests__/integration/` — cross-domain lifecycle scenarios only |
-| **Domain types** | Each domain folder has its own `types.ts` for domain-private types |
-| **Shared types** | Top-level `src/types.ts` for types shared across multiple domains within the package |
-| **No cross-package type imports** | Each engine defines and exports its own types; calling layer maps between packages |
+| Convention                        | Rule                                                                                                                |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Class files**                   | PascalCase (`CurationEngine.ts`, `FsrsScheduler.ts`)                                                                |
+| **Utility files**                 | camelCase (`conversationPrompt.ts`, `deduplication.ts`) — consistent with [Naming Conventions](#naming-conventions) |
+| **Unit tests**                    | Co-located per domain in `__tests__/` subdirectories next to source — not a top-level `__tests__/unit/` tree        |
+| **Integration tests**             | Package root `__tests__/integration/` — cross-domain lifecycle scenarios only                                       |
+| **Domain types**                  | Each domain folder has its own `types.ts` for domain-private types                                                  |
+| **Shared types**                  | Top-level `src/types.ts` for types shared across multiple domains within the package                                |
+| **No cross-package type imports** | Each engine defines and exports its own types; calling layer maps between packages                                  |
 
 ---
 
@@ -94,12 +95,12 @@ Applies to all packages in `packages/` (engine packages and future shared packag
 
 ### Unit Test Protocol
 
-| Layer | TDD | Coverage | Done Gate |
-|---|---|---|---|
-| Engine packages | Strict TDD | All paths | Full package suite pass |
-| Backend routes | Pragmatic | Contract-level | Full package suite pass |
-| Frontend | Pragmatic | Happy path | Full package suite pass |
-| BDD | PRD scenarios + QA impl | Medium | Deferred to UI stage |
+| Layer           | TDD                     | Coverage       | Done Gate               |
+| --------------- | ----------------------- | -------------- | ----------------------- |
+| Engine packages | Strict TDD              | All paths      | Full package suite pass |
+| Backend routes  | Pragmatic               | Contract-level | Full package suite pass |
+| Frontend        | Pragmatic               | Happy path     | Full package suite pass |
+| BDD             | PRD scenarios + QA impl | Medium         | Deferred to UI stage    |
 
 ### The "Two-Strike" Failure Rule
 
@@ -148,13 +149,13 @@ Use CODEMAP.md as a navigation aid — **not as a mandatory first step for every
 
 Each non-`__tests__` folder has its own `CODEMAP.md`. Navigate to the most specific one.
 
-| Situation | Action |
-|-----------|--------|
+| Situation                       | Action                                                                     |
+| ------------------------------- | -------------------------------------------------------------------------- |
 | Navigating unfamiliar territory | Read the folder-level CODEMAP first → identify relevant files → read those |
-| Working within a package | Read `packages/<name>/CODEMAP.md`, not root |
-| Working within a subfolder | Read `packages/<name>/src/<folder>/CODEMAP.md` |
-| You know the exact file | Go direct — skip CODEMAP |
-| Unsure which files matter | Read the nearest CODEMAP (Golden Rule #4: when unsure, stop and ask) |
+| Working within a package        | Read `packages/<name>/CODEMAP.md`, not root                                |
+| Working within a subfolder      | Read `packages/<name>/src/<folder>/CODEMAP.md`                             |
+| You know the exact file         | Go direct — skip CODEMAP                                                   |
+| Unsure which files matter       | Read the nearest CODEMAP (Golden Rule #4: when unsure, stop and ask)       |
 
 **NEVER**: List directory → read everything → figure out what matters
 
@@ -190,12 +191,12 @@ Checklist: tests pass → changelog generated → CODEMAP synced → memory upda
 
 The agent writes to `.agents/memory/{branch}/` at these trigger points. For detailed update guidelines, see `.agents/tools/memory-write-guide.md`.
 
-| Trigger | File to Update | Content |
-|---------|----------------|---------|
-| Story completed | `current-focus.md` | What was completed, what's next |
-| Decision made | `recent-decisions.md` | Why the decision, alternatives considered |
-| Blocker hit | `blocked-items.md` | What's blocked, why, what's needed to unblock |
-| Session end | `session-log.md` | Summary of session work and next steps |
+| Trigger         | File to Update        | Content                                       |
+| --------------- | --------------------- | --------------------------------------------- |
+| Story completed | `current-focus.md`    | What was completed, what's next               |
+| Decision made   | `recent-decisions.md` | Why the decision, alternatives considered     |
+| Blocker hit     | `blocked-items.md`    | What's blocked, why, what's needed to unblock |
+| Session end     | `session-log.md`      | Summary of session work and next steps        |
 
 ---
 
@@ -217,4 +218,3 @@ See `.agents/guardrails.yml` — blocks dangerous commands, requires approval fo
 2. **Ask ONE specific question** — Not "is this okay?" but "Should I use X or Y because Z?"
 3. **Wait for answer** — Do not continue autonomously
 4. **Document the decision** in `.agents/memory/{branch}/recent-decisions.md`
-

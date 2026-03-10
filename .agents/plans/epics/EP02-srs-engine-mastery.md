@@ -3,7 +3,9 @@
 **Created**: 20260306T013219Z
 **Status**: Completed
 **Status Changed**: 20260305T230055Z
+
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
+
 **Type**: Epic Plan
 **Depends on**: EP01
 **Parallel with**: N/A
@@ -20,6 +22,7 @@ The SRS engine has no mastery tracking, phase transition logic, or interval sche
 ### Phase 1: Mastery + Phase Transitions (EP02-PH01)
 
 **In scope**:
+
 - `packages/srs-engine/src/types.ts` — `WordState`, `MasteryPhase`, `WordCategory`, `SrsConfig`, `QuizAnswer`, `FsrsCardState`, and all engine-owned types
 - `packages/srs-engine/src/mastery.ts` — `updateMastery(state, isCorrect, config)`: mastery counting (+1 correct / -1 wrong, floor 0), configurable thresholds (5 foundational, 10 curated), Learning → ANKI transition, 3-lapse ANKI → Learning reset
 - Unit tests for all mastery functions (strict TDD)
@@ -27,6 +30,7 @@ The SRS engine has no mastery tracking, phase transition logic, or interval sche
 ### Phase 2: ANKI Scheduling (EP02-PH02)
 
 **In scope**:
+
 - `packages/srs-engine/src/scheduling/scheduler.interface.ts` — `SpacedRepetitionScheduler` interface + `ReviewResult` type
 - `packages/srs-engine/src/scheduling/FsrsScheduler.ts` — `ts-fsrs` adapter implementing the interface; FSRS desired retention 0.90, 90-day max interval cap
 - `ts-fsrs` added as a runtime dependency
@@ -35,10 +39,12 @@ The SRS engine has no mastery tracking, phase transition logic, or interval sche
 ### Phase 3: Demo Checkpoint (EP02-PH03)
 
 **In scope**:
+
 - `scripts/demo-srs.ts` — minimal `tsx` script exercising `updateMastery` + `FsrsScheduler` directly on 1 word; shows mastery count incrementing, Learning → ANKI transition, and first ANKI interval printed to stdout
 - No batch composition, no active window, no wiring beyond the two engine functions
 
 **Out of scope**:
+
 - Batch composition — EP03
 - Active window + stuck words — EP04
 - Foundational deck mechanics — EP05
@@ -51,22 +57,27 @@ The SRS engine has no mastery tracking, phase transition logic, or interval sche
 ### Phase 1: Mastery + Phase Transitions (EP02-PH01)
 
 ### EP02-ST01: Engine types
+
 **Scope**: Define all engine-owned types in `src/types.ts`; export from `src/index.ts`
 
 ### EP02-ST02: Mastery counting + phase transition
+
 **Scope**: Implement `src/mastery.ts` — `updateMastery` pure function with full unit test coverage (strict TDD)
 
 ### Phase 2: ANKI Scheduling (EP02-PH02)
 
 ### EP02-ST03: SpacedRepetitionScheduler interface + ReviewResult type
+
 **Scope**: Define `scheduler.interface.ts` and `src/scheduling/types.ts`; export from `index.ts`
 
 ### EP02-ST04: FsrsScheduler adapter
+
 **Scope**: Implement `FsrsScheduler` wrapping `ts-fsrs`; unit tests for all review paths and 90-day cap
 
 ### Phase 3: Demo Checkpoint (EP02-PH03)
 
 ### EP02-ST05: SRS core demo script
+
 **Scope**: `scripts/demo-srs.ts` — direct calls to `updateMastery` + `FsrsScheduler`; human can run `tsx scripts/demo-srs.ts` and observe a word progressing Learning → ANKI with interval output
 
 ---

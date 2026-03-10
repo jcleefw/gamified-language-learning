@@ -10,26 +10,28 @@
 
 ## 2. Visual Identity
 
-| Token | Value | Usage |
-|-------|-------|-------|
+| Token     | Value   | Usage   |
+| --------- | ------- | ------- |
 | `primary` | {value} | {usage} |
 
 ## 3. Layout & Wireframes
 
 ### Desktop
+
 ```
 {ASCII wireframe}
 ```
 
 ### Mobile
+
 ```
 {ASCII wireframe}
 ```
 
 ## 4. Interaction Design
 
-| Element | Trigger | Animation |
-|---------|---------|-----------|
+| Element   | Trigger   | Animation     |
+| --------- | --------- | ------------- |
 | {element} | {trigger} | {description} |
 
 ## 5. Accessibility

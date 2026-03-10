@@ -28,12 +28,12 @@ Flat — no version prefix in the path.
 /api/{domain}/{resource}
 ```
 
-| Domain | Prefix | Stage |
-|---|---|---|
-| SRS learning | `/api/srs/` | Stage 2 |
-| Auth | `/api/auth/` | Stage 5 |
-| Curation | `/api/curation/` | Stage 7 |
-| Admin | `/api/admin/` | Stage 10 |
+| Domain       | Prefix           | Stage    |
+| ------------ | ---------------- | -------- |
+| SRS learning | `/api/srs/`      | Stage 2  |
+| Auth         | `/api/auth/`     | Stage 5  |
+| Curation     | `/api/curation/` | Stage 7  |
+| Admin        | `/api/admin/`    | Stage 10 |
 
 No `/v1/` or `/v2/` in paths. If breaking changes are needed post-MVP, versioning strategy will be addressed in a future ADR.
 
@@ -75,15 +75,15 @@ Every error response uses a consistent shape regardless of HTTP status:
 
 HTTP status carries the error category:
 
-| Status | Meaning |
-|---|---|
-| `400` | Invalid request — bad input, failed validation |
-| `401` | Unauthenticated — missing or invalid token |
-| `403` | Forbidden — authenticated but not authorised |
-| `404` | Resource not found |
-| `409` | Conflict — state violation (e.g. invalid lifecycle transition) |
-| `422` | Unprocessable — input valid but business rule rejected |
-| `500` | Internal server error |
+| Status | Meaning                                                        |
+| ------ | -------------------------------------------------------------- |
+| `400`  | Invalid request — bad input, failed validation                 |
+| `401`  | Unauthenticated — missing or invalid token                     |
+| `403`  | Forbidden — authenticated but not authorised                   |
+| `404`  | Resource not found                                             |
+| `409`  | Conflict — state violation (e.g. invalid lifecycle transition) |
+| `422`  | Unprocessable — input valid but business rule rejected         |
+| `500`  | Internal server error                                          |
 
 ---
 
@@ -120,6 +120,7 @@ packages/api-contract/
 ```
 
 **Rules:**
+
 - No runtime code — types, interfaces, and enums only
 - Engine types (`WordState`, `Batch`, `ParsedConversation`, etc.) are **never** imported or re-exported here — they are internal to Hono
 - Hono maps engine output → API response shape before returning; the API contract reflects the wire format, not the engine shape
@@ -138,22 +139,22 @@ Request a quiz batch for a user + deck.
 ```ts
 // Request body
 interface GetBatchRequest {
-  deckId: string
+  deckId: string;
 }
 
 // Response: ApiResponse<BatchPayload>
 interface BatchPayload {
-  batchId: string
-  deckId: string
-  questions: QuizQuestion[]
+  batchId: string;
+  deckId: string;
+  questions: QuizQuestion[];
 }
 
 interface QuizQuestion {
-  wordId: string
-  questionType: 'multiple_choice' | 'word_block' | 'audio'
-  targetText: string
-  options?: string[]          // multiple_choice only
-  audioUrl?: string           // audio type only
+  wordId: string;
+  questionType: 'multiple_choice' | 'word_block' | 'audio';
+  targetText: string;
+  options?: string[]; // multiple_choice only
+  audioUrl?: string; // audio type only
 }
 ```
 
@@ -168,25 +169,25 @@ Submit completed batch answers, receive updated mastery summary.
 ```ts
 // Request body
 interface SubmitAnswersRequest {
-  batchId: string
-  answers: QuizAnswer[]
+  batchId: string;
+  answers: QuizAnswer[];
 }
 
 interface QuizAnswer {
-  wordId: string
-  correct: boolean
+  wordId: string;
+  correct: boolean;
 }
 
 // Response: ApiResponse<AnswerResultPayload>
 interface AnswerResultPayload {
-  processed: number
-  updatedWords: WordMasterySummary[]
+  processed: number;
+  updatedWords: WordMasterySummary[];
 }
 
 interface WordMasterySummary {
-  wordId: string
-  masteryCount: number
-  phase: 'learning' | 'anki_review'
+  wordId: string;
+  masteryCount: number;
+  phase: 'learning' | 'anki_review';
 }
 ```
 
@@ -196,14 +197,14 @@ Stage 2: mastery state held in memory (no persistence). Stage 3+: written to D1.
 
 ## Placeholder Routes (Shape Deferred)
 
-| Route | Stage | Notes |
-|---|---|---|
-| `POST /api/auth/google` | 5 | Google OAuth callback |
-| `POST /api/auth/refresh` | 5 | Token refresh |
-| `DELETE /api/auth/session` | 5 | Sign out |
-| `GET /api/curation/decks` | 7 | List published decks |
-| `POST /api/curation/conversations` | 7 | Generate conversation |
-| `GET /api/admin/users` | 10 | Admin user list |
+| Route                              | Stage | Notes                 |
+| ---------------------------------- | ----- | --------------------- |
+| `POST /api/auth/google`            | 5     | Google OAuth callback |
+| `POST /api/auth/refresh`           | 5     | Token refresh         |
+| `DELETE /api/auth/session`         | 5     | Sign out              |
+| `GET /api/curation/decks`          | 7     | List published decks  |
+| `POST /api/curation/conversations` | 7     | Generate conversation |
+| `GET /api/admin/users`             | 10    | Admin user list       |
 
 ---
 
@@ -225,30 +226,33 @@ Stage 2: mastery state held in memory (no persistence). Stage 3+: written to D1.
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| Versioned prefix (`/api/v1/`) | Future-proof for breaking changes | Unnecessary complexity for solo MVP | Deferred — add if and when needed |
-| Bare responses | Simpler, less code | Inconsistent when pagination or metadata needed | Wrapped costs nothing and prevents future drift |
-| Session cookies | No token management on client | Requires session store, CORS complexity across subdomains | Bearer JWT is simpler for a headless multi-client API |
-| Inline types in each app | No shared package overhead | Types drift silently between Hono and Nuxt | Single source of truth enforced at compile time |
-| Re-export engine types via api-contract | Convenient shortcut | Couples wire format to engine internals — breaks engine portability | Mapping layer is explicit and intentional |
+| Option                                  | Pros                              | Cons                                                                | Why Not Chosen                                        |
+| --------------------------------------- | --------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------- |
+| Versioned prefix (`/api/v1/`)           | Future-proof for breaking changes | Unnecessary complexity for solo MVP                                 | Deferred — add if and when needed                     |
+| Bare responses                          | Simpler, less code                | Inconsistent when pagination or metadata needed                     | Wrapped costs nothing and prevents future drift       |
+| Session cookies                         | No token management on client     | Requires session store, CORS complexity across subdomains           | Bearer JWT is simpler for a headless multi-client API |
+| Inline types in each app                | No shared package overhead        | Types drift silently between Hono and Nuxt                          | Single source of truth enforced at compile time       |
+| Re-export engine types via api-contract | Convenient shortcut               | Couples wire format to engine internals — breaks engine portability | Mapping layer is explicit and intentional             |
 
 ---
 
 ## Consequences
 
 **Positive:**
+
 - Hono and Nuxt agents share a single type source — incompatible shapes caught at compile time
 - Consistent error envelope means frontend error handling is uniform across all routes
 - Auth middleware slot reserved from Stage 2 — no rework when Stage 5 adds enforcement
 - Flat namespace is readable and avoids premature versioning overhead
 
 **Negative / Risks:**
+
 - `packages/api-contract` is a new package dependency — Turborepo pipeline must include it
 - Engine-to-wire mapping boilerplate in Hono route handlers (same as existing engine ADR consequence)
 - Stage 2 SRS endpoint schemas reference `wordId` as `string` — exact ID format (UUID vs. integer vs. slug) depends on the schema ADR (GAP-02). Update when schema is locked.
 
 **Neutral:**
+
 - All routes default to unauthenticated until Stage 5 — consistent, but test data must not be considered private
 - `meta` in responses is optional — routes that never need pagination can ignore it entirely
 
@@ -256,16 +260,17 @@ Stage 2: mastery state held in memory (no persistence). Stage 3+: written to D1.
 
 ## Open Questions
 
-| Question | Owner | Target |
-|---|---|---|
-| `wordId` format — UUID, integer, or slug? | Architect | Schema ADR (GAP-02, Stage 3) |
-| `batchId` — server-generated UUID or client-provided? | Dev | Before Stage 2 implementation |
-| JWT claims shape — what goes in the token payload? | Architect | Auth ADR (Stage 5) |
-| CORS configuration — what origins are allowed? | Dev | Stage 2 (Nuxt + Hono on different ports locally) |
+| Question                                              | Owner     | Target                                           |
+| ----------------------------------------------------- | --------- | ------------------------------------------------ |
+| `wordId` format — UUID, integer, or slug?             | Architect | Schema ADR (GAP-02, Stage 3)                     |
+| `batchId` — server-generated UUID or client-provided? | Dev       | Before Stage 2 implementation                    |
+| JWT claims shape — what goes in the token payload?    | Architect | Auth ADR (Stage 5)                               |
+| CORS configuration — what origins are allowed?        | Dev       | Stage 2 (Nuxt + Hono on different ports locally) |
 
 ---
 
-*Related ADRs:*
+_Related ADRs:_
+
 - [Headless Hono Backend](20260303T195134Z-engineering-headless-hono-backend.md)
 - [SRS Engine Package](20260302T160536Z-engineering-srs-engine-package.md)
 - [Curation Engine Package](20260303T210000Z-engineering-curation-engine-package.md)

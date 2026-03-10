@@ -2,7 +2,9 @@
 
 **Created**: {TIMESTAMP}
 **Status**: Draft
+
 <!-- Status: Draft | Proposed | Accepted | Rejected | Withdrawn | Shelved | Superseded -->
+
 **Author**: {name}
 **Supersedes**: {RFC## or N/A}
 
@@ -18,10 +20,10 @@
 
 ## Alternatives Considered
 
-| Alternative | Pros | Cons |
-|-------------|------|------|
-| {Option A} | {pros} | {cons} |
-| {Option B} | {pros} | {cons} |
+| Alternative | Pros   | Cons   |
+| ----------- | ------ | ------ |
+| {Option A}  | {pros} | {cons} |
+| {Option B}  | {pros} | {cons} |
 
 ## Impact
 
@@ -37,6 +39,7 @@
 ## Decision
 
 <!-- Filled in when status changes to Accepted/Rejected -->
+
 **Decision**: {Accepted / Rejected}
 **Rationale**: {Why}
 **Next step**: {Epic EP## / ADR## / N/A}

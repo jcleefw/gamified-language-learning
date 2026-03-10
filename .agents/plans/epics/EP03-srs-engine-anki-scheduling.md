@@ -3,7 +3,9 @@
 **Created**: 20260306T013219Z
 **Status**: Withdrawn
 **Status Changed**: 20260306T013219Z
+
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
+
 **Type**: Epic Plan
 **Depends on**: EP02
 **Predecessor**: N/A
@@ -18,6 +20,7 @@ Words that reach ANKI phase need spaced repetition interval scheduling. The engi
 ## Scope
 
 **In scope**:
+
 - `packages/srs-engine/src/scheduling/scheduler.interface.ts` — `SpacedRepetitionScheduler` interface (`scheduleReview`, `getNextInterval`)
 - `packages/srs-engine/src/scheduling/fsrs-scheduler.ts` — `FsrsScheduler` implementing the interface using `ts-fsrs` (FSRS desired retention 0.90, 90-day max interval cap)
 - `ReviewResult` type (next interval days, updated ease factor, updated FSRS state)
@@ -25,6 +28,7 @@ Words that reach ANKI phase need spaced repetition interval scheduling. The engi
 - Unit tests: correct interval increases, wrong answer triggers lapse, 90-day cap enforced
 
 **Out of scope**:
+
 - Hooking the scheduler into batch composition — EP04/EP07
 - Custom scheduler implementation — future, if `ts-fsrs` doesn't fit lapse rules
 - `date-fns` added only if interval date math is needed here (assess during implementation)
@@ -34,9 +38,11 @@ Words that reach ANKI phase need spaced repetition interval scheduling. The engi
 ## Stories
 
 ### EP03-ST01: SpacedRepetitionScheduler interface + ReviewResult type
+
 **Scope**: Define `scheduler.interface.ts` with `SpacedRepetitionScheduler` interface and `ReviewResult` type; export from `index.ts`
 
 ### EP03-ST02: FsrsScheduler adapter
+
 **Scope**: Implement `FsrsScheduler` wrapping `ts-fsrs` — `scheduleReview(wordState, isCorrect)` returns `ReviewResult` with next interval respecting 90-day cap; unit tests covering correct/wrong paths and cap enforcement
 
 ---

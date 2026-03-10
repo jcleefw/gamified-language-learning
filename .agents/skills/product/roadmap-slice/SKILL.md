@@ -7,6 +7,7 @@ model: sonnet
 Create a roadmap slice from: $ARGUMENTS
 
 If no input is provided, stop and ask:
+
 1. "Paste the feature list, backlog, or strategic priorities to work from."
 2. "What is the planning horizon? (e.g., now = this sprint, next = next quarter, later = H2)"
 3. "Are there any fixed constraints or committed items I should treat as locked?"
@@ -57,9 +58,11 @@ If no input is provided, stop and ask:
 | | |
 
 ### Key Dependencies
+
 List items where sequencing matters — what must ship before what.
 
 ### Parallelism Map
+
 Show which items share a dependency and can be built concurrently. Use a simple dependency tree:
 
 ```
@@ -69,9 +72,11 @@ EP01 → EP02 → [EP03 + EP04 + EP05] → EP06
 State the **critical path** (longest sequential chain) explicitly.
 
 ### Human Feedback Checkpoints
+
 Identify the earliest point a human can observe meaningful output without extra wiring. If a gap exists, note where a thin demo/smoke script should be injected and what it would show.
 
 ### Open Questions
+
 What decisions or external factors could shift this roadmap? Who owns each question?
 
 ---

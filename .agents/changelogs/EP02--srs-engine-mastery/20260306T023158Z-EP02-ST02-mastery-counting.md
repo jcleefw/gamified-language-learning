@@ -9,10 +9,12 @@
 ## What changed
 
 ### Created
+
 - `packages/srs-engine/src/mastery.ts` — `updateMastery(state, isCorrect, config)` pure function: mastery counting (+1 correct / -1 wrong, floor 0), configurable thresholds (curated 10, foundational 5), Learning → ANKI transition, 3-lapse ANKI → Learning reset
 - `packages/srs-engine/__tests__/unit/mastery.test.ts` — 13 unit tests covering all paths (strict TDD)
 
 ### Modified
+
 - `packages/srs-engine/src/index.ts` — added `updateMastery` export
 - `CODEMAP.md` — added `src/mastery.ts` entry
 

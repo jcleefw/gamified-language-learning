@@ -23,34 +23,42 @@ Wait for their response.
 Cover these dimensions. Skip any that are already clear from the user's description. Ask 2–3 questions per round, working conversationally until all relevant dimensions are covered.
 
 **Risk and Critical Paths**
+
 - What are the highest-risk areas — what would cause the most damage if broken?
 - What are the critical user journeys that must always work?
 
 **Coverage Targets**
+
 - What level of test coverage is required or expected?
 - Are there regulatory or compliance requirements that mandate specific test types?
 
 **Test Pyramid**
+
 - What is the current split between unit, integration, and end-to-end tests?
 - Where are the biggest gaps in the existing test suite (if any)?
 
 **Automation vs. Manual**
+
 - What should be automated? What is better tested manually (exploratory, usability)?
 - What is the team's capacity to maintain automated tests?
 
 **Test Environments**
+
 - What environments are needed? (local, CI, staging, production smoke)
 - Are there external dependencies (APIs, databases, queues) that need mocking or seeding?
 
 **Performance and Load Testing**
+
 - Are there latency or throughput requirements that need load testing?
 - What are the scale targets to test against?
 
 **Test Data**
+
 - How is test data managed? Is there a seeding or fixture strategy?
 - Are there privacy or compliance constraints on what data can be used in tests?
 
 **CI Integration**
+
 - How do tests integrate with the CI/CD pipeline?
 - What is the acceptable test run time? What fails a build?
 
@@ -85,6 +93,7 @@ What system or feature needs a test strategy? What quality risks or coverage gap
 ## Decision
 
 State the test strategy clearly and directly. Include:
+
 - Test pyramid breakdown (unit / integration / e2e proportions and rationale)
 - What is automated vs. manual
 - Test environment strategy
@@ -98,10 +107,10 @@ Why this strategy? What makes it the right fit given the risk profile and team c
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| [Alternative 1] | | | |
-| [Alternative 2] | | | |
+| Option          | Pros | Cons | Why Not Chosen |
+| --------------- | ---- | ---- | -------------- |
+| [Alternative 1] |      |      |                |
+| [Alternative 2] |      |      |                |
 
 ## Consequences
 
@@ -127,9 +136,11 @@ Unresolved decisions or assumptions that need validation. Include owner and targ
 ## File Output
 
 Save to:
+
 ```
 product-documentation/architecture/YYYYMMDDTHHMMSSZ-qa-<short-description>.md
 ```
+
 Example: `product-documentation/architecture/20260226T143000Z-qa-content-curation.md`
 
 ---
@@ -139,6 +150,7 @@ Example: `product-documentation/architecture/20260226T143000Z-qa-content-curatio
 After saving, ask: "What would you like to do next?"
 
 Suggest relevant steps based on the ADR content:
+
 - If test implementation is next: `/dev/tdd-plan` then `/dev/tdd-implement`
 - If BE architecture needs aligning: `/architect/be-design`
 - If infra environments need setting up: `/architect/infra-design`

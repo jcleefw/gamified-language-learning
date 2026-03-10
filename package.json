@@ -20,6 +20,7 @@
     "@gll/srs-engine": "workspace:*",
     "eslint": "^9",
     "jiti": "^2.6.1",
+    "prettier": "^3.8.1",
     "tsx": "^4",
     "turbo": "^2",
     "typescript": "^5.7",

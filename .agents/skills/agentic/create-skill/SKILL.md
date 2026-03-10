@@ -1,6 +1,6 @@
 ---
 name: create-skill
-description: "Guides the creation of a new Claude Code skill. Use when setting up a new skill, slash command, or reusable agent prompt."
+description: 'Guides the creation of a new Claude Code skill. Use when setting up a new skill, slash command, or reusable agent prompt.'
 ---
 
 # Create a New Skill
@@ -49,7 +49,7 @@ Once approved:
 ```markdown
 ---
 name: <name>
-description: "<one-sentence description including when to use>"
+description: '<one-sentence description including when to use>'
 ---
 
 # <Skill Title>
@@ -62,6 +62,6 @@ description: "<one-sentence description including when to use>"
 ## Rules
 
 - Never write the skill file without user approval of the design in Step 2.
-- The `description` field must answer both *what* and *when* — it's used by Claude to decide whether to auto-invoke.
+- The `description` field must answer both _what_ and _when_ — it's used by Claude to decide whether to auto-invoke.
 - Keep skill instructions imperative and specific. Avoid vague language like "help the user" or "do the right thing".
 - If the skill involves sensitive or irreversible actions, always include `disable-model-invocation: true` in the frontmatter.

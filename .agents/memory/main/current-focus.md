@@ -10,17 +10,17 @@
 
 ## Stage 1 — Delivered Epics
 
-| Epic | Title | Status |
-|------|-------|--------|
-| EP01 | Monorepo scaffolding | ✅ Merged |
-| EP02 | SRS engine: mastery + phase transitions (absorbed EP03 ANKI scheduling) | ✅ Merged |
-| EP04 | SRS engine: batch composition | ✅ Merged |
-| EP05 | SRS engine: active window + stuck words | ✅ Merged |
-| EP06 | SRS engine: foundational deck | ✅ Merged |
-| EP07 | SRS engine: answer processing + SrsEngine class | ✅ Merged |
-| EP08 | Terminal quiz runner + seed data | ✅ On branch `feature/EP08-terminal-quiz-runner` — merge pending |
-| EP09 | Agentic dev workflow (GAP-05) | ✅ Delivered as workflow docs |
-| EP10 | GitHub Actions CI | ✅ Merged |
+| Epic | Title                                                                   | Status                                                           |
+| ---- | ----------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| EP01 | Monorepo scaffolding                                                    | ✅ Merged                                                        |
+| EP02 | SRS engine: mastery + phase transitions (absorbed EP03 ANKI scheduling) | ✅ Merged                                                        |
+| EP04 | SRS engine: batch composition                                           | ✅ Merged                                                        |
+| EP05 | SRS engine: active window + stuck words                                 | ✅ Merged                                                        |
+| EP06 | SRS engine: foundational deck                                           | ✅ Merged                                                        |
+| EP07 | SRS engine: answer processing + SrsEngine class                         | ✅ Merged                                                        |
+| EP08 | Terminal quiz runner + seed data                                        | ✅ On branch `feature/EP08-terminal-quiz-runner` — merge pending |
+| EP09 | Agentic dev workflow (GAP-05)                                           | ✅ Delivered as workflow docs                                    |
+| EP10 | GitHub Actions CI                                                       | ✅ Merged                                                        |
 
 **Housekeeping**: EP08 epic plan (`plans/epics/EP08-terminal-quiz-runner.md`) status still shows Draft — update to Completed after merge.
 
@@ -28,12 +28,12 @@
 
 **Roadmap**: `product-documentation/roadmap/20260311T000000Z-stage2-build-sequence.md`
 
-| Epic | Title | Effort |
-|------|-------|--------|
+| Epic | Title                                                        | Effort   |
+| ---- | ------------------------------------------------------------ | -------- |
 | EP11 | `@gll/api-contract` — shared HTTP types (types-only package) | 0.25 day |
-| EP12 | `apps/server` — Hono server scaffold | 0.5 day |
-| EP13 | `apps/server` — SRS routes + in-memory state | 1 day |
-| EP14 | CI Stage 2 update | 0.25 day |
+| EP12 | `apps/server` — Hono server scaffold                         | 0.5 day  |
+| EP13 | `apps/server` — SRS routes + in-memory state                 | 1 day    |
+| EP14 | CI Stage 2 update                                            | 0.25 day |
 
 **Blocking prerequisite**: EP08 must be merged before EP11 starts.
 

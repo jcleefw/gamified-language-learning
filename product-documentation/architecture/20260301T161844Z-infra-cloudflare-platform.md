@@ -29,13 +29,13 @@ The gamified language learning app requires a cloud platform for hosting, data p
 
 All cloud services stay within the Cloudflare ecosystem:
 
-| Service | Cloudflare Product | Purpose |
-|---|---|---|
-| Web app (SSR) | Cloudflare Pages | Nuxt SSR hosting with branch preview deployments |
-| Backend API | Cloudflare Workers | Hono-based API (if/when needed) |
-| Database | Cloudflare D1 | SQLite-based persistence for all app data |
-| Object storage | Cloudflare R2 | Audio file storage (TTS-generated content) |
-| Background jobs | Cloudflare Queues | Audio generation queue management |
+| Service         | Cloudflare Product | Purpose                                          |
+| --------------- | ------------------ | ------------------------------------------------ |
+| Web app (SSR)   | Cloudflare Pages   | Nuxt SSR hosting with branch preview deployments |
+| Backend API     | Cloudflare Workers | Hono-based API (if/when needed)                  |
+| Database        | Cloudflare D1      | SQLite-based persistence for all app data        |
+| Object storage  | Cloudflare R2      | Audio file storage (TTS-generated content)       |
+| Background jobs | Cloudflare Queues  | Audio generation queue management                |
 
 ### Cloudflare D1 — Data Modeling
 
@@ -52,14 +52,14 @@ This avoids the rigidity of pure relational for multilingual content while prese
 
 **Data domains stored in D1:**
 
-| Domain | Structure | Notes |
-|---|---|---|
-| User management | Relational | Roles, auth provider, `lastLoginAt`, `isActive` |
-| SRS progress | Relational | Per-word mastery count, next review timestamp, mistake history |
-| Audio metadata | Relational + JSON | File path (R2 key), generation status; conversation context as JSON |
-| Content curation | Relational + JSON | Conversations, word breakdowns; language-specific config as JSON |
-| Quiz decks | Relational | Deck type, word associations, batch assignments |
-| Audio generation count | Relational | Rate tracking per curator/environment |
+| Domain                 | Structure         | Notes                                                               |
+| ---------------------- | ----------------- | ------------------------------------------------------------------- |
+| User management        | Relational        | Roles, auth provider, `lastLoginAt`, `isActive`                     |
+| SRS progress           | Relational        | Per-word mastery count, next review timestamp, mistake history      |
+| Audio metadata         | Relational + JSON | File path (R2 key), generation status; conversation context as JSON |
+| Content curation       | Relational + JSON | Conversations, word breakdowns; language-specific config as JSON    |
+| Quiz decks             | Relational        | Deck type, word associations, batch assignments                     |
+| Audio generation count | Relational        | Rate tracking per curator/environment                               |
 
 ### Cloudflare R2 — Audio Storage
 
@@ -84,56 +84,56 @@ Detailed queue design (retry policy, dead letter handling, batch size) scoped to
 
 **Single auth system for all user types** using `nuxt-auth-utils` (Nuxt's official auth module):
 
-| Method | Flow |
-|---|---|
-| Google OAuth | OAuth 2.0 flow → find or create user → embed role in session |
-| Email/password | Credentials flow → bcrypt verification → session |
+| Method         | Flow                                                         |
+| -------------- | ------------------------------------------------------------ |
+| Google OAuth   | OAuth 2.0 flow → find or create user → embed role in session |
+| Email/password | Credentials flow → bcrypt verification → session             |
 
 Role-based access control (RBAC) enforced in the application layer:
 
-| Role | Access |
-|---|---|
-| Admin | All routes including user management |
-| Curator | Content curation routes |
-| Learner | Learning path routes only |
+| Role    | Access                               |
+| ------- | ------------------------------------ |
+| Admin   | All routes including user management |
+| Curator | Content curation routes              |
+| Learner | Learning path routes only            |
 
 No Cloudflare Access. Keeping auth in the application layer avoids split authentication across two systems and maintains a consistent login UX for all user types. Email/password credentials are retained for simpler development and testing workflows.
 
 ### Environment Strategy
 
-| Environment | Purpose | Config source | Deployment trigger |
-|---|---|---|---|
-| Local | Development | `.env.local` | Manual (`make dev`) |
-| Test | Automated testing | `.env.test` | CI pipeline |
-| Staging | Pre-production validation | `.env.staging` | Push to `staging` branch |
-| Branch preview | PR review | `.env.staging` (inherited) | Push to any PR branch |
-| Production | Live | `.env.production` | Push to `main` branch |
+| Environment    | Purpose                   | Config source              | Deployment trigger       |
+| -------------- | ------------------------- | -------------------------- | ------------------------ |
+| Local          | Development               | `.env.local`               | Manual (`make dev`)      |
+| Test           | Automated testing         | `.env.test`                | CI pipeline              |
+| Staging        | Pre-production validation | `.env.staging`             | Push to `staging` branch |
+| Branch preview | PR review                 | `.env.staging` (inherited) | Push to any PR branch    |
+| Production     | Live                      | `.env.production`          | Push to `main` branch    |
 
 Branch preview deployments inherit staging configuration (Option A). No separate `.env.preview` — branch previews are staging clones.
 
 **Environment files committed vs gitignored:**
 
-| File | Committed? | Contains |
-|---|---|---|
-| `.env.example` | Yes | Variable names, port offsets, documentation |
-| `.env.local` | No | Local dev secrets, `PORT_OFFSET` |
-| `.env.test` | Yes | Test-specific config (no real secrets) |
-| `.env.staging` | No | Staging secrets |
-| `.env.production` | No | Production secrets (CI-only) |
+| File              | Committed? | Contains                                    |
+| ----------------- | ---------- | ------------------------------------------- |
+| `.env.example`    | Yes        | Variable names, port offsets, documentation |
+| `.env.local`      | No         | Local dev secrets, `PORT_OFFSET`            |
+| `.env.test`       | Yes        | Test-specific config (no real secrets)      |
+| `.env.staging`    | No         | Staging secrets                             |
+| `.env.production` | No         | Production secrets (CI-only)                |
 
 ### CI/CD — GitHub Actions
 
 GitHub Actions handles the full pipeline. Cloudflare is the deployment target only — no Cloudflare native git integration.
 
-| Stage | Trigger | What runs |
-|---|---|---|
-| Lint & type-check | Every PR | ESLint (read-only), TypeScript `tsc --noEmit` |
-| Test | Every PR | Unit tests, BDD tests |
-| Commitlint | Every PR | Conventional Commits validation |
-| Deploy staging | Push to `staging` | `wrangler pages deploy --branch staging` |
-| Deploy production | Push to `main` | `wrangler pages deploy --branch main` |
-| Preview deploy | PR opened/updated | Cloudflare Pages automatic preview |
-| D1 migrations | Staging/production deploy | `wrangler d1 migrations apply --env <env>` |
+| Stage             | Trigger                   | What runs                                     |
+| ----------------- | ------------------------- | --------------------------------------------- |
+| Lint & type-check | Every PR                  | ESLint (read-only), TypeScript `tsc --noEmit` |
+| Test              | Every PR                  | Unit tests, BDD tests                         |
+| Commitlint        | Every PR                  | Conventional Commits validation               |
+| Deploy staging    | Push to `staging`         | `wrangler pages deploy --branch staging`      |
+| Deploy production | Push to `main`            | `wrangler pages deploy --branch main`         |
+| Preview deploy    | PR opened/updated         | Cloudflare Pages automatic preview            |
+| D1 migrations     | Staging/production deploy | `wrangler d1 migrations apply --env <env>`    |
 
 Secrets (Gemini API keys, OAuth credentials) stored in GitHub Actions secrets and injected at deploy time via `wrangler secret put`.
 
@@ -143,10 +143,10 @@ Local dev is **Cloudflare-agnostic**. Docker Compose provides service emulation.
 
 **Docker Compose services:**
 
-| Service | Image | Emulates | Port |
-|---|---|---|---|
-| MinIO | `minio/minio` | Cloudflare R2 | 9000 (console: 9001) |
-| SQLite | `kesilent/sqlite-web` or volume-mounted SQLite | Cloudflare D1 | 8080 |
+| Service | Image                                          | Emulates      | Port                 |
+| ------- | ---------------------------------------------- | ------------- | -------------------- |
+| MinIO   | `minio/minio`                                  | Cloudflare R2 | 9000 (console: 9001) |
+| SQLite  | `kesilent/sqlite-web` or volume-mounted SQLite | Cloudflare D1 | 8080                 |
 
 SQLite runs in Docker (not Wrangler's built-in D1 emulator) for direct DB access, easier seeding, and inspection with standard SQLite tools.
 
@@ -217,14 +217,14 @@ All Wrangler commands are wrapped in Makefile targets. Wrangler is **not** part 
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| MongoDB Atlas (free tier) | Document model, familiar query syntax | External to Cloudflare, network latency from Workers, 512MB limit | Breaks "stay in Cloudflare" constraint |
-| Cloudflare Access for admin auth | Zero-trust edge auth, no app code needed | No credentials auth support, Cloudflare-branded UX, splits auth into two systems | Creates split auth confusion |
-| Wrangler D1 emulator for local dev | Closer Cloudflare parity, no Docker needed | No direct SQLite access, harder to seed and inspect | Docker SQLite is more developer-friendly |
-| Vercel for hosting + Cloudflare for storage | Vercel has better Nuxt/SSR DX | Splits infrastructure across two platforms, complicates deployment | Single ecosystem preference |
-| Separate D1 databases per environment | Full isolation | Unnecessary complexity at this scale; environment scoping in a single DB is sufficient | Free tier allows it, but adds management overhead |
-| `.env.preview` for branch deployments | Per-branch config flexibility | No current need for different config between staging and previews | Staging config is sufficient |
+| Option                                      | Pros                                       | Cons                                                                                   | Why Not Chosen                                    |
+| ------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| MongoDB Atlas (free tier)                   | Document model, familiar query syntax      | External to Cloudflare, network latency from Workers, 512MB limit                      | Breaks "stay in Cloudflare" constraint            |
+| Cloudflare Access for admin auth            | Zero-trust edge auth, no app code needed   | No credentials auth support, Cloudflare-branded UX, splits auth into two systems       | Creates split auth confusion                      |
+| Wrangler D1 emulator for local dev          | Closer Cloudflare parity, no Docker needed | No direct SQLite access, harder to seed and inspect                                    | Docker SQLite is more developer-friendly          |
+| Vercel for hosting + Cloudflare for storage | Vercel has better Nuxt/SSR DX              | Splits infrastructure across two platforms, complicates deployment                     | Single ecosystem preference                       |
+| Separate D1 databases per environment       | Full isolation                             | Unnecessary complexity at this scale; environment scoping in a single DB is sufficient | Free tier allows it, but adds management overhead |
+| `.env.preview` for branch deployments       | Per-branch config flexibility              | No current need for different config between staging and previews                      | Staging config is sufficient                      |
 
 ---
 
@@ -256,17 +256,17 @@ All Wrangler commands are wrapped in Makefile targets. Wrangler is **not** part 
 
 ## Open Questions
 
-| Question | Owner | Target |
-|---|---|---|
-| D1 environment scoping strategy — column-based prefix or separate tables? | Architect | Before first D1 migration |
-| Cloudflare Queues free tier limits vs expected audio generation volume | Architect | During audio generation ADR |
-| SQLite-to-D1 migration testing — how to validate local SQLite schema works on D1? | Dev | Before first staging deploy |
-| `nuxt-auth-utils` vs `sidebase/nuxt-auth` — which module best fits the dual auth flow? | Dev | Before auth implementation |
-| R2 bucket naming convention (one bucket per env or one bucket with prefixed keys?) | Architect | During audio storage ADR |
+| Question                                                                               | Owner     | Target                      |
+| -------------------------------------------------------------------------------------- | --------- | --------------------------- |
+| D1 environment scoping strategy — column-based prefix or separate tables?              | Architect | Before first D1 migration   |
+| Cloudflare Queues free tier limits vs expected audio generation volume                 | Architect | During audio generation ADR |
+| SQLite-to-D1 migration testing — how to validate local SQLite schema works on D1?      | Dev       | Before first staging deploy |
+| `nuxt-auth-utils` vs `sidebase/nuxt-auth` — which module best fits the dual auth flow? | Dev       | Before auth implementation  |
+| R2 bucket naming convention (one bucket per env or one bucket with prefixed keys?)     | Architect | During audio storage ADR    |
 
 ---
 
-*Related ADRs:*
+_Related ADRs:_
 
 - [20260227T022513Z-engineering-monorepo-tooling.md](20260227T022513Z-engineering-monorepo-tooling.md)
 - [20260227T000000Z-fe-pwa-platform-strategy.md](20260227T000000Z-fe-pwa-platform-strategy.md)

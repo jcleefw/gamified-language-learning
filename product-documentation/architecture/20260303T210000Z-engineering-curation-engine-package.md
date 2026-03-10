@@ -56,33 +56,33 @@ Calling Layer                          Curation Engine
 
 ### What Goes In
 
-| Responsibility | Description | PRD Reference |
-|---|---|---|
-| **Conversation prompt construction** | Assemble full prompt from generic + language-specific + curator params (topic, line count, difficulty, register) | §5.1 |
-| **Conversation response parsing** | Parse + validate Gemini response into typed conversation lines (speaker, target text, translation) via Zod | §5.1 |
-| **Breakdown prompt construction** | Assemble breakdown prompt from a reviewed conversation | §5.1 |
-| **Breakdown response parsing** | Parse + validate into per-line word components (word, meaning, part of speech) via Zod | §5.1 |
-| **Prompt merge logic** | Merge generic requirements + language-specific prompt + curator overrides into final prompt. Engine defines prompt schema (typed interfaces) | §5.4 |
-| **Word deduplication** | Derive unique words from all line breakdowns — same word across multiple lines → single entity | §5.1 |
-| **Content lifecycle state machine** | Enforce Draft → Published ↔ Unpublished transitions. Validate publish preconditions (breakdown complete, summary valid). Reject invalid transitions (e.g., Draft → Unpublished) | §5.7 |
-| **Edit classification** | Diff old vs. new conversation, classify each change as minor (English meaning, notes) or destructive (target language text changed → new word entity) | §5.8 |
-| **Nuance detection** | Auto-detect language-specific attributes from parsed content (e.g., Thai speaker gender from gendered particles). Pluggable per-language registry | §5.3 |
-| **Summary validation** | Validate curator-authored summary: max 30 words, concise, no filler connector words | §5.11 |
-| **Conversation duplication** | Produce a skeleton from an existing conversation: copy topic + summary, no lines copied. Ready for new generation in target language | §5.6 |
-| **Configuration validation** | Validate that provided config values are sane (e.g., valid difficulties, valid registers, summary word limit > 0) | — |
+| Responsibility                       | Description                                                                                                                                                                     | PRD Reference |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| **Conversation prompt construction** | Assemble full prompt from generic + language-specific + curator params (topic, line count, difficulty, register)                                                                | §5.1          |
+| **Conversation response parsing**    | Parse + validate Gemini response into typed conversation lines (speaker, target text, translation) via Zod                                                                      | §5.1          |
+| **Breakdown prompt construction**    | Assemble breakdown prompt from a reviewed conversation                                                                                                                          | §5.1          |
+| **Breakdown response parsing**       | Parse + validate into per-line word components (word, meaning, part of speech) via Zod                                                                                          | §5.1          |
+| **Prompt merge logic**               | Merge generic requirements + language-specific prompt + curator overrides into final prompt. Engine defines prompt schema (typed interfaces)                                    | §5.4          |
+| **Word deduplication**               | Derive unique words from all line breakdowns — same word across multiple lines → single entity                                                                                  | §5.1          |
+| **Content lifecycle state machine**  | Enforce Draft → Published ↔ Unpublished transitions. Validate publish preconditions (breakdown complete, summary valid). Reject invalid transitions (e.g., Draft → Unpublished) | §5.7          |
+| **Edit classification**              | Diff old vs. new conversation, classify each change as minor (English meaning, notes) or destructive (target language text changed → new word entity)                           | §5.8          |
+| **Nuance detection**                 | Auto-detect language-specific attributes from parsed content (e.g., Thai speaker gender from gendered particles). Pluggable per-language registry                               | §5.3          |
+| **Summary validation**               | Validate curator-authored summary: max 30 words, concise, no filler connector words                                                                                             | §5.11         |
+| **Conversation duplication**         | Produce a skeleton from an existing conversation: copy topic + summary, no lines copied. Ready for new generation in target language                                            | §5.6          |
+| **Configuration validation**         | Validate that provided config values are sane (e.g., valid difficulties, valid registers, summary word limit > 0)                                                               | —             |
 
 ### What Stays Out
 
-| Responsibility | Where It Lives | Why |
-|---|---|---|
-| Gemini API calls (sending prompts, receiving responses) | Calling layer (Hono backend / Workers) | Engine has no I/O |
-| D1 queries (read/write conversations, words, prompts) | Calling layer | Engine has no I/O |
-| System prompt CRUD (store/retrieve/save custom prompts) | Calling layer (D1 persistence) | Storage concern — engine owns merge logic only |
-| TTS audio generation, playback, storage | Calling-layer service (`ttsService.ts`) | Shared infra concern, inherently I/O-bound, consumed by both curation and SRS paths |
-| Foundational deck validation/ingestion | Calling layer (Zod schema validation) | Not curated content — predefined reference data, doesn't fit engine purpose |
-| Curator collaboration toggle (allow others to edit) | Calling layer | Authorization concern — engine has no user/permission awareness |
-| Vue composables, UI components | `apps/web` | Framework-specific presentation layer |
-| Authentication / session management | `nuxt-auth-utils` / Hono auth middleware | Infrastructure concern |
+| Responsibility                                          | Where It Lives                           | Why                                                                                 |
+| ------------------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------- |
+| Gemini API calls (sending prompts, receiving responses) | Calling layer (Hono backend / Workers)   | Engine has no I/O                                                                   |
+| D1 queries (read/write conversations, words, prompts)   | Calling layer                            | Engine has no I/O                                                                   |
+| System prompt CRUD (store/retrieve/save custom prompts) | Calling layer (D1 persistence)           | Storage concern — engine owns merge logic only                                      |
+| TTS audio generation, playback, storage                 | Calling-layer service (`ttsService.ts`)  | Shared infra concern, inherently I/O-bound, consumed by both curation and SRS paths |
+| Foundational deck validation/ingestion                  | Calling layer (Zod schema validation)    | Not curated content — predefined reference data, doesn't fit engine purpose         |
+| Curator collaboration toggle (allow others to edit)     | Calling layer                            | Authorization concern — engine has no user/permission awareness                     |
+| Vue composables, UI components                          | `apps/web`                               | Framework-specific presentation layer                                               |
+| Authentication / session management                     | `nuxt-auth-utils` / Hono auth middleware | Infrastructure concern                                                              |
 
 ### Content Lifecycle State Machine
 
@@ -161,6 +161,7 @@ packages/curation-engine/
 ```
 
 **Conventions** (apply to all engine packages):
+
 - Unit tests co-located with domain in `__tests__/` subdirectories
 - PascalCase for class files (`CurationEngine.ts`), camelCase for utility files (`conversationPrompt.ts`)
 - Each domain folder has its own `types.ts` for private types; top-level `types.ts` for shared/generic types only
@@ -213,11 +214,11 @@ Each domain folder within the package has its own `types.ts` for domain-private 
 
 ### Dependencies
 
-| Dependency | Type | Purpose |
-|---|---|---|
-| `zod` | Runtime | Validate/parse Gemini API responses into typed structures |
-| `vitest` | Dev | Unit + integration tests |
-| `typescript` | Dev | Type checking, build |
+| Dependency   | Type    | Purpose                                                   |
+| ------------ | ------- | --------------------------------------------------------- |
+| `zod`        | Runtime | Validate/parse Gemini API responses into typed structures |
+| `vitest`     | Dev     | Unit + integration tests                                  |
+| `typescript` | Dev     | Type checking, build                                      |
 
 Hard rule: **no framework dependencies** (no Vue, no Nuxt, no Cloudflare bindings, no HTTP libraries, no database drivers, no AI API clients).
 
@@ -251,21 +252,22 @@ Semver with changelog generated from commits. Even as an internal `workspace:*` 
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| Keep curation logic in server services | No package overhead | Coupled to Nuxt/Cloudflare, untestable without mocking I/O, not portable | Violates portability requirement |
-| Injected adapter for Gemini (Option B) | Engine owns full workflow including API call orchestration | Requires async, interface mocking in tests, blurred I/O boundary | Purity is more valuable than workflow encapsulation |
-| Include TTS in curation engine | Single package for all curation | TTS is shared with SRS, inherently I/O-bound, doesn't fit pure logic pattern | Separate concern with multiple consumers |
-| Include foundational decks in engine | All content validation in one place | Foundational decks aren't curated — different concern, doesn't fit engine purpose | Engine purpose is AI-assisted curation workflow |
-| Separate nuance detection package | Maximum modularity | One consumer today, tiny scope, creates overhead | Keep in-engine with clean directory boundary; extract if second consumer emerges |
-| Zero runtime dependencies | Maximum portability | Reinventing schema validation for unstructured AI output | Impractical; Zod is small, well-scoped, and essential for parsing AI responses |
-| Top-level `__tests__/unit/` directory | Centralized test location | Tests disconnected from source, harder to spot missing coverage | Co-located tests are more maintainable |
+| Option                                 | Pros                                                       | Cons                                                                              | Why Not Chosen                                                                   |
+| -------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Keep curation logic in server services | No package overhead                                        | Coupled to Nuxt/Cloudflare, untestable without mocking I/O, not portable          | Violates portability requirement                                                 |
+| Injected adapter for Gemini (Option B) | Engine owns full workflow including API call orchestration | Requires async, interface mocking in tests, blurred I/O boundary                  | Purity is more valuable than workflow encapsulation                              |
+| Include TTS in curation engine         | Single package for all curation                            | TTS is shared with SRS, inherently I/O-bound, doesn't fit pure logic pattern      | Separate concern with multiple consumers                                         |
+| Include foundational decks in engine   | All content validation in one place                        | Foundational decks aren't curated — different concern, doesn't fit engine purpose | Engine purpose is AI-assisted curation workflow                                  |
+| Separate nuance detection package      | Maximum modularity                                         | One consumer today, tiny scope, creates overhead                                  | Keep in-engine with clean directory boundary; extract if second consumer emerges |
+| Zero runtime dependencies              | Maximum portability                                        | Reinventing schema validation for unstructured AI output                          | Impractical; Zod is small, well-scoped, and essential for parsing AI responses   |
+| Top-level `__tests__/unit/` directory  | Centralized test location                                  | Tests disconnected from source, harder to spot missing coverage                   | Co-located tests are more maintainable                                           |
 
 ---
 
 ## Consequences
 
 **Positive:**
+
 - Curation logic is testable in complete isolation — no Gemini API, no D1, no Workers mocking
 - Package is portable across frontends and runtimes
 - Single authority for all curation rules — prompt construction, parsing, lifecycle, edit classification
@@ -274,12 +276,14 @@ Semver with changelog generated from commits. Even as an internal `workspace:*` 
 - Domain-scoped types prevent type file bloat and enforce encapsulation within the package
 
 **Negative / Risks:**
+
 - Calling layer must orchestrate the prompt → API call → parse cycle — 3 steps instead of 1 engine call. Boilerplate but straightforward
 - Gemini response format changes require updating Zod schemas in the engine — engine and API are loosely coupled but not independent
 - Nuance detection may outgrow its in-engine home if multiple consumers emerge — designed for clean extraction but migration cost exists
 - Class-based API decision is preliminary — exact method signatures deferred to ADR #4
 
 **Neutral:**
+
 - Turborepo pipeline must include `curation-engine` as a dependency — requires `turbo.json` update
 - ESLint flat config needs a new glob layer for `packages/curation-engine/**` (TypeScript strict)
 - Package structure conventions (co-located tests, domain-scoped types, naming) apply to all engine packages — to be recorded in RULES.md
@@ -288,17 +292,18 @@ Semver with changelog generated from commits. Even as an internal `workspace:*` 
 
 ## Open Questions
 
-| Question | Owner | Target |
-|---|---|---|
-| Exact method signatures and class API design | Architect | ADR #4 (API surface design) |
-| Package name — `@projectname/curation-engine` or unscoped `curation-engine`? | Dev | Before `package.json` creation |
-| Should `CurationEngine.create()` be offered alongside `new CurationEngine()` for ergonomics? | Dev | ADR #4 |
-| Gemini response format stability — how often does the response structure change? Affects Zod schema maintenance burden | Dev | Before implementation |
-| Summary word count limit (30) — sufficient for all languages? May need per-language override | Dev | During implementation |
+| Question                                                                                                               | Owner     | Target                         |
+| ---------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------ |
+| Exact method signatures and class API design                                                                           | Architect | ADR #4 (API surface design)    |
+| Package name — `@projectname/curation-engine` or unscoped `curation-engine`?                                           | Dev       | Before `package.json` creation |
+| Should `CurationEngine.create()` be offered alongside `new CurationEngine()` for ergonomics?                           | Dev       | ADR #4                         |
+| Gemini response format stability — how often does the response structure change? Affects Zod schema maintenance burden | Dev       | Before implementation          |
+| Summary word count limit (30) — sufficient for all languages? May need per-language override                           | Dev       | During implementation          |
 
 ---
 
-*Related ADRs:*
+_Related ADRs:_
+
 - [SRS Engine Package](20260302T160536Z-engineering-srs-engine-package.md)
 - [Monorepo Tooling](20260227T022513Z-engineering-monorepo-tooling.md)
 - [Headless Hono Backend](20260303T195134Z-engineering-headless-hono-backend.md)

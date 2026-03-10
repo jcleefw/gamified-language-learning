@@ -25,27 +25,35 @@ Use the current UTC timestamp in `YYYYMMDDTHHMMSSZ` format. Do not use `YYYY-MM-
 Then produce the following sections in order. Be specific and concrete — avoid filler.
 
 ### 1. Problem Statement
+
 What user or business problem does this solve? Who is affected and how often? What is the cost of not solving it?
 
 ### 2. Goals
+
 What does success look like? List 2–4 measurable outcomes.
 
 ### 3. Non-Goals
+
 What is explicitly out of scope for this version? This section prevents scope creep — be direct.
 
 ### 4. Users & Context
+
 Who uses this feature? Describe the primary user and their context (device, workflow, frequency of use).
 
 ### 5. Requirements
+
 List functional requirements as numbered items. Each requirement must be:
+
 - Testable (can a QA engineer verify it?)
 - Scoped to this version (not "someday maybe")
 - Written from the user's perspective where possible
 
 ### 6. Success Metrics
+
 How will we know this feature worked? List leading indicators (engagement, adoption) and lagging indicators (retention, conversion). Include baseline if known.
 
 ### 7. Open Questions
+
 What decisions are still unresolved? Who owns each question? Include a target resolution date if known.
 
 ---
@@ -70,9 +78,11 @@ Use the current UTC timestamp and a 2–4 word kebab-case description of the fea
 ## File Output
 
 Save the completed document to:
+
 ```
 product-documentation/prds/YYYYMMDDTHHMMSSZ-<short-description>.md
 ```
+
 Example: `product-documentation/prds/20260226T143000Z-user-onboarding-flow.md`
 
 Use the current UTC timestamp and a 2–4 word kebab-case description of the feature or problem.

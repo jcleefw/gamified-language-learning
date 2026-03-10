@@ -23,37 +23,45 @@ Wait for their response. Then read the relevant files.
 Evaluate the codebase across these dimensions. Only report findings where there is a genuine issue — do not manufacture problems.
 
 **API Design**
+
 - Are endpoints named and structured consistently? Is REST/GraphQL/RPC used correctly?
 - Is error handling consistent? Are error responses meaningful to consumers?
 - Is versioning handled? Is there a backwards-compatibility strategy?
 
 **Data Modeling**
+
 - Are entities well-defined with clear relationships?
 - Is there unnecessary duplication, or missing normalization causing inconsistency risks?
 - Are indexes appropriate for the query patterns in use?
 
 **Service Boundaries**
+
 - Are responsibilities cleanly separated? Is there inappropriate coupling between services?
 - Are transactional boundaries correct — are there distributed transaction risks?
 
 **Security**
+
 - Is authentication enforced on all endpoints that require it?
 - Is input validated and sanitized at system boundaries?
 - Are there OWASP Top 10 risks present (injection, broken auth, etc.)?
 
 **Scalability**
+
 - Are there N+1 query problems or missing pagination?
 - Are there obvious bottlenecks under load (synchronous blocking, missing caching)?
 
 **Async and Background Work**
+
 - Are background jobs idempotent? Is the failure/retry strategy sound?
 - Are there race conditions or missing concurrency controls?
 
 **Observability**
+
 - Are errors logged with enough context to diagnose in production?
 - Are key operations instrumented for tracing and metrics?
 
 **Test Coverage**
+
 - What is covered? What critical paths (auth, data mutation, edge cases) have no tests?
 - Are tests testing behavior or implementation details?
 
@@ -90,15 +98,19 @@ What was reviewed, why, and what was the scope of the audit?
 List findings grouped by severity:
 
 ### Critical (fix before shipping)
+
 Issues that will cause bugs, data loss, security vulnerabilities, or significant user impact.
 
 ### High (fix soon)
+
 Structural problems that will compound over time or create maintenance burden.
 
 ### Medium (address in next refactor)
+
 Suboptimal patterns that are not urgent but should be resolved.
 
 ### Low / Observations
+
 Minor style, naming, or convention issues. Worth noting but not blocking.
 
 ## Decision
@@ -111,9 +123,9 @@ Why are these changes warranted? What risk or cost do they address?
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| [Alternative 1] | | | |
+| Option          | Pros | Cons | Why Not Chosen |
+| --------------- | ---- | ---- | -------------- |
+| [Alternative 1] |      |      |                |
 
 ## Consequences
 
@@ -139,9 +151,11 @@ Unresolved items. Include owner and target date if known.
 ## File Output
 
 Save to:
+
 ```
 product-documentation/architecture/YYYYMMDDTHHMMSSZ-be-review-<short-description>.md
 ```
+
 Example: `product-documentation/architecture/20260226T143000Z-be-review-content-api.md`
 
 ---
@@ -151,6 +165,7 @@ Example: `product-documentation/architecture/20260226T143000Z-be-review-content-
 After saving, ask: "What would you like to do next?"
 
 Suggest relevant steps based on findings:
+
 - If a redesign is warranted: `/architect/be-design`
 - If FE is implicated: `/architect/fe-review`
 - If infra is implicated: `/architect/infra-review`

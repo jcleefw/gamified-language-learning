@@ -8,24 +8,24 @@
 
 ## Pricing Inputs
 
-| Parameter | Value |
-|---|---|
-| Provider | Google Gemini API |
-| Model | `gemini-2.5-flash-preview-tts` |
-| Billing unit | Per 1M input tokens (text sent for synthesis) |
-| Free tier cost | $0 |
-| Paid tier 1 input cost | $0.50 / 1M tokens |
+| Parameter               | Value                                                            |
+| ----------------------- | ---------------------------------------------------------------- |
+| Provider                | Google Gemini API                                                |
+| Model                   | `gemini-2.5-flash-preview-tts`                                   |
+| Billing unit            | Per 1M input tokens (text sent for synthesis)                    |
+| Free tier cost          | $0                                                               |
+| Paid tier 1 input cost  | $0.50 / 1M tokens                                                |
 | Paid tier 1 output cost | $10.00 / 1M tokens [output token rate unknown — not factored in] |
 
 ---
 
 ## Rate Limits by Tier
 
-| Metric | Free Tier | Paid Tier 1 |
-|---|---|---|
-| RPM (requests/min) | 3 | 10 |
-| TPM (tokens/min) | 10K | 10K |
-| RPD (requests/day) | 10 | 250 |
+| Metric             | Free Tier | Paid Tier 1 |
+| ------------------ | --------- | ----------- |
+| RPM (requests/min) | 3         | 10          |
+| TPM (tokens/min)   | 10K       | 10K         |
+| RPD (requests/day) | 10        | 250         |
 
 > RPD was not surfaced in the Google AI Studio rate limits view for either tier. It should be confirmed via the [Rate Limit Docs](https://ai.google.dev/gemini-api/docs/rate-limits) before relying on this model for production planning. If RPD is low (e.g., 50), it — not RPM — becomes the binding constraint.
 
@@ -35,12 +35,12 @@
 
 Source: `conversations-2026-02-27.json` (Thai Learning spike data)
 
-| Scope | Requests per conversation | Est. input tokens | Notes |
-|---|---|---|---|
-| Full conversation | 1 | ~50 tokens | All lines combined in one request |
-| Per sentence | 4 | ~50 tokens | One request per line, same text split |
-| Per word | 17–31 | ~25–50 tokens | One request per unique word; varies by conversation complexity |
-| **All 3 scopes total** | **22–36 requests** | **~125–150 tokens** | Weather (simpler): 22 req; Post office (denser): 36 req |
+| Scope                  | Requests per conversation | Est. input tokens   | Notes                                                          |
+| ---------------------- | ------------------------- | ------------------- | -------------------------------------------------------------- |
+| Full conversation      | 1                         | ~50 tokens          | All lines combined in one request                              |
+| Per sentence           | 4                         | ~50 tokens          | One request per line, same text split                          |
+| Per word               | 17–31                     | ~25–50 tokens       | One request per unique word; varies by conversation complexity |
+| **All 3 scopes total** | **22–36 requests**        | **~125–150 tokens** | Weather (simpler): 22 req; Post office (denser): 36 req        |
 
 Conversation parameters assumed: 4 lines, beginner difficulty, Thai language, <10 seconds full audio.
 
@@ -50,17 +50,17 @@ Conversation parameters assumed: 4 lines, beginner difficulty, Thai language, <1
 
 ### Free Tier
 
-| Scenario | Cost | Binding constraint |
-|---|---|---|
-| Any usage within rate limits | **$0** | RPM = 3 |
+| Scenario                     | Cost   | Binding constraint |
+| ---------------------------- | ------ | ------------------ |
+| Any usage within rate limits | **$0** | RPM = 3            |
 
 ### Paid Tier 1
 
-| Scenario | Conversations | Input tokens | Input cost | Notes |
-|---|---|---|---|---|
-| Low (10 conversations) | 10 | ~1,250 tokens | ~$0.00063 | Negligible |
-| Medium (100 conversations) | 100 | ~12,500 tokens | ~$0.0063 | Negligible |
-| High (1,000 conversations) | 1,000 | ~125,000 tokens | ~$0.063 | ~$0.06 |
+| Scenario                   | Conversations | Input tokens    | Input cost | Notes      |
+| -------------------------- | ------------- | --------------- | ---------- | ---------- |
+| Low (10 conversations)     | 10            | ~1,250 tokens   | ~$0.00063  | Negligible |
+| Medium (100 conversations) | 100           | ~12,500 tokens  | ~$0.0063   | Negligible |
+| High (1,000 conversations) | 1,000         | ~125,000 tokens | ~$0.063    | ~$0.06     |
 
 > Output token cost not included — audio token rate unconfirmed. Input cost alone is negligible at all volumes. Output cost could be material depending on audio token encoding rate; verify before committing to paid tier.
 
@@ -68,25 +68,25 @@ Conversation parameters assumed: 4 lines, beginner difficulty, Thai language, <1
 
 ## Generation Time per Conversation (all 3 scopes)
 
-| Conversation complexity | Requests | Free tier (3 RPM) | Paid tier 1 (10 RPM) |
-|---|---|---|---|
-| Simple (17 unique words) | 22 req | ~7.3 min | ~2.2 min |
-| Dense (31 unique words) | 36 req | ~12 min | ~3.6 min |
+| Conversation complexity  | Requests | Free tier (3 RPM) | Paid tier 1 (10 RPM) |
+| ------------------------ | -------- | ----------------- | -------------------- |
+| Simple (17 unique words) | 22 req   | ~7.3 min          | ~2.2 min             |
+| Dense (31 unique words)  | 36 req   | ~12 min           | ~3.6 min             |
 
 ### Without word-level TTS (full + sentence only)
 
 | Requests | Free tier | Paid tier 1 |
-|---|---|---|
-| 5 req | ~1.7 min | <1 min |
+| -------- | --------- | ----------- |
+| 5 req    | ~1.7 min  | <1 min      |
 
 ---
 
 ## Daily Throughput (theoretical max, RPM-limited, no RPD cap)
 
-| Tier | RPM | Max requests/day | Conversations/day (avg 22 req) |
-|---|---|---|---|
-| Free | 3 | 4,320 | ~196 |
-| Paid tier 1 | 10 | 14,400 | ~654 |
+| Tier        | RPM | Max requests/day | Conversations/day (avg 22 req) |
+| ----------- | --- | ---------------- | ------------------------------ |
+| Free        | 3   | 4,320            | ~196                           |
+| Paid tier 1 | 10  | 14,400           | ~654                           |
 
 > These are theoretical maximums assuming continuous 24/7 generation. In a manual curation workflow, the practical daily throughput is curation session time ÷ minutes per conversation.
 
@@ -112,13 +112,14 @@ Conversation parameters assumed: 4 lines, beginner difficulty, Thai language, <1
 > User: "If possible why not." Pending cost review.
 
 **Finding:** Cost is not a blocker. The question is UX tolerance for generation wait time during curation:
+
 - Free tier + word-level TTS: 7–12 min per conversation
 - Paid tier 1 + word-level TTS: 2–3 min per conversation
 - Either tier, no word-level TTS: <2 min per conversation
 
 **Recommended next step:** Run `/architect/cost-analysis` to evaluate whether to include word-level TTS in MVP scope, and whether to use free vs paid tier for the curation workflow.
 
-**Decicion made*:* see `product-documentation/prds/20260302T000000Z-gemini-tts-generation.md`
+\*_Decicion made_:\* see `product-documentation/prds/20260302T000000Z-gemini-tts-generation.md`
 
 ---
 

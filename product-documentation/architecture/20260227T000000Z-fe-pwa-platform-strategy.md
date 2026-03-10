@@ -46,29 +46,32 @@ Build a **Progressive Web App (PWA)** with a mobile-first design strategy.
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| Vue + Capacitor (hybrid) | Native haptics, better iOS audio, app store path | Requires Xcode/Android Studio, compile step, plugin ecosystem complexity | No native API requirement exists yet; adds setup cost for speculative benefit |
-| Separate native apps (iOS/Android) | Best native feel, full API access | Two codebases, app store overhead, not feasible for solo/small team | Maintenance overhead disproportionate to current stage |
-| Native PWA without framework | Minimal dependencies | No component model, hard to scale quiz UI complexity | Framework needed for SRS state management and quiz component reuse |
+| Option                             | Pros                                             | Cons                                                                     | Why Not Chosen                                                                |
+| ---------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| Vue + Capacitor (hybrid)           | Native haptics, better iOS audio, app store path | Requires Xcode/Android Studio, compile step, plugin ecosystem complexity | No native API requirement exists yet; adds setup cost for speculative benefit |
+| Separate native apps (iOS/Android) | Best native feel, full API access                | Two codebases, app store overhead, not feasible for solo/small team      | Maintenance overhead disproportionate to current stage                        |
+| Native PWA without framework       | Minimal dependencies                             | No component model, hard to scale quiz UI complexity                     | Framework needed for SRS state management and quiz component reuse            |
 
 ---
 
 ## Consequences
 
 **Positive:**
+
 - Fastest path to a working, debuggable mobile-shaped learner experience
 - Single deployment pipeline; no per-platform build or signing configuration
 - Installable without requiring users to visit an app store
 - Capacitor upgrade is available without rewriting application code
 
 **Negative / Risks:**
+
 - iOS Safari PWA limitations: audio autoplay restrictions may require explicit user gesture handling; some gesture conflicts with Safari's swipe-back navigation
 - Haptic feedback limited to `Vibration API` — not as precise or reliable as native haptics, with iOS restrictions
 - No app store presence reduces discoverability if that becomes a growth channel
 - `display: standalone` full-screen mode depends on the user installing the PWA; first-time browser users see browser chrome
 
 **Neutral:**
+
 - Always-online assumption deferred offline support — this is a known future decision point if habit-loop usage patterns demand it
 
 ---

@@ -28,7 +28,7 @@ The Hono backend ADR describes the orchestration approach but no API surface has
 ### GAP-02 — No Database Schema
 
 **Description:**
-The Cloudflare/D1 ADR describes the hybrid relational+JSON *approach* but no schema exists. No tables, columns, relationships, or index strategy are defined. SRS state alone is complex — mastery counts, intervals, active window, stuck words — and must be locked before any engine or backend code connects to D1.
+The Cloudflare/D1 ADR describes the hybrid relational+JSON _approach_ but no schema exists. No tables, columns, relationships, or index strategy are defined. SRS state alone is complex — mastery counts, intervals, active window, stuck words — and must be locked before any engine or backend code connects to D1.
 
 **Risk:** High. Schema decisions ripple through engine types, Hono routes, and migration files. Late schema design causes cascading rework.
 
@@ -85,13 +85,13 @@ Without this, each agentic session reinvents the process, consistency degrades a
 
 ## Recommended Discussion Order
 
-| Priority | Gap | Role | Dependency |
-|---|---|---|---|
-| 1 | GAP-03 — Build Sequence | `product` + `scrum` | Unblocks everything else |
-| 2 | GAP-05 — Agentic Dev Workflow | `agentic` + `scrum` | Needs build sequence to anchor stages |
-| 3 | GAP-02 — Database Schema | `architect` | Needed before any engine touches D1 |
-| 4 | GAP-01 — API Contract | `architect` | Needed before frontend-backend integration |
-| 5 | GAP-04 — Curation ADR Acceptance | `architect` | Low risk, close quickly |
+| Priority | Gap                              | Role                | Dependency                                 |
+| -------- | -------------------------------- | ------------------- | ------------------------------------------ |
+| 1        | GAP-03 — Build Sequence          | `product` + `scrum` | Unblocks everything else                   |
+| 2        | GAP-05 — Agentic Dev Workflow    | `agentic` + `scrum` | Needs build sequence to anchor stages      |
+| 3        | GAP-02 — Database Schema         | `architect`         | Needed before any engine touches D1        |
+| 4        | GAP-01 — API Contract            | `architect`         | Needed before frontend-backend integration |
+| 5        | GAP-04 — Curation ADR Acceptance | `architect`         | Low risk, close quickly                    |
 
 ---
 

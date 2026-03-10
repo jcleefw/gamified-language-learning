@@ -23,36 +23,44 @@ Wait for their response.
 Cover these dimensions. Skip any that are already clear from the user's description. Ask 2–3 questions per round, working conversationally until all relevant dimensions are covered.
 
 **Scale Targets**
+
 - What are the expected traffic volumes (requests/sec, concurrent users)?
 - What is the expected data volume now, and in 12 months?
 
 **Availability and Reliability**
+
 - What is the uptime requirement? Is there a defined SLA?
 - What is the acceptable recovery time if the system goes down (RTO/RPO)?
 
 **Deployment Environment**
+
 - What cloud provider or on-prem environment is in use or mandated?
 - Are there existing services, VPCs, or accounts this must live within?
 
 **CI/CD**
+
 - What does the deployment pipeline need to do? (build, test, deploy, rollback)
 - What environments are needed? (dev, staging, production, preview)
 - What are the deployment frequency and risk tolerance?
 
 **Security and Compliance**
+
 - What data is being handled? Are there regulatory requirements (GDPR, HIPAA, SOC2)?
 - What are the network isolation requirements?
 - How are secrets and credentials managed?
 
 **Cost Constraints**
+
 - Is there a budget ceiling? Are there cost-optimization requirements?
 - Is the workload bursty (pay-per-use preferred) or steady (reserved capacity better)?
 
 **Observability**
+
 - What needs to be monitored? What triggers an alert?
 - What is the logging and tracing strategy?
 
 **Disaster Recovery**
+
 - What is the backup strategy? How is data recovery handled?
 - Is multi-region required?
 
@@ -87,6 +95,7 @@ What problem or situation requires this architectural decision? Include relevant
 ## Decision
 
 State the infrastructure design clearly and directly. Include:
+
 - Compute strategy (containers, serverless, VMs, managed services)
 - Networking topology
 - Data storage and persistence
@@ -101,10 +110,10 @@ Why this approach? What makes it the right fit given the constraints? Reference 
 
 ## Alternatives Considered
 
-| Option | Pros | Cons | Why Not Chosen |
-|---|---|---|---|
-| [Alternative 1] | | | |
-| [Alternative 2] | | | |
+| Option          | Pros | Cons | Why Not Chosen |
+| --------------- | ---- | ---- | -------------- |
+| [Alternative 1] |      |      |                |
+| [Alternative 2] |      |      |                |
 
 ## Consequences
 
@@ -132,9 +141,11 @@ Unresolved decisions or assumptions that need validation. Include owner and targ
 ## File Output
 
 Save to:
+
 ```
 product-documentation/architecture/YYYYMMDDTHHMMSSZ-infra-<short-description>.md
 ```
+
 Example: `product-documentation/architecture/20260226T143000Z-infra-content-curation-deploy.md`
 
 ---
@@ -144,6 +155,7 @@ Example: `product-documentation/architecture/20260226T143000Z-infra-content-cura
 After saving, ask: "What would you like to do next?"
 
 Suggest relevant steps based on the ADR content:
+
 - If BE architecture needs aligning: `/architect/be-design`
 - If CI/CD detail is needed: consider a workflow definition
 - If security posture needs review: `/dev/security-review`

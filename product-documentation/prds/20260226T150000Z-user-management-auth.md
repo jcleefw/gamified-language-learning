@@ -109,12 +109,12 @@ The application has three distinct user types (admin, curator, learner) with dif
 
 ## 6. Success Metrics
 
-| Metric | Type | Target |
-|---|---|---|
-| Google OAuth sign-in completion rate | Leading | > 95% of OAuth attempts result in successful sign-in |
-| Time to first action after sign-in | Leading | < 5 seconds from auth callback to landing page |
-| Admin user creation success rate | Leading | 100% of admin-created accounts are usable on first attempt |
-| Failed sign-in rate (credentials) | Lagging | < 10% of credential sign-in attempts fail (excluding blocked accounts) |
+| Metric                               | Type    | Target                                                                 |
+| ------------------------------------ | ------- | ---------------------------------------------------------------------- |
+| Google OAuth sign-in completion rate | Leading | > 95% of OAuth attempts result in successful sign-in                   |
+| Time to first action after sign-in   | Leading | < 5 seconds from auth callback to landing page                         |
+| Admin user creation success rate     | Leading | 100% of admin-created accounts are usable on first attempt             |
+| Failed sign-in rate (credentials)    | Lagging | < 10% of credential sign-in attempts fail (excluding blocked accounts) |
 
 ---
 

@@ -11,12 +11,15 @@ Created shared TypeScript base config and ESLint flat config. Config parses and 
 ## Files Modified
 
 ### `tsconfig.base.json`
+
 - New file. Strict ESNext settings. All packages extend via `"extends": "../../tsconfig.base.json"`.
 
 ### `eslint.config.ts`
+
 - New file. TypeScript strict layer scoped to `packages/**/*.ts`. Test overrides for `__tests__/**`.
 
 ### `package.json`
+
 - Added `jiti` to devDependencies — required by ESLint 9.x to load `eslint.config.ts`.
 
 ## Behavior Preserved / New Behavior

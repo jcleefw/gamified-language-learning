@@ -4,11 +4,11 @@ Conventions confirmed for skills built in this project.
 
 ## Output Directory Conventions
 
-| Artifact type | Directory |
-|---|---|
+| Artifact type                 | Directory                             |
+| ----------------------------- | ------------------------------------- |
 | Architecture decisions (ADRs) | `product-documentation/architecture/` |
-| PRDs | `product-documentation/prds/` |
-| Session state | `sessions/` |
+| PRDs                          | `product-documentation/prds/`         |
+| Session state                 | `sessions/`                           |
 
 All use timestamped filenames: `YYYYMMDDTHHMMSSZ-<short-description>.md`
 

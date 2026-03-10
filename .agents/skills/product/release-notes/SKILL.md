@@ -25,12 +25,15 @@ If no input is provided, stop and ask: "Provide a git diff, commit log, or list 
 ### Version / Release [name or date if provided]
 
 **New**
+
 - [User-facing description of new capability]
 
 **Improved**
+
 - [User-facing description of enhancement to existing behavior]
 
 **Fixed**
+
 - [User-facing description of bug that was resolved]
 
 ---
@@ -61,9 +64,11 @@ Use the current UTC timestamp and the version or release name as the description
 ## File Output
 
 Save the completed document to:
+
 ```
 product-documentation/release-notes/YYYYMMDDTHHMMSSZ-<short-description>.md
 ```
+
 Example: `product-documentation/release-notes/20260226T143000Z-v2-3-release.md`
 
 Use the current UTC timestamp and a 2–4 word kebab-case description of the release (version or theme).

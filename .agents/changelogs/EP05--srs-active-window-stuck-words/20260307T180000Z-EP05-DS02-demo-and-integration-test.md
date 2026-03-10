@@ -18,13 +18,13 @@ Two additions verify that the EP05 modules work correctly end-to-end with real w
 
 ## 2. Core Requirements
 
-| Requirement | Decision | Rationale |
-|-------------|----------|-----------|
-| Demo builds active pool via `updateMastery` | No hand-crafted `phase` fields in demo | Proves modules compose; mirrors real session flow |
-| Demo sets `batchesSinceLastProgress` directly for stuck scenarios | Field is set by the calling layer (not by updateMastery) | Caller responsibility is explicit in design; demo must exercise it directly |
-| Integration test uses `updateMastery` to reach `srsM2_review` | Same — no mocked `phase` field | Catches regressions where mastery state shape diverges from active-window expectations |
-| Integration test for stuck detection sets `batchesSinceLastProgress` directly | Field is caller-managed; test owns that responsibility | Validates correct interaction between caller-set field and detectStuckWords |
-| Integration test lives in `__tests__/integration/` | Consistent with existing location | Cross-component tests separate from unit tests |
+| Requirement                                                                   | Decision                                                 | Rationale                                                                              |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Demo builds active pool via `updateMastery`                                   | No hand-crafted `phase` fields in demo                   | Proves modules compose; mirrors real session flow                                      |
+| Demo sets `batchesSinceLastProgress` directly for stuck scenarios             | Field is set by the calling layer (not by updateMastery) | Caller responsibility is explicit in design; demo must exercise it directly            |
+| Integration test uses `updateMastery` to reach `srsM2_review`                 | Same — no mocked `phase` field                           | Catches regressions where mastery state shape diverges from active-window expectations |
+| Integration test for stuck detection sets `batchesSinceLastProgress` directly | Field is caller-managed; test owns that responsibility   | Validates correct interaction between caller-set field and detectStuckWords            |
+| Integration test lives in `__tests__/integration/`                            | Consistent with existing location                        | Cross-component tests separate from unit tests                                         |
 
 ---
 
@@ -40,8 +40,13 @@ import {
   shelveWord,
   unshelveWord,
   isShelved,
-} from '@gll/srs-engine'
-import type { SrsConfig, WordState, EligibleWordsResult, StuckWordsResult } from '@gll/srs-engine'
+} from '@gll/srs-engine';
+import type {
+  SrsConfig,
+  WordState,
+  EligibleWordsResult,
+  StuckWordsResult,
+} from '@gll/srs-engine';
 ```
 
 ---
@@ -96,12 +101,14 @@ Test 4: shelveWord + isShelved + unshelveWord state transitions work end-to-end
 **Scope**: Extend `scripts/demo-srs.ts` with Scenario G (active window slots) and Scenario H (stuck word detection + shelving) using `updateMastery` to build the word pool and direct field assignment for caller-managed fields
 
 **Read List**:
+
 - `scripts/demo-srs.ts` (existing demo pattern — scenarios A–F)
 - `packages/srs-engine/src/active-window.ts` (`getEligibleWords` signature)
 - `packages/srs-engine/src/stuck-words.ts` (`detectStuckWords`, `shelveWord`, `unshelveWord`, `isShelved` signatures)
 - `packages/srs-engine/src/index.ts` (confirm all exports present)
 
 **Tasks**:
+
 - [ ] Add `getEligibleWords`, `detectStuckWords`, `shelveWord`, `unshelveWord`, `isShelved` to the import from `@gll/srs-engine`
 - [ ] Add Scenario G: Active window slot calculation
   - Drive 4 curated words to `srsM2_review` via `updateMastery` loop
@@ -117,6 +124,7 @@ Test 4: shelveWord + isShelved + unshelveWord state transitions work end-to-end
 - [ ] Add header comments for each new scenario consistent with existing style (`// ── Scenario X: ...`)
 
 **Acceptance Criteria**:
+
 - [ ] `pnpm tsx scripts/demo-srs.ts` runs without errors
 - [ ] Scenario G output shows correct `active`, `newSlots`, `eligible` counts; `newSlots = 0` when at active limit
 - [ ] Scenario H output shows stuck words detected, shelve/unshelve transitions, cap behaviour with `canReShelve = false`
@@ -129,6 +137,7 @@ Test 4: shelveWord + isShelved + unshelveWord state transitions work end-to-end
 **Scope**: Add `packages/srs-engine/__tests__/integration/active-window-lifecycle.test.ts` asserting that words promoted via `updateMastery` are correctly classified by `getEligibleWords` and that `detectStuckWords` + shelve/unshelve transitions compose correctly
 
 **Read List**:
+
 - `packages/srs-engine/__tests__/integration/batch-lifecycle.test.ts` (test pattern — imports, describe/it style, config shape)
 - `packages/srs-engine/__tests__/integration/srs-lifecycle.test.ts` (additional pattern reference)
 - `packages/srs-engine/src/active-window.ts` (`getEligibleWords` logic)
@@ -136,6 +145,7 @@ Test 4: shelveWord + isShelved + unshelveWord state transitions work end-to-end
 - `packages/srs-engine/src/types.ts` (`WordState`, `SrsConfig`)
 
 **Tasks**:
+
 - [ ] Create `packages/srs-engine/__tests__/integration/active-window-lifecycle.test.ts`
 - [ ] Add file-level doc comment (scenarios covered) consistent with `batch-lifecycle.test.ts` style
 - [ ] Test 1: Words promoted to `srsM2_review` via `updateMastery` are counted as active by `getEligibleWords`
@@ -155,6 +165,7 @@ Test 4: shelveWord + isShelved + unshelveWord state transitions work end-to-end
   - Set `shelvedUntil` to past date → assert `isShelved()` returns `false` (expired)
 
 **Acceptance Criteria**:
+
 - [ ] All 4 integration tests pass
 - [ ] `pnpm test` exits green (full suite)
 - [ ] No TypeScript errors
