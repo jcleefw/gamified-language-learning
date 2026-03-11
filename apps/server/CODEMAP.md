@@ -21,6 +21,10 @@ Purpose: Hono 4 HTTP server for the GLL API. Runs on Cloudflare Workers (product
 | Auth passthrough | inline | Reads `Authorization` header, sets `userId = null`. No validation until Stage 5. |
 | Error handler | `app.onError` | Catches thrown errors, returns `ApiResponse<never>` envelope from `@gll/api-contract`. |
 
+## State (`src/state/`)
+
+→ See [src/state/CODEMAP.md](src/state/CODEMAP.md)
+
 ## Routes
 
 | Method | Path | Handler |

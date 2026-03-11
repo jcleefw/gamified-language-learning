@@ -41,6 +41,9 @@ importers:
       '@gll/api-contract':
         specifier: workspace:*
         version: link:../../packages/api-contract
+      '@gll/srs-engine':
+        specifier: workspace:*
+        version: link:../../packages/srs-engine
       '@hono/node-server':
         specifier: ^1
         version: 1.19.11(hono@4.12.7)

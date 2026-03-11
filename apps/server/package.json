@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@gll/api-contract": "workspace:*",
+    "@gll/srs-engine": "workspace:*",
     "@hono/node-server": "^1",
     "hono": "^4"
   },
