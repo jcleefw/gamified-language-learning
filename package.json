@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "typecheck": "turbo typecheck",
     "demo": "tsx scripts/demo-srs.ts",
-    "quiz": "tsx scripts/quiz-runner.ts"
+    "quiz": "tsx scripts/quiz-runner.ts",
+    "dev:server": "pnpm --filter @gll/server dev"
   },
   "devDependencies": {
     "@gll/srs-engine": "workspace:*",

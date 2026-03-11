@@ -1,0 +1,30 @@
+{
+  "name": "@gll/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@gll/api-contract": "workspace:*",
+    "@hono/node-server": "^1",
+    "hono": "^4"
+  },
+  "devDependencies": {
+    "typescript": "^5.7",
+    "tsx": "^4",
+    "vitest": "^3"
+  }
+}
