@@ -113,7 +113,8 @@ Each package owns its own CODEMAP. Navigate there for file-level detail.
 
 | Package                | Purpose                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------------- |
-| `packages/srs-engine/` | `@gll/srs-engine` — SRS scheduling engine → [CODEMAP](packages/srs-engine/CODEMAP.md) |
+| `packages/srs-engine/`    | `@gll/srs-engine` — SRS scheduling engine → [CODEMAP](packages/srs-engine/CODEMAP.md)       |
+| `packages/api-contract/`  | `@gll/api-contract` — Shared HTTP wire-format types (no runtime deps) → [CODEMAP](packages/api-contract/CODEMAP.md) |
 
 ---
 
