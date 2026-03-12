@@ -8,7 +8,7 @@ import { seedStore, deckId } from '../../state/store.js';
 import { clearRegistry } from '../../state/batchRegistry.js';
 import type { WordState } from '@gll/srs-engine';
 import type { WordDetail } from '../../state/store.js';
-import type { ApiResponse, BatchPayload } from '@gll/api-contract';
+import type { ApiResponse, BatchPayload, SubmitAnswersResponse } from '@gll/api-contract';
 
 const WORD_ID = 'word-001';
 
@@ -39,6 +39,110 @@ function makeStore(count: number): { states: WordState[]; details: Map<string, W
   );
   return { states, details };
 }
+
+describe('POST /api/srs/answers', () => {
+  beforeEach(() => {
+    const { states, details } = makeStore(20);
+    seedStore(states, details);
+  });
+
+  afterEach(() => {
+    clearRegistry();
+  });
+
+  it('returns 404 when batchId is not in registry', async () => {
+    const res = await app.request('/api/srs/answers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ batchId: 'unknown-id', answers: [] }),
+    });
+
+    expect(res.status).toBe(404);
+    const body = await res.json() as ApiResponse<never>;
+    expect(body.success).toBe(false);
+    expect((body as { success: false; error: { code: string } }).error.code).toBe('NOT_FOUND');
+  });
+
+  it('returns 200 with processed count and updatedWords on valid answers', async () => {
+    // First get a batch to obtain a valid batchId
+    const batchRes = await app.request('/api/srs/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deckId }),
+    });
+    const batchBody = await batchRes.json() as ApiResponse<BatchPayload>;
+    expect(batchBody.success).toBe(true);
+    if (!batchBody.success) return;
+
+    const { batchId, questions } = batchBody.data;
+    const answers = questions.map((q) => ({ wordId: q.wordId, correct: true }));
+
+    const answersRes = await app.request('/api/srs/answers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ batchId, answers }),
+    });
+
+    expect(answersRes.status).toBe(200);
+    const answersBody = await answersRes.json() as ApiResponse<SubmitAnswersResponse>;
+    expect(answersBody.success).toBe(true);
+    if (answersBody.success) {
+      expect(answersBody.data.processed).toBe(answers.length);
+      expect(answersBody.data.updatedWords.length).toBe(answers.length);
+      const validPhases = ['learning', 'anki_review'];
+      for (const word of answersBody.data.updatedWords) {
+        expect(typeof word.wordId).toBe('string');
+        expect(typeof word.masteryCount).toBe('number');
+        expect(validPhases).toContain(word.phase);
+      }
+    }
+  });
+});
+
+describe('E2E: batch → answers', () => {
+  beforeEach(() => {
+    const { states, details } = makeStore(20);
+    seedStore(states, details);
+  });
+
+  afterEach(() => {
+    clearRegistry();
+  });
+
+  it('submitting all-correct answers increases masteryCount for each answered word', async () => {
+    const batchRes = await app.request('/api/srs/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deckId }),
+    });
+    const batchBody = await batchRes.json() as ApiResponse<BatchPayload>;
+    expect(batchBody.success).toBe(true);
+    if (!batchBody.success) return;
+
+    const { batchId, questions } = batchBody.data;
+    const answers = questions.map((q) => ({ wordId: q.wordId, correct: true }));
+
+    const answersRes = await app.request('/api/srs/answers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ batchId, answers }),
+    });
+
+    expect(answersRes.status).toBe(200);
+    const answersBody = await answersRes.json() as ApiResponse<SubmitAnswersResponse>;
+    expect(answersBody.success).toBe(true);
+    if (!answersBody.success) return;
+
+    expect(answersBody.data.processed).toBe(questions.length);
+    expect(answersBody.data.updatedWords.length).toBeGreaterThan(0);
+
+    const validPhases = ['learning', 'anki_review'];
+    for (const word of answersBody.data.updatedWords) {
+      expect(validPhases).toContain(word.phase);
+      expect(word.masteryCount).toBeGreaterThan(0);
+    }
+  });
+});
 
 describe('POST /api/srs/batch', () => {
   beforeEach(() => {

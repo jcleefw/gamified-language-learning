@@ -33,3 +33,4 @@ Purpose: Hono 4 HTTP server for the GLL API. Runs on Cloudflare Workers (product
 |---|---|---|
 | GET | `/health` | Returns `200 { status: "ok" }` |
 | POST | `/api/srs/batch` | `src/routes/srs.ts` — compose and return a quiz batch |
+| POST | `/api/srs/answers` | `src/routes/srs.ts` — submit answers and update word state |

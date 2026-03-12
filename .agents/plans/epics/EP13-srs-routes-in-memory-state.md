@@ -1,7 +1,7 @@
 # EP13 - `apps/server` — SRS Routes + In-Memory State
 
 **Created**: 20260311T000000Z
-**Status**: Draft
+**Status**: Impl-Complete
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
