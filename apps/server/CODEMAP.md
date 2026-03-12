@@ -25,8 +25,11 @@ Purpose: Hono 4 HTTP server for the GLL API. Runs on Cloudflare Workers (product
 
 → See [src/state/CODEMAP.md](src/state/CODEMAP.md)
 
-## Routes
+## Routes (`src/routes/`)
+
+→ See [src/routes/CODEMAP.md](src/routes/CODEMAP.md)
 
 | Method | Path | Handler |
 |---|---|---|
 | GET | `/health` | Returns `200 { status: "ok" }` |
+| POST | `/api/srs/batch` | `src/routes/srs.ts` — compose and return a quiz batch |

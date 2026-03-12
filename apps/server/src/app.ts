@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { ErrorCode, type ApiResponse } from '@gll/api-contract';
 import type { Context } from 'hono';
+import srsRoutes from './routes/srs.js';
 
 type Variables = {
   userId: string | null;
@@ -27,5 +28,7 @@ app.use('*', async (c, next) => {
 app.onError(errorHandler);
 
 app.get('/health', (c) => c.json({ status: 'ok' }));
+
+app.route('/api/srs', srsRoutes);
 
 export default app;
