@@ -2,101 +2,70 @@
 
 Run with `pnpm quiz` (or `tsx scripts/quiz-runner.ts`).
 
-An interactive terminal quiz that exercises the SRS engine end-to-end with real Thai language seed data. This is an **engine validation tool** — it proves the `SrsEngine` API works correctly, not a user-facing product.
+An interactive terminal quiz that exercises the SRS HTTP API end-to-end. This is an **API validation tool** — it proves the full quiz contract works correctly (seed → batch → answers), not a user-facing product.
+
+**Requires the server to be running**: `pnpm dev:server` in a separate terminal before running `pnpm quiz`.
 
 ---
 
 ## How it works
 
-1. Loads seed data: **5 foundational Thai consonants** (ก ข ค ง จ) + **vocabulary from conversation decks** (~49 curated words after dedup).
-2. Loops: compose a batch → present questions → accept self-assessed answers (`c`orrect / `w`rong / `q`uit) → update mastery → print summary → repeat.
-3. All data is in-memory. Nothing is persisted between runs.
+1. `POST /api/srs/seed` — seeds the server with Thai consonant data and reads `deckId` from the response.
+2. `POST /api/srs/batch` — fetches a batch of questions with `a/b/c/d` choices. The correct key is **not** in the response — the server withholds it.
+3. Presents one `multiple_choice` question at a time. Press `a`, `b`, `c`, or `d` to answer (no Enter needed). `word_block` and `audio` questions are skipped.
+4. `POST /api/srs/answers` — submits all collected `selectedKey` values. The server determines correctness.
+5. Prints per-word results: `✓`/`✗`, submitted key, correct key (on wrong answers), and mastery delta.
+
+All state is in-memory on the server. Nothing is persisted between server restarts.
 
 ---
 
-## Current config
-
-| Setting                         | Value                              | What it controls                                                 |
-| ------------------------------- | ---------------------------------- | ---------------------------------------------------------------- |
-| `batchSize`                     | 15                                 | Max questions per batch (actual count depends on eligible words) |
-| `masteryThreshold.foundational` | **5**                              | Correct answers to promote a foundational word to `srsM2_review` |
-| `masteryThreshold.curated`      | **10**                             | Correct answers to promote a curated word to `srsM2_review`      |
-| `activeWordLimit`               | 20                                 | Max words in the active learning window                          |
-| `newWordsPerBatch`              | 3                                  | New words introduced per batch                                   |
-| `lapseThreshold`                | 3                                  | Wrong answers in `srsM2_review` before resetting to `learning`   |
-| `shelveAfterBatches`            | 5                                  | Batches without progress before a word is shelved                |
-| `maxShelved`                    | 50                                 | Max simultaneously shelved words                                 |
-| `continuousWrongThreshold`      | 3                                  | Consecutive wrongs on a foundational word to reset mastery to 0  |
-| `questionTypeSplit`             | 60% mc / 30% wordBlock / 10% audio | Question type distribution                                       |
-| `foundationalAllocation`        | 20% active / 5% post-depletion     | Batch slots reserved for foundational words                      |
-
----
-
-## Word lifecycle
+## Example session
 
 ```
-                    ┌─────────────────────────────────────────┐
-                    │           learning phase                │
-                    │                                         │
-   New word ──────► │  Each correct answer: masteryCount + 1  │
-                    │  Each wrong answer:   masteryCount - 1  │
-                    │  (floor at 0)                           │
-                    │                                         │
-                    └──────────────┬──────────────────────────┘
-                                   │
-                     masteryCount reaches threshold
-                     (foundational: 5, curated: 10)
-                                   │
-                                   ▼
-                    ┌─────────────────────────────────────────┐
-                    │         srsM2_review phase              │
-                    │                                         │
-                    │  FSRS scheduling takes over             │
-                    │  Word is now "active" in the window     │
-                    │  Keeps appearing in batches as          │
-                    │  carry-over until FSRS interval elapses │
-                    │                                         │
-                    │  3 wrong answers (lapses) → reset back  │
-                    │  to learning phase with masteryCount=0  │
-                    └─────────────────────────────────────────┘
+Seeded 44 words (learning)
+
+Batch 1 — 15 questions
+
+─────────────────────────────────────────────
+
+  Batch 1 — Q1 of 15
+─────────────────────────────────────────────
+
+  What sound does "ก" make?
+
+  a) ข
+  b) ค
+  c) ง
+  d) ก
+
+  → Your answer (a/b/c/d): d
+
+─────────────────────────────────────────────
+  Results
+─────────────────────────────────────────────
+
+  ก (ko-kai)               ✓  mastery: 0 → 1
+  ข (kho-khai)             ✗  you: a  correct: b   mastery: 0 → 0
+  ค (kho-khwai)            ✓  mastery: 0 → 1
 ```
-
----
-
-## Behaviors you will observe (not bugs)
-
-### Small initial batches
-
-The first batch has only **3 questions**, not 15. This is because `newWordsPerBatch=3` limits how many new words enter the active window per batch. Batches grow as words get promoted to `srsM2_review` (they become "active" and carry over).
-
-### Promoted words keep appearing
-
-Once a word reaches `srsM2_review`, it **does not exit the deck**. It becomes a carry-over word and appears in every subsequent batch. In a real app with persistence, FSRS would space reviews out (1 day → 3 days → 14 days…). In this in-memory runner there is no time passage, so FSRS intervals don't apply and the word keeps showing up.
-
-### Mastery count keeps rising past the threshold
-
-A foundational word promoted at `masteryCount=5` will show `mastery=6, 7, 8…` in later batches. This is correct — the threshold only gates the phase transition. Mastery continues to be tracked in `srsM2_review`.
-
-### Same words repeat across batches
-
-Words in `learning` phase reappear until promoted. Words in `srsM2_review` reappear as carry-over. New words (3 per batch) are introduced only when there's room in the active window.
-
-### Foundational words appear before curated words
-
-The engine prioritises: carry-over → foundational revision → new words → foundational learning. Foundational consonants (with a lower threshold of 5) promote faster and dominate early batches.
-
-### 3 consecutive wrongs resets foundational mastery
-
-If you answer a foundational word wrong 3 times in a row during `learning` phase, its `masteryCount` resets to 0. This is the `continuousWrongThreshold` rule.
 
 ---
 
 ## Question types
 
-| Type                     | Foundational example               | Curated example                   |
-| ------------------------ | ---------------------------------- | --------------------------------- |
-| **mc** (multiple choice) | What is "ก"? → Ko Kai — k          | What does "หิว" mean? → hungry    |
-| **wordBlock**            | Spell the romanization of "จ" → ch | Arrange: "hungry" in Thai → หิว   |
-| **audio**                | Listen: "ก" — what sound? → k      | Listen: "หิว" — meaning? → hungry |
+| Type | Behaviour |
+| --- | --- |
+| `multiple_choice` | Displays `targetText`, four labelled choices, collects a keypress |
+| `word_block` | Prints `[not yet implemented — skipped]` — no keypress collected |
+| `audio` | Prints `[not yet implemented — skipped]` — no keypress collected |
 
-Audio questions appear in the distribution breakdown but are not actually playable in the terminal.
+---
+
+## Controls
+
+| Key | Action |
+| --- | --- |
+| `a` / `b` / `c` / `d` | Select answer and advance |
+| Any other key | Reprompts — does not advance |
+| `Ctrl+C` | Exit immediately |
