@@ -93,9 +93,9 @@ function separator(): void {
   console.log(`\n${'─'.repeat(45)}`);
 }
 
-function displayQuestion(question: QuizQuestion, index: number, total: number): void {
+function displayQuestion(question: QuizQuestion, index: number, total: number, batchNumber: number): void {
   separator();
-  console.log(`  Batch 1 — Q${index} of ${total}`);
+  console.log(`  Batch ${batchNumber} — Q${index} of ${total}`);
   separator();
   console.log(`\n  What sound does "${question.targetText}" make?\n`);
   for (const [key, value] of Object.entries(question.choices)) {
@@ -135,39 +135,77 @@ function displayResults(
 
 // ── Quiz loop ─────────────────────────────────────────────────────────────────
 
+async function promptContinue(): Promise<boolean> {
+  process.stdout.write('\n  Next batch? (Enter to continue, q to quit): ');
+
+  return new Promise((resolve) => {
+    process.stdin.resume();
+    process.stdin.setRawMode(true);
+    process.stdin.setEncoding('utf8');
+
+    const onData = (chunk: string): void => {
+      process.stdin.removeListener('data', onData);
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+
+      if (chunk === '\u0003' || chunk.toLowerCase() === 'q') {
+        console.log('\n\n  Quit. Goodbye!');
+        process.exit(0);
+      }
+
+      console.log();
+      resolve(true);
+    };
+
+    process.stdin.on('data', onData);
+  });
+}
+
 async function runQuiz(): Promise<void> {
   const seedData = await seed();
   console.log(`\nSeeded ${seedData.wordCount} words (${seedData.phase})`);
 
-  const batch = await getBatch(seedData.deckId);
-  const totalQuestions = batch.questions.length;
-  console.log(`\nBatch 1 — ${totalQuestions} questions`);
+  let batchNumber = 0;
 
-  const collectedAnswers: CollectedAnswer[] = [];
-  let questionNumber = 0;
+  for (;;) {
+    const batch = await getBatch(seedData.deckId);
+    const totalQuestions = batch.questions.length;
 
-  for (const question of batch.questions) {
-    if (question.questionType !== 'multiple_choice') {
-      console.log(`\n  [not yet implemented — skipped] (${question.questionType})`);
-      continue;
+    if (totalQuestions === 0) {
+      console.log('\n  No questions available. All words complete!');
+      break;
     }
 
-    questionNumber++;
-    displayQuestion(question, questionNumber, totalQuestions);
+    batchNumber++;
+    console.log(`\nBatch ${batchNumber} — ${totalQuestions} questions`);
 
-    const selectedKey = await readKey();
-    console.log(selectedKey);
+    const collectedAnswers: CollectedAnswer[] = [];
+    let questionNumber = 0;
 
-    collectedAnswers.push({ wordId: question.wordId, selectedKey });
+    for (const question of batch.questions) {
+      if (question.questionType !== 'multiple_choice') {
+        console.log(`\n  [not yet implemented — skipped] (${question.questionType})`);
+        continue;
+      }
+
+      questionNumber++;
+      displayQuestion(question, questionNumber, totalQuestions, batchNumber);
+
+      const selectedKey = await readKey();
+      console.log(selectedKey);
+
+      collectedAnswers.push({ wordId: question.wordId, selectedKey });
+    }
+
+    if (collectedAnswers.length === 0) {
+      console.log('\n  No answers collected this batch.');
+    } else {
+      const result = await submitAnswers(batch.batchId, collectedAnswers);
+      displayResults(result.updatedWords, batch.questions);
+    }
+
+    await promptContinue();
   }
-
-  if (collectedAnswers.length === 0) {
-    console.log('\n  No answers collected. Exiting.');
-    process.exit(0);
-  }
-
-  const result = await submitAnswers(batch.batchId, collectedAnswers);
-  displayResults(result.updatedWords, batch.questions);
 
   process.exit(0);
 }
