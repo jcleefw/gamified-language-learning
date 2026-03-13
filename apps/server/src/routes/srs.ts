@@ -9,6 +9,7 @@ import {
   type SubmitAnswersResponse,
   type AnswerResultPayload,
   type MasteryPhase,
+  type SeedPayload,
 } from '@gll/api-contract';
 import type { Question, MasteryPhase as EngineMasteryPhase } from '@gll/srs-engine';
 import { deckId, wordStates, wordDetails, setWordStates, type WordDetail } from '../state/store.js';
@@ -122,7 +123,10 @@ srsRoutes.post('/answers', async (c) => {
     return c.json(res, 404);
   }
 
-  const engineAnswers = body.answers.map((a) => ({ wordId: a.wordId, isCorrect: a.correct }));
+  const engineAnswers = body.answers.map((a) => {
+    const correctKey = registeredEntry.correctKeys[a.wordId] ?? '';
+    return { wordId: a.wordId, isCorrect: a.selectedKey === correctKey };
+  });
   const updatedStates = getEngine().processAnswers(engineAnswers, wordStates);
   setWordStates(updatedStates);
 
@@ -131,11 +135,13 @@ srsRoutes.post('/answers', async (c) => {
     .filter((s) => answeredIds.has(s.wordId))
     .map((s) => {
       const answer = body.answers.find((a) => a.wordId === s.wordId);
+      const correctKey = registeredEntry.correctKeys[s.wordId] ?? '';
+      const submittedKey = answer?.selectedKey ?? '';
       return {
         wordId: s.wordId,
-        submittedKey: '',
-        correctKey: '',
-        correct: answer?.correct ?? false,
+        submittedKey,
+        correctKey,
+        correct: submittedKey === correctKey,
         masteryCount: s.masteryCount,
         phase: ENGINE_TO_WIRE_PHASE[s.phase],
       };
@@ -144,6 +150,14 @@ srsRoutes.post('/answers', async (c) => {
   const res: ApiResponse<SubmitAnswersResponse> = {
     success: true,
     data: { processed: body.answers.length, updatedWords },
+  };
+  return c.json(res, 200);
+});
+
+srsRoutes.post('/seed', (c) => {
+  const res: ApiResponse<SeedPayload> = {
+    success: true,
+    data: { deckId, wordCount: wordDetails.size, phase: 'learning' },
   };
   return c.json(res, 200);
 });

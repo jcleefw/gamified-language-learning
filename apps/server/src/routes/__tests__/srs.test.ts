@@ -8,7 +8,8 @@ import { seedStore, deckId } from '../../state/store.js';
 import { clearRegistry } from '../../state/batchRegistry.js';
 import type { WordState } from '@gll/srs-engine';
 import type { WordDetail } from '../../state/store.js';
-import type { ApiResponse, BatchPayload, SubmitAnswersResponse } from '@gll/api-contract';
+import type { ApiResponse, BatchPayload, SubmitAnswersResponse, SeedPayload } from '@gll/api-contract';
+import { get } from '../../state/batchRegistry.js';
 
 const WORD_ID = 'word-001';
 
@@ -64,7 +65,6 @@ describe('POST /api/srs/answers', () => {
   });
 
   it('returns 200 with processed count and updatedWords on valid answers', async () => {
-    // First get a batch to obtain a valid batchId
     const batchRes = await app.request('/api/srs/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -75,7 +75,11 @@ describe('POST /api/srs/answers', () => {
     if (!batchBody.success) return;
 
     const { batchId, questions } = batchBody.data;
-    const answers = questions.map((q) => ({ wordId: q.wordId, correct: true }));
+    const entry = get(batchId);
+    const answers = questions.map((q) => ({
+      wordId: q.wordId,
+      selectedKey: entry?.correctKeys[q.wordId] ?? 'a',
+    }));
 
     const answersRes = await app.request('/api/srs/answers', {
       method: 'POST',
@@ -94,8 +98,44 @@ describe('POST /api/srs/answers', () => {
         expect(typeof word.wordId).toBe('string');
         expect(typeof word.masteryCount).toBe('number');
         expect(validPhases).toContain(word.phase);
+        expect(typeof word.submittedKey).toBe('string');
+        expect(typeof word.correctKey).toBe('string');
       }
     }
+  });
+
+  it('returns correct: false and reveals correctKey when wrong key is submitted', async () => {
+    const batchRes = await app.request('/api/srs/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deckId }),
+    });
+    const batchBody = await batchRes.json() as ApiResponse<BatchPayload>;
+    expect(batchBody.success).toBe(true);
+    if (!batchBody.success) return;
+
+    const { batchId, questions } = batchBody.data;
+    const entry = get(batchId);
+    const firstQuestion = questions[0]!;
+    const correctKey = entry?.correctKeys[firstQuestion.wordId] ?? 'a';
+    const wrongKey = (['a', 'b', 'c', 'd'] as const).find((k) => k !== correctKey) ?? 'b';
+
+    const answers = [{ wordId: firstQuestion.wordId, selectedKey: wrongKey }];
+    const answersRes = await app.request('/api/srs/answers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ batchId, answers }),
+    });
+
+    expect(answersRes.status).toBe(200);
+    const answersBody = await answersRes.json() as ApiResponse<SubmitAnswersResponse>;
+    expect(answersBody.success).toBe(true);
+    if (!answersBody.success) return;
+
+    const result = answersBody.data.updatedWords[0]!;
+    expect(result.correct).toBe(false);
+    expect(result.submittedKey).toBe(wrongKey);
+    expect(result.correctKey).toBe(correctKey);
   });
 });
 
@@ -109,7 +149,7 @@ describe('E2E: batch → answers', () => {
     clearRegistry();
   });
 
-  it('submitting all-correct answers increases masteryCount for each answered word', async () => {
+  it('submitting all-correct answers increases masteryCount and returns submittedKey/correctKey', async () => {
     const batchRes = await app.request('/api/srs/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -120,7 +160,11 @@ describe('E2E: batch → answers', () => {
     if (!batchBody.success) return;
 
     const { batchId, questions } = batchBody.data;
-    const answers = questions.map((q) => ({ wordId: q.wordId, correct: true }));
+    const entry = get(batchId);
+    const answers = questions.map((q) => ({
+      wordId: q.wordId,
+      selectedKey: entry?.correctKeys[q.wordId] ?? 'a',
+    }));
 
     const answersRes = await app.request('/api/srs/answers', {
       method: 'POST',
@@ -140,6 +184,8 @@ describe('E2E: batch → answers', () => {
     for (const word of answersBody.data.updatedWords) {
       expect(validPhases).toContain(word.phase);
       expect(word.masteryCount).toBeGreaterThan(0);
+      expect(typeof word.submittedKey).toBe('string');
+      expect(typeof word.correctKey).toBe('string');
     }
   });
 });
@@ -242,5 +288,29 @@ describe('POST /api/srs/batch', () => {
     for (const q of nonMcQuestions) {
       expect(q.choices).toEqual({});
     }
+  });
+});
+
+describe('POST /api/srs/seed', () => {
+  beforeEach(() => {
+    const { states, details } = makeStore(20);
+    seedStore(states, details);
+  });
+
+  it('returns 200 with deckId and wordCount', async () => {
+    const res = await app.request('/api/srs/seed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as ApiResponse<SeedPayload>;
+    expect(body.success).toBe(true);
+    if (!body.success) return;
+
+    expect(typeof body.data.deckId).toBe('string');
+    expect(body.data.wordCount).toBe(20);
+    expect(body.data.phase).toBe('learning');
   });
 });

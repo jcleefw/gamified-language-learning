@@ -13,4 +13,5 @@ Purpose: Hono route handlers for SRS HTTP endpoints.
 | Method | Path | Handler file | Description |
 |---|---|---|---|
 | POST | `/api/srs/batch` | `srs.ts` | Validates `deckId`, composes a batch via `SrsEngine`, maps to wire types, registers in batch registry, returns `ApiResponse<BatchPayload>`. |
-| POST | `/api/srs/answers` | `srs.ts` | Validates `batchId` in registry (404 if missing), processes answers via `SrsEngine`, updates store, returns `ApiResponse<SubmitAnswersResponse>`. |
+| POST | `/api/srs/answers` | `srs.ts` | Validates `batchId` in registry (404 if missing); reads `selectedKey` per answer; looks up `correctKey` from registry; processes answers via `SrsEngine`; returns `ApiResponse<SubmitAnswersResponse>` with `submittedKey`+`correctKey` per word. |
+| POST | `/api/srs/seed` | `srs.ts` | Returns `ApiResponse<SeedPayload>` with current `deckId`, `wordCount`, and starting `phase: 'learning'`. |

@@ -22,7 +22,7 @@ Types-only package exporting shared HTTP wire-format types for `@gll/api-contrac
 | --------------- | ----------------------------------------------------------------------- |
 | `index.ts`      | Barrel re-export — re-exports all modules                               |
 | `errors.ts`     | `ErrorCode` enum (incl. `INSUFFICIENT_WORD_POOL`), `ApiError`, `ApiResponse<T>` — universal HTTP envelope |
-| `srs.ts`        | SRS wire types: `QuestionType`, `GetBatchRequest`, `QuizQuestion` (with `choices`), `BatchPayload`, `QuizAnswer` (with `selectedKey`), `SubmitAnswersRequest`, `MasteryPhase`, `AnswerResultPayload` (with `submittedKey`+`correctKey`), `WordMasterySummary` |
+| `srs.ts`        | SRS wire types: `QuestionType`, `GetBatchRequest`, `QuizQuestion` (with `choices`), `BatchPayload`, `QuizAnswer` (with `selectedKey`), `SubmitAnswersRequest`, `MasteryPhase`, `AnswerResultPayload` (with `submittedKey`+`correctKey`), `WordMasterySummary`, `SeedPayload` |
 | `auth.ts`       | Stub — Stage 5 auth wire types deferred                                 |
 | `curation.ts`   | Stub — Stage 7 curation wire types deferred                             |
 
@@ -44,3 +44,4 @@ Types-only package exporting shared HTTP wire-format types for `@gll/api-contrac
 | `MasteryPhase`    | `srs.ts`     |
 | `AnswerResultPayload` | `srs.ts` |
 | `WordMasterySummary`  | `srs.ts` |
+| `SeedPayload`         | `srs.ts` |

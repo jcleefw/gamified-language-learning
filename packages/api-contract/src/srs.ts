@@ -61,3 +61,11 @@ export interface WordMasterySummary {
   masteryCount: number;
   phase: MasteryPhase;
 }
+
+/** Response payload for POST /srs/seed */
+export interface SeedPayload {
+  deckId: string;
+  seedId?: string;
+  wordCount: number;
+  phase: MasteryPhase;
+}
