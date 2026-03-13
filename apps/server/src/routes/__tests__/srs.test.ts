@@ -8,7 +8,8 @@ import { seedStore, deckId } from '../../state/store.js';
 import { clearRegistry } from '../../state/batchRegistry.js';
 import type { WordState } from '@gll/srs-engine';
 import type { WordDetail } from '../../state/store.js';
-import type { ApiResponse, BatchPayload, SubmitAnswersResponse } from '@gll/api-contract';
+import type { ApiResponse, BatchPayload, SubmitAnswersResponse, SeedPayload } from '@gll/api-contract';
+import { get } from '../../state/batchRegistry.js';
 
 const WORD_ID = 'word-001';
 
@@ -64,7 +65,6 @@ describe('POST /api/srs/answers', () => {
   });
 
   it('returns 200 with processed count and updatedWords on valid answers', async () => {
-    // First get a batch to obtain a valid batchId
     const batchRes = await app.request('/api/srs/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -75,7 +75,11 @@ describe('POST /api/srs/answers', () => {
     if (!batchBody.success) return;
 
     const { batchId, questions } = batchBody.data;
-    const answers = questions.map((q) => ({ wordId: q.wordId, correct: true }));
+    const entry = get(batchId);
+    const answers = questions.map((q) => ({
+      wordId: q.wordId,
+      selectedKey: entry?.correctKeys[q.wordId] ?? 'a',
+    }));
 
     const answersRes = await app.request('/api/srs/answers', {
       method: 'POST',
@@ -94,8 +98,44 @@ describe('POST /api/srs/answers', () => {
         expect(typeof word.wordId).toBe('string');
         expect(typeof word.masteryCount).toBe('number');
         expect(validPhases).toContain(word.phase);
+        expect(typeof word.submittedKey).toBe('string');
+        expect(typeof word.correctKey).toBe('string');
       }
     }
+  });
+
+  it('returns correct: false and reveals correctKey when wrong key is submitted', async () => {
+    const batchRes = await app.request('/api/srs/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deckId }),
+    });
+    const batchBody = await batchRes.json() as ApiResponse<BatchPayload>;
+    expect(batchBody.success).toBe(true);
+    if (!batchBody.success) return;
+
+    const { batchId, questions } = batchBody.data;
+    const entry = get(batchId);
+    const firstQuestion = questions[0]!;
+    const correctKey = entry?.correctKeys[firstQuestion.wordId] ?? 'a';
+    const wrongKey = (['a', 'b', 'c', 'd'] as const).find((k) => k !== correctKey) ?? 'b';
+
+    const answers = [{ wordId: firstQuestion.wordId, selectedKey: wrongKey }];
+    const answersRes = await app.request('/api/srs/answers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ batchId, answers }),
+    });
+
+    expect(answersRes.status).toBe(200);
+    const answersBody = await answersRes.json() as ApiResponse<SubmitAnswersResponse>;
+    expect(answersBody.success).toBe(true);
+    if (!answersBody.success) return;
+
+    const result = answersBody.data.updatedWords[0]!;
+    expect(result.correct).toBe(false);
+    expect(result.submittedKey).toBe(wrongKey);
+    expect(result.correctKey).toBe(correctKey);
   });
 });
 
@@ -109,7 +149,7 @@ describe('E2E: batch → answers', () => {
     clearRegistry();
   });
 
-  it('submitting all-correct answers increases masteryCount for each answered word', async () => {
+  it('submitting all-correct answers increases masteryCount and returns submittedKey/correctKey', async () => {
     const batchRes = await app.request('/api/srs/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -120,7 +160,11 @@ describe('E2E: batch → answers', () => {
     if (!batchBody.success) return;
 
     const { batchId, questions } = batchBody.data;
-    const answers = questions.map((q) => ({ wordId: q.wordId, correct: true }));
+    const entry = get(batchId);
+    const answers = questions.map((q) => ({
+      wordId: q.wordId,
+      selectedKey: entry?.correctKeys[q.wordId] ?? 'a',
+    }));
 
     const answersRes = await app.request('/api/srs/answers', {
       method: 'POST',
@@ -140,6 +184,8 @@ describe('E2E: batch → answers', () => {
     for (const word of answersBody.data.updatedWords) {
       expect(validPhases).toContain(word.phase);
       expect(word.masteryCount).toBeGreaterThan(0);
+      expect(typeof word.submittedKey).toBe('string');
+      expect(typeof word.correctKey).toBe('string');
     }
   });
 });
@@ -202,5 +248,120 @@ describe('POST /api/srs/batch', () => {
         expect(typeof q.wordId).toBe('string');
       }
     }
+  });
+
+  it('returns 400 INSUFFICIENT_WORD_POOL when word pool has fewer than 4 words', async () => {
+    const { states, details } = makeStore(3);
+    seedStore(states, details);
+
+    const res = await app.request('/api/srs/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deckId }),
+    });
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as ApiResponse<never>;
+    expect(body.success).toBe(false);
+    expect((body as { success: false; error: { code: string } }).error.code).toBe('INSUFFICIENT_WORD_POOL');
+  });
+
+  it('multiple_choice questions have questionDirection; targetText and choices match direction', async () => {
+    // Use distinct native/english values to verify direction correctness
+    const count = 20;
+    const states: WordState[] = Array.from({ length: count }, (_, i) => ({
+      ...testWordState,
+      wordId: `dir-word-${i}`,
+    }));
+    const dirDetails = new Map<string, WordDetail>(
+      states.map((s, i) => [s.wordId, {
+        native: `nat-${i}`,
+        romanization: `rom-${i}`,
+        english: `eng-${i}`,
+        category: 'curated' as const,
+      }]),
+    );
+    seedStore(states, dirDetails);
+
+    const res = await app.request('/api/srs/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deckId }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as ApiResponse<BatchPayload>;
+    if (!body.success) return;
+
+    const allNatives = new Set([...dirDetails.values()].map((d) => d.native));
+    const allEnglish = new Set([...dirDetails.values()].map((d) => d.english));
+    const allRomanizations = new Set([...dirDetails.values()].map((d) => d.romanization));
+    const validDirections = ['english_to_native', 'native_to_english', 'native_to_romanization'];
+
+    const mcQuestions = body.data.questions.filter((q) => q.questionType === 'multiple_choice');
+    expect(mcQuestions.length).toBeGreaterThan(0);
+
+    for (const q of mcQuestions) {
+      expect(validDirections).toContain(q.questionDirection);
+      const choiceValues = Object.values(q.choices);
+      if (q.questionDirection === 'english_to_native') {
+        expect(allEnglish.has(q.targetText)).toBe(true);
+        for (const v of choiceValues) expect(allNatives.has(v)).toBe(true);
+      } else if (q.questionDirection === 'native_to_romanization') {
+        expect(allNatives.has(q.targetText)).toBe(true);
+        for (const v of choiceValues) expect(allRomanizations.has(v)).toBe(true);
+      } else {
+        expect(allNatives.has(q.targetText)).toBe(true);
+        for (const v of choiceValues) expect(allEnglish.has(v)).toBe(true);
+      }
+    }
+  });
+
+  it('multiple_choice questions have choices with keys a, b, c, d; non-MC questions have empty choices', async () => {
+    const res = await app.request('/api/srs/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deckId }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as ApiResponse<BatchPayload>;
+    expect(body.success).toBe(true);
+    if (!body.success) return;
+
+    const mcQuestions = body.data.questions.filter((q) => q.questionType === 'multiple_choice');
+    expect(mcQuestions.length).toBeGreaterThan(0);
+    for (const q of mcQuestions) {
+      expect(Object.keys(q.choices).sort()).toEqual(['a', 'b', 'c', 'd']);
+    }
+
+    const nonMcQuestions = body.data.questions.filter((q) => q.questionType !== 'multiple_choice');
+    for (const q of nonMcQuestions) {
+      expect(q.choices).toEqual({});
+    }
+  });
+});
+
+describe('POST /api/srs/seed', () => {
+  beforeEach(() => {
+    const { states, details } = makeStore(20);
+    seedStore(states, details);
+  });
+
+  it('returns 200 with deckId and wordCount', async () => {
+    const res = await app.request('/api/srs/seed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as ApiResponse<SeedPayload>;
+    expect(body.success).toBe(true);
+    if (!body.success) return;
+
+    expect(typeof body.data.deckId).toBe('string');
+    expect(body.data.wordCount).toBe(44);
+    expect(body.data.phase).toBe('learning');
   });
 });

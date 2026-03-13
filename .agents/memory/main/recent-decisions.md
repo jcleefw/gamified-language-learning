@@ -1,7 +1,7 @@
 # Recent Decisions
 
 **Branch**: main
-**Updated**: 20260311T000000Z
+**Updated**: 20260314T000000Z
 **Rolling window**: Keep last 3 days only. Older decisions archived to `decisions-archive.md`.
 
 ## Decision Index (1-liner each)
@@ -19,6 +19,12 @@
 | 03-13 | New epic required: server generates `choices`, withholds `answer`, client sends `selectedKey`, server verifies correctness         | ADR: quiz-contract-answer-authority           |
 | 03-13 | `quiz-runner.ts` rejected — reveals answer in question text, self-reports correctness, bypasses HTTP API                          | ADR: quiz-contract-answer-authority           |
 | 03-13 | Distractor selection: 3 random `targetText` values from same word pool, shuffled with correct answer into a/b/c/d                  | ADR: quiz-contract-answer-authority           |
+| 03-13 | EP15-ST01: `QuizAnswer.correct` removed — intentional breakage in `@gll/server` left for ST02/ST03; api-contract typechecks clean | EP15-ST01                                     |
+| 03-13 | EP15-ST02: non-MC questions get `choices: {}` (empty); only MC generates a/b/c/d — runner (EP16) skips MC interaction for other types | EP15-ST02                                     |
+| 03-13 | EP15-ST03: `/answers` accepts `selectedKey`, server determines correctness via registry lookup; `/seed` route added returning `deckId` | EP15-ST03                                     |
+| 03-14 | EP15-ST04: MC questions get random `questionDirection` (`english_to_native` or `native_to_english`); `buildMcChoices` derives `targetText` from direction | EP15-DS02, EP15-ST04                          |
+| 03-14 | EP15-ST05: third direction `native_to_romanization` added; picker changed from 50/50 to uniform 1-of-3 via `DIRECTIONS` array | EP15-DS03, EP15-ST05                          |
+| 03-14 | Hono `logger()` middleware added to `app.ts` for request/response visibility during development | logging fix                                   |
 | 03-11 | `wrangler.toml`: minimal config added in EP12 scaffold; not wired into local dev loop (`tsx` runs locally)                        | EP12 design                                   |
 | 03-10 | Remove worktree list at start of each AGENT operation                                                                             | AGENT.md                                      |
 | 03-09 | All exported and non-trivial private functions require a docstring — plain English, max 80 chars/line                             | code-review SKILL                             |
@@ -68,19 +74,25 @@
 
 ---
 
-### 2026-03-11: Stage 1 Complete — Stage 2 Planning
+### 2026-03-14: EP15 Complete — Mixed Question Directions + Romanization
 
-**Stage 1 verdict**: All 10 epics delivered. Delivery report: `.agents/changelogs/roadmap/20260311T000000Z-stage1-delivery-report.md`.
+**EP15-ST03** (completed 03-13): `/api/srs/answers` now accepts `{ wordId, selectedKey }` per answer. Server looks up `correctKey` from `batchRegistry`, determines `correct` independently, returns `{ submittedKey, correctKey, correct, masteryCount, phase }` per word. `/api/srs/seed` route added — returns `{ deckId, wordCount, phase }` in response body (eliminates console-log dependency for EP16 runner).
 
-**Stage 2 roadmap**: `product-documentation/roadmap/20260311T000000Z-stage2-build-sequence.md`
+**EP15-ST04** (completed 03-14): Each `multiple_choice` question in `/batch` response now has `questionDirection: 'english_to_native' | 'native_to_english'`. `buildMcChoices` accepts a `direction` parameter and derives `targetText`, `correctText`, and distractor field from it. `targetText` and `choices` values are always different text types.
 
-**Key type mappings** (load-bearing — engine → wire format, must be handled in EP13):
+**EP15-ST05** (completed 03-14): Third direction `native_to_romanization` added — `targetText` is Thai char, choices are romanization strings (e.g. `"Ko Kai"`). Direction picker changed from `Math.random() < 0.5` to uniform 1-of-3 via `DIRECTIONS` constant array. Motivation: many consonants share the same English sound (`"kh"` → ข, ค, ฆ, ฅ), making romanization the only unambiguous label.
 
-- `QuestionType 'mc'` → `'multiple_choice'`; `'wordBlock'` → `'word_block'`
-- `MasteryPhase 'srsM2_review'` → `'anki_review'`
-- `QuizAnswer.isCorrect` → `QuizAnswer.correct`
+**Current `QuestionDirection` type**: `'english_to_native' | 'native_to_english' | 'native_to_romanization'`
 
-**Blocking prerequisite for EP11**: EP08 must be merged to `main` first (EP13 imports data mappers from `@gll/srs-engine`).
+**Direction → field mapping**:
+
+| direction | `targetText` | `correctText` | distractor field |
+|---|---|---|---|
+| `english_to_native` | `.english` | `.native` | `.native` |
+| `native_to_english` | `.native` | `.english` | `.english` |
+| `native_to_romanization` | `.native` | `.romanization` | `.romanization` |
+
+**Test count**: 19 server tests passing. `pnpm typecheck` green across monorepo.
 
 ---
 

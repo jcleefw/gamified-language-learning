@@ -1,12 +1,17 @@
 import type { QuizQuestion } from '@gll/api-contract';
 
-const registry = new Map<string, QuizQuestion[]>();
-
-export function register(batchId: string, questions: QuizQuestion[]): void {
-  registry.set(batchId, questions);
+export interface BatchEntry {
+  questions: QuizQuestion[];
+  correctKeys: Record<string, string>;
 }
 
-export function get(batchId: string): QuizQuestion[] | undefined {
+const registry = new Map<string, BatchEntry>();
+
+export function register(batchId: string, entry: BatchEntry): void {
+  registry.set(batchId, entry);
+}
+
+export function get(batchId: string): BatchEntry | undefined {
   return registry.get(batchId);
 }
 
