@@ -2,9 +2,9 @@
  *  Maps from engine-internal: 'mc' → 'multiple_choice', 'wordBlock' → 'word_block' */
 export type QuestionType = 'multiple_choice' | 'word_block' | 'audio';
 
-/** GET /srs/batch — query parameters */
+/** POST /srs/batch — request body */
 export interface GetBatchRequest {
-  /** Number of questions to include in the batch. */
+  deckId: string;
   size?: number;
 }
 
@@ -12,10 +12,12 @@ export interface GetBatchRequest {
 export interface QuizQuestion {
   wordId: string;
   questionType: QuestionType;
+  targetText: string;
 }
 
-/** Response payload for GET /srs/batch */
+/** Response payload for POST /srs/batch */
 export interface BatchPayload {
+  batchId: string;
   questions: QuizQuestion[];
   batchSize: number;
 }
@@ -29,7 +31,14 @@ export interface QuizAnswer {
 
 /** POST /srs/answers — request body */
 export interface SubmitAnswersRequest {
+  batchId: string;
   answers: QuizAnswer[];
+}
+
+/** Response payload for POST /srs/answers */
+export interface SubmitAnswersResponse {
+  processed: number;
+  updatedWords: AnswerResultPayload[];
 }
 
 /** Mastery phase visible to clients.

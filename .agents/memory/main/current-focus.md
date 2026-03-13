@@ -1,26 +1,22 @@
-# EP12 Current Focus
+# current-focus
 
-**Branch**: feat/EP12
-**Epic**: EP12 - `apps/server` — Hono Server Scaffold
-**Status**: impl-complete
+**Branch**: feat/EP13
+**Last updated**: 20260313
 
-## Completed
+## Status
 
-- ST01: `apps/server/` scaffolded — `@gll/server`, health route, `wrangler.toml`, CODEMAP
-- ST02: Middleware stack — CORS, auth passthrough, global error handler using `@gll/api-contract`
+EP13-ST01 complete ✅ — committed `bdda1b9`
+EP13-ST02 complete ✅ — `POST /api/srs/batch` route, 11/11 tests green, typecheck clean
+EP13-ST03 complete ✅ — `POST /api/srs/answers` route + E2E test, 14/14 tests green, typecheck clean
 
-## Commits
+⚠️ EP13 quiz contract rejected — implementation does not constitute a real quiz.
 
-- `4679194` feat(EP12-ST01): scaffold @gll/server with Hono app and health route
-- `55b06d8` feat(EP12-ST02): add CORS, auth passthrough, and global error handler middleware
+## What's next
 
-## Key Decisions
+New epic required before EP13 can be considered done. See ADR:
+`product-documentation/architecture/20260313T000000Z-engineering-quiz-contract-answer-authority.md`
 
-- `src/app.ts` exports pure Hono app (imported by tests); `src/index.ts` starts `@hono/node-server` for local dev
-- `errorHandler` exported as named function — tests compose a local Hono instance rather than adding a test route to the production app
-- Middleware inline in `app.ts` (each ≤5 lines, no abstraction needed)
-
-## Next Steps
-
-- PR for feat/EP12 → main
-- EP13: SRS routes + in-memory state store
+Three open questions to resolve before epic stories are written:
+1. Distractor fallback when pool < 4 words
+2. Should `/seed` return `deckId`?
+3. Should `word_block`/`audio` types be filtered from batch output for this epic?
