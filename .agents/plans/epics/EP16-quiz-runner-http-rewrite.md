@@ -1,7 +1,7 @@
 # EP16 - Quiz Runner: HTTP-Based Interactive Quiz
 
 **Created**: 20260313T000000Z
-**Status**: Draft
+**Status**: Impl-Complete
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 

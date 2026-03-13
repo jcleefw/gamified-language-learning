@@ -18,7 +18,9 @@
     "dev:server": "pnpm --filter @gll/server dev"
   },
   "devDependencies": {
+    "@gll/api-contract": "workspace:*",
     "@gll/srs-engine": "workspace:*",
+    "@types/node": "^22",
     "eslint": "^9",
     "jiti": "^2.6.1",
     "prettier": "^3.8.1",
