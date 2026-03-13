@@ -266,6 +266,57 @@ describe('POST /api/srs/batch', () => {
     expect((body as { success: false; error: { code: string } }).error.code).toBe('INSUFFICIENT_WORD_POOL');
   });
 
+  it('multiple_choice questions have questionDirection; targetText and choices match direction', async () => {
+    // Use distinct native/english values to verify direction correctness
+    const count = 20;
+    const states: WordState[] = Array.from({ length: count }, (_, i) => ({
+      ...testWordState,
+      wordId: `dir-word-${i}`,
+    }));
+    const dirDetails = new Map<string, WordDetail>(
+      states.map((s, i) => [s.wordId, {
+        native: `nat-${i}`,
+        romanization: `rom-${i}`,
+        english: `eng-${i}`,
+        category: 'curated' as const,
+      }]),
+    );
+    seedStore(states, dirDetails);
+
+    const res = await app.request('/api/srs/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deckId }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as ApiResponse<BatchPayload>;
+    if (!body.success) return;
+
+    const allNatives = new Set([...dirDetails.values()].map((d) => d.native));
+    const allEnglish = new Set([...dirDetails.values()].map((d) => d.english));
+    const allRomanizations = new Set([...dirDetails.values()].map((d) => d.romanization));
+    const validDirections = ['english_to_native', 'native_to_english', 'native_to_romanization'];
+
+    const mcQuestions = body.data.questions.filter((q) => q.questionType === 'multiple_choice');
+    expect(mcQuestions.length).toBeGreaterThan(0);
+
+    for (const q of mcQuestions) {
+      expect(validDirections).toContain(q.questionDirection);
+      const choiceValues = Object.values(q.choices);
+      if (q.questionDirection === 'english_to_native') {
+        expect(allEnglish.has(q.targetText)).toBe(true);
+        for (const v of choiceValues) expect(allNatives.has(v)).toBe(true);
+      } else if (q.questionDirection === 'native_to_romanization') {
+        expect(allNatives.has(q.targetText)).toBe(true);
+        for (const v of choiceValues) expect(allRomanizations.has(v)).toBe(true);
+      } else {
+        expect(allNatives.has(q.targetText)).toBe(true);
+        for (const v of choiceValues) expect(allEnglish.has(v)).toBe(true);
+      }
+    }
+  });
+
   it('multiple_choice questions have choices with keys a, b, c, d; non-MC questions have empty choices', async () => {
     const res = await app.request('/api/srs/batch', {
       method: 'POST',
@@ -310,7 +361,7 @@ describe('POST /api/srs/seed', () => {
     if (!body.success) return;
 
     expect(typeof body.data.deckId).toBe('string');
-    expect(body.data.wordCount).toBe(20);
+    expect(body.data.wordCount).toBe(44);
     expect(body.data.phase).toBe('learning');
   });
 });

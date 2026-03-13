@@ -5,6 +5,7 @@ import {
   type BatchPayload,
   type QuizQuestion,
   type QuestionType,
+  type QuestionDirection,
   type SubmitAnswersRequest,
   type SubmitAnswersResponse,
   type AnswerResultPayload,
@@ -12,9 +13,10 @@ import {
   type SeedPayload,
 } from '@gll/api-contract';
 import type { Question, MasteryPhase as EngineMasteryPhase } from '@gll/srs-engine';
-import { deckId, wordStates, wordDetails, setWordStates, type WordDetail } from '../state/store.js';
+import { deckId, wordStates, wordDetails, setWordStates, seedStore, type WordDetail } from '../state/store.js';
 import { getEngine } from '../state/engine.js';
 import { register, get } from '../state/batchRegistry.js';
+import { getThaiConsonantsWordStates, getThaiConsonantsWordDetails } from '../state/seeds/thai-consonants.js';
 
 const srsRoutes = new Hono();
 
@@ -35,20 +37,43 @@ function shuffled<T>(arr: T[]): T[] {
   return copy;
 }
 
+const DIRECTIONS: QuestionDirection[] = ['english_to_native', 'native_to_english', 'native_to_romanization'];
+
 function buildMcChoices(
   wordId: string,
   pool: Map<string, WordDetail>,
-): { choices: Record<string, string>; correctKey: string } {
-  const correctText = pool.get(wordId)?.native ?? '';
+  direction: QuestionDirection,
+): { choices: Record<string, string>; correctKey: string; targetText: string } {
+  const detail = pool.get(wordId);
+  let correctText: string;
+  let targetText: string;
+  let distractorField: (d: WordDetail) => string;
+
+  if (direction === 'english_to_native') {
+    correctText = detail?.native ?? '';
+    targetText = detail?.english ?? '';
+    distractorField = (d) => d.native;
+  } else if (direction === 'native_to_romanization') {
+    correctText = detail?.romanization ?? '';
+    targetText = detail?.native ?? '';
+    distractorField = (d) => d.romanization;
+  } else {
+    correctText = detail?.english ?? '';
+    targetText = detail?.native ?? '';
+    distractorField = (d) => d.english;
+  }
+
   const distractors = shuffled(
-    [...pool.entries()].filter(([id]) => id !== wordId).map(([, detail]) => detail.native),
+    [...pool.entries()]
+      .filter(([id]) => id !== wordId)
+      .map(([, d]) => distractorField(d)),
   ).slice(0, 3);
   const texts = shuffled([correctText, ...distractors]);
   const choices: Record<string, string> = Object.fromEntries(
     CHOICE_KEYS.map((key, idx) => [key, texts[idx]!]),
   );
   const correctKey = CHOICE_KEYS.find((key) => choices[key] === correctText) ?? 'a';
-  return { choices, correctKey };
+  return { choices, correctKey, targetText };
 }
 
 srsRoutes.post('/batch', async (c) => {
@@ -79,13 +104,15 @@ srsRoutes.post('/batch', async (c) => {
   const questions: QuizQuestion[] = batch.questions.map((q) => {
     const questionType = ENGINE_TO_WIRE_TYPE[q.type];
     if (questionType === 'multiple_choice') {
-      const { choices, correctKey } = buildMcChoices(q.wordId, wordDetails);
+      const direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)]!;
+      const { choices, correctKey, targetText } = buildMcChoices(q.wordId, wordDetails, direction);
       correctKeys[q.wordId] = correctKey;
       return {
         wordId: q.wordId,
         questionType,
-        targetText: wordDetails.get(q.wordId)?.native ?? '',
+        targetText,
         choices,
+        questionDirection: direction,
       };
     }
     return {
@@ -155,6 +182,7 @@ srsRoutes.post('/answers', async (c) => {
 });
 
 srsRoutes.post('/seed', (c) => {
+  seedStore(getThaiConsonantsWordStates(), getThaiConsonantsWordDetails());
   const res: ApiResponse<SeedPayload> = {
     success: true,
     data: { deckId, wordCount: wordDetails.size, phase: 'learning' },

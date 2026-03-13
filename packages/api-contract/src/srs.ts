@@ -2,6 +2,11 @@
  *  Maps from engine-internal: 'mc' → 'multiple_choice', 'wordBlock' → 'word_block' */
 export type QuestionType = 'multiple_choice' | 'word_block' | 'audio';
 
+/** Direction of a multiple_choice question.
+ *  english_to_native: targetText is English name, choices are native characters.
+ *  native_to_english: targetText is native character, choices are English names. */
+export type QuestionDirection = 'english_to_native' | 'native_to_english' | 'native_to_romanization';
+
 /** POST /srs/batch — request body */
 export interface GetBatchRequest {
   deckId: string;
@@ -14,6 +19,8 @@ export interface QuizQuestion {
   questionType: QuestionType;
   targetText: string;
   choices: Record<string, string>;
+  /** Only present on multiple_choice questions. */
+  questionDirection?: QuestionDirection;
 }
 
 /** Response payload for POST /srs/batch */
