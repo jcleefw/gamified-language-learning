@@ -13,6 +13,7 @@ export interface QuizQuestion {
   wordId: string;
   questionType: QuestionType;
   targetText: string;
+  choices: Record<string, string>;
 }
 
 /** Response payload for POST /srs/batch */
@@ -25,8 +26,7 @@ export interface BatchPayload {
 /** A single answer submitted by the client. */
 export interface QuizAnswer {
   wordId: string;
-  /** true = correct, false = incorrect */
-  correct: boolean;
+  selectedKey: string;
 }
 
 /** POST /srs/answers — request body */
@@ -48,6 +48,8 @@ export type MasteryPhase = 'learning' | 'anki_review';
 /** Per-word result after answers are processed. */
 export interface AnswerResultPayload {
   wordId: string;
+  submittedKey: string;
+  correctKey: string;
   correct: boolean;
   masteryCount: number;
   phase: MasteryPhase;
