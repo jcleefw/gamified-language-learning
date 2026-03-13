@@ -14,7 +14,11 @@
 | 03-11 | Deck ID: random hash generated at seed time, fixed for process lifetime, printed to console on startup                            | EP13 design                                   |
 | 03-11 | Batch ID: server-generated `crypto.randomUUID()` — server is authority on what was asked                                          | EP13 design                                   |
 | 03-11 | `targetText` source: in-memory `Map<wordId, wordDetail>` seeded from mappers at startup                                           | EP13 design                                   |
-| 03-11 | `options[]` (MC distractors): omitted in Stage 2 — field is optional in ADR; known limitation                                     | EP13 design                                   |
+| 03-11 | `options[]` (MC distractors): omitted in Stage 2 — field is optional in ADR; known limitation                                     | EP13 design — superseded 03-13                |
+| 03-13 | EP13 quiz contract rejected — `choices` and `answer` missing from batch; `correct: boolean` from client is wrong authority         | ADR: quiz-contract-answer-authority           |
+| 03-13 | New epic required: server generates `choices`, withholds `answer`, client sends `selectedKey`, server verifies correctness         | ADR: quiz-contract-answer-authority           |
+| 03-13 | `quiz-runner.ts` rejected — reveals answer in question text, self-reports correctness, bypasses HTTP API                          | ADR: quiz-contract-answer-authority           |
+| 03-13 | Distractor selection: 3 random `targetText` values from same word pool, shuffled with correct answer into a/b/c/d                  | ADR: quiz-contract-answer-authority           |
 | 03-11 | `wrangler.toml`: minimal config added in EP12 scaffold; not wired into local dev loop (`tsx` runs locally)                        | EP12 design                                   |
 | 03-10 | Remove worktree list at start of each AGENT operation                                                                             | AGENT.md                                      |
 | 03-09 | All exported and non-trivial private functions require a docstring — plain English, max 80 chars/line                             | code-review SKILL                             |
@@ -36,6 +40,33 @@
 | 03-04 | Memory pointer, D1 batch, mid-quiz, ANKI params, word pool decisions                                                              | archived → decisions-archive.md               |
 
 ## Recent Details (last 3 days only)
+
+### 2026-03-13: EP13 Quiz Contract Rejected — New Epic Required
+
+**Problem**: EP13 delivered a non-functional quiz. Three root failures:
+1. `/api/srs/batch` returns no `choices` — unrenderable questions
+2. `/api/srs/answers` accepts `correct: boolean` from client — client is answer authority
+3. `quiz-runner.ts` shows the answer in the question text and self-reports correctness; bypasses HTTP API entirely
+
+**Decision**: New epic to fix the quiz contract. ADR: `product-documentation/architecture/20260313T000000Z-engineering-quiz-contract-answer-authority.md`
+
+**Contract changes**:
+- `QuizQuestion` gains `choices: Record<string, string>` (a/b/c/d → targetText)
+- `answer` is stored server-side in batch registry — NOT returned to client
+- `QuizAnswer.correct: boolean` → `QuizAnswer.selectedKey: string`
+- `AnswerResultPayload` gains `submittedKey` and `correctKey`
+- Batch registry changes from `Map<batchId, QuizQuestion[]>` to `Map<batchId, { questions, correctKeys }>`
+
+**quiz-runner.ts**: Full rewrite — must call HTTP API, display real MC choices, accept a/b/c/d keypress, print results with correctKey after submission.
+
+**Scope**: Multiple choice only. `word_block` and `audio` out of scope for this epic.
+
+**Open questions before implementation**:
+- Distractor fallback when pool < 4 words
+- Should `/seed` return `deckId` to eliminate console-log dependency in runner?
+- Should `word_block`/`audio` types be filtered from batch output for this epic?
+
+---
 
 ### 2026-03-11: Stage 1 Complete — Stage 2 Planning
 

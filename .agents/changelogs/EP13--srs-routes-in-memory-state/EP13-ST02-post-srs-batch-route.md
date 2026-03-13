@@ -1,6 +1,6 @@
 # EP13-ST02: POST /api/srs/batch Route
 
-**Created**: 20260312
+**Created**: 20260312T000000Z
 **Epic**: [EP13 - SRS Routes + In-Memory State](.agents/plans/epics/EP13-srs-routes-in-memory-state.md)
 **Status**: Complete ✅
 
@@ -11,23 +11,18 @@ Added `POST /api/srs/batch` route handler in `src/routes/srs.ts`. Validates `dec
 ## Files Modified
 
 ### apps/server/src/routes/srs.ts (new)
-
 - `POST /batch` handler: deckId validation, engine call, type mapping, registry registration, response
 
 ### apps/server/src/routes/__tests__/srs.test.ts (new)
-
 - 3 tests: 400 on wrong deckId, 200 with valid BatchPayload, wire type format validation
 
 ### apps/server/src/app.ts
-
 - Import `srsRoutes` and mount at `/api/srs`
 
 ### apps/server/src/routes/CODEMAP.md (new)
-
 - Documents the routes folder
 
 ### packages/api-contract/dist/ (rebuilt)
-
 - Rebuilt to expose ST01 additions (`batchId`, `targetText`, `deckId`, `GetBatchRequest`)
 
 ## Behavior Preserved / New Behavior

@@ -111,3 +111,19 @@ One layer per story max. Split triggers: layer bleed, multiple independent ACs, 
 ### 2026-03-05: GAP-05 — PR Template + Story States
 
 PR must contain: What (story ID + summary), Why (AC closed), Test evidence, Linked artifacts, Checklist (suite pass + CODEMAP + changelog + memory). Story states: no formal states — PLAN/CODE/TEST/REVIEW phases are sufficient.
+
+## ST01: Store design — seedStore pattern (not self-seeding)
+
+**Decision**: `store.ts` starts empty and exposes `seedStore(states, details)`. Caller populates.
+**Rejected**: Self-seeding store that reads files at module load (like quiz-runner).
+**Reason**: User clarified data is supplied by the server, not owned by the state module. Enables testability and supports multiple data sources (file, Postman, CURL).
+
+## ST01: No cross-package data imports
+
+**Decision**: Server does not import from `packages/srs-engine/data/`. No changes to srs-engine package.
+**Reason**: SRS engine should never provide unprocessed data. Server supplies its own data.
+
+## ST01: engine.ts config values
+
+**Decision**: `DEFAULT_SRS_CONFIG` mirrors `scripts/quiz-runner.ts` values exactly (`batchSize: 15`, etc.).
+**Reason**: Consistency with existing demo tooling per DS01.
