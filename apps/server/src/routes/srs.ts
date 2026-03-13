@@ -11,7 +11,7 @@ import {
   type MasteryPhase,
 } from '@gll/api-contract';
 import type { Question, MasteryPhase as EngineMasteryPhase } from '@gll/srs-engine';
-import { deckId, wordStates, wordDetails, setWordStates } from '../state/store.js';
+import { deckId, wordStates, wordDetails, setWordStates, type WordDetail } from '../state/store.js';
 import { getEngine } from '../state/engine.js';
 import { register, get } from '../state/batchRegistry.js';
 
@@ -22,6 +22,33 @@ const ENGINE_TO_WIRE_TYPE: Record<Question['type'], QuestionType> = {
   wordBlock: 'word_block',
   audio: 'audio',
 };
+
+const CHOICE_KEYS = ['a', 'b', 'c', 'd'] as const;
+
+function shuffled<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j]!, copy[i]!];
+  }
+  return copy;
+}
+
+function buildMcChoices(
+  wordId: string,
+  pool: Map<string, WordDetail>,
+): { choices: Record<string, string>; correctKey: string } {
+  const correctText = pool.get(wordId)?.native ?? '';
+  const distractors = shuffled(
+    [...pool.entries()].filter(([id]) => id !== wordId).map(([, detail]) => detail.native),
+  ).slice(0, 3);
+  const texts = shuffled([correctText, ...distractors]);
+  const choices: Record<string, string> = Object.fromEntries(
+    CHOICE_KEYS.map((key, idx) => [key, texts[idx]!]),
+  );
+  const correctKey = CHOICE_KEYS.find((key) => choices[key] === correctText) ?? 'a';
+  return { choices, correctKey };
+}
 
 srsRoutes.post('/batch', async (c) => {
   const body = await c.req.json<{ deckId?: string }>();
@@ -34,16 +61,42 @@ srsRoutes.post('/batch', async (c) => {
     return c.json(res, 400);
   }
 
+  if (wordDetails.size < 4) {
+    const res: ApiResponse<never> = {
+      success: false,
+      error: {
+        code: ErrorCode.INSUFFICIENT_WORD_POOL,
+        message: `Cannot generate choices: need ≥4 unique words, got ${wordDetails.size}`,
+      },
+    };
+    return c.json(res, 400);
+  }
+
   const batch = getEngine().composeBatch(wordStates);
 
-  const questions: QuizQuestion[] = batch.questions.map((q) => ({
-    wordId: q.wordId,
-    questionType: ENGINE_TO_WIRE_TYPE[q.type],
-    targetText: wordDetails.get(q.wordId)?.native ?? '',
-  }));
+  const correctKeys: Record<string, string> = {};
+  const questions: QuizQuestion[] = batch.questions.map((q) => {
+    const questionType = ENGINE_TO_WIRE_TYPE[q.type];
+    if (questionType === 'multiple_choice') {
+      const { choices, correctKey } = buildMcChoices(q.wordId, wordDetails);
+      correctKeys[q.wordId] = correctKey;
+      return {
+        wordId: q.wordId,
+        questionType,
+        targetText: wordDetails.get(q.wordId)?.native ?? '',
+        choices,
+      };
+    }
+    return {
+      wordId: q.wordId,
+      questionType,
+      targetText: wordDetails.get(q.wordId)?.native ?? '',
+      choices: {},
+    };
+  });
 
   const batchId = crypto.randomUUID();
-  register(batchId, questions);
+  register(batchId, { questions, correctKeys });
 
   const res: ApiResponse<BatchPayload> = {
     success: true,
@@ -60,8 +113,8 @@ const ENGINE_TO_WIRE_PHASE: Record<EngineMasteryPhase, MasteryPhase> = {
 srsRoutes.post('/answers', async (c) => {
   const body = await c.req.json<SubmitAnswersRequest>();
 
-  const registeredQuestions = get(body.batchId);
-  if (registeredQuestions === undefined) {
+  const registeredEntry = get(body.batchId);
+  if (registeredEntry === undefined) {
     const res: ApiResponse<never> = {
       success: false,
       error: { code: ErrorCode.NOT_FOUND, message: 'Unknown batchId' },
@@ -80,6 +133,8 @@ srsRoutes.post('/answers', async (c) => {
       const answer = body.answers.find((a) => a.wordId === s.wordId);
       return {
         wordId: s.wordId,
+        submittedKey: '',
+        correctKey: '',
         correct: answer?.correct ?? false,
         masteryCount: s.masteryCount,
         phase: ENGINE_TO_WIRE_PHASE[s.phase],

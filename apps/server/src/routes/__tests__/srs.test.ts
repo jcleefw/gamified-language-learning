@@ -203,4 +203,44 @@ describe('POST /api/srs/batch', () => {
       }
     }
   });
+
+  it('returns 400 INSUFFICIENT_WORD_POOL when word pool has fewer than 4 words', async () => {
+    const { states, details } = makeStore(3);
+    seedStore(states, details);
+
+    const res = await app.request('/api/srs/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deckId }),
+    });
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as ApiResponse<never>;
+    expect(body.success).toBe(false);
+    expect((body as { success: false; error: { code: string } }).error.code).toBe('INSUFFICIENT_WORD_POOL');
+  });
+
+  it('multiple_choice questions have choices with keys a, b, c, d; non-MC questions have empty choices', async () => {
+    const res = await app.request('/api/srs/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deckId }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as ApiResponse<BatchPayload>;
+    expect(body.success).toBe(true);
+    if (!body.success) return;
+
+    const mcQuestions = body.data.questions.filter((q) => q.questionType === 'multiple_choice');
+    expect(mcQuestions.length).toBeGreaterThan(0);
+    for (const q of mcQuestions) {
+      expect(Object.keys(q.choices).sort()).toEqual(['a', 'b', 'c', 'd']);
+    }
+
+    const nonMcQuestions = body.data.questions.filter((q) => q.questionType !== 'multiple_choice');
+    for (const q of nonMcQuestions) {
+      expect(q.choices).toEqual({});
+    }
+  });
 });

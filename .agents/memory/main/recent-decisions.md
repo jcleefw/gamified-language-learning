@@ -20,6 +20,7 @@
 | 03-13 | `quiz-runner.ts` rejected — reveals answer in question text, self-reports correctness, bypasses HTTP API                          | ADR: quiz-contract-answer-authority           |
 | 03-13 | Distractor selection: 3 random `targetText` values from same word pool, shuffled with correct answer into a/b/c/d                  | ADR: quiz-contract-answer-authority           |
 | 03-13 | EP15-ST01: `QuizAnswer.correct` removed — intentional breakage in `@gll/server` left for ST02/ST03; api-contract typechecks clean | EP15-ST01                                     |
+| 03-13 | EP15-ST02: non-MC questions get `choices: {}` (empty); only MC generates a/b/c/d — runner (EP16) skips MC interaction for other types | EP15-ST02                                     |
 | 03-11 | `wrangler.toml`: minimal config added in EP12 scaffold; not wired into local dev loop (`tsx` runs locally)                        | EP12 design                                   |
 | 03-10 | Remove worktree list at start of each AGENT operation                                                                             | AGENT.md                                      |
 | 03-09 | All exported and non-trivial private functions require a docstring — plain English, max 80 chars/line                             | code-review SKILL                             |
