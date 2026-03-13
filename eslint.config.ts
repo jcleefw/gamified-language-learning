@@ -11,6 +11,10 @@ export default tseslint.config(
     ],
   },
   {
+    files: ['apps/**/*.ts'],
+    extends: [...tseslint.configs.recommended],
+  },
+  {
     files: ['packages/**/*.ts'],
     extends: [...tseslint.configs.strictTypeChecked],
     languageOptions: {
