@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { logger } from 'hono/logger';
 import { ErrorCode, type ApiResponse } from '@gll/api-contract';
 import type { Context } from 'hono';
 import srsRoutes from './routes/srs.js';
@@ -18,6 +19,7 @@ export function errorHandler(err: Error, c: Context): Response {
 
 const app = new Hono<{ Variables: Variables }>();
 
+app.use('*', logger());
 app.use('*', cors());
 
 app.use('*', async (c, next) => {
