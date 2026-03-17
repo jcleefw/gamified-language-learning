@@ -1,250 +1,215 @@
-import { createInterface } from 'node:readline/promises';
-import { readFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { SrsEngine } from '@gll/srs-engine';
 import type {
-  SrsConfig,
-  WordState,
-  QuizAnswer,
-  QuestionType,
-} from '@gll/srs-engine';
-import {
-  characterToWordState,
-  conversationWordsToWordStates,
-} from '../packages/srs-engine/data/mappers.js';
-import type {
-  FoundationalCharacter,
-  ConversationWord,
-} from '../packages/srs-engine/data/types.js';
-import { consonants } from '../packages/srs-engine/data/samples/foundations-consonants.js';
+  ApiResponse,
+  SeedPayload,
+  BatchPayload,
+  QuizQuestion,
+  SubmitAnswersResponse,
+  AnswerResultPayload,
+} from '@gll/api-contract';
 
-// ── Config ──────────────────────────────────────────────────────────────────
+// ── Config ───────────────────────────────────────────────────────────────────
 
-const config: SrsConfig = {
-  masteryThreshold: { curated: 10, foundational: 5 },
-  lapseThreshold: 3,
-  batchSize: 15,
-  activeWordLimit: 20,
-  newWordsPerBatch: 3,
-  shelveAfterBatches: 5,
-  maxShelved: 50,
-  continuousWrongThreshold: 3,
-  questionTypeSplit: { mc: 0.6, wordBlock: 0.3, audio: 0.1 },
-  foundationalAllocation: { active: 0.2, postDepletion: 0.05 },
-  desiredRetention: 0.9,
-  maxIntervalDays: 90,
-};
+const BASE_URL = 'http://localhost:3000';
 
-// ── Word detail lookup ──────────────────────────────────────────────────────
+// ── Internal types ───────────────────────────────────────────────────────────
 
-interface WordDetail {
-  native: string;
-  romanization: string;
-  english: string;
-  category: 'foundational' | 'curated';
+interface CollectedAnswer {
+  wordId: string;
+  selectedKey: string;
 }
 
-/** Maps wordId → display details for quiz questions. */
-const wordDetails = new Map<string, WordDetail>();
+// ── HTTP helpers ─────────────────────────────────────────────────────────────
 
-function registerFoundational(character: FoundationalCharacter): void {
-  wordDetails.set(`foundational:${character.id}`, {
-    native: character.char,
-    romanization: character.romanization,
-    english: character.name,
-    category: 'foundational',
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  const envelope = (await response.json()) as ApiResponse<T>;
+
+  if (!envelope.success) {
+    const errorMessage = envelope.error.message;
+    throw new Error(`${path} failed: ${errorMessage}`);
+  }
+
+  return envelope.data;
+}
+
+async function seed(): Promise<SeedPayload> {
+  return postJson<SeedPayload>('/api/srs/seed', {});
+}
+
+async function getBatch(deckId: string): Promise<BatchPayload> {
+  return postJson<BatchPayload>('/api/srs/batch', {
+    deckId,
+    clientCapabilities: { mc: true, wordBlock: false, audio: false },
   });
 }
 
-function registerCurated(word: ConversationWord): void {
-  wordDetails.set(`curated:${word.native}`, {
-    native: word.native,
-    romanization: word.romanization,
-    english: word.english,
-    category: 'curated',
+async function submitAnswers(
+  batchId: string,
+  answers: CollectedAnswer[],
+): Promise<SubmitAnswersResponse> {
+  return postJson<SubmitAnswersResponse>('/api/srs/answers', { batchId, answers });
+}
+
+// ── Input helper ─────────────────────────────────────────────────────────────
+
+const VALID_KEYS = new Set(['a', 'b', 'c', 'd']);
+
+async function readKey(): Promise<string> {
+  return new Promise((resolve) => {
+    process.stdin.resume();
+    process.stdin.setRawMode(true);
+    process.stdin.setEncoding('utf8');
+
+    const onData = (chunk: string): void => {
+      const key = chunk.toLowerCase();
+
+      if (key === '\u0003') {
+        // Ctrl+C — exit gracefully
+        process.stdin.setRawMode(false);
+        process.stdin.pause();
+        console.log('\n\n  Quit. Goodbye!');
+        process.exit(0);
+      }
+
+      if (VALID_KEYS.has(key)) {
+        process.stdin.removeListener('data', onData);
+        process.stdin.setRawMode(false);
+        process.stdin.pause();
+        resolve(key);
+      } else {
+        process.stdout.write('\r  → Your answer (a/b/c/d): ');
+      }
+    };
+
+    process.stdin.on('data', onData);
   });
 }
 
-// ── Seed data loading ───────────────────────────────────────────────────────
+// ── Display helpers ───────────────────────────────────────────────────────────
 
-interface RawConversationWord {
-  thai: string;
-  romanization: string;
-  english: string;
-  type: string;
+function separator(): void {
+  console.log(`\n${'─'.repeat(45)}`);
 }
 
-interface RawConversation {
-  id: string;
-  topic: string;
-  uniqueWords: RawConversationWord[];
+function displayQuestion(question: QuizQuestion, index: number, total: number, batchNumber: number): void {
+  separator();
+  console.log(`  Batch ${batchNumber} — Q${index} of ${total}`);
+  separator();
+  console.log(`\n  What sound does "${question.targetText}" make?\n`);
+  for (const [key, value] of Object.entries(question.choices)) {
+    console.log(`  ${key}) ${value}`);
+  }
+  console.log();
+  process.stdout.write('  → Your answer (a/b/c/d): ');
 }
 
-function loadSeedData(): WordState[] {
-  // Foundational: first 5 consonants
-  const firstFive = consonants.slice(0, 5);
-  firstFive.forEach(registerFoundational);
-  const foundationalStates = firstFive.map(characterToWordState);
+function displayResults(
+  updatedWords: AnswerResultPayload[],
+  questions: QuizQuestion[],
+): void {
+  const questionByWordId = new Map(questions.map((q) => [q.wordId, q]));
 
-  // Conversations: map `thai` → `native` then convert
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  const jsonPath = resolve(
-    currentDir,
-    '../packages/srs-engine/data/samples/conversations-2026-03-08.json',
-  );
-  const rawConversations: RawConversation[] = JSON.parse(
-    readFileSync(jsonPath, 'utf-8'),
-  );
+  separator();
+  console.log('  Results');
+  separator();
+  console.log();
 
-  const allConversationWords: ConversationWord[] = rawConversations
-    .filter((conversation) => conversation.uniqueWords.length > 0)
-    .flatMap((conversation) =>
-      conversation.uniqueWords.map((word) => ({
-        native: word.thai,
-        romanization: word.romanization,
-        english: word.english,
-        type: word.type,
-      })),
-    );
+  for (const result of updatedWords) {
+    const question = questionByWordId.get(result.wordId);
+    const label = question ? `${question.targetText} (${result.wordId})` : result.wordId;
+    const prevMastery = result.masteryCount - (result.correct ? 1 : 0);
 
-  allConversationWords.forEach(registerCurated);
-  const curatedStates = conversationWordsToWordStates(allConversationWords);
-
-  return [...foundationalStates, ...curatedStates];
-}
-
-// ── Quiz question display ───────────────────────────────────────────────────
-
-function formatQuestion(wordId: string, questionType: QuestionType): string {
-  const detail = wordDetails.get(wordId);
-  if (!detail) return wordId;
-
-  if (detail.category === 'foundational') {
-    switch (questionType) {
-      case 'mc':
-        return `What is "${detail.native}"?  (answer: ${detail.english} — ${detail.romanization})`;
-      case 'wordBlock':
-        return `Spell the romanization of "${detail.native}"  (answer: ${detail.romanization})`;
-      case 'audio':
-        return `Listen: "${detail.native}" — what sound does it make?  (answer: ${detail.romanization})`;
+    if (result.correct) {
+      console.log(`  ${label.padEnd(24)} ✓  mastery: ${prevMastery} → ${result.masteryCount}`);
+    } else {
+      console.log(
+        `  ${label.padEnd(24)} ✗  you: ${result.submittedKey}  correct: ${result.correctKey}   mastery: ${prevMastery} → ${result.masteryCount}`,
+      );
     }
   }
 
-  // curated word
-  switch (questionType) {
-    case 'mc':
-      return `What does "${detail.native}" mean?  (answer: ${detail.english})`;
-    case 'wordBlock':
-      return `Arrange: "${detail.english}" in Thai  (answer: ${detail.native} — ${detail.romanization})`;
-    case 'audio':
-      return `Listen: "${detail.native}" — what does it mean?  (answer: ${detail.english})`;
-  }
+  console.log();
 }
 
-// ── Display helpers ─────────────────────────────────────────────────────────
+// ── Quiz loop ─────────────────────────────────────────────────────────────────
 
-function header(title: string): void {
-  console.log(`\n${'─'.repeat(60)}`);
-  console.log(`  ${title}`);
-  console.log('─'.repeat(60));
+async function promptContinue(): Promise<boolean> {
+  process.stdout.write('\n  Next batch? (Enter to continue, q to quit): ');
+
+  return new Promise((resolve) => {
+    process.stdin.resume();
+    process.stdin.setRawMode(true);
+    process.stdin.setEncoding('utf8');
+
+    const onData = (chunk: string): void => {
+      process.stdin.removeListener('data', onData);
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+
+      if (chunk === '\u0003' || chunk.toLowerCase() === 'q') {
+        console.log('\n\n  Quit. Goodbye!');
+        process.exit(0);
+      }
+
+      console.log();
+      resolve(true);
+    };
+
+    process.stdin.on('data', onData);
+  });
 }
-
-function printMasterySummary(
-  wordStates: WordState[],
-  batchWordIds: Set<string>,
-): void {
-  console.log('\n  Updated mastery:');
-  console.log('  ' + '─'.repeat(50));
-
-  for (const state of wordStates) {
-    if (!batchWordIds.has(state.wordId)) continue;
-    const detail = wordDetails.get(state.wordId);
-    const label = detail
-      ? `${detail.native} (${detail.english})`
-      : state.wordId;
-    const displayLabel = label.length > 28 ? label.slice(0, 26) + '…' : label;
-    console.log(
-      `  ${displayLabel.padEnd(30)} ${state.phase.padEnd(14)} mastery=${state.masteryCount}  lapse=${state.lapseCount}`,
-    );
-  }
-}
-
-// ── Quiz loop ───────────────────────────────────────────────────────────────
 
 async function runQuiz(): Promise<void> {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const engine = new SrsEngine(config);
-  let wordStates = loadSeedData();
-  let batchNumber = 1;
+  const seedData = await seed();
+  console.log(`\nSeeded ${seedData.wordCount} words (${seedData.phase})`);
 
-  const foundationalCount = wordStates.filter(
-    (w) => w.category === 'foundational',
-  ).length;
-  const curatedCount = wordStates.filter(
-    (w) => w.category === 'curated',
-  ).length;
-  console.log(
-    `\nLoaded ${wordStates.length} words (${foundationalCount} foundational, ${curatedCount} curated)`,
-  );
-  console.log('Answer (c)orrect, (w)rong, or (q)uit for each question.\n');
+  let batchNumber = 0;
 
-  try {
-    while (true) {
-      header(`Batch ${batchNumber}`);
+  for (;;) {
+    const batch = await getBatch(seedData.deckId);
+    const totalQuestions = batch.questions.length;
 
-      const batch = engine.composeBatch(wordStates);
-
-      if (batch.questions.length === 0) {
-        console.log(
-          '\n  All words mastered or no eligible words! Quiz complete.',
-        );
-        break;
-      }
-
-      console.log(`  ${batch.batchSize} questions\n`);
-
-      const answers: QuizAnswer[] = [];
-
-      for (
-        let questionIndex = 0;
-        questionIndex < batch.questions.length;
-        questionIndex++
-      ) {
-        const question = batch.questions[questionIndex];
-        const questionText = formatQuestion(question.wordId, question.type);
-
-        console.log(
-          `  Q${questionIndex + 1}. [${question.type}] ${questionText}`,
-        );
-        const input = await rl.question('  → Did you get it right? (c/w/q): ');
-        const trimmed = input.trim().toLowerCase();
-
-        if (trimmed === 'q') {
-          console.log('\n  Quitting quiz. Goodbye!');
-          return;
-        }
-
-        answers.push({
-          wordId: question.wordId,
-          isCorrect: trimmed === 'c' || trimmed === 'y',
-        });
-        console.log();
-      }
-
-      wordStates = engine.processAnswers(answers, wordStates);
-
-      const batchWordIds = new Set(batch.questions.map((q) => q.wordId));
-      printMasterySummary(wordStates, batchWordIds);
-
-      batchNumber++;
+    if (totalQuestions === 0) {
+      console.log('\n  No questions available. All words complete!');
+      break;
     }
-  } finally {
-    rl.close();
+
+    batchNumber++;
+    console.log(`\nBatch ${batchNumber} — ${totalQuestions} questions`);
+
+    const collectedAnswers: CollectedAnswer[] = [];
+    let questionNumber = 0;
+
+    for (const question of batch.questions) {
+      questionNumber++;
+      displayQuestion(question, questionNumber, totalQuestions, batchNumber);
+
+      const selectedKey = await readKey();
+      console.log(selectedKey);
+
+      collectedAnswers.push({ wordId: question.wordId, selectedKey });
+    }
+
+    if (collectedAnswers.length === 0) {
+      console.log('\n  No answers collected this batch.');
+    } else {
+      const result = await submitAnswers(batch.batchId, collectedAnswers);
+      displayResults(result.updatedWords, batch.questions);
+    }
+
+    await promptContinue();
   }
+
+  process.exit(0);
 }
 
 runQuiz().catch((error: unknown) => {
-  console.error('Quiz runner error:', error);
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(`\nQuiz runner error: ${message}`);
   process.exit(1);
 });

@@ -11,6 +11,7 @@ import {
   type AnswerResultPayload,
   type MasteryPhase,
   type SeedPayload,
+  type GetBatchRequest,
 } from '@gll/api-contract';
 import type { Question, MasteryPhase as EngineMasteryPhase } from '@gll/srs-engine';
 import { deckId, wordStates, wordDetails, setWordStates, seedStore, type WordDetail } from '../state/store.js';
@@ -77,7 +78,7 @@ function buildMcChoices(
 }
 
 srsRoutes.post('/batch', async (c) => {
-  const body = await c.req.json<{ deckId?: string }>();
+  const body = await c.req.json<GetBatchRequest>();
 
   if (body.deckId !== deckId) {
     const res: ApiResponse<never> = {
@@ -100,8 +101,29 @@ srsRoutes.post('/batch', async (c) => {
 
   const batch = getEngine().composeBatch(wordStates);
 
+  const caps = body.clientCapabilities;
+  const fallbackType: 'mc' | 'wordBlock' | 'audio' | null = caps
+    ? caps.mc !== false
+      ? 'mc'
+      : caps.wordBlock === true
+        ? 'wordBlock'
+        : caps.audio === true
+          ? 'audio'
+          : null
+    : null;
+  type EngineQuestion = (typeof batch.questions)[number];
+  const normalizedQuestions: EngineQuestion[] = fallbackType
+    ? batch.questions.map((q: EngineQuestion) => {
+        const supported =
+          (q.type === 'mc' && caps?.mc !== false) ||
+          (q.type === 'wordBlock' && caps?.wordBlock === true) ||
+          (q.type === 'audio' && caps?.audio === true);
+        return supported ? q : { ...q, type: fallbackType as EngineQuestion['type'] };
+      })
+    : batch.questions;
+
   const correctKeys: Record<string, string> = {};
-  const questions: QuizQuestion[] = batch.questions.map((q) => {
+  const questions: QuizQuestion[] = normalizedQuestions.map((q) => {
     const questionType = ENGINE_TO_WIRE_TYPE[q.type];
     if (questionType === 'multiple_choice') {
       const direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)]!;
@@ -136,6 +158,7 @@ srsRoutes.post('/batch', async (c) => {
 const ENGINE_TO_WIRE_PHASE: Record<EngineMasteryPhase, MasteryPhase> = {
   learning: 'learning',
   srsM2_review: 'anki_review',
+  mastered: 'anki_review',
 };
 
 srsRoutes.post('/answers', async (c) => {

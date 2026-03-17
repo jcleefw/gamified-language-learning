@@ -1,4 +1,4 @@
-export type MasteryPhase = 'learning' | 'srsM2_review';
+export type MasteryPhase = 'learning' | 'srsM2_review' | 'mastered';
 
 export type WordCategory = 'curated' | 'foundational';
 
@@ -54,6 +54,9 @@ export interface SrsConfig {
   };
   desiredRetention: number;
   maxIntervalDays: number;
+  // Words graduate out of the active window after this many correct answers in
+  // srsM2_review. Absent = no graduation (original behaviour).
+  graduationThreshold?: number;
 }
 
 export type QuestionType = 'mc' | 'wordBlock' | 'audio';

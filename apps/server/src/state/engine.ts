@@ -1,18 +1,19 @@
 import { SrsEngine, type SrsConfig } from '@gll/srs-engine';
 
 export const DEFAULT_SRS_CONFIG: SrsConfig = {
-  masteryThreshold: { curated: 10, foundational: 5 },
+  masteryThreshold: { curated: 10, foundational: 2 },
   lapseThreshold: 3,
   batchSize: 15,
-  activeWordLimit: 20,
-  newWordsPerBatch: 3,
-  shelveAfterBatches: 5,
-  maxShelved: 50,
+  activeWordLimit: 8,
+  newWordsPerBatch: 4,
+  shelveAfterBatches: 3,
+  maxShelved: 2,
   continuousWrongThreshold: 3,
-  questionTypeSplit: { mc: 0.6, wordBlock: 0.3, audio: 0.1 },
+  questionTypeSplit: { mc: 0.7, wordBlock: 0.2, audio: 0.1 },
   foundationalAllocation: { active: 0.2, postDepletion: 0.05 },
   desiredRetention: 0.9,
   maxIntervalDays: 90,
+  graduationThreshold: 3,
 };
 
 let engine = new SrsEngine(DEFAULT_SRS_CONFIG);

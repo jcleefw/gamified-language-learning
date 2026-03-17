@@ -7,10 +7,18 @@ export type QuestionType = 'multiple_choice' | 'word_block' | 'audio';
  *  native_to_english: targetText is native character, choices are English names. */
 export type QuestionDirection = 'english_to_native' | 'native_to_english' | 'native_to_romanization';
 
+/** Which question types the client is able to render. Defaults to all true if omitted. */
+export interface ClientCapabilities {
+  mc?: boolean;
+  wordBlock?: boolean;
+  audio?: boolean;
+}
+
 /** POST /srs/batch — request body */
 export interface GetBatchRequest {
   deckId: string;
   size?: number;
+  clientCapabilities?: ClientCapabilities;
 }
 
 /** A single question in the batch payload. */

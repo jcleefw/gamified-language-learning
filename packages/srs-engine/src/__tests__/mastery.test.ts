@@ -126,4 +126,64 @@ describe('updateMastery — srsM2_review phase', () => {
     const next = updateMastery(state, true, baseConfig);
     expect(next.correctCount).toBe(6);
   });
+
+  it('does not graduate when graduationThreshold is absent', () => {
+    const state = makeAnkiWord({ masteryCount: 10 });
+    const next = updateMastery(state, true, baseConfig); // baseConfig has no graduationThreshold
+    expect(next.phase).toBe('srsM2_review');
+  });
+
+  it('graduates to mastered when masteryCount reaches graduationThreshold', () => {
+    const configWithGrad = { ...baseConfig, graduationThreshold: 3 };
+    const state = makeAnkiWord({ masteryCount: 2 });
+    const next = updateMastery(state, true, configWithGrad);
+    expect(next.phase).toBe('mastered');
+    expect(next.masteryCount).toBe(3);
+  });
+
+  it('does not graduate before reaching graduationThreshold', () => {
+    const configWithGrad = { ...baseConfig, graduationThreshold: 3 };
+    const state = makeAnkiWord({ masteryCount: 1 });
+    const next = updateMastery(state, true, configWithGrad);
+    expect(next.phase).toBe('srsM2_review');
+  });
+});
+
+describe('updateMastery — mastered phase', () => {
+  function makeMasteredWord(overrides: Partial<WordState> = {}): WordState {
+    return makeLearningWord({
+      phase: 'mastered',
+      masteryCount: 3,
+      lapseCount: 0,
+      ...overrides,
+    });
+  }
+
+  it('stays mastered and increments correctCount on correct answer', () => {
+    const state = makeMasteredWord({ correctCount: 2 });
+    const next = updateMastery(state, true, baseConfig);
+    expect(next.phase).toBe('mastered');
+    expect(next.correctCount).toBe(3);
+  });
+
+  it('increments lapseCount on wrong answer without demotion below threshold', () => {
+    const state = makeMasteredWord({ lapseCount: 1 });
+    const next = updateMastery(state, false, baseConfig);
+    expect(next.phase).toBe('mastered');
+    expect(next.lapseCount).toBe(2);
+  });
+
+  it('demotes to srsM2_review when lapseCount reaches lapseThreshold', () => {
+    const state = makeMasteredWord({ lapseCount: 2 }); // lapseThreshold = 3
+    const next = updateMastery(state, false, baseConfig);
+    expect(next.phase).toBe('srsM2_review');
+    expect(next.lapseCount).toBe(0);
+    expect(next.masteryCount).toBe(0);
+  });
+
+  it('increments wrongCount on wrong answer', () => {
+    const state = makeMasteredWord({ wrongCount: 1 });
+    const next = updateMastery(state, false, baseConfig);
+    expect(next.wrongCount).toBe(2);
+  });
 });
