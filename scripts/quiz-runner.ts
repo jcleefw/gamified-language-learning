@@ -42,7 +42,10 @@ async function seed(): Promise<SeedPayload> {
 }
 
 async function getBatch(deckId: string): Promise<BatchPayload> {
-  return postJson<BatchPayload>('/api/srs/batch', { deckId });
+  return postJson<BatchPayload>('/api/srs/batch', {
+    deckId,
+    clientCapabilities: { mc: true, wordBlock: false, audio: false },
+  });
 }
 
 async function submitAnswers(
@@ -183,11 +186,6 @@ async function runQuiz(): Promise<void> {
     let questionNumber = 0;
 
     for (const question of batch.questions) {
-      if (question.questionType !== 'multiple_choice') {
-        console.log(`\n  [not yet implemented — skipped] (${question.questionType})`);
-        continue;
-      }
-
       questionNumber++;
       displayQuestion(question, questionNumber, totalQuestions, batchNumber);
 

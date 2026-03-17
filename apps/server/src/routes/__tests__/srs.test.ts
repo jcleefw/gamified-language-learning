@@ -153,7 +153,8 @@ describe('E2E: batch → answers', () => {
     const batchRes = await app.request('/api/srs/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ deckId }),
+      // mc-only so every question has a correctKey registered in the batch registry
+      body: JSON.stringify({ deckId, clientCapabilities: { mc: true, wordBlock: false, audio: false } }),
     });
     const batchBody = await batchRes.json() as ApiResponse<BatchPayload>;
     expect(batchBody.success).toBe(true);
