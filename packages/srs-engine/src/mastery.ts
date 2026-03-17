@@ -12,6 +12,23 @@ export function updateMastery(
 ): WordState {
   const masteryThreshold = config.masteryThreshold[state.category];
 
+  if (state.phase === 'mastered') {
+    if (!isCorrect) {
+      const newLapseCount = state.lapseCount + 1;
+      if (newLapseCount >= config.lapseThreshold) {
+        return {
+          ...state,
+          wrongCount: state.wrongCount + 1,
+          lapseCount: 0,
+          masteryCount: 0,
+          phase: 'srsM2_review',
+        };
+      }
+      return { ...state, wrongCount: state.wrongCount + 1, lapseCount: newLapseCount };
+    }
+    return { ...state, correctCount: state.correctCount + 1 };
+  }
+
   if (state.phase === 'srsM2_review') {
     if (!isCorrect) {
       const newLapseCount = state.lapseCount + 1;
@@ -30,10 +47,15 @@ export function updateMastery(
         lapseCount: newLapseCount,
       };
     }
+    const newMasteryCount = state.masteryCount + 1;
+    const graduates =
+      config.graduationThreshold !== undefined &&
+      newMasteryCount >= config.graduationThreshold;
     return {
       ...state,
       correctCount: state.correctCount + 1,
-      masteryCount: state.masteryCount + 1,
+      masteryCount: newMasteryCount,
+      phase: graduates ? 'mastered' : 'srsM2_review',
     };
   }
 

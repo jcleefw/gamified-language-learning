@@ -19,7 +19,9 @@ export function getEligibleWords(
     config.newWordsPerBatch,
     Math.max(0, config.activeWordLimit - active.length),
   );
-  const eligible = allWords.filter((w) => w.phase !== 'srsM2_review');
+  // Only learning-phase words are candidates for new slots.
+  // mastered words are excluded — they re-enter batches via FSRS schedule only.
+  const eligible = allWords.filter((w) => w.phase === 'learning');
 
   return { active, newSlots, eligible };
 }

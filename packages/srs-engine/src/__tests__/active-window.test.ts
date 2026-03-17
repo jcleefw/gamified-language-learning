@@ -229,3 +229,36 @@ describe('getEligibleWords', () => {
     });
   });
 });
+
+describe('getEligibleWords — mastered phase', () => {
+  it('mastered words are not counted as active', () => {
+    const words = [
+      makeWord({ wordId: 'mastered-1', phase: 'mastered' }),
+      makeWord({ wordId: 'review-1', phase: 'srsM2_review' }),
+    ];
+    const result = getEligibleWords(words, baseConfig);
+    expect(result.active).toHaveLength(1);
+    expect(result.active[0].wordId).toBe('review-1');
+  });
+
+  it('mastered words are not included in eligible (new-word candidates)', () => {
+    const words = [
+      makeWord({ wordId: 'mastered-1', phase: 'mastered' }),
+      makeWord({ wordId: 'learning-1', phase: 'learning' }),
+    ];
+    const result = getEligibleWords(words, baseConfig);
+    expect(result.eligible).toHaveLength(1);
+    expect(result.eligible[0].wordId).toBe('learning-1');
+  });
+
+  it('mastered words free up active slots so new words can enter', () => {
+    // 8 mastered words — should not block the active window
+    const words = Array.from({ length: 8 }, (_, i) =>
+      makeWord({ wordId: `mastered-${i.toString()}`, phase: 'mastered' }),
+    ).concat(makeWord({ wordId: 'learning-1', phase: 'learning' }));
+    const result = getEligibleWords(words, baseConfig);
+    expect(result.active).toHaveLength(0);
+    expect(result.newSlots).toBe(4);
+    expect(result.eligible).toHaveLength(1);
+  });
+});

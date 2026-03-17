@@ -29,7 +29,8 @@ export class SrsEngine {
       unshelved,
       this.config,
     );
-    const forBatch = [...active, ...eligible.slice(0, newSlots)];
+    const mastered = unshelved.filter((w) => w.phase === 'mastered');
+    const forBatch = [...active, ...eligible.slice(0, newSlots), ...mastered];
     return composeBatch(forBatch, this.config, options);
   }
 
@@ -47,8 +48,8 @@ export class SrsEngine {
       // 1. Mastery update
       let next = updateMastery(state, answer.isCorrect, this.config);
 
-      // 2. FSRS scheduling — only for words already in srsM2_review before this answer
-      if (state.phase === 'srsM2_review') {
+      // 2. FSRS scheduling — for words in srsM2_review or mastered before this answer
+      if (state.phase === 'srsM2_review' || state.phase === 'mastered') {
         const result = this.scheduler.scheduleReview(state, answer.isCorrect);
         next = { ...next, fsrsState: result.updatedFsrsState };
       }

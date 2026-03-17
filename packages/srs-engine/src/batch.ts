@@ -46,12 +46,23 @@ export function composeBatch(
     (w): boolean => w.category === 'foundational' && w.phase === 'learning',
   );
 
+  // Priority 5: Due mastered words — FSRS interval has elapsed since last review.
+  // Words with no fsrsState are treated as due (not yet scheduled after graduation).
+  const nowMs = Date.now();
+  const dueMastered = wordStates.filter((w): boolean => {
+    if (w.phase !== 'mastered') return false;
+    if (w.fsrsState == null) return true;
+    const lastReviewMs = w.fsrsState.lastReview !== null ? w.fsrsState.lastReview.getTime() : 0;
+    return lastReviewMs + w.fsrsState.scheduledDays * 86_400_000 <= nowMs;
+  });
+
   // Concatenate in priority order and slice to batchSize
   const ordered = [
     ...carryOver,
     ...foundationalRevision,
     ...newWords,
     ...foundationalLearning,
+    ...dueMastered,
   ];
   const batchWordStates = ordered.slice(0, config.batchSize);
   const actualBatchSize = batchWordStates.length;
