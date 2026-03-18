@@ -1,8 +1,11 @@
 import { mockConsonants } from '../data/mock/mock-consonants.js';
-import { composeBatch } from './engine/compose-batch.js';
+import { composeBatchMulti } from './engine/compose-batch.js';
 import { runInteractive } from './runner/interactive.js';
 
-const consonant = mockConsonants[0];
-const questions = composeBatch(consonant, mockConsonants);
+const FOUNDATIONAL_WORD_COUNT = 3;
+const QUESTION_LIMIT = 5;
+
+const words = mockConsonants.slice(0, FOUNDATIONAL_WORD_COUNT);
+const questions = composeBatchMulti(words, mockConsonants, { questionLimit: QUESTION_LIMIT });
 
 await runInteractive(questions);

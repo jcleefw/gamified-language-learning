@@ -1,9 +1,19 @@
-import { createInterface } from 'readline/promises';
-import { stdin as input, stdout as output } from 'process';
 import { QuizQuestion } from '../types/quiz.js';
 
+function readKey(): Promise<string> {
+  return new Promise(resolve => {
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    process.stdin.once('data', (key: string) => {
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+      resolve(key);
+    });
+  });
+}
+
 export async function runInteractive(questions: QuizQuestion[]): Promise<void> {
-  const rl = createInterface({ input, output });
   let score = 0;
 
   for (let i = 0; i < questions.length; i++) {
@@ -13,13 +23,16 @@ export async function runInteractive(questions: QuizQuestion[]): Promise<void> {
     for (const choice of q.choices) {
       console.log(`  ${choice.label}) ${choice.value}`);
     }
+    process.stdout.write('Your answer (a/b/c/d): ');
 
     let answer: string;
     while (true) {
-      answer = (await rl.question('Your answer (a/b/c/d): ')).trim().toLowerCase();
-      if (['a', 'b', 'c', 'd'].includes(answer)) break;
-      console.log('Please enter a, b, c, or d.');
+      const key = (await readKey()).toLowerCase();
+      if (key === '\u0003') process.exit(); // Ctrl+C
+      if (['a', 'b', 'c', 'd'].includes(key)) { answer = key; break; }
     }
+
+    console.log(answer!);
 
     const selected = q.choices.find(c => c.label === answer)!;
     const correct = q.choices.find(c => c.isCorrect)!;
@@ -32,6 +45,5 @@ export async function runInteractive(questions: QuizQuestion[]): Promise<void> {
     }
   }
 
-  rl.close();
   console.log(`\nScore: ${score} / ${questions.length}`);
 }

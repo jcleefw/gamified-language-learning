@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { mockConsonants } from '../../../data/mock/mock-consonants.js';
-import { composeBatch } from '../../engine/compose-batch.js';
+import { composeBatch, composeBatchMulti } from '../../engine/compose-batch.js';
 
 const consonant = mockConsonants[0]; // ก (Ko Kai, k, middle)
 const pool = mockConsonants;
@@ -71,5 +71,48 @@ describe('composeBatch', () => {
     expect(q2.choices.find(c => c.isCorrect)?.value).toBe(consonant.native);
     expect(q3.choices.find(c => c.isCorrect)?.value).toBe(consonant.romanization);
     expect(q4.choices.find(c => c.isCorrect)?.value).toBe(consonant.native);
+  });
+});
+
+describe('composeBatchMulti', () => {
+  const words = mockConsonants.slice(0, 3);
+  const pool = mockConsonants;
+  const questionLimit = 5;
+
+  it('returns exactly questionLimit questions', () => {
+    const batch = composeBatchMulti(words, pool, { questionLimit });
+    expect(batch).toHaveLength(questionLimit);
+  });
+
+  it('every input word appears in at least 1 question', () => {
+    const batch = composeBatchMulti(words, pool, { questionLimit });
+    const prompts = batch.map(q => q.prompt);
+    for (const word of words) {
+      const covered = prompts.includes(word.native) || prompts.includes(`${word.english} (${word.class})`) || prompts.includes(word.romanization);
+      expect(covered, `word ${word.id} not covered`).toBe(true);
+    }
+  });
+
+  it('each question has exactly 4 choices, exactly 1 correct', () => {
+    const batch = composeBatchMulti(words, pool, { questionLimit });
+    for (const q of batch) {
+      expect(q.choices).toHaveLength(4);
+      expect(q.choices.filter(c => c.isCorrect)).toHaveLength(1);
+    }
+  });
+
+  it('no duplicate word+direction pairs', () => {
+    const batch = composeBatchMulti(words, pool, { questionLimit });
+    const seen = new Set<string>();
+    for (const q of batch) {
+      const key = `${q.prompt}::${q.direction}`;
+      expect(seen.has(key), `duplicate: ${key}`).toBe(false);
+      seen.add(key);
+    }
+  });
+
+  it('returns all questions when questionLimit >= total possible', () => {
+    const batch = composeBatchMulti(words, pool, { questionLimit: 100 });
+    expect(batch).toHaveLength(words.length * 4);
   });
 });

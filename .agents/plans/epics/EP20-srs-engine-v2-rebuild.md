@@ -138,7 +138,56 @@ multiple-choice questions (one per direction) and run them interactively via std
 1. `pnpm --filter @gll/srs-engine-v2 test` — all tests pass (including existing smoke tests)
 2. `pnpm quizv2` — presents 4 questions interactively, shows per-answer feedback, ends with score
 
-**Status**: Draft
+**Status**: Done
+
+---
+
+### EP20-ST04: Batch composition — N foundational words, configurable question limit
+
+**Scope**: Extend the quiz engine to compose a batch across multiple foundational words,
+with a configurable total question limit and guaranteed per-word coverage.
+
+#### Configuration constants (in `main.ts`)
+
+| Constant | Default | Purpose |
+|---|---|---|
+| `FOUNDATIONAL_WORD_COUNT` | `3` | How many words are included in the quiz |
+| `QUESTION_LIMIT` | `5` | Total questions returned (must be ≥ `FOUNDATIONAL_WORD_COUNT`) |
+
+#### New engine function
+
+`composeBatchMulti(words, pool, { questionLimit }) → QuizQuestion[]`
+
+**Algorithm (coverage-first shuffle)**:
+1. For each word, generate all 4 direction questions and shuffle them
+2. Pick 1 question per word as a guaranteed "coverage" slot → `wordCount` questions
+3. Collect remaining questions from all words into a leftover pool
+4. Shuffle the leftover pool; take `questionLimit - wordCount` questions as filler
+5. Final shuffle of `[...coverage, ...filler]`
+6. Edge case: if `questionLimit < wordCount`, coverage is capped at `questionLimit`
+
+#### Files changed
+
+- `src/engine/compose-batch.ts` — add `composeBatchMulti`; `composeBatch` unchanged
+- `src/main.ts` — replace hardcoded single-word logic with two constants + `composeBatchMulti`
+- `src/__tests__/unit/compose-batch.test.ts` — new `describe('composeBatchMulti')` block
+
+#### Unit tests (`composeBatchMulti`)
+
+- Returns exactly `questionLimit` questions
+- Every input word appears in at least 1 question
+- Each question has exactly 4 choices, exactly 1 correct
+- No duplicate (word + direction) pairs
+- When `questionLimit ≥ total possible`, all questions are returned
+
+#### Success criteria
+
+1. `pnpm --filter @gll/srs-engine-v2 test` — all tests pass (including existing ST03 tests)
+2. `pnpm quizv2` — presents 5 questions across 3 words with per-answer feedback and final score
+3. Changing `FOUNDATIONAL_WORD_COUNT` from 1 → 3 → 5 → 4 requires editing one line
+4. Changing `QUESTION_LIMIT` requires editing one line
+
+**Status**: Done
 
 ---
 
@@ -153,5 +202,6 @@ multiple-choice questions (one per direction) and run them interactively via std
 
 1. ✅ ST01 — Mock seed data complete
 2. ✅ ST02 — Project scaffold + test harness complete
-3. ⬜ ST03 — Batch composition, 1 consonant, 4 MC directions, interactive runner
+3. ✅ ST03 — Batch composition, 1 consonant, 4 MC directions, interactive runner
+4. ⬜ ST04 — Batch composition, N foundational words, configurable question limit
 

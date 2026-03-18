@@ -24,6 +24,23 @@ function makeChoices(correct: string, distractors: string[]): QuizChoice[] {
   }));
 }
 
+export function composeBatchMulti(
+  words: MockConsonant[],
+  pool: MockConsonant[],
+  options: { questionLimit: number },
+): QuizQuestion[] {
+  const { questionLimit } = options;
+
+  const questionsByWord = words.map(word => shuffle(composeBatch(word, pool)));
+
+  const coverage = questionsByWord.map(qs => qs[0]).slice(0, questionLimit);
+  const leftover = questionsByWord.flatMap(qs => qs.slice(1));
+  const fillCount = Math.max(0, questionLimit - coverage.length);
+  const filler = shuffle(leftover).slice(0, fillCount);
+
+  return shuffle([...coverage, ...filler]);
+}
+
 export function composeBatch(consonant: MockConsonant, pool: MockConsonant[]): QuizQuestion[] {
   const others = pool.filter(c => c.id !== consonant.id);
 
