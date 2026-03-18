@@ -1,13 +1,26 @@
 # current-focus
 
-**Branch**: main
-**Last updated**: 20260313
+**Branch**: feat/EP20--srs-engine-start-again
+**Last updated**: 20260319
 
 ## Status
 
-EP15-ST01 complete ✅ — `@gll/api-contract` wire types updated
-EP15-ST02 complete ✅ — `/batch` generates choices, pool validation, `BatchEntry` registry; 16/16 tests green
+Start from scratch on SRS engine implementation
+
+Target Working directory: `packages/srs-engine-v2`
+
+- Building small incremental testable quiz engine
+- pure Node.js, not http layer until later.
+- use mock data for now
+- main purpose is build the quize properly
+
+## Completed
+- EP20-ST02
 
 ## What's next
+- ST03: Batch composition for 1 foundational word in multiple choice format
+- ST04: Batch composition for 3 foundational words in multiple choice format 
+- Batch composition for ST03 + 3 words
 
-EP15-ST03: Update `/api/srs/answers` (selectedKey + server correctness) + add `POST /api/srs/seed` + update E2E tests
+
+
