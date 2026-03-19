@@ -16,7 +16,7 @@ After approval is given, use `.agents/skills/dev/tdd-implement/SKILL.md` to impl
 
 Stop and ask for manual validation on implementation completion.
 
-When user say "complete", update the Parent EPIC file `.agents/plans/epics/EP20-srs-engine-v2-rebuild.md` to mark the story as complete.
+When user say "complete", create story changelog. Update the Parent EPIC file `.agents/plans/epics/EP20-srs-engine-v2-rebuild.md` to mark the story as complete.
 
 
 
