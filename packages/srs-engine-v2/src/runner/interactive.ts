@@ -3,31 +3,42 @@ import { RunState, StreakThresholds, updateRunState, isMastered } from '../types
 import { composeBatchMulti, QuizItem } from '../engine/compose-batch.js';
 import { MockDeck } from '../types/deck.js';
 
-function readKey(): Promise<string> {
+// Constants
+const WORD_ID_PREFIX = 'th::';
+const KEYBOARD_EXIT = '\u0003';
+const BATCH_PROMPT = '\nNext batch? (y/n): ';
+
+// Stdin helper
+async function readFromStdin(options: { raw?: boolean; trim?: boolean } = {}): Promise<string> {
   return new Promise(resolve => {
-    process.stdin.setRawMode(true);
+    if (options.raw) {
+      process.stdin.setRawMode(true);
+    }
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
-    process.stdin.once('data', (key: string) => {
-      process.stdin.setRawMode(false);
+    process.stdin.once('data', (data: string) => {
+      if (options.raw) {
+        process.stdin.setRawMode(false);
+      }
       process.stdin.pause();
-      resolve(key);
+      const result = options.trim ? data.trim().toLowerCase() : data;
+      resolve(result);
     });
   });
+}
+
+function readKey(): Promise<string> {
+  return readFromStdin({ raw: true });
 }
 
 function readLine(): Promise<string> {
-  return new Promise(resolve => {
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    process.stdin.once('data', (line: string) => {
-      process.stdin.pause();
-      resolve(line.trim().toLowerCase());
-    });
-  });
+  return readFromStdin({ raw: false, trim: true });
 }
 
 export async function selectDeck(decks: MockDeck[]): Promise<MockDeck> {
+  if (!decks || decks.length === 0) {
+    throw new Error('selectDeck: No decks available');
+  }
   console.log('\nAvailable decks:');
   for (let i = 0; i < decks.length; i++) {
     console.log(`  ${i + 1}. ${decks[i].topic}`);
@@ -36,7 +47,7 @@ export async function selectDeck(decks: MockDeck[]): Promise<MockDeck> {
 
   while (true) {
     const key = (await readKey()).toLowerCase();
-    if (key === '\u0003') process.exit();
+    if (key === KEYBOARD_EXIT) process.exit();
     const num = parseInt(key, 10);
     if (num >= 1 && num <= decks.length) {
       console.log(num);
@@ -51,14 +62,26 @@ export interface QuizResult {
 }
 
 export async function runInteractive(questions: QuizQuestion[]): Promise<{ correct: number; total: number; results: QuizResult[] }> {
+  if (!questions || questions.length === 0) {
+    throw new Error('runInteractive: No questions provided');
+  }
+
   let score = 0;
   const results: QuizResult[] = [];
 
   for (let i = 0; i < questions.length; i++) {
-    const q = questions[i];
+    const question = questions[i];
+
+    if (!question.choices || question.choices.length === 0) {
+      throw new Error(`runInteractive: Question ${i + 1} has no choices`);
+    }
+    if (!question.choices.find(c => c.isCorrect)) {
+      throw new Error(`runInteractive: Question ${i + 1} has no correct answer marked`);
+    }
+
     console.log(`\nQuestion ${i + 1} of ${questions.length}`);
-    console.log(q.prompt);
-    for (const choice of q.choices) {
+    console.log(question.prompt);
+    for (const choice of question.choices) {
       console.log(`  ${choice.label}) ${choice.value}`);
     }
     process.stdout.write('Your answer (a/b/c/d): ');
@@ -66,14 +89,20 @@ export async function runInteractive(questions: QuizQuestion[]): Promise<{ corre
     let answer: string;
     while (true) {
       const key = (await readKey()).toLowerCase();
-      if (key === '\u0003') process.exit(); // Ctrl+C
+      if (key === KEYBOARD_EXIT) process.exit(); // Ctrl+C
       if (['a', 'b', 'c', 'd'].includes(key)) { answer = key; break; }
     }
 
-    console.log(answer!);
+    console.log(answer);
 
-    const selected = q.choices.find(c => c.label === answer)!;
-    const correct = q.choices.find(c => c.isCorrect)!;
+    const selected = question.choices.find(c => c.label === answer);
+    if (!selected) {
+      throw new Error(`runInteractive: Invalid choice "${answer}" for question ${i + 1}`);
+    }
+    const correct = question.choices.find(c => c.isCorrect);
+    if (!correct) {
+      throw new Error(`runInteractive: Question ${i + 1} has no correct answer`);
+    }
     const wasCorrect = selected.isCorrect;
 
     if (wasCorrect) {
@@ -83,7 +112,7 @@ export async function runInteractive(questions: QuizQuestion[]): Promise<{ corre
       console.log(`Wrong — correct answer was: ${correct.value}`);
     }
 
-    results.push({ wordId: q.wordId, correct: wasCorrect });
+    results.push({ wordId: question.wordId, correct: wasCorrect });
   }
 
   console.log(`\nScore: ${score} / ${questions.length}`);
@@ -93,9 +122,9 @@ export async function runInteractive(questions: QuizQuestion[]): Promise<{ corre
 function printWordSummary(runState: RunState, wordIds: string[], maxMastery: number): void {
   console.log('\nWord results:');
   for (const wordId of wordIds) {
-    const ws = runState.get(wordId);
-    if (ws) {
-      console.log(`  ${wordId.replace('th::', '')}   seen: ${ws.seen}  correct: ${ws.correct}  mastery: ${ws.mastery}/${maxMastery}  streaks: +${ws.correctStreak}/-${ws.wrongStreak}`);
+    const wordState = runState.get(wordId);
+    if (wordState) {
+      console.log(`  ${wordId.replace(WORD_ID_PREFIX, '')}   seen: ${wordState.seen}  correct: ${wordState.correct}  mastery: ${wordState.mastery}/${maxMastery}  streaks: +${wordState.correctStreak}/-${wordState.wrongStreak}`);
     }
   }
 }
@@ -139,8 +168,8 @@ export function processRecheckResult(
     // normal word or recheckReentered — apply normal rules
     nextState = updateRunState(runState, wordId, wasCorrect, streakThresholds);
     if (nextReentered.has(wordId)) {
-      const ws = nextState.get(wordId);
-      if (ws && !isMastered(ws, masteryThreshold)) {
+      const wordState = nextState.get(wordId);
+      if (wordState && !isMastered(wordState, masteryThreshold)) {
         nextReentered.delete(wordId);
       }
     }
@@ -159,8 +188,8 @@ export function nextActivePool(
 ): { active: QuizItem[]; queue: QuizItem[] } {
   const remaining = active.filter(item => {
     if (recheckExempt.has(item.id)) return true;
-    const ws = runState.get(item.id);
-    return !ws || !isMastered(ws, masteryThreshold);
+    const wordState = runState.get(item.id);
+    return !wordState || !isMastered(wordState, masteryThreshold);
   });
 
   const freeSlots = questionLimit - remaining.length;
@@ -168,6 +197,78 @@ export function nextActivePool(
   const newQueue = queue.slice(freeSlots);
 
   return { active: [...remaining, ...newItems], queue: newQueue };
+}
+
+async function runBatch(
+  batchNum: number,
+  activeItems: QuizItem[],
+  wordPool: QuizItem[],
+  foundationalPool: QuizItem[],
+  questionLimit: number,
+): Promise<{ correct: number; total: number; results: QuizResult[] }> {
+  console.log(`\n=== Batch ${batchNum} ===`);
+
+  const activeFoundational = activeItems.filter(item => 'class' in item);
+  const activeWords = activeItems.filter(item => !('class' in item));
+  const consonantLimit = activeItems.length > 0
+    ? Math.round(questionLimit * activeFoundational.length / activeItems.length)
+    : 0;
+  const wordLimit = questionLimit - consonantLimit;
+
+  const foundationalQs = activeFoundational.length > 0
+    ? composeBatchMulti(activeFoundational, foundationalPool, { questionLimit: consonantLimit })
+    : [];
+  const wordQs = activeWords.length > 0
+    ? composeBatchMulti(activeWords, wordPool, { questionLimit: wordLimit })
+    : [];
+  const questions = [...foundationalQs, ...wordQs].sort(() => Math.random() - 0.5);
+
+  return await runInteractive(questions);
+}
+
+interface MasteryUpdateResult {
+  runState: RunState;
+  recheckPending: Set<string>;
+  recheckReentered: Set<string>;
+  masteredCount: number;
+}
+
+function updateMasteryState(
+  results: QuizResult[],
+  runState: RunState,
+  prevState: RunState,
+  recheckPending: Set<string>,
+  recheckReentered: Set<string>,
+  masteryThreshold: number,
+  streakThresholds: StreakThresholds,
+): MasteryUpdateResult {
+  let nextRunState = runState;
+  let nextRecheckPending = recheckPending;
+  let nextRecheckReentered = recheckReentered;
+  let masteredCount = 0;
+
+  const batchWordIds = [...new Set(results.map(result => result.wordId))];
+
+  for (const result of results) {
+    ({ runState: nextRunState, recheckPending: nextRecheckPending, recheckReentered: nextRecheckReentered } = processRecheckResult(
+      result.wordId, result.correct, nextRunState, nextRecheckPending, nextRecheckReentered, masteryThreshold, streakThresholds,
+    ));
+  }
+
+  printWordSummary(nextRunState, batchWordIds, streakThresholds.maxMastery);
+
+  for (const wordId of batchWordIds) {
+    const wordState = nextRunState.get(wordId);
+    if (wordState && isMastered(wordState, masteryThreshold)) {
+      const prevWordState = prevState.get(wordId);
+      if (!prevWordState || !isMastered(prevWordState, masteryThreshold)) {
+        console.log(`Mastered: ${wordId.replace(WORD_ID_PREFIX, '')}`);
+        masteredCount++;
+      }
+    }
+  }
+
+  return { runState: nextRunState, recheckPending: nextRecheckPending, recheckReentered: nextRecheckReentered, masteredCount };
 }
 
 export async function runAdaptiveLoop(
@@ -197,52 +298,24 @@ export async function runAdaptiveLoop(
     if (active.length === 0 && queue.length === 0) break;
 
     batchNum++;
-    console.log(`\n=== Batch ${batchNum} ===`);
+    const prevState = runState;
 
-    const activeFoundational = active.filter(item => 'class' in item);
-    const activeWords = active.filter(item => !('class' in item));
-    const consonantLimit = active.length > 0
-      ? Math.round(questionLimit * activeFoundational.length / active.length)
-      : 0;
-    const wordLimit = questionLimit - consonantLimit;
-
-    const foundationalQs = activeFoundational.length > 0
-      ? composeBatchMulti(activeFoundational, foundationalPool, { questionLimit: consonantLimit })
-      : [];
-    const wordQs = activeWords.length > 0
-      ? composeBatchMulti(activeWords, wordPool, { questionLimit: wordLimit })
-      : [];
-    const questions = [...foundationalQs, ...wordQs].sort(() => Math.random() - 0.5);
-
-    const { correct, total, results } = await runInteractive(questions);
+    const { correct, total, results } = await runBatch(batchNum, active, wordPool, foundationalPool, questionLimit);
     totalCorrect += correct;
     totalQuestions += total;
 
-    const prevState = runState;
-    const batchWordIds = [...new Set(results.map(r => r.wordId))];
-    for (const r of results) {
-      ({ runState, recheckPending, recheckReentered } = processRecheckResult(
-        r.wordId, r.correct, runState, recheckPending, recheckReentered, masteryThreshold, streakThresholds,
-      ));
-    }
-
-    printWordSummary(runState, batchWordIds, streakThresholds.maxMastery);
-
-    for (const wordId of batchWordIds) {
-      const ws = runState.get(wordId);
-      if (ws && isMastered(ws, masteryThreshold)) {
-        const prevWs = prevState.get(wordId);
-        if (!prevWs || !isMastered(prevWs, masteryThreshold)) {
-          console.log(`Mastered: ${wordId.replace('th::', '')}`);
-          masteredCount++;
-        }
-      }
-    }
+    const { runState: nextRunState, recheckPending: nextRecheckPending, recheckReentered: nextRecheckReentered, masteredCount: batchMastered } = updateMasteryState(
+      results, runState, prevState, recheckPending, recheckReentered, masteryThreshold, streakThresholds,
+    );
+    runState = nextRunState;
+    recheckPending = nextRecheckPending;
+    recheckReentered = nextRecheckReentered;
+    masteredCount += batchMastered;
 
     const peekExempt = new Set([...recheckPending, ...recheckReentered]);
     const peek = nextActivePool(active, queue, questionLimit, runState, masteryThreshold, peekExempt);
     if (peek.active.length > 0 || peek.queue.length > 0) {
-      process.stdout.write('\nNext batch? (y/n): ');
+      process.stdout.write(BATCH_PROMPT);
       const answer = await readLine();
       if (answer !== 'y') break;
     }
