@@ -229,13 +229,41 @@ tie-breaking by **closest to mastery** (highest `correct` count).
 
 ## Mastery rule
 
+~~`isMastered(ws: WordState): boolean  →  ws.correct >= masteryThreshold`~~
+
+~~- `masteryThreshold` is a single configurable constant (default: `3`)~~
+~~- No per-word-type differentiation at this stage (deferred)~~
+~~- No streak tracking — total correct answers only~~
+
+**Updated (ST09):** Mastery is a streak-driven integer (0–5), not a cumulative correct count.
+
 ```ts
-isMastered(ws: WordState): boolean  →  ws.correct >= masteryThreshold
+// WordState fields added in ST09
+mastery: number          // integer 0–5
+correctStreak: number    // consecutive correct answers
+wrongStreak: number      // consecutive wrong answers
+
+// Retirement condition (replaces correct >= masteryThreshold)
+isMastered(ws: WordState): boolean  →  ws.mastery >= masteryThreshold
 ```
 
-- `masteryThreshold` is a single configurable constant (default: `3`)
+Rules:
+- Correct answer: `correctStreak += 1`, `wrongStreak = 0`
+- Correct + `correctStreak >= correctStreakThreshold`: `mastery = min(5, mastery + 1)`
+- Wrong answer: `wrongStreak += 1`, `correctStreak = 0`
+- Wrong + `wrongStreak >= wrongStreakThreshold`: `mastery = max(0, mastery - 1)`
+- Streaks are **not reset** after a mastery change — enables fast climb/drop
+- Retirement: `mastery >= masteryThreshold` (default: `5`)
+
+Config constants (ST09):
+
+| Constant | Default | Purpose |
+|---|---|---|
+| `masteryThreshold` | `5` | Mastery level required to retire a word |
+| `correctStreakThreshold` | `3` | Consecutive correct answers needed to increment mastery |
+| `wrongStreakThreshold` | `2` | Consecutive wrong answers needed to decrement mastery |
+
 - No per-word-type differentiation at this stage (deferred)
-- No streak tracking — total correct answers only
 
 ---
 
@@ -244,7 +272,8 @@ isMastered(ws: WordState): boolean  →  ws.correct >= masteryThreshold
 | Mechanic | Notes |
 |---|---|
 | Sliding active window | Core mechanic described above |
-| Mastery threshold | Single configurable constant |
+| ~~Mastery threshold~~ | ~~Single configurable constant~~ |
+| Streak-driven mastery (ST09) | Integer 0–5; increments/decrements on streak thresholds; retires at `masteryThreshold` (default 5) |
 | Within-run retirement | Mastered words leave active pool permanently for this run |
 | Per-batch word summary | Seen / correct per word after each batch |
 | Newly mastered announcement | "Mastered: X" printed when a word graduates |
