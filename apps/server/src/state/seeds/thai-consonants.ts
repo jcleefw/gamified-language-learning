@@ -69,7 +69,7 @@ export function getThaiConsonantsWordDetails(): Map<string, WordDetail> {
   const details = new Map<string, WordDetail>();
   consonants.forEach((c) => {
     details.set(`foundational:${c.id}`, {
-      native: c.char,
+      native: c.native,
       romanization: c.romanization,
       english: c.english,
       category: 'foundational',
