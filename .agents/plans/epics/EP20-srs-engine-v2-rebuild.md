@@ -828,7 +828,7 @@ await runAdaptiveLoop(
    adaptive loop; behaviour otherwise identical to ST09
 3. Adding a third deck requires editing only `mock-decks.ts`
 
-**Status**: Planned
+**Status**: Done
 
 ---
 
