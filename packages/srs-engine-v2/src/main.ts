@@ -2,7 +2,7 @@ import { mockConsonants } from '../data/mock/mock-consonants.js';
 import { wordPool } from '../data/mock/mock-word-pool.js';
 import { mockDecks } from '../data/mock/mock-decks.js';
 import { selectDeck, runAdaptiveLoop } from './runner/interactive.js';
-import { RunState, isMastered } from './types/word-state.js';
+import { type RunState, isMastered } from './types/word-state.js';
 
 const config = {
   foundationalWordsCount: 2,
@@ -21,9 +21,12 @@ const streakThresholds = {
 
 let runState: RunState = new Map();
 
-while (true) {
+for (;;) {
   const deck = await selectDeck(mockDecks);
-  const deckWords = deck.wordIds.map(id => wordPool.find(w => w.id === id)!);
+  const deckWords = deck.wordIds.flatMap(id => {
+    const w = wordPool.find(word => word.id === id);
+    return w !== undefined ? [w] : [];
+  });
   const words = [
     ...deckWords,
     ...mockConsonants.slice(0, config.foundationalWordsCount),

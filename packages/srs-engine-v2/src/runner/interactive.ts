@@ -1,7 +1,9 @@
-import { QuizQuestion } from '../types/quiz.js';
-import { RunState, StreakThresholds, updateRunState, isMastered } from '../types/word-state.js';
-import { composeBatchMulti, QuizItem } from '../engine/compose-batch.js';
-import { MockDeck } from '../types/deck.js';
+/* eslint-disable no-console */
+
+import type { QuizQuestion } from '../types/quiz.js';
+import { type RunState, type StreakThresholds, updateRunState, isMastered } from '../types/word-state.js';
+import { composeBatchMulti, type QuizItem } from '../engine/compose-batch.js';
+import type { MockDeck } from '../types/deck.js';
 
 // Constants
 const WORD_ID_PREFIX = 'th::';
@@ -36,16 +38,16 @@ function readLine(): Promise<string> {
 }
 
 export async function selectDeck(decks: MockDeck[]): Promise<MockDeck> {
-  if (!decks || decks.length === 0) {
+  if (decks.length === 0) {
     throw new Error('selectDeck: No decks available');
   }
   console.log('\nAvailable decks:');
   for (let i = 0; i < decks.length; i++) {
-    console.log(`  ${i + 1}. ${decks[i].topic}`);
+    console.log(`  ${String(i + 1)}. ${decks[i].topic}`);
   }
-  process.stdout.write(`Select a deck (1-${decks.length}): `);
+  process.stdout.write(`Select a deck (1-${String(decks.length)}): `);
 
-  while (true) {
+  for (;;) {
     const key = (await readKey()).toLowerCase();
     if (key === KEYBOARD_EXIT) process.exit();
     const num = parseInt(key, 10);
@@ -62,7 +64,7 @@ export interface QuizResult {
 }
 
 export async function runInteractive(questions: QuizQuestion[]): Promise<{ correct: number; total: number; results: QuizResult[] }> {
-  if (!questions || questions.length === 0) {
+  if (questions.length === 0) {
     throw new Error('runInteractive: No questions provided');
   }
 
@@ -72,14 +74,14 @@ export async function runInteractive(questions: QuizQuestion[]): Promise<{ corre
   for (let i = 0; i < questions.length; i++) {
     const question = questions[i];
 
-    if (!question.choices || question.choices.length === 0) {
-      throw new Error(`runInteractive: Question ${i + 1} has no choices`);
+    if (question.choices.length === 0) {
+      throw new Error(`runInteractive: Question ${String(i + 1)} has no choices`);
     }
     if (!question.choices.find(c => c.isCorrect)) {
-      throw new Error(`runInteractive: Question ${i + 1} has no correct answer marked`);
+      throw new Error(`runInteractive: Question ${String(i + 1)} has no correct answer marked`);
     }
 
-    console.log(`\nQuestion ${i + 1} of ${questions.length}`);
+    console.log(`\nQuestion ${String(i + 1)} of ${String(questions.length)}`);
     console.log(question.prompt);
     for (const choice of question.choices) {
       console.log(`  ${choice.label}) ${choice.value}`);
@@ -87,7 +89,7 @@ export async function runInteractive(questions: QuizQuestion[]): Promise<{ corre
     process.stdout.write('Your answer (a/b/c/d): ');
 
     let answer: string;
-    while (true) {
+    for (;;) {
       const key = (await readKey()).toLowerCase();
       if (key === KEYBOARD_EXIT) process.exit(); // Ctrl+C
       if (['a', 'b', 'c', 'd'].includes(key)) { answer = key; break; }
@@ -97,11 +99,11 @@ export async function runInteractive(questions: QuizQuestion[]): Promise<{ corre
 
     const selected = question.choices.find(c => c.label === answer);
     if (!selected) {
-      throw new Error(`runInteractive: Invalid choice "${answer}" for question ${i + 1}`);
+      throw new Error(`runInteractive: Invalid choice "${answer}" for question ${String(i + 1)}`);
     }
     const correct = question.choices.find(c => c.isCorrect);
     if (!correct) {
-      throw new Error(`runInteractive: Question ${i + 1} has no correct answer`);
+      throw new Error(`runInteractive: Question ${String(i + 1)} has no correct answer`);
     }
     const wasCorrect = selected.isCorrect;
 
@@ -115,7 +117,7 @@ export async function runInteractive(questions: QuizQuestion[]): Promise<{ corre
     results.push({ wordId: question.wordId, correct: wasCorrect });
   }
 
-  console.log(`\nScore: ${score} / ${questions.length}`);
+  console.log(`\nScore: ${String(score)} / ${String(questions.length)}`);
   return { correct: score, total: questions.length, results };
 }
 
@@ -124,7 +126,7 @@ function printWordSummary(runState: RunState, wordIds: string[], maxMastery: num
   for (const wordId of wordIds) {
     const wordState = runState.get(wordId);
     if (wordState) {
-      console.log(`  ${wordId.replace(WORD_ID_PREFIX, '')}   seen: ${wordState.seen}  correct: ${wordState.correct}  mastery: ${wordState.mastery}/${maxMastery}  streaks: +${wordState.correctStreak}/-${wordState.wrongStreak}`);
+      console.log(`  ${wordId.replace(WORD_ID_PREFIX, '')}   seen: ${String(wordState.seen)}  correct: ${String(wordState.correct)}  mastery: ${String(wordState.mastery)}/${String(maxMastery)}  streaks: +${String(wordState.correctStreak)}/-${String(wordState.wrongStreak)}`);
     }
   }
 }
@@ -206,7 +208,7 @@ async function runBatch(
   foundationalPool: QuizItem[],
   questionLimit: number,
 ): Promise<{ correct: number; total: number; results: QuizResult[] }> {
-  console.log(`\n=== Batch ${batchNum} ===`);
+  console.log(`\n=== Batch ${String(batchNum)} ===`);
 
   const activeFoundational = activeItems.filter(item => 'class' in item);
   const activeWords = activeItems.filter(item => !('class' in item));
@@ -291,7 +293,7 @@ export async function runAdaptiveLoop(
   let totalQuestions = 0;
   let masteredCount = 0;
 
-  while (true) {
+  for (;;) {
     const recheckExempt = new Set([...recheckPending, ...recheckReentered]);
     ({ active, queue } = nextActivePool(active, queue, questionLimit, runState, masteryThreshold, recheckExempt));
 
@@ -322,9 +324,9 @@ export async function runAdaptiveLoop(
   }
 
   console.log('\n=== Run Complete ===');
-  console.log(`Batches: ${batchNum}`);
-  console.log(`Score:   ${totalCorrect} / ${totalQuestions}`);
-  console.log(`Mastered: ${masteredCount}`);
+  console.log(`Batches: ${String(batchNum)}`);
+  console.log(`Score:   ${String(totalCorrect)} / ${String(totalQuestions)}`);
+  console.log(`Mastered: ${String(masteredCount)}`);
 
   return runState;
 }

@@ -1,6 +1,6 @@
-import { MockConsonant } from '../../data/mock/mock-consonants.js';
-import { MockWord } from '../../data/mock/mock-words.js';
-import { QuizChoice, QuizQuestion } from '../types/quiz.js';
+import type { MockConsonant } from '../../data/mock/mock-consonants.js';
+import type { MockWord } from '../../data/mock/mock-words.js';
+import type { QuizChoice, QuizQuestion } from '../types/quiz.js';
 
 export type QuizItem = MockConsonant | MockWord;
 

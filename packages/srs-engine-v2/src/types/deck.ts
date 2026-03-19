@@ -1,4 +1,4 @@
-import { MockWord } from '../../data/mock/mock-words.js';
+import type { MockWord } from '../../data/mock/mock-words.js';
 
 export interface MockLine {
   speaker: 'A' | 'B';

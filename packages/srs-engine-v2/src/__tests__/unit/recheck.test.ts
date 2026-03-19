@@ -21,7 +21,7 @@ function makeState(
 // Helpers
 // ---------------------------------------------------------------------------
 
-function masteryThreshold() { return 3; }
+function masteryThreshold(): number { return 3; }
 
 // ---------------------------------------------------------------------------
 // Cycle 1: nextActivePool recheckExempt
