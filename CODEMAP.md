@@ -114,6 +114,7 @@ Each package owns its own CODEMAP. Navigate there for file-level detail.
 | Package                | Purpose                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------------- |
 | `packages/srs-engine/`    | `@gll/srs-engine` — SRS scheduling engine → [CODEMAP](packages/srs-engine/CODEMAP.md)       |
+| `packages/srs-engine-v2/` | `@gll/srs-engine-v2` — Interactive SRS quiz engine (Thai, CLI runner) → [CODEMAP](packages/srs-engine-v2/CODEMAP.md) |
 | `packages/api-contract/`  | `@gll/api-contract` — Shared HTTP wire-format types (no runtime deps) → [CODEMAP](packages/api-contract/CODEMAP.md) |
 
 ---

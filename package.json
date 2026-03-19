@@ -13,12 +13,13 @@
     "test:watch": "turbo watch test",
     "lint": "eslint .",
     "typecheck": "turbo typecheck",
-    "demo": "tsx scripts/demo-srs.ts",
     "quiz": "tsx scripts/quiz-runner.ts",
-    "dev:server": "pnpm --filter @gll/server dev"
+    "dev:server": "pnpm --filter @gll/server dev",
+    "quizv2": "tsx packages/srs-engine-v2/src/main.ts"
   },
   "devDependencies": {
     "@gll/srs-engine": "workspace:*",
+    "@types/node": "^25.5.0",
     "eslint": "^9",
     "jiti": "^2.6.1",
     "prettier": "^3.8.1",
@@ -27,5 +28,7 @@
     "typescript": "^5.7",
     "typescript-eslint": "^8",
     "vitest": "^3"
+  },
+  "dependencies": {
   }
 }

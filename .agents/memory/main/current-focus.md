@@ -1,13 +1,26 @@
 # current-focus
 
-**Branch**: main
-**Last updated**: 20260313
+**Branch**: feat/EP20--srs-engine-start-again
+**Last updated**: 20260319
 
 ## Status
 
-EP15-ST01 complete ✅ — `@gll/api-contract` wire types updated
-EP15-ST02 complete ✅ — `/batch` generates choices, pool validation, `BatchEntry` registry; 16/16 tests green
+Start from scratch on SRS engine implementation
+
+Target Working directory: `packages/srs-engine-v2`
+
+- Building small incremental testable quiz engine
+- pure Node.js, not http layer until later.
+- use mock data for now
+- main purpose is build the quize properly
+
+## Completed up until
+- EP20-ST12
 
 ## What's next
+- EP21 Review Phase
+- Learning Phase: Multi deck support
+- automate quiz running (pnpm quizv2) with scripts. I only need to type "y" to continue
 
-EP15-ST03: Update `/api/srs/answers` (selectedKey + server correctness) + add `POST /api/srs/seed` + update E2E tests
+
+
