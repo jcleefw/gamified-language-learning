@@ -8,9 +8,9 @@ export interface MockConsonant {
 }
 
 export const mockConsonants: MockConsonant[] = [
-  { id: 'ko-kai',    native: 'ก', romanization: 'Ko Kai',    english: 'k',  class: 'middle', language: 'th' },
-  { id: 'kho-khai',  native: 'ข', romanization: 'Kho Khai',  english: 'kh', class: 'high',   language: 'th' },
-  { id: 'kho-khwai', native: 'ค', romanization: 'Kho Khwai', english: 'kh', class: 'low',    language: 'th' },
-  { id: 'ngo-ngu',   native: 'ง', romanization: 'Ngo Ngu',   english: 'ng', class: 'low',    language: 'th' },
-  { id: 'cho-chan',   native: 'จ', romanization: 'Cho Chan',  english: 'ch', class: 'middle', language: 'th' },
+  { id: 'th::ก', native: 'ก', romanization: 'Ko Kai',    english: 'k',  class: 'middle', language: 'th' },
+  { id: 'th::ข', native: 'ข', romanization: 'Kho Khai',  english: 'kh', class: 'high',   language: 'th' },
+  { id: 'th::ค', native: 'ค', romanization: 'Kho Khwai', english: 'kh', class: 'low',    language: 'th' },
+  { id: 'th::ง', native: 'ง', romanization: 'Ngo Ngu',   english: 'ng', class: 'low',    language: 'th' },
+  { id: 'th::จ', native: 'จ', romanization: 'Cho Chan',  english: 'ch', class: 'middle', language: 'th' },
 ];

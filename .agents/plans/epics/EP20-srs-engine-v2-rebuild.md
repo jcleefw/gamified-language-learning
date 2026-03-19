@@ -191,6 +191,82 @@ with a configurable total question limit and guaranteed per-word coverage.
 
 ---
 
+### EP20-ST05: Introduce non-foundational words into the quiz mix
+
+**Scope**: Extend the quiz engine to handle `MockWord` alongside `MockConsonant`. Words
+use plain `english` (no class suffix). Distractors never cross pools. Config extracted to
+a single object in `main.ts`.
+
+#### ID format change
+
+Both types adopt a language-namespaced ID format: `th::native`.
+
+- `MockConsonant` IDs updated: `ko-kai` → `th::ก`, `kho-khai` → `th::ข`, etc.
+- `MockWord` gains `id` field with the same format: `th::หิว`, `th::ไป`, etc.
+
+#### Type change — `QuizItem` union
+
+Define `type QuizItem = MockConsonant | MockWord` in `src/engine/compose-batch.ts`.
+Discriminant: `'class' in item` → `MockConsonant`; otherwise `MockWord`.
+
+- `getEnglishLabel(item: QuizItem): string` replaces `englishWithClass`:
+  - Consonant: `"${english} (${class})"`
+  - Word: `english` only
+- `composeBatch(item: QuizItem, pool: QuizItem[]): QuizQuestion[]` — signature generalised
+- `composeBatchMulti(words: QuizItem[], pool: QuizItem[], options): QuizQuestion[]` — same
+
+Pools remain homogeneous per call (words pool = `mockWords` only, consonant pool = `mockConsonants` only).
+
+#### Config object (in `main.ts`)
+
+Replace separate constants with a single object:
+
+```ts
+const config = {
+  foundationalWordCount: 3,   // consonants to quiz
+  nonFoundationalWordCount: 3, // words to quiz
+  questionLimit: 8,            // total questions presented
+};
+```
+
+Question limit split: `consonantLimit = Math.ceil(config.questionLimit / 2)`, `wordLimit = config.questionLimit - consonantLimit`.
+
+#### `main.ts` wiring
+
+```ts
+const consonantQuestions = composeBatchMulti(consonants, mockConsonants, { questionLimit: consonantLimit });
+const wordQuestions      = composeBatchMulti(words, mockWords,           { questionLimit: wordLimit });
+await runInteractive(shuffle([...consonantQuestions, ...wordQuestions]));
+```
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `data/mock/mock-consonants.ts` | Update 5 IDs to `th::native` format |
+| `data/mock/mock-words.ts` | Add `id: string` to `MockWord`; populate `id: 'th::native'` for all 15 entries |
+| `src/engine/compose-batch.ts` | `QuizItem` union; `getEnglishLabel`; generalise `composeBatch` + `composeBatchMulti` |
+| `src/main.ts` | `config` object; import `mockWords`; two `composeBatchMulti` calls; combined shuffle |
+| `src/__tests__/unit/compose-batch.test.ts` | Update ID-dependent assertions; add `describe('composeBatchMulti with words')` block |
+
+#### Unit tests — new `describe('composeBatchMulti with words')`
+
+- Returns exactly `questionLimit` questions
+- Every input word appears in at least 1 question
+- Each question has exactly 4 choices, exactly 1 correct
+- No duplicate word+direction pairs
+- `native-to-english` choices are plain english strings (no `(class)` suffix)
+
+#### Success criteria
+
+1. `pnpm --filter @gll/srs-engine-v2 test` — all tests pass
+2. `pnpm quizv2` — presents 8 questions mixing consonants and words, with per-answer feedback and final score
+3. Changing any value in `config` requires editing one line
+
+**Status**: Done
+
+---
+
 ## Deferred (post-EP20)
 
 - FSRS / ANKI scheduling
@@ -203,5 +279,6 @@ with a configurable total question limit and guaranteed per-word coverage.
 1. ✅ ST01 — Mock seed data complete
 2. ✅ ST02 — Project scaffold + test harness complete
 3. ✅ ST03 — Batch composition, 1 consonant, 4 MC directions, interactive runner
-4. ⬜ ST04 — Batch composition, N foundational words, configurable question limit
+4. ✅ ST04 — Batch composition, N foundational words, configurable question limit
+5. ✅ ST05 — Non-foundational words in the mix, QuizItem union, config object
 

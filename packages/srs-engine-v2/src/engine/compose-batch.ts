@@ -1,8 +1,11 @@
 import { MockConsonant } from '../../data/mock/mock-consonants.js';
+import { MockWord } from '../../data/mock/mock-words.js';
 import { QuizChoice, QuizQuestion } from '../types/quiz.js';
 
-function englishWithClass(c: MockConsonant): string {
-  return `${c.english} (${c.class})`;
+export type QuizItem = MockConsonant | MockWord;
+
+function getEnglishLabel(item: QuizItem): string {
+  return 'class' in item ? `${item.english} (${item.class})` : item.english;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -25,8 +28,8 @@ function makeChoices(correct: string, distractors: string[]): QuizChoice[] {
 }
 
 export function composeBatchMulti(
-  words: MockConsonant[],
-  pool: MockConsonant[],
+  words: QuizItem[],
+  pool: QuizItem[],
   options: { questionLimit: number },
 ): QuizQuestion[] {
   const { questionLimit } = options;
@@ -41,29 +44,29 @@ export function composeBatchMulti(
   return shuffle([...coverage, ...filler]);
 }
 
-export function composeBatch(consonant: MockConsonant, pool: MockConsonant[]): QuizQuestion[] {
-  const others = pool.filter(c => c.id !== consonant.id);
+export function composeBatch(item: QuizItem, pool: QuizItem[]): QuizQuestion[] {
+  const others = pool.filter(c => c.id !== item.id);
 
   return [
     {
       direction: 'native-to-english',
-      prompt: consonant.native,
-      choices: makeChoices(englishWithClass(consonant), others.map(englishWithClass)),
+      prompt: item.native,
+      choices: makeChoices(getEnglishLabel(item), others.map(getEnglishLabel)),
     },
     {
       direction: 'english-to-native',
-      prompt: englishWithClass(consonant),
-      choices: makeChoices(consonant.native, others.map(c => c.native)),
+      prompt: getEnglishLabel(item),
+      choices: makeChoices(item.native, others.map(c => c.native)),
     },
     {
       direction: 'native-to-romanization',
-      prompt: consonant.native,
-      choices: makeChoices(consonant.romanization, others.map(c => c.romanization)),
+      prompt: item.native,
+      choices: makeChoices(item.romanization, others.map(c => c.romanization)),
     },
     {
       direction: 'romanization-to-native',
-      prompt: consonant.romanization,
-      choices: makeChoices(consonant.native, others.map(c => c.native)),
+      prompt: item.romanization,
+      choices: makeChoices(item.native, others.map(c => c.native)),
     },
   ];
 }
