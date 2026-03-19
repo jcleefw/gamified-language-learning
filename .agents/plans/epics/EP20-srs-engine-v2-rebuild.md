@@ -267,6 +267,110 @@ await runInteractive(shuffle([...consonantQuestions, ...wordQuestions]));
 
 ---
 
+### EP20-ST06: Deck + Batch architecture
+
+**Scope**: Introduce `Deck` and `Batch` as first-class types. A deck holds two pools
+(words + foundational). A batch is a sequential slice of both pools with a question limit.
+The runner loops through all batches, prompting "Next batch?" between each, and shows a
+run summary at the end.
+
+#### New types — `src/types/deck.ts`
+
+```ts
+interface Deck {
+  wordPool: MockWord[];
+  foundationalPool: MockConsonant[];
+}
+
+interface BatchConfig {
+  nonFoundationalFocusCount: number; // words pulled per batch from wordPool
+  foundationalFocusCount: number;    // words pulled per batch from foundationalPool
+  questionLimit: number;             // total questions per batch
+}
+
+interface Batch {
+  focusWords: MockWord[];
+  focusFoundational: MockConsonant[];
+  questionLimit: number;
+}
+```
+
+#### New engine function — `src/engine/compose-deck.ts`
+
+`generateBatches(deck: Deck, config: BatchConfig): Batch[]`
+
+Algorithm:
+1. `batchCount = Math.ceil(deck.wordPool.length / config.nonFoundationalFocusCount)`
+2. For each `i`: slice `focusWords` and `focusFoundational` sequentially
+3. If foundational pool is shorter than wordPool, remaining batches get an empty `focusFoundational` (noted as future concern — not a ST06 failure case given equal pool sizes)
+
+#### `runInteractive` return value
+
+Update signature to return `{ correct: number, total: number }` instead of `void`.
+
+#### New runner function — `runBatchLoop` (in `src/runner/interactive.ts`)
+
+```
+for each batch (index i):
+  compose questions via composeBatchMulti (consonant half + word half, split from questionLimit)
+  run runInteractive → { correct, total }
+  show: "Batch i+1 score: X / Y"
+  if not last batch: prompt "Next batch? (y/n)" — 'n' ends the run early
+after all batches (or early exit):
+  show run summary: "=== Run Complete === Batches: N  Score: X / Y"
+```
+
+#### `main.ts` wiring
+
+Testing config (hardcoded for ST06):
+
+```ts
+const deck: Deck = {
+  wordPool: mockWords.slice(0, 3),
+  foundationalPool: mockConsonants.slice(0, 3),
+};
+
+const batchConfig: BatchConfig = {
+  nonFoundationalFocusCount: 1,
+  foundationalFocusCount: 1,
+  questionLimit: 2,
+};
+```
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `src/types/deck.ts` | New — `Deck`, `BatchConfig`, `Batch` types |
+| `src/engine/compose-deck.ts` | New — `generateBatches` |
+| `src/runner/interactive.ts` | `runInteractive` returns score; add `runBatchLoop` |
+| `src/main.ts` | Replace flat config with `Deck` + `BatchConfig`; call `runBatchLoop` |
+| `src/__tests__/unit/compose-deck.test.ts` | New — `generateBatches` unit tests |
+
+#### Unit tests — `compose-deck.test.ts`
+
+- Returns correct number of batches (`ceil(wordPool.length / nonFoundationalFocusCount)`)
+- Each batch has the right `focusWords` and `focusFoundational` counts
+- Batches cover all words in `wordPool` with no repeats
+- Each batch carries the correct `questionLimit`
+
+#### Roadmap note (not in scope)
+
+| Story | Scope |
+|---|---|
+| ST07 | `WordState` — tracks seen count + correct count per word, carried through the run |
+| ST08 | Dynamic batch selection — use `WordState` to prioritise weak words (design TBD) |
+
+#### Success criteria
+
+1. `pnpm --filter @gll/srs-engine-v2 test` — all tests pass
+2. `pnpm quizv2` — 3 batches of 2 questions, per-batch score after each, "Next batch?" prompt, run summary at end
+3. Changing `batchConfig.questionLimit` or pool sizes requires editing one place
+
+**Status**: Done
+
+---
+
 ## Deferred (post-EP20)
 
 - FSRS / ANKI scheduling
@@ -281,4 +385,5 @@ await runInteractive(shuffle([...consonantQuestions, ...wordQuestions]));
 3. ✅ ST03 — Batch composition, 1 consonant, 4 MC directions, interactive runner
 4. ✅ ST04 — Batch composition, N foundational words, configurable question limit
 5. ✅ ST05 — Non-foundational words in the mix, QuizItem union, config object
+6. ✅ ST06 — Deck + Batch architecture, batch loop runner, run summary
 
