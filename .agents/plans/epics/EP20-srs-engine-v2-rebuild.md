@@ -673,6 +673,196 @@ function isMastered(ws: WordState, threshold: number): boolean {
 
 ---
 
+---
+
+### EP20-ST10: Multi-deck support — WordPool + MockDeck + deck selection
+
+**Scope**: Introduce a global `WordPool` and `MockDeck` type that reflects the real
+conversation → line → words hierarchy. Replace the flat `mockWords` array in `main.ts`
+with two conversation-based decks. Add a deck selection prompt to the runner before the
+adaptive loop starts.
+
+---
+
+#### Design: WordPool vs Deck
+
+`WordPool` is a **global** flat list of unique `MockWord` entries — the source of truth
+for all words. It sits at the same level as (or above) decks, not inside one.
+
+A `MockDeck` **references** words from the pool by ID. Mastery (via `RunState`) is keyed
+by `wordId` and is therefore pool-level — a word mastered in deck 1 carries that mastery
+into deck 2 (see ST11 for the re-check edge case).
+
+```
+WordPool (global)
+  MockWord[]  ← one entry per unique word, across all conversations
+
+MockDeck
+  id, topic
+  lines: MockLine[]    ← conversation context (enables future word_block questions)
+  wordIds: string[]    ← references into WordPool for this deck's focus words
+```
+
+Relationship: word → pool is **1:1**; word → deck is **1:many** (a word can belong to
+multiple decks). `MockLine.words` preserves per-line components including duplicates
+across lines — mastery is not tracked per-line, only per pool entry.
+
+---
+
+#### New types — `src/types/deck.ts`
+
+Replace existing `Deck` with:
+
+```ts
+interface MockLine {
+  speaker: 'A' | 'B';
+  native: string;        // thai sentence
+  romanization: string;
+  english: string;
+  words: MockWord[];     // per-line word components (duplicates across lines expected)
+}
+
+interface MockDeck {
+  id: string;
+  topic: string;
+  lines: MockLine[];     // full conversation — enables future word_block questions
+  wordIds: string[];     // IDs of focus words for this deck (subset of WordPool)
+}
+```
+
+---
+
+#### New file — `data/mock/mock-word-pool.ts`
+
+Global pool containing all unique words across both test conversations (deduplicated
+union). This replaces the role of the old flat `mockWords` array for distractor purposes.
+
+```ts
+export const wordPool: MockWord[] = [ /* union of both conversations' unique words */ ];
+```
+
+---
+
+#### New file — `data/mock/mock-decks.ts`
+
+Two `MockDeck` instances built from `conversations-2026-03-08.json`:
+
+| Deck | Topic | wordIds (first 6 from uniqueWords) |
+|---|---|---|
+| deck-1 | let's eat something | หิว, แล้ว, ไป, กิน, อะไร, กัน |
+| deck-2 | The weather is hot today | วันนี้, ร้อน, มาก, เลย, ใช่, จริงๆ |
+
+`lines` built by merging `breakdown[i]` (components) with `lines[i]` (speaker) from the
+JSON — they are 1:1 correlated.
+
+---
+
+#### Runner change — `src/runner/interactive.ts`
+
+Add `selectDeck(decks: MockDeck[]): Promise<MockDeck>`:
+
+```
+Available decks:
+  1. Let's eat something
+  2. The weather is hot today
+Select a deck (1/2):
+```
+
+Reads a single keypress, returns the chosen deck.
+
+---
+
+#### `main.ts` wiring
+
+```ts
+import { wordPool } from '../data/mock/mock-word-pool.js';
+import { mockDecks } from '../data/mock/mock-decks.js';
+import { selectDeck } from './runner/interactive.js';
+
+const deck = await selectDeck(mockDecks);
+const words = deck.wordIds.map(id => wordPool.find(w => w.id === id)!);
+
+await runAdaptiveLoop(
+  words,
+  wordPool,           // distractor pool — unchanged role
+  mockConsonants,
+  config.questionLimit,
+  config.masteryThreshold,
+  { correctStreakThreshold: config.correctStreakThreshold, wrongStreakThreshold: config.wrongStreakThreshold },
+);
+```
+
+`runAdaptiveLoop` signature is **unchanged**.
+
+---
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `src/types/deck.ts` | Replace `Deck` with `MockLine`, `MockDeck` types |
+| `data/mock/mock-word-pool.ts` | New — global word pool (union of both conversations) |
+| `data/mock/mock-decks.ts` | New — 2 `MockDeck` instances |
+| `src/runner/interactive.ts` | Add `selectDeck` prompt |
+| `src/main.ts` | Import decks + pool; deck selection; resolve wordIds; pass to `runAdaptiveLoop` |
+| `src/__tests__/unit/mock-decks.test.ts` | New — deck shape + pool reference tests |
+
+---
+
+#### Unit tests — `mock-decks.test.ts`
+
+- Each deck has a non-empty `topic`
+- Each deck has exactly 6 `wordIds`
+- All `wordIds` in each deck resolve to entries in `wordPool`
+- No duplicate `wordIds` within a single deck
+- Each deck has at least 1 `MockLine`
+- Each `MockLine` has at least 1 word in `words`
+- Words shared between decks exist exactly once in `wordPool`
+
+---
+
+#### Success criteria
+
+1. `pnpm --filter @gll/srs-engine-v2 test` — all tests pass
+2. `pnpm quizv2` — shows deck selection prompt; selected deck's 6 words run through
+   adaptive loop; behaviour otherwise identical to ST09
+3. Adding a third deck requires editing only `mock-decks.ts`
+
+**Status**: Planned
+
+---
+
+### EP20-ST11: Re-check mastered words on new deck entry
+
+**Status**: Planned (design agreed, not yet scoped)
+
+#### Design context
+
+Mastery is pool-global — a word mastered in deck 1 carries that state into deck 2.
+This is correct for normal use, but creates a gap: a user returning after a long absence
+(e.g. 2 years) would never see a previously mastered word again, even if forgotten.
+
+#### Agreed behaviour (option C)
+
+When a deck is loaded, words in `deck.wordIds` that are **already mastered** in the
+current `RunState` are given a one-time **re-check**:
+
+- Re-check questions are **mixed into the first batch** (not a separate phase)
+- **Correct on first attempt** → word stays mastered, not shown again in this run
+- **Incorrect on first attempt** → word re-enters the active pool for another chance
+- **Incorrect on second attempt** → normal wrong-streak rules apply (mastery decrements)
+
+If mixing re-check into the first batch proves too complex, a pre-run phase is acceptable
+as a fallback.
+
+#### Open design questions (to resolve at planning time)
+
+- How is a "re-check word" flagged so the runner handles it differently from active pool words?
+- Does the re-check count against the `questionLimit` for batch 1, or is it additive?
+- At what point in the session lifecycle is the re-check list computed?
+
+---
+
 ## Deferred
 
 - FSRS / ANKI scheduling
@@ -691,4 +881,6 @@ function isMastered(ws: WordState, threshold: number): boolean {
 7. ✅ ST07 — WordState: per-word seen/correct tracking across the run, per-batch summary
 8. ✅ ST08 — Adaptive loop: sliding window, mastery, retirement, run-until-exhausted
 9. ✅ ST09 — Word streaks and mastery: integer mastery 0–5, streak-driven increment/decrement
+10. ⬜ ST10 — Multi-deck support: WordPool + MockDeck + deck selection
+11. ⬜ ST11 — Re-check mastered words on new deck entry
 

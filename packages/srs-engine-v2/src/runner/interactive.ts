@@ -1,6 +1,7 @@
 import { QuizQuestion } from '../types/quiz.js';
 import { RunState, StreakThresholds, updateRunState, isMastered } from '../types/word-state.js';
 import { composeBatchMulti, QuizItem } from '../engine/compose-batch.js';
+import { MockDeck } from '../types/deck.js';
 
 function readKey(): Promise<string> {
   return new Promise(resolve => {
@@ -24,6 +25,24 @@ function readLine(): Promise<string> {
       resolve(line.trim().toLowerCase());
     });
   });
+}
+
+export async function selectDeck(decks: MockDeck[]): Promise<MockDeck> {
+  console.log('\nAvailable decks:');
+  for (let i = 0; i < decks.length; i++) {
+    console.log(`  ${i + 1}. ${decks[i].topic}`);
+  }
+  process.stdout.write(`Select a deck (1-${decks.length}): `);
+
+  while (true) {
+    const key = (await readKey()).toLowerCase();
+    if (key === '\u0003') process.exit();
+    const num = parseInt(key, 10);
+    if (num >= 1 && num <= decks.length) {
+      console.log(num);
+      return decks[num - 1];
+    }
+  }
 }
 
 export interface QuizResult {
@@ -71,12 +90,12 @@ export async function runInteractive(questions: QuizQuestion[]): Promise<{ corre
   return { correct: score, total: questions.length, results };
 }
 
-function printWordSummary(runState: RunState, wordIds: string[]): void {
+function printWordSummary(runState: RunState, wordIds: string[], maxMastery: number): void {
   console.log('\nWord results:');
   for (const wordId of wordIds) {
     const ws = runState.get(wordId);
     if (ws) {
-      console.log(`  ${wordId.replace('th::', '')}   seen: ${ws.seen}  correct: ${ws.correct}  mastery: ${ws.mastery}/5  streaks: +${ws.correctStreak}/-${ws.wrongStreak}`);
+      console.log(`  ${wordId.replace('th::', '')}   seen: ${ws.seen}  correct: ${ws.correct}  mastery: ${ws.mastery}/${maxMastery}  streaks: +${ws.correctStreak}/-${ws.wrongStreak}`);
     }
   }
 }
@@ -107,10 +126,11 @@ export async function runAdaptiveLoop(
   questionLimit: number,
   masteryThreshold: number,
   streakThresholds: StreakThresholds,
-): Promise<void> {
+  initialRunState: RunState = new Map(),
+): Promise<RunState> {
   let active: QuizItem[] = [];
   let queue: QuizItem[] = [...words];
-  let runState: RunState = new Map();
+  let runState: RunState = new Map(initialRunState);
   let batchNum = 0;
   let totalCorrect = 0;
   let totalQuestions = 0;
@@ -149,7 +169,7 @@ export async function runAdaptiveLoop(
       runState = updateRunState(runState, r.wordId, r.correct, streakThresholds);
     }
 
-    printWordSummary(runState, batchWordIds);
+    printWordSummary(runState, batchWordIds, streakThresholds.maxMastery);
 
     for (const wordId of batchWordIds) {
       const ws = runState.get(wordId);
@@ -174,4 +194,6 @@ export async function runAdaptiveLoop(
   console.log(`Batches: ${batchNum}`);
   console.log(`Score:   ${totalCorrect} / ${totalQuestions}`);
   console.log(`Mastered: ${masteredCount}`);
+
+  return runState;
 }

@@ -19,6 +19,8 @@ Target Working directory: `packages/srs-engine-v2`
 
 ## What's next
 - EP21 Review Phase
+- Learning Phase: Multi deck support
+- automate quiz running (pnpm quizv2) with scripts. I only need to type "y" to continue
 
 
 

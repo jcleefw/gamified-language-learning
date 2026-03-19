@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { updateRunState, isMastered } from '../../types/word-state.js';
 import type { RunState } from '../../types/word-state.js';
 
-const THRESHOLDS = { correctStreakThreshold: 3, wrongStreakThreshold: 2 };
+const THRESHOLDS = { correctStreakThreshold: 3, wrongStreakThreshold: 2, maxMastery: 5 };
 
 // ---------------------------------------------------------------------------
 // updateRunState — cumulative fields (unchanged from ST07/ST08)

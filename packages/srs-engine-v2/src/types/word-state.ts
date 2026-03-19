@@ -1,5 +1,3 @@
-export const MAX_MASTERY = 5;
-
 export interface WordState {
   wordId: string;
   seen: number;
@@ -14,6 +12,7 @@ export type RunState = Map<string, WordState>;
 export interface StreakThresholds {
   correctStreakThreshold: number;
   wrongStreakThreshold: number;
+  maxMastery: number;
 }
 
 export function updateRunState(
@@ -38,7 +37,7 @@ export function updateRunState(
     correctStreak += 1;
     wrongStreak = 0;
     if (correctStreak >= thresholds.correctStreakThreshold) {
-      mastery = Math.min(MAX_MASTERY, mastery + 1);
+      mastery = Math.min(thresholds.maxMastery, mastery + 1);
     }
   } else {
     wrongStreak += 1;
