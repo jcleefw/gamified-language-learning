@@ -561,7 +561,119 @@ by changing one constant.
 
 ---
 
-## Deferred 
+---
+
+### EP20-ST09: Word Streaks and Mastery
+
+**Scope**: Replace the binary `correct >= threshold` mastery model with a streak-driven
+integer mastery system. `mastery` (0–5) rises with consecutive correct answers and falls
+with consecutive wrong answers. Retirement is `mastery >= masteryThreshold`.
+
+---
+
+#### Updated `WordState` — `src/types/word-state.ts`
+
+```ts
+interface WordState {
+  wordId: string;
+  seen: number;           // cumulative — unchanged
+  correct: number;        // cumulative — unchanged
+  mastery: number;        // 0–5
+  correctStreak: number;  // consecutive correct answers
+  wrongStreak: number;    // consecutive wrong answers
+}
+```
+
+#### Config additions — `main.ts`
+
+```ts
+const config = {
+  ...
+  masteryThreshold: 5,          // mastery level for retirement
+  correctStreakThreshold: 3,    // correct streak needed to increment mastery
+  wrongStreakThreshold: 2,      // wrong streak needed to decrement mastery
+};
+```
+
+Pass `correctStreakThreshold` and `wrongStreakThreshold` into `updateRunState`.
+Pass `masteryThreshold` into `isMastered`.
+
+---
+
+#### `updateRunState` logic
+
+**On correct answer**:
+- `seen += 1`, `correct += 1`
+- `wrongStreak = 0`
+- `correctStreak += 1`
+- if `correctStreak >= correctStreakThreshold` → `mastery = Math.min(5, mastery + 1)`
+
+**On wrong answer**:
+- `seen += 1`
+- `correctStreak = 0`
+- `wrongStreak += 1`
+- if `wrongStreak >= wrongStreakThreshold` → `mastery = Math.max(0, mastery - 1)`
+
+Note: streaks are **not reset** after triggering a mastery change. Once a streak exceeds
+the threshold, every subsequent answer in the same direction triggers another mastery change.
+
+#### `isMastered` update
+
+```ts
+function isMastered(ws: WordState, threshold: number): boolean {
+  return ws.mastery >= threshold;
+}
+```
+
+---
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `src/types/word-state.ts` | Add `mastery`, `correctStreak`, `wrongStreak` to `WordState`; update `updateRunState` signature + logic; update `isMastered` |
+| `src/main.ts` | Add `correctStreakThreshold`, `wrongStreakThreshold` to config; update `runAdaptiveLoop` call |
+| `src/runner/interactive.ts` | Pass new thresholds through to `updateRunState`; update per-batch summary to show `mastery` |
+| `src/__tests__/unit/word-state.test.ts` | Replace old `isMastered` tests; add streak + mastery increment/decrement scenarios |
+
+---
+
+#### Unit tests — `word-state.test.ts`
+
+**`updateRunState` — streak behaviour**:
+- `correctStreak` increments on correct, resets to 0 on wrong
+- `wrongStreak` increments on wrong, resets to 0 on correct
+- `seen` and `correct` cumulative counts unchanged
+
+**`updateRunState` — mastery increment**:
+- mastery unchanged when `correctStreak < correctStreakThreshold`
+- mastery += 1 when `correctStreak === correctStreakThreshold`
+- mastery += 1 on next correct when already above threshold (no reset)
+- mastery capped at 5
+
+**`updateRunState` — mastery decrement**:
+- mastery unchanged when `wrongStreak < wrongStreakThreshold`
+- mastery -= 1 when `wrongStreak === wrongStreakThreshold`
+- mastery -= 1 on next wrong when already above threshold (no reset)
+- mastery floored at 0
+
+**`isMastered`**:
+- returns `false` when `mastery < threshold`
+- returns `true` when `mastery === threshold`
+- returns `true` when `mastery > threshold`
+
+---
+
+#### Success criteria
+
+1. `pnpm --filter @gll/srs-engine-v2 test` — all tests pass
+2. `pnpm quizv2` — per-batch word summary shows `mastery` level; words retire at mastery 5; wrong streak visibly drops mastery in the summary
+
+**Status**: Done
+
+---
+
+## Deferred
 
 - FSRS / ANKI scheduling
 - Stuck word shelving
@@ -578,4 +690,5 @@ by changing one constant.
 6. ✅ ST06 — Deck + Batch architecture, batch loop runner, run summary
 7. ✅ ST07 — WordState: per-word seen/correct tracking across the run, per-batch summary
 8. ✅ ST08 — Adaptive loop: sliding window, mastery, retirement, run-until-exhausted
+9. ✅ ST09 — Word streaks and mastery: integer mastery 0–5, streak-driven increment/decrement
 

@@ -7,10 +7,10 @@ function makeItem(id: string): QuizItem {
   return { id, native: id, english: id, romanization: id, type: 'word', language: 'th' } as QuizItem;
 }
 
-function makeState(entries: Record<string, { seen: number; correct: number }>): RunState {
+function makeState(entries: Record<string, { seen: number; correct: number; mastery?: number }>): RunState {
   const m: RunState = new Map();
-  for (const [wordId, { seen, correct }] of Object.entries(entries)) {
-    m.set(wordId, { wordId, seen, correct });
+  for (const [wordId, { seen, correct, mastery = 0 }] of Object.entries(entries)) {
+    m.set(wordId, { wordId, seen, correct, mastery, correctStreak: 0, wrongStreak: 0 });
   }
   return m;
 }
@@ -28,7 +28,7 @@ describe('nextActivePool', () => {
   it('retires a mastered word and pulls next from queue', () => {
     const active = [makeItem('w1'), makeItem('w2')];
     const queue = [makeItem('w3')];
-    const runState = makeState({ w1: { seen: 3, correct: 3 }, w2: { seen: 2, correct: 2 } });
+    const runState = makeState({ w1: { seen: 3, correct: 3, mastery: 3 }, w2: { seen: 2, correct: 2 } });
     const result = nextActivePool(active, queue, 2, runState, 3);
     expect(result.active.map(i => i.id)).toEqual(['w2', 'w3']);
     expect(result.queue).toHaveLength(0);
@@ -37,7 +37,7 @@ describe('nextActivePool', () => {
   it('retires multiple mastered words and pulls same number from queue', () => {
     const active = [makeItem('w1'), makeItem('w2')];
     const queue = [makeItem('w3'), makeItem('w4')];
-    const runState = makeState({ w1: { seen: 3, correct: 3 }, w2: { seen: 3, correct: 3 } });
+    const runState = makeState({ w1: { seen: 3, correct: 3, mastery: 3 }, w2: { seen: 3, correct: 3, mastery: 3 } });
     const result = nextActivePool(active, queue, 2, runState, 3);
     expect(result.active.map(i => i.id)).toEqual(['w3', 'w4']);
     expect(result.queue).toHaveLength(0);
@@ -46,7 +46,7 @@ describe('nextActivePool', () => {
   it('returns empty active and queue when queue is exhausted after retirement', () => {
     const active = [makeItem('w1')];
     const queue: QuizItem[] = [];
-    const runState = makeState({ w1: { seen: 3, correct: 3 } });
+    const runState = makeState({ w1: { seen: 3, correct: 3, mastery: 3 } });
     const result = nextActivePool(active, queue, 2, runState, 3);
     expect(result.active).toHaveLength(0);
     expect(result.queue).toHaveLength(0);
@@ -55,7 +55,7 @@ describe('nextActivePool', () => {
   it('returns active shorter than questionLimit when queue runs out', () => {
     const active = [makeItem('w1')];
     const queue = [makeItem('w2')];
-    const runState = makeState({ w1: { seen: 3, correct: 3 } });
+    const runState = makeState({ w1: { seen: 3, correct: 3, mastery: 3 } });
     const result = nextActivePool(active, queue, 3, runState, 3);
     expect(result.active.map(i => i.id)).toEqual(['w2']);
     expect(result.queue).toHaveLength(0);

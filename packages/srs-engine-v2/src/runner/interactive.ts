@@ -1,5 +1,5 @@
 import { QuizQuestion } from '../types/quiz.js';
-import { RunState, updateRunState, isMastered } from '../types/word-state.js';
+import { RunState, StreakThresholds, updateRunState, isMastered } from '../types/word-state.js';
 import { composeBatchMulti, QuizItem } from '../engine/compose-batch.js';
 
 function readKey(): Promise<string> {
@@ -76,7 +76,7 @@ function printWordSummary(runState: RunState, wordIds: string[]): void {
   for (const wordId of wordIds) {
     const ws = runState.get(wordId);
     if (ws) {
-      console.log(`  ${wordId.replace('th::', '')}   seen: ${ws.seen}  correct: ${ws.correct}`);
+      console.log(`  ${wordId.replace('th::', '')}   seen: ${ws.seen}  correct: ${ws.correct}  mastery: ${ws.mastery}/5  streaks: +${ws.correctStreak}/-${ws.wrongStreak}`);
     }
   }
 }
@@ -106,6 +106,7 @@ export async function runAdaptiveLoop(
   foundationalPool: QuizItem[],
   questionLimit: number,
   masteryThreshold: number,
+  streakThresholds: StreakThresholds,
 ): Promise<void> {
   let active: QuizItem[] = [];
   let queue: QuizItem[] = [...words];
@@ -145,7 +146,7 @@ export async function runAdaptiveLoop(
     const prevState = runState;
     const batchWordIds = [...new Set(results.map(r => r.wordId))];
     for (const r of results) {
-      runState = updateRunState(runState, r.wordId, r.correct);
+      runState = updateRunState(runState, r.wordId, r.correct, streakThresholds);
     }
 
     printWordSummary(runState, batchWordIds);
