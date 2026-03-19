@@ -834,7 +834,7 @@ await runAdaptiveLoop(
 
 ### EP20-ST11: Re-check mastered words on new deck entry
 
-**Status**: Planned (design agreed, not yet scoped)
+**Status**: Done ✅
 
 #### Design context
 
@@ -849,17 +849,83 @@ current `RunState` are given a one-time **re-check**:
 
 - Re-check questions are **mixed into the first batch** (not a separate phase)
 - **Correct on first attempt** → word stays mastered, not shown again in this run
-- **Incorrect on first attempt** → word re-enters the active pool for another chance
-- **Incorrect on second attempt** → normal wrong-streak rules apply (mastery decrements)
+- **Incorrect on first attempt** → word re-enters the active pool; `updateRunState` is NOT called (streak/mastery unchanged)
+- **Incorrect on second attempt** → normal wrong-streak rules apply (`updateRunState` called; mastery may decrement)
 
-If mixing re-check into the first batch proves too complex, a pre-run phase is acceptable
-as a fallback.
+#### Design decisions
 
-#### Open design questions (to resolve at planning time)
+| Question | Decision |
+|---|---|
+| How is a re-check word flagged? | Two local `Set<string>` tracked inside `runAdaptiveLoop`: `recheckPending` (first attempt not yet taken) and `recheckReentered` (first attempt was wrong, now in normal pool but still mastered). Both sets exempt words from retirement in `nextActivePool`. |
+| Does re-check count against `questionLimit`? | Yes — counted within the existing batch limit (additive would change batch sizing). |
+| When is the re-check list computed? | At deck-load time in `main.ts`, before calling `runAdaptiveLoop`. |
+| Why suppress `updateRunState` on first wrong? | Preserves the "one free chance" guarantee — mastery only decrements after the second wrong answer. |
 
-- How is a "re-check word" flagged so the runner handles it differently from active pool words?
-- Does the re-check count against the `questionLimit` for batch 1, or is it additive?
-- At what point in the session lifecycle is the re-check list computed?
+#### Implementation plan
+
+**`src/main.ts`**
+- After resolving `deckWords`, compute:
+  ```ts
+  const recheckIds = new Set(
+    deck.wordIds.filter(id => {
+      const ws = runState.get(id);
+      return ws != null && isMastered(ws, config.masteryThreshold);
+    })
+  );
+  ```
+- Pass `recheckIds` as new last argument to `runAdaptiveLoop`
+
+**`src/runner/interactive.ts` — `nextActivePool`**
+- Add param `recheckExempt: Set<string> = new Set()`
+- Update retirement filter: exempt any word whose id is in `recheckExempt`
+  ```ts
+  const remaining = active.filter(item => {
+    if (recheckExempt.has(item.id)) return true;
+    const ws = runState.get(item.id);
+    return !ws || !isMastered(ws, masteryThreshold);
+  });
+  ```
+
+**`src/runner/interactive.ts` — `runAdaptiveLoop`**
+- Add param `recheckIds: Set<string> = new Set()`
+- Split `words` into re-check words and regular words:
+  - `active = words.filter(w => recheckIds.has(w.id))` (seeded directly, skip queue)
+  - `queue = words.filter(w => !recheckIds.has(w.id))`
+- Local state:
+  - `recheckPending = new Set(recheckIds)`
+  - `recheckReentered = new Set<string>()`
+- Pass `new Set([...recheckPending, ...recheckReentered])` to every `nextActivePool` call
+- Results processing (replaces current single-loop `updateRunState`):
+  1. For each result where `recheckPending.has(wordId)`:
+     - Correct → `recheckPending.delete(wordId)` (will be retired next batch)
+     - Wrong → `recheckPending.delete(wordId)`, `recheckReentered.add(wordId)` — skip `updateRunState`
+  2. For all other results → `updateRunState` called normally (includes `recheckReentered` words)
+  3. After updating, for each `recheckReentered` word: if `!isMastered(ws, masteryThreshold)` → `recheckReentered.delete(wordId)` (now genuinely unmastered, normal retirement applies)
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `src/main.ts` | Compute `recheckIds`; pass to `runAdaptiveLoop`; import `isMastered` |
+| `src/runner/interactive.ts` | `nextActivePool` + `runAdaptiveLoop` — re-check exemption logic |
+| `src/__tests__/unit/recheck.test.ts` | New — unit tests for re-check behaviour |
+
+#### Unit tests — `recheck.test.ts`
+
+- Re-check word correct on first attempt → `recheckPending` cleared; mastery unchanged; retired in next `nextActivePool` call
+- Re-check word wrong on first attempt → `recheckPending` cleared; `recheckReentered` set; mastery unchanged; NOT retired
+- Re-check word wrong on second attempt → `updateRunState` called; mastery may decrement per streak rules
+- `nextActivePool` does not retire words in `recheckExempt` even when mastered
+- `nextActivePool` with empty `recheckExempt` — existing behaviour unchanged (all existing tests must still pass)
+- No `recheckIds` → behaviour identical to current (zero re-check words)
+- Re-check word whose mastery drops below threshold leaves `recheckReentered` and is subject to normal retirement
+
+#### Success criteria
+
+1. `pnpm --filter @gll/srs-engine-v2 test` — all tests pass (old + new)
+2. `pnpm quizv2` — select deck 1, master a word, then select deck 2 which shares that word → word appears in batch 1 of deck 2 run
+3. Correct answer on re-check word → word not shown again in that run
+4. Wrong answer on re-check word → word reappears; mastery unchanged until second wrong
 
 ---
 
@@ -881,6 +947,6 @@ as a fallback.
 7. ✅ ST07 — WordState: per-word seen/correct tracking across the run, per-batch summary
 8. ✅ ST08 — Adaptive loop: sliding window, mastery, retirement, run-until-exhausted
 9. ✅ ST09 — Word streaks and mastery: integer mastery 0–5, streak-driven increment/decrement
-10. ⬜ ST10 — Multi-deck support: WordPool + MockDeck + deck selection
-11. ⬜ ST11 — Re-check mastered words on new deck entry
+10. ✅ ST10 — Multi-deck support: WordPool + MockDeck + deck selection
+11. ✅ ST11 — Re-check mastered words on new deck entry
 

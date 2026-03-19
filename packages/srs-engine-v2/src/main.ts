@@ -2,11 +2,11 @@ import { mockConsonants } from '../data/mock/mock-consonants.js';
 import { wordPool } from '../data/mock/mock-word-pool.js';
 import { mockDecks } from '../data/mock/mock-decks.js';
 import { selectDeck, runAdaptiveLoop } from './runner/interactive.js';
-import { RunState } from './types/word-state.js';
+import { RunState, isMastered } from './types/word-state.js';
 
 const config = {
-  foundationalWordsCount: 1,
-  questionLimit: 4,
+  foundationalWordsCount: 2,
+  questionLimit: 6,
   masteryThreshold: 2,
   maxMastery: 2,
   correctStreakThreshold: 2,
@@ -29,6 +29,13 @@ while (true) {
     ...mockConsonants.slice(0, config.foundationalWordsCount),
   ];
 
+  const recheckIds = new Set(
+    deck.wordIds.filter(id => {
+      const ws = runState.get(id);
+      return ws != null && isMastered(ws, config.masteryThreshold);
+    })
+  );
+
   runState = await runAdaptiveLoop(
     words,
     wordPool,
@@ -37,5 +44,6 @@ while (true) {
     config.masteryThreshold,
     streakThresholds,
     runState,
+    recheckIds,
   );
 }

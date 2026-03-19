@@ -100,14 +100,65 @@ function printWordSummary(runState: RunState, wordIds: string[], maxMastery: num
   }
 }
 
+const DEFAULT_STREAK_THRESHOLDS: StreakThresholds = {
+  correctStreakThreshold: 2,
+  wrongStreakThreshold: 2,
+  maxMastery: 5,
+};
+
+export interface RecheckResultOutput {
+  runState: RunState;
+  recheckPending: Set<string>;
+  recheckReentered: Set<string>;
+}
+
+export function processRecheckResult(
+  wordId: string,
+  wasCorrect: boolean,
+  runState: RunState,
+  recheckPending: Set<string>,
+  recheckReentered: Set<string>,
+  masteryThreshold: number,
+  streakThresholds: StreakThresholds = DEFAULT_STREAK_THRESHOLDS,
+): RecheckResultOutput {
+  const nextPending = new Set(recheckPending);
+  const nextReentered = new Set(recheckReentered);
+  let nextState = runState;
+
+  if (nextPending.has(wordId)) {
+    nextPending.delete(wordId);
+    // Always record the attempt (seen/correct) but never touch streaks or mastery
+    const existing = runState.get(wordId) ?? { wordId, seen: 0, correct: 0, mastery: 0, correctStreak: 0, wrongStreak: 0 };
+    const updated = new Map(runState);
+    updated.set(wordId, { ...existing, seen: existing.seen + 1, correct: existing.correct + (wasCorrect ? 1 : 0) });
+    nextState = updated;
+    if (!wasCorrect) {
+      nextReentered.add(wordId);
+    }
+  } else {
+    // normal word or recheckReentered — apply normal rules
+    nextState = updateRunState(runState, wordId, wasCorrect, streakThresholds);
+    if (nextReentered.has(wordId)) {
+      const ws = nextState.get(wordId);
+      if (ws && !isMastered(ws, masteryThreshold)) {
+        nextReentered.delete(wordId);
+      }
+    }
+  }
+
+  return { runState: nextState, recheckPending: nextPending, recheckReentered: nextReentered };
+}
+
 export function nextActivePool(
   active: QuizItem[],
   queue: QuizItem[],
   questionLimit: number,
   runState: RunState,
   masteryThreshold: number,
+  recheckExempt: Set<string> = new Set(),
 ): { active: QuizItem[]; queue: QuizItem[] } {
   const remaining = active.filter(item => {
+    if (recheckExempt.has(item.id)) return true;
     const ws = runState.get(item.id);
     return !ws || !isMastered(ws, masteryThreshold);
   });
@@ -127,17 +178,21 @@ export async function runAdaptiveLoop(
   masteryThreshold: number,
   streakThresholds: StreakThresholds,
   initialRunState: RunState = new Map(),
+  recheckIds: Set<string> = new Set(),
 ): Promise<RunState> {
-  let active: QuizItem[] = [];
-  let queue: QuizItem[] = [...words];
+  let active: QuizItem[] = words.filter(w => recheckIds.has(w.id));
+  let queue: QuizItem[] = words.filter(w => !recheckIds.has(w.id));
   let runState: RunState = new Map(initialRunState);
+  let recheckPending = new Set(recheckIds);
+  let recheckReentered = new Set<string>();
   let batchNum = 0;
   let totalCorrect = 0;
   let totalQuestions = 0;
   let masteredCount = 0;
 
   while (true) {
-    ({ active, queue } = nextActivePool(active, queue, questionLimit, runState, masteryThreshold));
+    const recheckExempt = new Set([...recheckPending, ...recheckReentered]);
+    ({ active, queue } = nextActivePool(active, queue, questionLimit, runState, masteryThreshold, recheckExempt));
 
     if (active.length === 0 && queue.length === 0) break;
 
@@ -166,7 +221,9 @@ export async function runAdaptiveLoop(
     const prevState = runState;
     const batchWordIds = [...new Set(results.map(r => r.wordId))];
     for (const r of results) {
-      runState = updateRunState(runState, r.wordId, r.correct, streakThresholds);
+      ({ runState, recheckPending, recheckReentered } = processRecheckResult(
+        r.wordId, r.correct, runState, recheckPending, recheckReentered, masteryThreshold, streakThresholds,
+      ));
     }
 
     printWordSummary(runState, batchWordIds, streakThresholds.maxMastery);
@@ -182,7 +239,8 @@ export async function runAdaptiveLoop(
       }
     }
 
-    const peek = nextActivePool(active, queue, questionLimit, runState, masteryThreshold);
+    const peekExempt = new Set([...recheckPending, ...recheckReentered]);
+    const peek = nextActivePool(active, queue, questionLimit, runState, masteryThreshold, peekExempt);
     if (peek.active.length > 0 || peek.queue.length > 0) {
       process.stdout.write('\nNext batch? (y/n): ');
       const answer = await readLine();
