@@ -49,21 +49,25 @@ export function composeBatch(item: QuizItem, pool: QuizItem[]): QuizQuestion[] {
 
   return [
     {
+      wordId: item.id,
       direction: 'native-to-english',
       prompt: item.native,
       choices: makeChoices(getEnglishLabel(item), others.map(getEnglishLabel)),
     },
     {
+      wordId: item.id,
       direction: 'english-to-native',
       prompt: getEnglishLabel(item),
       choices: makeChoices(item.native, others.map(c => c.native)),
     },
     {
+      wordId: item.id,
       direction: 'native-to-romanization',
       prompt: item.native,
       choices: makeChoices(item.romanization, others.map(c => c.romanization)),
     },
     {
+      wordId: item.id,
       direction: 'romanization-to-native',
       prompt: item.romanization,
       choices: makeChoices(item.native, others.map(c => c.native)),

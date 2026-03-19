@@ -1,20 +1,16 @@
 import { mockConsonants } from '../data/mock/mock-consonants.js';
 import { mockWords } from '../data/mock/mock-words.js';
-import { generateBatches } from './engine/compose-deck.js';
-import { runBatchLoop } from './runner/interactive.js';
-import { Deck, BatchConfig } from './types/deck.js';
+import { runAdaptiveLoop } from './runner/interactive.js';
 
-const deck: Deck = {
-  wordPool: mockWords.slice(0, 3),
-  foundationalPool: mockConsonants.slice(0, 3),
+const NON_FOUNDATION_WORDS_COUNT = 2;
+const FOUNDATION_WORDS_COUNT = 4;
+
+const config = {
+  nonFoundationWordsCount: NON_FOUNDATION_WORDS_COUNT,
+  foundationalWordsCount: FOUNDATION_WORDS_COUNT,
+  words: [...mockWords.slice(0, FOUNDATION_WORDS_COUNT + 1), ...mockConsonants.slice(0, NON_FOUNDATION_WORDS_COUNT + 1)],
+  questionLimit: 7,
+  masteryThreshold: 3,
 };
 
-const batchConfig: BatchConfig = {
-  nonFoundationalFocusCount: 1,
-  foundationalFocusCount: 1,
-  questionLimit: 2,
-};
-
-const batches = generateBatches(deck, batchConfig);
-
-await runBatchLoop(batches, mockWords, mockConsonants);
+await runAdaptiveLoop(config.words, mockWords, mockConsonants, config.questionLimit, config.masteryThreshold);

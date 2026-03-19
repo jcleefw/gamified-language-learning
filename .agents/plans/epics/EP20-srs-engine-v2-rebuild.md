@@ -1,7 +1,7 @@
 # EP20 - SRS Engine v2: Rebuild from Scratch
 
 **Created**: 20260319T000000Z
-**Status**: In Progress
+**Status**: Impl-Complete
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
@@ -371,6 +371,196 @@ const batchConfig: BatchConfig = {
 
 ---
 
+### EP20-ST07: WordState — per-word tracking across the run
+
+**Scope**: Introduce `WordState` to track how many times each word has been seen and
+answered correctly. State is built up across all batches in a run and shown as a
+per-word summary after each batch (for words covered in that batch).
+
+#### Type change — `QuizQuestion`
+
+Add `wordId: string` to `QuizQuestion` (populated from `item.id` in `composeBatch`).
+This lets the runner attribute each answered question to a specific word.
+
+#### New file — `src/types/word-state.ts`
+
+```ts
+interface WordState { wordId: string; seen: number; correct: number }
+type RunState = Map<string, WordState>
+function updateRunState(state: RunState, wordId: string, wasCorrect: boolean): RunState
+```
+
+`updateRunState` is a pure function — takes existing state, returns new state with
+the given word's `seen` incremented (always) and `correct` incremented (if correct).
+
+#### `runInteractive` return value
+
+Change from `{ correct, total }` to `{ correct, total, results: { wordId: string; correct: boolean }[] }`.
+
+#### `runBatchLoop`
+
+- Initialise a `RunState` before the batch loop
+- After each batch: call `updateRunState` for each result; print per-word summary
+  for words covered in that batch
+- Run summary at end unchanged (aggregate score)
+
+#### Per-batch word summary format
+
+```
+Word results:
+  th::หิว   seen: 2  correct: 1
+  th::ก     seen: 1  correct: 1
+```
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `src/types/quiz.ts` | Add `wordId: string` to `QuizQuestion` |
+| `src/types/word-state.ts` | New — `WordState`, `RunState`, `updateRunState` |
+| `src/engine/compose-batch.ts` | Populate `wordId: item.id` in `composeBatch` |
+| `src/runner/interactive.ts` | `runInteractive` returns `results`; `runBatchLoop` accumulates `RunState` + per-batch summary |
+| `src/__tests__/unit/word-state.test.ts` | New — `updateRunState` unit tests |
+| `src/__tests__/unit/compose-batch.test.ts` | Update `QuizQuestion` constructions to include `wordId` |
+
+#### Unit tests — `word-state.test.ts`
+
+- `seen` increments on correct answer
+- `seen` increments on wrong answer
+- `correct` increments only on correct answer
+- Multiple words tracked independently in the same `RunState`
+- Starting from empty state creates a new entry
+
+#### Success criteria
+
+1. `pnpm --filter @gll/srs-engine-v2 test` — all tests pass
+2. `pnpm quizv2` — after each batch, shows per-word seen/correct for words in that batch
+
+**Status**: Done
+
+---
+
+### EP20-ST08: Adaptive loop — sliding window, mastery, retirement, run-until-exhausted
+
+**Scope**: Replace the pre-computed `generateBatches` + `runBatchLoop` architecture with
+a single `runAdaptiveLoop` that owns the full learning lifecycle per the new ADR. Words
+move through a queue → active → mastered cycle. The run continues until all words are
+mastered and both active and queue are empty.
+
+**Supersedes**: the intent of the old ST08 (weak-word priority) and ST09 (mastery +
+retirement), which were collapsed into this story after the ADR was rewritten.
+
+**Reference**: [SRS Engine v2 — Learning Phase ADR](../../../product-documentation/architecture/20260319T000000Z-engineering-srs-engine-v2-learning-phase.md)
+
+---
+
+#### New pure function — `nextActivePool`
+
+Extracted from the loop so it is unit-testable:
+
+```ts
+function nextActivePool(
+  active: QuizItem[],
+  queue: QuizItem[],
+  questionLimit: number,
+  runState: RunState,
+): { active: QuizItem[]; queue: QuizItem[] }
+```
+
+Algorithm:
+1. Retire mastered words from active (`isMastered` from `RunState`)
+2. Count free slots: `questionLimit - active.length`
+3. Pull `free_slots` words from the front of queue into active
+4. Return updated `{ active, queue }`
+
+Called once per batch — at the **end** of each batch after updating `RunState`.
+New words enter active at end-of-batch; they receive their first question next batch.
+
+---
+
+#### `runAdaptiveLoop`
+
+Replaces `runBatchLoop`. Owns all I/O.
+
+```
+initialise: active = [], queue = [...all words], runState = new Map()
+
+loop:
+  1. if active empty + queue empty → run complete, break
+  2. compose questions from active (composeBatchMulti, questionLimit)
+  3. runInteractive(questions) → { correct, total, results }
+  4. update RunState from results
+  5. print per-batch word summary (words covered this batch)
+  6. detect newly mastered words → print "Mastered: X" for each
+  7. nextActivePool(active, queue, questionLimit, runState) → new active + queue
+  8. if active not empty or queue not empty → "Next batch? (y/n)"
+
+print run summary: batches, total score, mastered count
+```
+
+---
+
+#### `main.ts` config (replacing Deck + BatchConfig)
+
+```ts
+const config = {
+  words: mockWords.slice(0, 6),
+  questionLimit: 2,
+  masteryThreshold: 3,
+};
+```
+
+`masteryThreshold` passed into `isMastered` — currently hardcoded to `3`, configurable
+by changing one constant.
+
+---
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `src/runner/interactive.ts` | Replace `runBatchLoop` with `runAdaptiveLoop`; extract `nextActivePool` as exported pure function |
+| `src/engine/compose-deck.ts` | `generateBatches` removed |
+| `src/types/deck.ts` | `BatchConfig` and `Batch` removed; `Deck` removed or simplified |
+| `src/types/word-state.ts` | Add `isMastered(ws: WordState, threshold: number): boolean` |
+| `src/main.ts` | Replace `Deck` + `BatchConfig` + `generateBatches` + `runBatchLoop` with flat config + `runAdaptiveLoop` |
+| `src/__tests__/unit/adaptive-loop.test.ts` | New — `nextActivePool` unit tests |
+| `src/__tests__/unit/compose-deck.test.ts` | Removed — `generateBatches` no longer exists |
+| `src/__tests__/unit/word-state.test.ts` | Add `isMastered` tests |
+
+---
+
+#### Unit tests — `nextActivePool`
+
+- Returns unchanged active + queue when no words are mastered and active is full
+- Retires a mastered word and pulls next from queue
+- Retires multiple mastered words in one call and pulls the same number from queue
+- Returns empty queue when queue is exhausted
+- Returns active shorter than questionLimit when queue runs out
+- Does not mutate input arrays
+
+#### Unit tests — `isMastered`
+
+- Returns `false` when `correct < threshold`
+- Returns `true` when `correct === threshold`
+- Returns `true` when `correct > threshold`
+- Returns `false` on a fresh `WordState`
+
+---
+
+#### Success criteria
+
+1. `pnpm --filter @gll/srs-engine-v2 test` — all tests pass
+2. `pnpm quizv2` — run starts with 2 active words; new words enter one at a time as
+   words master; "Mastered: X" printed on graduation; run ends automatically when all
+   words mastered with a final summary
+3. Matches the 10-batch scenario in the ADR (all correct, 6 words, questionLimit 2,
+   mastery 3)
+
+**Status**: Done
+
+---
+
 ## Deferred (post-EP20)
 
 - FSRS / ANKI scheduling
@@ -386,4 +576,6 @@ const batchConfig: BatchConfig = {
 4. ✅ ST04 — Batch composition, N foundational words, configurable question limit
 5. ✅ ST05 — Non-foundational words in the mix, QuizItem union, config object
 6. ✅ ST06 — Deck + Batch architecture, batch loop runner, run summary
+7. ✅ ST07 — WordState: per-word seen/correct tracking across the run, per-batch summary
+8. ✅ ST08 — Adaptive loop: sliding window, mastery, retirement, run-until-exhausted
 

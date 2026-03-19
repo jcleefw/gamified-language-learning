@@ -1,6 +1,6 @@
 # ADR: SRS Engine as a Separate Package
 
-**Status:** Proposed
+**Status:** Superseded by [20260319T000000Z-engineering-srs-engine-v2-learning-phase.md](20260319T000000Z-engineering-srs-engine-v2-learning-phase.md)
 
 **Date:** 2026-03-02
 

@@ -5,15 +5,3 @@ export interface Deck {
   wordPool: MockWord[];
   foundationalPool: MockConsonant[];
 }
-
-export interface BatchConfig {
-  nonFoundationalFocusCount: number;
-  foundationalFocusCount: number;
-  questionLimit: number;
-}
-
-export interface Batch {
-  focusWords: MockWord[];
-  focusFoundational: MockConsonant[];
-  questionLimit: number;
-}

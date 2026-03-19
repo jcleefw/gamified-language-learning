@@ -14,13 +14,11 @@ Target Working directory: `packages/srs-engine-v2`
 - use mock data for now
 - main purpose is build the quize properly
 
-## Completed
-- EP20-ST02
+## Completed up until
+- EP20-ST08
 
 ## What's next
-- ST03: Batch composition for 1 foundational word in multiple choice format
-- ST04: Batch composition for 3 foundational words in multiple choice format 
-- Batch composition for ST03 + 3 words
+- EP20 complete. Deferred: FSRS scheduling, state persistence, Hono route wiring.
 
 
 

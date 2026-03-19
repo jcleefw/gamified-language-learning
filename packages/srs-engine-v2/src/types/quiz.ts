@@ -11,6 +11,7 @@ export interface QuizChoice {
 }
 
 export interface QuizQuestion {
+  wordId: string;
   direction: QuizDirection;
   prompt: string;
   choices: QuizChoice[];

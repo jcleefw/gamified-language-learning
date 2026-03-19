@@ -59,6 +59,13 @@ describe('composeBatch', () => {
     }
   });
 
+  it('each question carries the wordId of the item', () => {
+    const batch = composeBatch(consonant, pool);
+    for (const q of batch) {
+      expect(q.wordId).toBe(consonant.id);
+    }
+  });
+
   it('correct answer is always present in choices', () => {
     const batch = composeBatch(consonant, pool);
 
