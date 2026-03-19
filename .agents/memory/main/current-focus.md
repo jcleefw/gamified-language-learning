@@ -18,7 +18,6 @@ Target Working directory: `packages/srs-engine-v2`
 - EP20-ST08
 
 ## What's next
-- EP20 complete. Deferred: FSRS scheduling, state persistence, Hono route wiring.
-
+- EP20 
 
 

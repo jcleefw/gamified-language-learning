@@ -1,7 +1,7 @@
 # EP20 - SRS Engine v2: Rebuild from Scratch
 
 **Created**: 20260319T000000Z
-**Status**: Impl-Complete
+**Status**: In Progress
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
@@ -561,7 +561,7 @@ by changing one constant.
 
 ---
 
-## Deferred (post-EP20)
+## Deferred 
 
 - FSRS / ANKI scheduling
 - Stuck word shelving

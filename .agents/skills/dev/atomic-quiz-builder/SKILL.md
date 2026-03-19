@@ -10,6 +10,8 @@ You will be provided a short description on the task to complete with a STORY ID
 
 Plan your approach based on the story and write it to the Parent EPIC file `.agents/plans/epics/EP20-srs-engine-v2-rebuild.md`
 
+Every atomic setup should be configurable. 
+
 Stop after you plan for approval.
 
 After approval is given, use `.agents/skills/dev/tdd-implement/SKILL.md` to implement the changes.
