@@ -17,7 +17,7 @@ Quiz generation logic. Pure functions only — no I/O, no side effects.
 | Export | Signature | Purpose |
 | --- | --- | --- |
 | `composeBatch` | `(consonant: MockConsonant, pool: MockConsonant[]) → QuizQuestion[4]` | One question per `QuizDirection` for a single consonant; uses `pool` for distractors |
-| `composeBatchMulti` | `(words: MockConsonant[], pool: MockConsonant[], options: { questionLimit: number }) → QuizQuestion[N]` | Covers all input words, fills to `questionLimit`, returns shuffled result |
+| `composeBatchMulti` | `(words: QuizItem[], pool: QuizItem[], options: { questionLimit: number; shuffle?: boolean }) → QuizQuestion[N]` | Covers all input words, fills to `questionLimit`; optional `shuffle` parameter controls randomness (default: `true`); when `shuffle: false`, returns deterministic order for testing |
 
 ### Internal Helpers
 

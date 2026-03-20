@@ -6,7 +6,7 @@ Package navigation index. Navigate to subfolder CODEMAPs for file-level detail.
 
 ## Package Purpose
 
-Interactive SRS quiz engine for Thai language learning. Composes multiple-choice questions from language content and runs them via a CLI quiz session.
+Interactive SRS quiz engine for Thai language learning. Composes multiple-choice questions from language content and runs them via a CLI quiz session. Supports both interactive mode (user input) and auto mode (automated test scenarios via answer strategies).
 
 ---
 
@@ -14,7 +14,7 @@ Interactive SRS quiz engine for Thai language learning. Composes multiple-choice
 
 | File | Role |
 | --- | --- |
-| `src/main.ts` | CLI demo — wires mock data → `composeBatchMulti` → `runInteractive` |
+| `src/main.ts` | CLI demo — wires mock data → `composeBatchMulti` → `runInteractive` (interactive) or `runAutoInteractive` (auto mode via `AUTO_MODE` flag) |
 | `dist/index.js` | Built library export (generated from `src/`) |
 
 ---
@@ -42,6 +42,7 @@ Interactive SRS quiz engine for Thai language learning. Composes multiple-choice
 | File | Purpose |
 | --- | --- |
 | `__tests__/integration/smoke.test.ts` | Verifies mock data loads with correct shape |
+| `__tests__/integration/auto-scenarios.test.ts` | Validates auto mode scenarios (perfect, 80/20, edge cases) |
 | `__tests__/setup.ts` | Global test setup placeholder |
 
 ---
@@ -59,18 +60,36 @@ Interactive SRS quiz engine for Thai language learning. Composes multiple-choice
 
 ## Data Flow
 
+### Interactive Mode (default)
 ```
 data/mock/mock-consonants.ts
         ↓
-    src/main.ts  (slice first N)
+    src/main.ts  (selectDeck)
         ↓
-src/engine/compose-batch.ts  (composeBatchMulti)
+src/engine/compose-batch.ts  (composeBatchMulti, shuffle=true)
         ↓
    QuizQuestion[]
         ↓
 src/runner/interactive.ts  (runInteractive)
         ↓
-  Console I/O
+  Console I/O + User Input
+```
+
+### Auto Mode (AUTO_MODE=true)
+```
+data/mock/mock-consonants.ts
+        ↓
+    src/main.ts  (AUTO_MODE=true, selectStrategy)
+        ↓
+src/engine/compose-batch.ts  (composeBatchMulti, shuffle=false)
+        ↓
+   QuizQuestion[]
+        ↓
+src/types/answer-strategy.ts  (AnswerStrategy.selectAnswer)
+        ↓
+src/runner/auto-answerer.ts  (runAutoInteractive)
+        ↓
+  Deterministic Results
 ```
 
 ---

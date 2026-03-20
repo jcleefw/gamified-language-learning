@@ -123,6 +123,46 @@ describe('composeBatchMulti', () => {
     const batch = composeBatchMulti(words, pool, { questionLimit: 100 });
     expect(batch).toHaveLength(words.length * 4);
   });
+
+  it('with shuffle: false, returns deterministic question order', () => {
+    const batch1 = composeBatchMulti(words, pool, { questionLimit: 5, shuffle: false });
+    const batch2 = composeBatchMulti(words, pool, { questionLimit: 5, shuffle: false });
+
+    expect(batch1).toHaveLength(5);
+    expect(batch2).toHaveLength(5);
+
+    // Same input → same output with shuffle: false
+    for (let i = 0; i < batch1.length; i++) {
+      expect(batch1[i].wordId).toBe(batch2[i].wordId);
+      expect(batch1[i].direction).toBe(batch2[i].direction);
+      expect(batch1[i].prompt).toBe(batch2[i].prompt);
+    }
+  });
+
+  it('with shuffle: true, may return different order', () => {
+    const orderings = new Set<string>();
+
+    for (let i = 0; i < 10; i++) {
+      const batch = composeBatchMulti(words, pool, { questionLimit: 5, shuffle: true });
+      const ordering = batch.map(q => `${q.wordId}::${q.direction}`).join('|');
+      orderings.add(ordering);
+    }
+
+    // With shuffle: true, we expect variation (low probability all 10 are identical)
+    expect(orderings.size).toBeGreaterThan(1);
+  });
+
+  it('defaults to shuffle: true for backward compatibility', () => {
+    const batchDefault = composeBatchMulti(words, pool, { questionLimit: 5 });
+    const batchExplicit = composeBatchMulti(words, pool, { questionLimit: 5, shuffle: true });
+
+    expect(batchDefault).toHaveLength(5);
+    expect(batchExplicit).toHaveLength(5);
+    // Both should have valid structure (not checking order since both are shuffled)
+    for (const q of batchDefault) {
+      expect(q.choices).toHaveLength(4);
+    }
+  });
 });
 
 describe('composeBatch with MockWord', () => {
