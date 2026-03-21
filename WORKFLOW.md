@@ -1,12 +1,17 @@
 # WORKFLOW.md
 
-## Naming Conventions
+## Naming Conventions (Mandatory Tooling)
 
-**Timestamp Format**: `YYYYMMDDTHHmmssZ` | **Timezone**: UTC+10
+All timestamps and file names must be generated using the following tools:
+- **Timestamp**: `.agents/tools/generate-timestamp.sh`
+- **Filename**: `.agents/tools/generate-filename.sh <PREFIX> <SLUG>`
 
+**Timestamp Format**: `YYYYMMDDTHHmmssZ` | **Timezone**: UTC+10 (fixed)
 **File Naming**: `[TIMESTAMP]-[PREFIX]-[SLUG].md`
 
-Example: `20260302T143022Z-EP01-user-authentication.md`
+Example results:
+- Timestamp: `20260321T104219Z`
+- Filename: `20260321T104219Z-EP01-user-authentication.md`
 
 | Element          | Convention                                                  | Example                                     |
 | ---------------- | ----------------------------------------------------------- | ------------------------------------------- |
