@@ -12,16 +12,12 @@ export interface QuizResult {
  * Automatically answer a batch of quiz questions using a provided strategy.
  * Mirrors runInteractive() contract but with no user input.
  */
-export async function runAutoInteractive(
+export function runAutoInteractive(
   questions: QuizQuestion[],
   strategy: AnswerStrategy,
-): Promise<{ correct: number; total: number; results: QuizResult[] }> {
+): { correct: number; total: number; results: QuizResult[] } {
   if (questions.length === 0) {
     throw new Error('runAutoInteractive: No questions provided');
-  }
-
-  if (!strategy) {
-    throw new Error('runAutoInteractive: No strategy provided');
   }
 
   let score = 0;

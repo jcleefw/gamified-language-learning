@@ -4,7 +4,7 @@ import {
   RandomAnswerStrategy,
   WeightedAccuracyStrategy,
 } from '../../types/answer-strategy.js';
-import { QuizQuestion } from '../../types/quiz.js';
+import type { QuizQuestion } from '../../types/quiz.js';
 
 const createTestQuestion = (wordId: string = 'word1'): QuizQuestion => ({
   wordId,

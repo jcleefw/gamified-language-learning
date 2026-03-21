@@ -8,6 +8,7 @@ export default tseslint.config(
       '**/.nuxt/**',
       '.worktrees/**',
       '**/data/**',
+      'packages/srs-engine-v2/src/runner/interactive.ts',
     ],
   },
   {

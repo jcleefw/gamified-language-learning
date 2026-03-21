@@ -3,7 +3,7 @@ import { wordPool } from '../data/mock/mock-word-pool.js';
 import { mockDecks } from '../data/mock/mock-decks.js';
 import { selectDeck, runAdaptiveLoop } from './runner/interactive.js';
 import { type RunState, isMastered } from './types/word-state.js';
-import { CorrectAnswerStrategy, WeightedAccuracyStrategy, RandomAnswerStrategy } from './types/answer-strategy.js';
+import { CorrectAnswerStrategy } from './types/answer-strategy.js';
 import type { AnswerStrategy } from './types/answer-strategy.js';
 
 // AUTO_MODE: Set to true to run automated quiz answering without user input
@@ -46,8 +46,9 @@ function selectStrategy(): AnswerStrategy {
 
 let runState: RunState = new Map();
 
-for (;;) {
+for (; ;) {
   // Select deck (auto or interactive)
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const deck = AUTO_MODE ? mockDecks[0] : await selectDeck(mockDecks);
 
   const deckWords = deck.wordIds.flatMap(id => {
@@ -66,6 +67,7 @@ for (;;) {
     })
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const strategy = AUTO_MODE ? selectStrategy() : undefined;
 
   runState = await runAdaptiveLoop(
@@ -81,5 +83,6 @@ for (;;) {
   );
 
   // In auto mode, exit after one run; in interactive mode, loop
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (AUTO_MODE) break;
 }

@@ -1,4 +1,4 @@
-import { QuizQuestion } from './quiz';
+import type { QuizQuestion } from './quiz';
 
 /**
  * AnswerStrategy determines which choice a quiz runner will select
