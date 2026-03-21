@@ -929,6 +929,186 @@ current `RunState` are given a one-time **re-check**:
 
 ---
 
+### EP20-ST13: Extended foundational types — vowels, tones, and configurable directions
+
+**Scope**: Extend the foundational system to support all three Thai foundational categories
+(consonants, vowels, tones). Introduce a `MockFoundational` tagged-union type. Give each
+foundational type its own allowed set of `QuizDirection`s configured in the engine, so
+that tones (for example) only generate meaningful question directions.
+
+---
+
+#### Type changes — `data/mock/` + new `src/types/foundational.ts`
+
+Add an explicit `foundationalType` discriminant to `MockConsonant` and define two new
+interfaces:
+
+```ts
+// mock-consonants.ts — add foundationalType tag
+export interface MockConsonant {
+  id: string;
+  foundationalType: 'consonant';        // ← new explicit tag
+  native: string;
+  romanization: string;                  // consonant name, e.g. 'Ko Kai'
+  english: string;                       // sound value, e.g. 'k'
+  class: 'middle' | 'high' | 'low';
+  language: 'th';
+}
+
+// mock-vowels.ts — new
+export interface MockVowel {
+  id: string;
+  foundationalType: 'vowel';
+  native: string;                        // e.g. 'า'
+  romanization: string;                  // e.g. 'aa'
+  english: string;                       // e.g. 'long a'
+  position: 'leading' | 'trailing' | 'surrounding';
+  length: 'short' | 'long';
+  language: 'th';
+}
+
+// mock-tones.ts — new
+export interface MockTone {
+  id: string;
+  foundationalType: 'tone';
+  native: string;                        // the diacritic mark, e.g. '่'
+  romanization: string;                  // e.g. 'mai ek'
+  english: string;                       // e.g. 'low tone'
+  language: 'th';
+}
+
+// src/types/foundational.ts — new
+export type MockFoundational = MockConsonant | MockVowel | MockTone;
+```
+
+`QuizItem` becomes `MockFoundational | MockWord`.
+
+---
+
+#### Configurable directions — `src/engine/compose-batch.ts`
+
+Introduce a direction config table keyed by `foundationalType`. Tones omit the
+romanization directions because mixing tiny diacritic marks as MC choices is confusing
+and low-signal:
+
+```ts
+export const FOUNDATIONAL_DIRECTIONS: Record<
+  MockFoundational['foundationalType'],
+  QuizDirection[]
+> = {
+  consonant: [
+    'native-to-english',
+    'english-to-native',
+    'native-to-romanization',
+    'romanization-to-native',
+  ],
+  vowel: [
+    'native-to-english',
+    'english-to-native',
+    'native-to-romanization',
+    'romanization-to-native',
+  ],
+  tone: [
+    'native-to-english',     // mark → tone name  (e.g. ่ → "low tone")
+    'english-to-native',     // tone name → mark  (e.g. "low tone" → ่)
+  ],
+};
+```
+
+`MockWord` continues to use all 4 directions (unchanged).
+
+`composeBatch` selects the direction list at runtime:
+
+```ts
+const directions: QuizDirection[] =
+  'foundationalType' in item
+    ? FOUNDATIONAL_DIRECTIONS[item.foundationalType]
+    : ['native-to-english', 'english-to-native', 'native-to-romanization', 'romanization-to-native'];
+
+return directions.map(direction => makeQuestion(item, direction, others));
+```
+
+Extract `makeQuestion(item, direction, pool)` as a private pure function (no behaviour
+change for consonants or words).
+
+#### `getEnglishLabel` update
+
+Replace the fragile `'class' in item` structural check with the explicit tag:
+
+```ts
+function getEnglishLabel(item: QuizItem): string {
+  if ('foundationalType' in item && item.foundationalType === 'consonant') {
+    return `${item.english} (${item.class})`;
+  }
+  return item.english; // vowels, tones, words
+}
+```
+
+---
+
+#### Distractor pool rule (caller responsibility)
+
+Distractor pools must remain **homogeneous by foundational type** — consonant questions
+draw distractors only from other consonants, tone questions from other tones. This is
+enforced by the caller passing the correct pool, not by the engine:
+
+```ts
+composeBatchMulti(focusTones, allMockTones, { questionLimit });
+composeBatchMulti(focusConsonants, mockConsonants, { questionLimit });
+```
+
+---
+
+#### Mock data — new files
+
+| File | Content |
+|---|---|
+| `data/mock/mock-vowels.ts` | 5–8 core Thai vowels (`า`, `ิ`, `ี`, `ึ`, `ื`) with `MockVowel` shape |
+| `data/mock/mock-tones.ts` | 5 Thai tone marks (`่` `้` `๊` `๋` + no mark = mid tone) with `MockTone` shape |
+
+---
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `data/mock/mock-consonants.ts` | Add `foundationalType: 'consonant'` to interface + all entries |
+| `data/mock/mock-vowels.ts` | **[NEW]** `MockVowel` interface + 5–8 seed entries |
+| `data/mock/mock-tones.ts` | **[NEW]** `MockTone` interface + 5 seed entries |
+| `src/types/foundational.ts` | **[NEW]** `MockFoundational` union type |
+| `src/engine/compose-batch.ts` | `QuizItem` updated; `FOUNDATIONAL_DIRECTIONS` config; `makeQuestion` extracted; `getEnglishLabel` updated |
+| `src/learning/learning-runner.ts` | Pass type-matched pools for each foundational type |
+| `src/__tests__/unit/compose-batch.test.ts` | Update `QuizItem` constructions; add direction-count tests per type |
+
+---
+
+#### Unit tests — new assertions in `compose-batch.test.ts`
+
+- Consonant item produces exactly 4 questions
+- Vowel item produces exactly 4 questions
+- Tone item produces exactly **2** questions
+- Tone questions are only `native-to-english` and `english-to-native`
+- `getEnglishLabel` returns `"k (middle)"` for a consonant, plain `english` for a vowel and a tone
+- Existing consonant + word tests still pass unchanged
+
+---
+
+#### Success criteria
+
+1. `pnpm --filter @gll/srs-engine-v2 test` — all tests pass (old + new)
+2. `pnpm learnv2` — `mockVowels` and `mockTones` are wired into the learning runner so
+   all three foundational types appear in the quiz session; no consonant or word behaviour
+   regression
+3. `AUTO_MODE=true pnpm learnv2` — auto-mode run exercises vowel and tone questions; the
+   auto-answer strategy selects valid choices for 2-direction tone questions without
+   error; scenario results logged as usual
+4. Adding a new foundational type requires: one new interface, one new mock file, one new
+   entry in `FOUNDATIONAL_DIRECTIONS` — nothing else
+
+**Status**: Pending
+
+---
+
 ## Deferred
 
 - FSRS / ANKI scheduling
@@ -949,4 +1129,5 @@ current `RunState` are given a one-time **re-check**:
 9. ✅ ST09 — Word streaks and mastery: integer mastery 0–5, streak-driven increment/decrement
 10. ✅ ST10 — Multi-deck support: WordPool + MockDeck + deck selection
 11. ✅ ST11 — Re-check mastered words on new deck entry
+12. ⬜ ST13 — Extended foundational types: vowels, tones, configurable directions
 
