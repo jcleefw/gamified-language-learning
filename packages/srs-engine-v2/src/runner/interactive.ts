@@ -4,6 +4,8 @@ import type { QuizQuestion } from '../types/quiz.js';
 import { type RunState, type StreakThresholds, updateRunState, isMastered } from '../types/word-state.js';
 import { composeBatchMulti, type QuizItem } from '../engine/compose-batch.js';
 import type { MockDeck } from '../types/deck.js';
+import type { AnswerStrategy } from '../types/answer-strategy.js';
+import { runAutoInteractive } from './auto-answerer.js';
 
 // Constants
 const WORD_ID_PREFIX = 'th::';
@@ -207,6 +209,7 @@ async function runBatch(
   wordPool: QuizItem[],
   foundationalPool: QuizItem[],
   questionLimit: number,
+  strategy?: AnswerStrategy,
 ): Promise<{ correct: number; total: number; results: QuizResult[] }> {
   console.log(`\n=== Batch ${String(batchNum)} ===`);
 
@@ -217,15 +220,20 @@ async function runBatch(
     : 0;
   const wordLimit = questionLimit - consonantLimit;
 
+  const shouldShuffle = !strategy; // Only shuffle when in interactive mode (no strategy)
   const foundationalQs = activeFoundational.length > 0
-    ? composeBatchMulti(activeFoundational, foundationalPool, { questionLimit: consonantLimit })
+    ? composeBatchMulti(activeFoundational, foundationalPool, { questionLimit: consonantLimit, shuffle: shouldShuffle })
     : [];
   const wordQs = activeWords.length > 0
-    ? composeBatchMulti(activeWords, wordPool, { questionLimit: wordLimit })
+    ? composeBatchMulti(activeWords, wordPool, { questionLimit: wordLimit, shuffle: shouldShuffle })
     : [];
   const questions = [...foundationalQs, ...wordQs].sort(() => Math.random() - 0.5);
 
-  return await runInteractive(questions);
+  if (strategy) {
+    return runAutoInteractive(questions, strategy);
+  } else {
+    return await runInteractive(questions);
+  }
 }
 
 interface MasteryUpdateResult {
@@ -282,6 +290,7 @@ export async function runAdaptiveLoop(
   streakThresholds: StreakThresholds,
   initialRunState: RunState = new Map(),
   recheckIds: Set<string> = new Set(),
+  strategy?: AnswerStrategy,
 ): Promise<RunState> {
   let active: QuizItem[] = words.filter(w => recheckIds.has(w.id));
   let queue: QuizItem[] = words.filter(w => !recheckIds.has(w.id));
@@ -302,7 +311,7 @@ export async function runAdaptiveLoop(
     batchNum++;
     const prevState = runState;
 
-    const { correct, total, results } = await runBatch(batchNum, active, wordPool, foundationalPool, questionLimit);
+    const { correct, total, results } = await runBatch(batchNum, active, wordPool, foundationalPool, questionLimit, strategy);
     totalCorrect += correct;
     totalQuestions += total;
 
@@ -317,9 +326,16 @@ export async function runAdaptiveLoop(
     const peekExempt = new Set([...recheckPending, ...recheckReentered]);
     const peek = nextActivePool(active, queue, questionLimit, runState, masteryThreshold, peekExempt);
     if (peek.active.length > 0 || peek.queue.length > 0) {
-      process.stdout.write(BATCH_PROMPT);
-      const answer = await readLine();
-      if (answer !== 'y') break;
+      // In auto mode, continue automatically; in interactive mode, ask user
+      if (strategy) {
+        // Auto mode: continue to next batch
+        continue;
+      } else {
+        // Interactive mode: ask user
+        process.stdout.write(BATCH_PROMPT);
+        const answer = await readLine();
+        if (answer !== 'y') break;
+      }
     }
   }
 

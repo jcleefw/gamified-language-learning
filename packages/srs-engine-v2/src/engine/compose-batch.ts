@@ -30,18 +30,22 @@ function makeChoices(correct: string, distractors: string[]): QuizChoice[] {
 export function composeBatchMulti(
   words: QuizItem[],
   pool: QuizItem[],
-  options: { questionLimit: number },
+  options: { questionLimit: number; shuffle?: boolean },
 ): QuizQuestion[] {
-  const { questionLimit } = options;
+  const { questionLimit, shuffle: shouldShuffle = true } = options;
 
-  const questionsByWord = words.map(word => shuffle(composeBatch(word, pool)));
+  const questionsByWord = words.map(word => {
+    const questions = composeBatch(word, pool);
+    return shouldShuffle ? shuffle(questions) : questions;
+  });
 
   const coverage = questionsByWord.map(qs => qs[0]).slice(0, questionLimit);
   const leftover = questionsByWord.flatMap(qs => qs.slice(1));
   const fillCount = Math.max(0, questionLimit - coverage.length);
-  const filler = shuffle(leftover).slice(0, fillCount);
+  const filler = shouldShuffle ? shuffle(leftover).slice(0, fillCount) : leftover.slice(0, fillCount);
 
-  return shuffle([...coverage, ...filler]);
+  const batch = [...coverage, ...filler];
+  return shouldShuffle ? shuffle(batch) : batch;
 }
 
 export function composeBatch(item: QuizItem, pool: QuizItem[]): QuizQuestion[] {
