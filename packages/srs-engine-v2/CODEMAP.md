@@ -14,7 +14,7 @@ Interactive SRS quiz engine for Thai language learning. Composes multiple-choice
 
 | File | Role |
 | --- | --- |
-| `src/main.ts` | CLI demo — wires mock data → `composeBatchMulti` → `runInteractive` (interactive) or `runAutoInteractive` (auto mode via `AUTO_MODE` flag) |
+| `src/learning/learning-runner.ts` | CLI learning demo — wires mock data → `runAdaptiveLoop` → `runInteractive` (interactive) or `runAutoInteractive` (auto mode) |
 | `dist/index.js` | Built library export (generated from `src/`) |
 
 ---
@@ -23,8 +23,8 @@ Interactive SRS quiz engine for Thai language learning. Composes multiple-choice
 
 | Folder | Purpose | CODEMAP |
 | --- | --- | --- |
+| `src/learning/` | Learning phase CLI session, adaptive loop, and automated runners | [CODEMAP](src/learning/CODEMAP.md) |
 | `src/engine/` | Quiz generation — pure functions, no I/O | [CODEMAP](src/engine/CODEMAP.md) |
-| `src/runner/` | CLI quiz execution — I/O only, no quiz logic | [CODEMAP](src/runner/CODEMAP.md) |
 | `src/types/` | Shared TypeScript type definitions | [CODEMAP](src/types/CODEMAP.md) |
 
 ---
@@ -64,13 +64,13 @@ Interactive SRS quiz engine for Thai language learning. Composes multiple-choice
 ```
 data/mock/mock-consonants.ts
         ↓
-    src/main.ts  (selectDeck)
+src/learning/learning-runner.ts  (selectDeck)
         ↓
 src/engine/compose-batch.ts  (composeBatchMulti, shuffle=true)
         ↓
    QuizQuestion[]
         ↓
-src/runner/interactive.ts  (runInteractive)
+src/learning/learning-io.ts  (runInteractive)
         ↓
   Console I/O + User Input
 ```
@@ -79,18 +79,19 @@ src/runner/interactive.ts  (runInteractive)
 ```
 data/mock/mock-consonants.ts
         ↓
-    src/main.ts  (AUTO_MODE=true, selectStrategy)
+src/learning/learning-runner.ts  (AUTO_MODE=true, selectStrategy)
         ↓
 src/engine/compose-batch.ts  (composeBatchMulti, shuffle=false)
         ↓
    QuizQuestion[]
         ↓
-src/types/answer-strategy.ts  (AnswerStrategy.selectAnswer)
+src/learning/auto-answer-strategy.ts  (AutoAnswerStrategy.selectAnswer)
         ↓
-src/runner/auto-answerer.ts  (runAutoInteractive)
+src/learning/auto-answerer.ts  (runAutoInteractive)
         ↓
   Deterministic Results
 ```
+
 
 ---
 

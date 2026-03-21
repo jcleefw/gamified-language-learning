@@ -49,7 +49,7 @@ This specification covers the full scope of EP23: refactoring the `srs-engine-v2
 
 ## 4. Stories & Tasks
 
-### EP23-ST01: Structural Refactor & Naming
+### EP23-ST01: Structural Refactor & Naming — **Complete ✅**
 **Scope**: Logical isolation in `src/learning/`.
 - Move `src/main.ts` → `src/learning/learning-runner.ts` (Entry Point).
 - Move `src/runner/interactive.ts` → `src/learning/learning-io.ts` (IO/Orchestration).

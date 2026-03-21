@@ -4,7 +4,7 @@ import type { QuizQuestion } from '../types/quiz.js';
 import { type RunState, type StreakThresholds, updateRunState, isMastered } from '../types/word-state.js';
 import { composeBatchMulti, type QuizItem } from '../engine/compose-batch.js';
 import type { MockDeck } from '../types/deck.js';
-import type { AnswerStrategy } from '../types/answer-strategy.js';
+import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 import { runAutoInteractive } from './auto-answerer.js';
 
 // Constants
@@ -136,7 +136,7 @@ function printWordSummary(runState: RunState, wordIds: string[], maxMastery: num
 const DEFAULT_STREAK_THRESHOLDS: StreakThresholds = {
   correctStreakThreshold: 2,
   wrongStreakThreshold: 2,
-  maxMastery: 5,
+  maxMastery: 2,
 };
 
 export interface RecheckResultOutput {
@@ -209,7 +209,7 @@ async function runBatch(
   wordPool: QuizItem[],
   foundationalPool: QuizItem[],
   questionLimit: number,
-  strategy?: AnswerStrategy,
+  strategy?: AutoAnswerStrategy,
 ): Promise<{ correct: number; total: number; results: QuizResult[] }> {
   console.log(`\n=== Batch ${String(batchNum)} ===`);
 
@@ -290,7 +290,7 @@ export async function runAdaptiveLoop(
   streakThresholds: StreakThresholds,
   initialRunState: RunState = new Map(),
   recheckIds: Set<string> = new Set(),
-  strategy?: AnswerStrategy,
+  strategy?: AutoAnswerStrategy,
 ): Promise<RunState> {
   let active: QuizItem[] = words.filter(w => recheckIds.has(w.id));
   let queue: QuizItem[] = words.filter(w => !recheckIds.has(w.id));

@@ -1,27 +1,13 @@
-import { mockConsonants } from '../data/mock/mock-consonants.js';
-import { wordPool } from '../data/mock/mock-word-pool.js';
-import { mockDecks } from '../data/mock/mock-decks.js';
-import { selectDeck, runAdaptiveLoop } from './runner/interactive.js';
-import { type RunState, isMastered } from './types/word-state.js';
-import { CorrectAnswerStrategy } from './types/answer-strategy.js';
-import type { AnswerStrategy } from './types/answer-strategy.js';
-
-// AUTO_MODE: Set to true to run automated quiz answering without user input
-const AUTO_MODE = true;
-const config = {
-  foundationalWordsCount: 2,
-  questionLimit: 6,
-  masteryThreshold: 2,
-  maxMastery: 2,
-  correctStreakThreshold: 2,
-  wrongStreakThreshold: 2,
-};
-
-const streakThresholds = {
-  correctStreakThreshold: config.correctStreakThreshold,
-  wrongStreakThreshold: config.wrongStreakThreshold,
-  maxMastery: config.maxMastery,
-};
+import { mockConsonants } from '../../data/mock/mock-consonants.js';
+import { wordPool } from '../../data/mock/mock-word-pool.js';
+import { mockDecks } from '../../data/mock/mock-decks.js';
+import { selectDeck, runAdaptiveLoop } from './learning-io.js';
+import { type RunState, isMastered } from '../types/word-state.js';
+import {
+  CorrectAutoAnswerStrategy,
+} from './auto-answer-strategy.js';
+import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
+import { AUTO_MODE, LEARNING_CONFIG, STREAK_THRESHOLDS } from './config.js';
 
 /**
  * Test Scenarios for Auto Mode
@@ -30,18 +16,18 @@ const streakThresholds = {
  * Each scenario uses a different answer strategy to validate different aspects
  * of the SRS engine behavior.
  */
-function selectStrategy(): AnswerStrategy {
+function selectStrategy(): AutoAnswerStrategy {
   // Scenario 1: Perfect Run — all questions answered correctly
   // Expected: All words reach mastery, 100% accuracy
-  return new CorrectAnswerStrategy();
+  return new CorrectAutoAnswerStrategy();
 
   // Scenario 2: Realistic 80/20 — 80% accuracy with some errors
   // Expected: Mixed mastery levels, ~80% accuracy, some recheck behavior
-  // return new WeightedAccuracyStrategy(0.8);
+  // return new WeightedAccuracyAutoAnswerStrategy(0.8);
 
   // Scenario 3: Edge Cases — random answers
   // Expected: Unpredictable results, validates engine handles variable accuracy
-  // return new RandomAnswerStrategy();
+  // return new RandomAutoAnswerStrategy();
 }
 
 let runState: RunState = new Map();
@@ -57,13 +43,13 @@ for (; ;) {
   });
   const words = [
     ...deckWords,
-    ...mockConsonants.slice(0, config.foundationalWordsCount),
+    ...mockConsonants.slice(0, LEARNING_CONFIG.foundationalWordsCount),
   ];
 
   const recheckIds = new Set(
     deck.wordIds.filter(id => {
       const ws = runState.get(id);
-      return ws != null && isMastered(ws, config.masteryThreshold);
+      return ws != null && isMastered(ws, LEARNING_CONFIG.masteryThreshold);
     })
   );
 
@@ -74,9 +60,9 @@ for (; ;) {
     words,
     wordPool,
     mockConsonants,
-    config.questionLimit,
-    config.masteryThreshold,
-    streakThresholds,
+    LEARNING_CONFIG.questionLimit,
+    LEARNING_CONFIG.masteryThreshold,
+    STREAK_THRESHOLDS,
     runState,
     recheckIds,
     strategy,

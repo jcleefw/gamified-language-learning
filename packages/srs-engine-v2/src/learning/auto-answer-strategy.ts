@@ -1,10 +1,10 @@
-import type { QuizQuestion } from './quiz';
+import type { QuizQuestion } from '../types/quiz.js';
 
 /**
- * AnswerStrategy determines which choice a quiz runner will select
+ * AutoAnswerStrategy determines which choice a quiz runner will select
  * for a given question, without user input.
  */
-export interface AnswerStrategy {
+export interface AutoAnswerStrategy {
   /**
    * Select an answer choice index (0–3) for a question.
    * @param question - the quiz question
@@ -17,7 +17,7 @@ export interface AnswerStrategy {
  * Always select the correct answer.
  * Used for "perfect run" test scenarios.
  */
-export class CorrectAnswerStrategy implements AnswerStrategy {
+export class CorrectAutoAnswerStrategy implements AutoAnswerStrategy {
   selectAnswer(question: QuizQuestion): number {
     const index = question.choices.findIndex(c => c.isCorrect);
     if (index === -1) {
@@ -31,7 +31,7 @@ export class CorrectAnswerStrategy implements AnswerStrategy {
  * Select a random choice (including possibly the correct answer).
  * Used for edge case / chaos testing.
  */
-export class RandomAnswerStrategy implements AnswerStrategy {
+export class RandomAutoAnswerStrategy implements AutoAnswerStrategy {
   selectAnswer(question: QuizQuestion): number {
     return Math.floor(Math.random() * question.choices.length);
   }
@@ -42,7 +42,7 @@ export class RandomAnswerStrategy implements AnswerStrategy {
  * If accuracy is 0.8, answer correctly ~80% of the time, randomly ~20%.
  * Used for "realistic accuracy" scenarios.
  */
-export class WeightedAccuracyStrategy implements AnswerStrategy {
+export class WeightedAccuracyAutoAnswerStrategy implements AutoAnswerStrategy {
   constructor(private accuracy: number) {
     if (accuracy < 0 || accuracy > 1) {
       throw new Error('Accuracy must be between 0 and 1');
@@ -73,3 +73,4 @@ export class WeightedAccuracyStrategy implements AnswerStrategy {
     }
   }
 }
+

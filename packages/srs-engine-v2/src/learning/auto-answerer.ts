@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 
 import type { QuizQuestion } from '../types/quiz.js';
-import type { AnswerStrategy } from '../types/answer-strategy.js';
+import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 
 export interface QuizResult {
   wordId: string;
@@ -14,7 +14,7 @@ export interface QuizResult {
  */
 export function runAutoInteractive(
   questions: QuizQuestion[],
-  strategy: AnswerStrategy,
+  strategy: AutoAnswerStrategy,
 ): { correct: number; total: number; results: QuizResult[] } {
   if (questions.length === 0) {
     throw new Error('runAutoInteractive: No questions provided');
