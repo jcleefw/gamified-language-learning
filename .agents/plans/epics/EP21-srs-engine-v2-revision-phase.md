@@ -73,83 +73,50 @@ New entry point: `src/main-review.ts` → `pnpm reviewv2`.
 
 ## Stories
 
-### EP21-ST01: SQLite persistence layer for ReviewCard
+### EP21-ST01: Revision Runner + Mock Seeder (Vertical Slice)
 
-**Scope**: Introduce a SQLite-backed persistence utility for `ReviewCard` state. Pure I/O —
-no FSRS, no scheduler logic. The engine remains side-effect-free; the persistence
-utility lives in `src/persistence/`.
+**Scope**: To decouple the Revision phase development from the Learning phase, we will implement the Revision auto-answerer runner and a mock seeding script. This lets us generate ready-to-test `ReviewCard` records in SQLite and then run `pnpm reviewv2` (auto mode) to verify that due cards are retrieved, answered, effectively scheduled by FSRS, and persisted back to SQLite.
 
-#### New type — `src/types/review-card.ts`
+#### 1. Persistence Layer (`ReviewStore` & `SqliteReviewStore`)
+- Domain Type: `ReviewCard` (`wordId`, `due: Date`, `schedulerData: unknown`) — no `ts-fsrs` import.
+- Interface: `ReviewStore` with `upsert`, `getByWordId`, `getDue`, `getDueForDeck`, `getAll`.
+- Implementation: `SqliteReviewStore` using `better-sqlite3`.
+- DB table: `review_cards` (`word_id` TEXT PK, `due` TEXT, `scheduler_data` TEXT). Store dates as ISO 8601.
 
-```ts
-interface ReviewCard {
-  wordId: string;
-  due: Date;
-  schedulerData: unknown; // opaque — the scheduler owns this completely
-}
-```
+#### 2. Scheduler Layer (`ReviewScheduler` & `FsrsScheduler`)
+- Domain Type: `ReviewScheduler` interface with types `ReviewRating` ('again'|'hard'|'good'|'easy') and `GraduationPerformance`.
+- Implementation: `FsrsScheduler` — the **only** place `ts-fsrs` is imported. Initialize FSRS with `enable_short_term: false`. 
+- Provide `FsrsScheduler.seed()` to map performance to an initial rating, runs `fsrs.next`, and returns a new `ReviewCard`.
+- Provide `FsrsScheduler.schedule()` to take an existing `ReviewCard` and `ReviewRating`, run `fsrs.next`, and return an updated `ReviewCard`.
 
-No ts-fsrs import. The persistence layer never inspects `schedulerData`.
+#### 3. Mock Seeder Script
+- Script `src/scripts/seed-mock-reviews.ts` (runnable via `pnpm seed-mocks`).
+- Defines a few fixed `wordId`s and simulates graduation by calling `FsrsScheduler.seed()`.
+- Manipulates the `dueDate` of the resulting cards so they are actively due *now*.
+- Uses `SqliteReviewStore` to persist them to `data/review-state.db`.
 
-#### SQLite schema
+#### 4. Revision Mode Runner
+- Implement `runReviewSession` in `src/runner/main-review.ts`.
+- It connects to `SqliteReviewStore`, calls `getDue(now)`, and iterates through the cards.
+- During auto-mode, it uses an `AnswerStrategy` to answer questions, infers a `ReviewRating` based on success, calls `FsrsScheduler.schedule(card, rating)`, and `upsert`s the result back to SQLite.
 
-```sql
-CREATE TABLE IF NOT EXISTS review_cards (
-  word_id        TEXT PRIMARY KEY,
-  due            TEXT NOT NULL,      -- ISO 8601 date string
-  scheduler_data TEXT NOT NULL       -- JSON-serialised blob
-);
-```
-
-D1-compatible: standard SQL, no SQLite-specific extensions.
-
-#### `ReviewStore` interface — `src/persistence/review-store.ts`
-
-```ts
-interface ReviewStore {
-  upsert(card: ReviewCard): void;
-  getByWordId(wordId: string): ReviewCard | null;
-  getDue(now: Date): ReviewCard[];
-  getDueForDeck(wordIds: string[], now: Date): ReviewCard[];
-  getAll(): ReviewCard[];
-}
-```
-
-Implementation notes:
-
-- `better-sqlite3` (synchronous API — consistent with existing readline runner)
-- DB file: `data/review-state.db` (gitignored)
-- `upsert` uses `INSERT OR REPLACE`
-- `due` stored as ISO 8601 string; parsed to `Date` on read
-- `schedulerData` round-trips via `JSON.stringify` / `JSON.parse`
-- Constructor accepts a file path (runtime) or `:memory:` (tests)
-
-#### Files
+#### Files Added/Changed
 
 | File | Change |
 |---|---|
-| `src/types/review-card.ts` | New — `ReviewCard` domain type |
+| `src/types/review-card.ts` | New — `ReviewCard`, `ReviewRating`, `GraduationPerformance` |
 | `src/persistence/review-store.ts` | New — `ReviewStore` interface + `SqliteReviewStore` impl |
-| `src/__tests__/unit/review-store.test.ts` | New — unit tests using `:memory:` SQLite |
+| `src/scheduler/fsrs-scheduler.ts` | New — `ReviewScheduler` interface + `FsrsScheduler` impl |
+| `src/scripts/seed-mock-reviews.ts` | New — Mock seeder script |
+| `src/main-review.ts` | New — Entry point for Revision phase |
 | `package.json` | Add `better-sqlite3` + `@types/better-sqlite3` |
-
-#### Unit tests — `review-store.test.ts`
-
-- `upsert` creates a new row when word doesn't exist
-- `upsert` replaces existing row when word already exists
-- `getByWordId` returns `null` for unknown `wordId`
-- `getDue` returns only cards where `due <= now`
-- `getDue` excludes cards where `due > now`
-- `getDueForDeck` returns only the intersection of provided `wordIds` AND `due <= now`
-- `getDueForDeck` with empty `wordIds` returns empty array
-- `schedulerData` round-trips through JSON without mutation
-- `due` dates round-trip correctly as ISO 8601
 
 #### Success criteria
 
-1. `pnpm --filter @gll/srs-engine-v2 test` — all tests pass (including all existing EP20 tests)
-2. `ReviewStore` works with both `:memory:` and a real file path
-3. No ts-fsrs import anywhere in `src/persistence/` or `src/types/review-card.ts`
+1. We can run `pnpm seed-mocks` to populate `data/review-state.db` with due cards.
+2. We can run `pnpm reviewv2` (auto mode) and observe the runner querying, answering, and rescheduling the cards.
+3. Querying the DB manually (`sqlite3 data/review-state.db "SELECT * FROM review_cards"`) confirms `due` dates are pushed to the future.
+4. `pnpm --filter @gll/srs-engine-v2 test` passes (including new unit tests for persistence/scheduler).
 
 **Status**: To Do
 
@@ -157,22 +124,8 @@ Implementation notes:
 
 ### Stories to address (unnumbered — to be sequenced as ST02+ when ST01 is complete)
 
-**`ReviewScheduler` interface + `FsrsScheduler` adapter**
-Define `ReviewScheduler` interface in `src/types/review-scheduler.ts` (no ts-fsrs import).
-Types: `ReviewRating` ('again'|'hard'|'good'|'easy'), `GraduationPerformance`. Implement
-`FsrsScheduler` in `src/scheduler/fsrs-scheduler.ts` — ts-fsrs imported here only.
-Configured with `enable_short_term: false`.
-
-**`lapses` counter in `WordState`**
-Add `lapses: number` to `WordState`. Increments whenever `mastery` decrements (a
-wrongStreak triggers a mastery drop). Needed for graduation seeding. Scope: modify
-`word-state.ts`, update `updateRunState`, update existing unit tests.
-
-**Graduation hook — seed `ReviewCard` at Learning run completion**
-At the end of `runAdaptiveLoop`, for each mastered word: compute `GraduationPerformance`
-from final `WordState` (correctStreak, lapses, correct/seen ratio), call
-`FsrsScheduler.seed(wordId, perf)`, persist `ReviewCard` via `ReviewStore`. First time
-`ReviewStore` is wired into `main.ts`.
+**`lapses` counter in `WordState` & Graduation Hook**
+Later, wire the Learning phase into Revision. Add `lapses: number` to `WordState`, increment on mastery decrement, and implement the graduation hook inside runner at session completion to iterate over mastered words, seed with `FsrsScheduler.seed`, and persist to `SqliteReviewStore`.
 
 **Response time → rating calibration config**
 Configurable thresholds in `main-review.ts` for response time → FSRS rating mapping.
