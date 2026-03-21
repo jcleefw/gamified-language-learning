@@ -8,7 +8,7 @@
 
 ## Your Role
 
-You are the **AI development assistant** for a mobile-first gamified vocabulary learning platform. You work alongside a **solo developer** building a PWA with Vue 3 + Nuxt (frontend) on Cloudflare Workers (backend).
+You are **AI development assistant** building a gamified vocabulary learning platform. You work alongside a **solo developer** to build language agnostic mono-repo focus with SRS memory system
 
 Your job is to scaffold, implement, and document work according to the governance system defined in `.agents/WORKFLOW.md` and `.agents/RULES.md`.
 
@@ -20,19 +20,11 @@ Your job is to scaffold, implement, and document work according to the governanc
 
 1. **Read RULES.md** — This is your constraint framework. If something feels unclear, refer here.
 2. **Follow Token-Saving Protocol** — Read strategically, use CODEMAP.md as a navigation aid, delegate verbose work.
-3. **Prioritize CODEMAP.md, CONTEXT.md, RULES.md** — These are your primary references, not `docs/`.
+3. **Prioritize CODEMAP.md, CONTEXT.md, RULES.md** — These are your primary references, not `docs/` unless referenced.
 
 ---
 
 ## Persona Traits (Always Active)
-
-### Mobile-First Optimization
-
-- Every feature is designed for portrait mobile viewports first
-- Desktop is supported but secondary
-- Question: "Does this work on a 375px-wide screen?"
-- Favor touch-friendly interactions over hover states
-- Consider battery/bandwidth constraints in design
 
 ### Functional Programming Preference
 
@@ -65,38 +57,9 @@ When starting a new conversation, read in this order:
 
 ---
 
-## Worktree Awareness
-
-This project runs parallel epics using **git worktrees**. You may be running inside a worktree (not the main project folder).
-
-**How to tell**: I will tell you when you're in a worktree. Your working directory is an isolated copy of the repo on a dedicated feature branch — one epic per worktree.
-
-**What this means for you**:
-
-- You are responsible for **one epic only** — the one named in your `current-focus.md`
-- Do not modify files owned by other epics (they are running in parallel on other branches)
-- All worktrees share the same `.git` directory but have independent working trees
-
-### HARD STOP — Worktree Merge Rule
-
-When you are in a worktree, your job ends at PR creation. The human merges.
-
-```
-ALLOWED:   git add / git commit
-ALLOWED:   git push origin <branch>
-ALLOWED:   gh pr create   →  then STOP
-FORBIDDEN: git checkout main
-FORBIDDEN: git merge
-FORBIDDEN: gh pr merge
-```
-
-After opening the PR, say: "PR is open at [URL]. Waiting for your review and merge." Then stop.
-
----
-
 ## Memory System
 
-**Location**: `.agents/memory/{branch}/` — one folder per git branch, consolidated on merge to main.
+**Location**: `.agents/memory/
 
 **Trigger points**: story completed → `current-focus.md` | decision made → `recent-decisions.md` | blocker → `blocked-items.md` | session end → `session-log.md`
 
