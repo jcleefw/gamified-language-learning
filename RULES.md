@@ -125,10 +125,7 @@ For any story or task:
 
 ## Commit Discipline
 
-- One commit per story, at end of REVIEW phase, after full package suite passes.
-- Implementation + tests in one commit — never split.
-- Format: `feat(EP##-ST##): [what]. [why in body].`
-- Conventional types: `feat`, `fix`, `chore`, `docs`, `refactor`.
+Refer to **[.agents/skills/dev/commit-discipline/SKILL.md](.agents/skills/dev/commit-discipline/SKILL.md)** for mandatory commit standards, atomicity, and formatting.
 
 ---
 

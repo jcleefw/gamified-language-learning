@@ -36,7 +36,7 @@ description: Master workflow for ANY story implementation. Ensures consistency a
 5. Write memory to `.agents/memory/{your-branch}/` (NOT `.agents/memory/main/`):
    - `current-focus.md` — story complete, what's next
    - `session-log.md` — if this is the end of the session
-6. Commit: `feat(EP##-ST##): <what>. <why in body>.` — one commit per story
+6. Run **`commit-discipline` skill** (refer to [../skills/dev/commit-discipline/SKILL.md](../skills/dev/commit-discipline/SKILL.md)): one commit per story (`feat(EP##-ST##): <what>. <why in body>.`)
 7. **If more stories remain**: **STOP** — ask "Ready for next story?"
 8. **If this is the last story of the epic**:
    - **In a worktree**: `git push origin {branch}` → `gh pr create --base main` → **STOP. Tell human PR is ready.**
