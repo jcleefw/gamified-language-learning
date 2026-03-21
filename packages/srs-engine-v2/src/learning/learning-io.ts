@@ -213,8 +213,8 @@ async function runBatch(
 ): Promise<{ correct: number; total: number; results: QuizResult[] }> {
   console.log(`\n=== Batch ${String(batchNum)} ===`);
 
-  const activeFoundational = activeItems.filter(item => 'class' in item);
-  const activeWords = activeItems.filter(item => !('class' in item));
+  const activeFoundational = activeItems.filter(item => 'foundationalType' in item);
+  const activeWords = activeItems.filter(item => !('foundationalType' in item));
   const consonantLimit = activeItems.length > 0
     ? Math.round(questionLimit * activeFoundational.length / activeItems.length)
     : 0;

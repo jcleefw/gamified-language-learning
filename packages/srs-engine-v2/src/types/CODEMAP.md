@@ -11,7 +11,17 @@ Shared TypeScript type definitions. No logic.
 | `quiz.ts` | All quiz-domain types shared across `engine/` and `runner/` |
 | `word-state.ts` | Word mastery and streak state types |
 | `deck.ts` | Deck and Batch types |
-| `consonant.ts` | Thai consonant types |
+| `foundational.ts` | Thai foundational types (consonants, vowels, tones) |
+
+---
+
+## Exports — `foundational.ts`
+
+| Export | Kind | Detail |
+| --- | --- | --- |
+| `MockVowel` | Interface | Thai vowel mark with position and length |
+| `MockTone` | Interface | Thai tone mark |
+| `MockFoundational` | Union | `MockConsonant \| MockVowel \| MockTone` |
 
 ---
 
@@ -22,4 +32,5 @@ Shared TypeScript type definitions. No logic.
 | `QuizDirection` | Union type | `'native-to-english' \| 'english-to-native' \| 'native-to-romanization' \| 'romanization-to-native'` |
 | `QuizChoice` | Interface | `{ label: 'a'\|'b'\|'c'\|'d', value: string, isCorrect: boolean }` |
 | `QuizQuestion` | Interface | `{ direction: QuizDirection, prompt: string, choices: QuizChoice[] }` |
+
 

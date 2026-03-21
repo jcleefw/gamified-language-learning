@@ -1,11 +1,36 @@
-import type { MockConsonant } from '../../data/mock/mock-consonants.js';
 import type { MockWord } from '../../data/mock/mock-words.js';
-import type { QuizChoice, QuizQuestion } from '../types/quiz.js';
+import type { QuizChoice, QuizDirection, QuizQuestion } from '../types/quiz.js';
+import type { MockFoundational } from '../types/foundational.js';
 
-export type QuizItem = MockConsonant | MockWord;
+export type QuizItem = MockFoundational | MockWord;
+
+export const FOUNDATIONAL_DIRECTIONS: Record<
+  MockFoundational['foundationalType'],
+  QuizDirection[]
+> = {
+  consonant: [
+    'native-to-english',
+    'english-to-native',
+    'native-to-romanization',
+    'romanization-to-native',
+  ],
+  vowel: [
+    'native-to-english',
+    'english-to-native',
+    'native-to-romanization',
+    'romanization-to-native',
+  ],
+  tone: [
+    'native-to-english',
+    'english-to-native',
+  ],
+};
 
 function getEnglishLabel(item: QuizItem): string {
-  return 'class' in item ? `${item.english} (${item.class})` : item.english;
+  if ('foundationalType' in item && item.foundationalType === 'consonant') {
+    return `${item.english} (${item.class})`;
+  }
+  return item.english;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -48,33 +73,52 @@ export function composeBatchMulti(
   return shouldShuffle ? shuffle(batch) : batch;
 }
 
-export function composeBatch(item: QuizItem, pool: QuizItem[]): QuizQuestion[] {
+function makeQuestion(item: QuizItem, direction: QuizDirection, pool: QuizItem[]): QuizQuestion {
   const others = pool.filter(c => c.id !== item.id);
 
-  return [
-    {
-      wordId: item.id,
-      direction: 'native-to-english',
-      prompt: item.native,
-      choices: makeChoices(getEnglishLabel(item), others.map(getEnglishLabel)),
-    },
-    {
-      wordId: item.id,
-      direction: 'english-to-native',
-      prompt: getEnglishLabel(item),
-      choices: makeChoices(item.native, others.map(c => c.native)),
-    },
-    {
-      wordId: item.id,
-      direction: 'native-to-romanization',
-      prompt: item.native,
-      choices: makeChoices(item.romanization, others.map(c => c.romanization)),
-    },
-    {
-      wordId: item.id,
-      direction: 'romanization-to-native',
-      prompt: item.romanization,
-      choices: makeChoices(item.native, others.map(c => c.native)),
-    },
-  ];
+  switch (direction) {
+    case 'native-to-english':
+      return {
+        wordId: item.id,
+        direction: 'native-to-english',
+        prompt: item.native,
+        choices: makeChoices(getEnglishLabel(item), others.map(getEnglishLabel)),
+      };
+    case 'english-to-native':
+      return {
+        wordId: item.id,
+        direction: 'english-to-native',
+        prompt: getEnglishLabel(item),
+        choices: makeChoices(item.native, others.map(c => c.native)),
+      };
+    case 'native-to-romanization':
+      return {
+        wordId: item.id,
+        direction: 'native-to-romanization',
+        prompt: item.native,
+        choices: makeChoices(item.romanization, others.map(c => c.romanization)),
+      };
+    case 'romanization-to-native':
+      return {
+        wordId: item.id,
+        direction: 'romanization-to-native',
+        prompt: item.romanization,
+        choices: makeChoices(item.native, others.map(c => c.native)),
+      };
+  }
 }
+
+export function composeBatch(item: QuizItem, pool: QuizItem[]): QuizQuestion[] {
+  const directions: QuizDirection[] =
+    'foundationalType' in item
+      ? FOUNDATIONAL_DIRECTIONS[item.foundationalType]
+      : [
+          'native-to-english',
+          'english-to-native',
+          'native-to-romanization',
+          'romanization-to-native',
+        ];
+
+  return directions.map(direction => makeQuestion(item, direction, pool));
+}
+

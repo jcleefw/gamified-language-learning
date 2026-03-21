@@ -1,13 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { mockConsonants } from '../../../data/mock/mock-consonants.js';
 import { mockWords } from '../../../data/mock/mock-words.js';
+import { mockVowels } from '../../../data/mock/mock-vowels.js';
+import { mockTones } from '../../../data/mock/mock-tones.js';
 import { composeBatch, composeBatchMulti } from '../../engine/compose-batch.js';
 
 const consonant = mockConsonants[0]; // ก (Ko Kai, k, middle)
 const pool = mockConsonants;
 
 describe('composeBatch', () => {
-  it('returns exactly 4 questions', () => {
+  it('returns exactly 4 questions for a consonant', () => {
     const batch = composeBatch(consonant, pool);
     expect(batch).toHaveLength(4);
   });
@@ -79,6 +81,47 @@ describe('composeBatch', () => {
     expect(q2.choices.find(c => c.isCorrect)?.value).toBe(consonant.native);
     expect(q3.choices.find(c => c.isCorrect)?.value).toBe(consonant.romanization);
     expect(q4.choices.find(c => c.isCorrect)?.value).toBe(consonant.native);
+  });
+});
+
+describe('composeBatch with Vowel', () => {
+  const vowel = mockVowels[0]; // า (long a)
+  const vowelPool = mockVowels;
+
+  it('returns exactly 4 questions for a vowel', () => {
+    const batch = composeBatch(vowel, vowelPool);
+    expect(batch).toHaveLength(4);
+  });
+
+  it('correct answer for native-to-english is plain english string', () => {
+    const batch = composeBatch(vowel, vowelPool);
+    const q = batch.find(q => q.direction === 'native-to-english')!;
+    expect(q.choices.find(c => c.isCorrect)?.value).toBe(vowel.english);
+  });
+});
+
+describe('composeBatch with Tone', () => {
+  const tone = mockTones[0]; // ่ (mai ek, low tone)
+  const tonePool = mockTones;
+
+  it('returns exactly 2 questions for a tone', () => {
+    const batch = composeBatch(tone, tonePool);
+    expect(batch).toHaveLength(2);
+  });
+
+  it('only includes native-to-english and english-to-native directions', () => {
+    const batch = composeBatch(tone, tonePool);
+    const directions = batch.map(q => q.direction);
+    expect(directions).toContain('native-to-english');
+    expect(directions).toContain('english-to-native');
+    expect(directions).not.toContain('native-to-romanization');
+    expect(directions).not.toContain('romanization-to-native');
+  });
+
+  it('correct answer for native-to-english is tone name', () => {
+    const batch = composeBatch(tone, tonePool);
+    const q = batch.find(q => q.direction === 'native-to-english')!;
+    expect(q.choices.find(c => c.isCorrect)?.value).toBe(tone.english);
   });
 });
 
@@ -227,3 +270,4 @@ describe('composeBatchMulti with word pool', () => {
     }
   });
 });
+

@@ -1,4 +1,6 @@
 import { mockConsonants } from '../../data/mock/mock-consonants.js';
+import { mockVowels } from '../../data/mock/mock-vowels.js';
+import { mockTones } from '../../data/mock/mock-tones.js';
 import { wordPool } from '../../data/mock/mock-word-pool.js';
 import { mockDecks } from '../../data/mock/mock-decks.js';
 import { selectDeck, runAdaptiveLoop } from './learning-io.js';
@@ -30,6 +32,12 @@ function selectStrategy(): AutoAnswerStrategy {
   // return new RandomAutoAnswerStrategy();
 }
 
+const mockFoundational = [
+  ...mockConsonants,
+  ...mockVowels,
+  ...mockTones,
+];
+
 let runState: RunState = new Map();
 
 for (; ;) {
@@ -41,10 +49,15 @@ for (; ;) {
     const w = wordPool.find(word => word.id === id);
     return w !== undefined ? [w] : [];
   });
+
+  // For testing purposes: 1 consonant, 1 vowel, 1 tone first to ensure they show up
   const words = [
+    mockConsonants[0],
+    mockVowels[0],
+    mockTones[0],
     ...deckWords,
-    ...mockConsonants.slice(0, LEARNING_CONFIG.foundationalWordsCount),
   ];
+
 
   const recheckIds = new Set(
     deck.wordIds.filter(id => {
@@ -59,7 +72,7 @@ for (; ;) {
   runState = await runAdaptiveLoop(
     words,
     wordPool,
-    mockConsonants,
+    mockFoundational,
     LEARNING_CONFIG.questionLimit,
     LEARNING_CONFIG.masteryThreshold,
     STREAK_THRESHOLDS,
