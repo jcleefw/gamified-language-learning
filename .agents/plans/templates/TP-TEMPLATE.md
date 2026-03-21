@@ -1,6 +1,6 @@
 # EP##-TP##: Test Implementation Plan
 
-**Created**: {TIMESTAMP}
+**Created**: {TIMESTAMP} <!-- Run .agents/tools/generate-timestamp.sh -->
 **Status**: Draft
 **Epic**: [EP## - {Epic Name}]({path})
 

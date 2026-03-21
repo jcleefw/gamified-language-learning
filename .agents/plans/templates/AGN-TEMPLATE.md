@@ -1,6 +1,6 @@
 # AGN##: {Title}
 
-**Date**: {TIMESTAMP}
+**Date**: {TIMESTAMP} <!-- Run .agents/tools/generate-timestamp.sh -->
 **Type**: Skill | Workflow | Template | Rule | Memory | Tool
 **Files Changed**: {list}
 

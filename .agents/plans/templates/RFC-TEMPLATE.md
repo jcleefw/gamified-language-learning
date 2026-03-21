@@ -1,6 +1,6 @@
 # RFC##: {Title}
 
-**Created**: {TIMESTAMP}
+**Created**: {TIMESTAMP} <!-- Run .agents/tools/generate-timestamp.sh -->
 **Status**: Draft
 
 <!-- Status: Draft | Proposed | Accepted | Rejected | Withdrawn | Shelved | Superseded -->

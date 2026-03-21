@@ -1,6 +1,6 @@
 # EP##-ST##: {Story Title}
 
-**Created**: {TIMESTAMP}
+**Created**: {TIMESTAMP} <!-- Run .agents/tools/generate-timestamp.sh -->
 **Epic**: [EP## - {Epic Name}]({path})
 **Status**: Complete ✅
 

@@ -1,6 +1,6 @@
 # EP## - {Title}
 
-**Created**: {TIMESTAMP}
+**Created**: {TIMESTAMP} <!-- Run .agents/tools/generate-timestamp.sh -->
 **Status**: Draft
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->

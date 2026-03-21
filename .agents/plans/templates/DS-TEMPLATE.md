@@ -1,6 +1,6 @@
 # EP##-DS##: {Feature Title} Specification
 
-**Date**: {DATE}
+**Date**: {TIMESTAMP} <!-- Call .agents/tools/generate-timestamp.sh to fill this -->
 **Status**: Draft
 **Epic**: [EP## - {Name}]({path})
 

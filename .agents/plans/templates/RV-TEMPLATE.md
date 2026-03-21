@@ -1,6 +1,6 @@
 # EP##-RV##: Code Review — {Scope}
 
-**Date**: {TIMESTAMP}
+**Date**: {TIMESTAMP} <!-- Run .agents/tools/generate-timestamp.sh -->
 **Status**: Changes Requested
 
 <!-- Status: Changes Requested | Passed | Conditional Pass -->

@@ -1,6 +1,6 @@
 # EP##-UX##: {Feature Title} Design Specification
 
-**Date**: {DATE}
+**Date**: {TIMESTAMP} <!-- Run .agents/tools/generate-timestamp.sh -->
 **Status**: Draft
 **Epic**: [EP## - {Epic Name}]({path})
 

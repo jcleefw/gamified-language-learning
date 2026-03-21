@@ -1,6 +1,6 @@
 # ADR##: {Title}
 
-**Date**: {TIMESTAMP}
+**Date**: {TIMESTAMP} <!-- Run .agents/tools/generate-timestamp.sh -->
 **Status**: Accepted
 
 <!-- Status: Accepted | Superseded | Deprecated -->
