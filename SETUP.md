@@ -21,64 +21,6 @@ Visit: `http://localhost:3000`
 | ------------ | ------- | --------------------------------------------------- |
 | Node.js      | ≥ 20.x  | LTS recommended                                     |
 | pnpm         | ≥ 9.x   | `npm install -g pnpm`                               |
-| Wrangler CLI | ≥ 3.x   | `pnpm add -g wrangler` — Cloudflare Workers tooling |
-
----
-
-## Environment Variables
-
-Create `.env` in the project root (⚠️ never commit this):
-
-```bash
-# Auth
-NUXT_SESSION_SECRET=          # 32+ char random string for JWT signing
-
-# Google OAuth
-NUXT_OAUTH_GOOGLE_CLIENT_ID=
-NUXT_OAUTH_GOOGLE_CLIENT_SECRET=
-
-# Gemini API
-GEMINI_API_KEY=
-
-# Cloudflare (for local dev via wrangler)
-CLOUDFLARE_ACCOUNT_ID=
-CLOUDFLARE_API_TOKEN=
-
-# TTS Rate Limits (defaults match Gemini free tier)
-TTS_RPD=10                    # Requests per day
-TTS_RPM=3                     # Requests per minute
-```
-
----
-
-## Local Development
-
-### Frontend (Nuxt)
-
-```bash
-pnpm dev           # Start Nuxt dev server (hot reload)
-pnpm build         # Production build
-pnpm preview       # Preview production build locally
-```
-
-### Cloudflare Workers (Local)
-
-```bash
-pnpm wrangler dev  # Run Workers locally with D1 + R2 simulation
-```
-
-### Database (D1)
-
-```bash
-# Apply migrations locally
-pnpm wrangler d1 migrations apply --local
-
-# Apply migrations to remote (production)
-pnpm wrangler d1 migrations apply --remote
-
-# Open D1 shell (local)
-pnpm wrangler d1 execute --local --command "SELECT * FROM users LIMIT 10"
-```
 
 ---
 
@@ -123,29 +65,6 @@ gamified-language-learning/
     ├── memory/                 # Cross-session context
     ├── tools/                  # Executable scripts
     └── guardrails.yml          # Safety checks
-```
-
----
-
-## Deployment
-
-### Cloudflare Pages (Frontend)
-
-```bash
-pnpm build
-# Cloudflare Pages automatically deploys on push to main
-```
-
-### Cloudflare Workers (Backend)
-
-```bash
-pnpm wrangler deploy
-```
-
-### D1 Migrations (Production)
-
-```bash
-pnpm wrangler d1 migrations apply --remote
 ```
 
 ---
