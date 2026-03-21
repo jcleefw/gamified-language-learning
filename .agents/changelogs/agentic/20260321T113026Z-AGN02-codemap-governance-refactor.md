@@ -8,15 +8,16 @@
 - `.agents/docs/code-map-guide.md` (New)
 - `.agents/skills/dev/code-mapper/SKILL.md`
 - `.agents/workflows/code-change-workflow.md`
+- `.agents/workflows/create-code-map.md` (Deleted)
 
 ---
 
 ## What Changed
 
-- Refactored CODEMAP update rules out of `RULES.md`.
-- Created a centralized `Code Map Guide` at `.agents/docs/code-map-guide.md` for mandatory update steps and scope definitions.
+- Refactored CODEMAP update rules out of `RULES.md` and the master implementation workflow.
+- Created a centralized `Code Map Guide` at `.agents/docs/code-map-guide.md` for mandatory update steps.
 - Updated the `code-mapper` skill to point to the central guide and removed the duplicated rule definitions in the skill file.
-- Minimized all references to `CODEMAP.md` in core governance files (`RULES.md`, `WORKFLOW.md`) to keep them as navigational guidance, ensuring the "how-to" update logic is only located where it's functionally required.
+- Minimized all references to operational details in `RULES.md` and `WORKFLOW.md` to keep them as navigational guidance.
 
 ## Why
 
@@ -24,5 +25,5 @@
 
 ## Before / After
 
-- **Before**: `RULES.md` contained 15+ lines of specific triggers for when to update `CODEMAP.md`, which were partially duplicated in the `code-mapper` skill.
+- **Before**: `RULES.md` and the master `code-change-workflow.md` contained 15+ lines of specific triggers for when to update `CODEMAP.md`, which were partially duplicated in the `code-mapper` skill.
 - **After**: `RULES.md` and `WORKFLOW.md` only refer to "CODEMAP sync" as a high-level step. The detailed update triggers and maintenance rules are now centralized in `.agents/docs/code-map-guide.md` and linked directly from the `code-mapper` skill.
