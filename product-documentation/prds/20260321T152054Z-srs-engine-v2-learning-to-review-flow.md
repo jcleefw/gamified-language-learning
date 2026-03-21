@@ -410,8 +410,7 @@ All tracked in EP21. See [Review Phase ADR Open Questions](../architecture/20260
 
 | # | Question |
 |---|---|
-| AQ1 | **Shelving logic in Review phase only** — what does it mean to shelve a word that is already graduated? How does it interact with the `ReviewCard` in SQLite? |
-| AQ2 | **Enthusiastic learner problem** — a user who keeps revisiting words and ignores FSRS scheduling. Does the system allow session-on-demand (bypassing due date check)? Does doing so corrupt FSRS stability data? Should there be a "practice mode" vs "scheduled review mode" distinction? |
+
 
 ---
 

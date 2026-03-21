@@ -12,11 +12,15 @@ Plan your approach based on the story and write it to the Parent EPIC file `.age
 
 Every atomic setup should be configurable. 
 
-Stop after you plan for approval.
+run `.agents/skills/dev/tdd-plan/SKILL.md` to plan the changes.
+
+STOP after you plan for approval.
+
+Do not start implementation without approval.
 
 After approval is given, use `.agents/skills/dev/tdd-implement/SKILL.md` to implement the changes.
 
-Stop and ask for manual validation on implementation completion.
+STOP and ask for manual validation on implementation completion.
 
 When user say "complete", 
 1. update changelog using `.agents/skills/dev/change-log-updater/SKILL.md`. 

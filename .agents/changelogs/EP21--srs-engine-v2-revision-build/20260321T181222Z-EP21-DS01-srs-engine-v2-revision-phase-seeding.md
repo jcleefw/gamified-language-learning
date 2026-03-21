@@ -1,8 +1,11 @@
-# EP21-DS01: Graduation Hook & FSRS Seeding Specification
+# EP21-DS01: Revision Runner + Mock Seeder ~~[REJECTED]~~
 
 **Date**: 20260321T181221Z
-**Status**: Draft
+**Status**: ❌ Rejected — 20260321T192000Z
+**Rejected by**: Engineering Review + User Review
 **Epic**: [EP21 - SRS Engine v2: Revision Phase](../../epics/EP21-srs-engine-v2-revision-phase.md)
+
+> **Note**: This DS was rejected before implementation. Do not use as a basis for coding. A full rewrite is required after EP23 is designed. The findings below are preserved as a record for that rewrite.
 
 ---
 
@@ -94,3 +97,55 @@ START → pnpm reviewv2 → Prompt user: "Run auto or manual mode?" → Read due
 1. End-to-end validation passes: seeding the database and then running `pnpm reviewv2` (auto mode) successfully clears the due queue and writes future dates to the DB.
 2. No type errors.
 3. No `ts-fsrs` imports exist outside of `src/scheduler/fsrs-scheduler.ts`.
+
+---
+
+## 7. Rejection Record — Engineering Review (20260321T192000Z)
+
+### AI Engineering Review Findings
+
+**Critical**
+- `review-runner.ts` is missing from the file manifest — DS01 doesn't list it as a file despite the TDD plan referencing it. Would cause implementor confusion.
+- `deleteAll()` is mentioned in prose but missing from the `ReviewStore` interface definition.
+
+**High**
+- Auto-mode rating inference is undefined. The DS assumes a response-time strategy for interactive mode but makes no decision for auto mode. The ADR (§6) is explicit that rating is derived from response time — this doesn't translate to auto mode without a defined mapping rule. DS was silent on this.
+- Mock seeder `GraduationPerformance` values are undefined: the seed script fakes graduation but doesn't say what `lapses`/`correctStreak`/`correctRatio` values to use and therefore what initial FSRS rating each seeded card receives.
+
+**Medium**
+- `src/scripts/` is a new directory not present in CODEMAP.md.
+- `pnpm seed-mocks` was not listed in the package.json file manifest.
+
+---
+
+### User Review Findings (20260321T192000Z)
+
+**Unclear phase-related file structure**
+The current `srs-engine-v2` package folder structure and file names were set up for the Learning phase but named generically. Specifically:
+- Both runner files in `packages/srs-engine-v2/src/runner/`
+- `packages/srs-engine-v2/src/types/answer-strategy.ts`
+- `packages/srs-engine-v2/src/main.ts`
+
+These should be renamed and moved to a `learning-phase/` or equivalent scoped folder to avoid confusion when the Revision phase files land.
+
+**ST01 scope is not atomic — story is too large**
+The story tries to deliver too many concerns at once:
+1. Setup persistent storage
+2. Setup Learning phase interaction with persistent store
+3. Write Learning results to persistent store
+4. Transition from Learning → Revision
+5. Run Revision based on mock data
+
+These are 5 separate responsibilities. Even the descoped mock-seeder version still highlights the gap: items 1–4 are pre-conditions that are unaddressed and should belong to an earlier epic.
+
+**Fix**: Create EP23 as pre-requisite for EP21, addressing points 1–4. EP23 must be complete before EP21 ST01 is meaningful.
+
+**Planning without asking clarifying questions**
+The AI proceeded with assumptions rather than asking about:
+- Store interaction design (who owns the store reference? How is it injected?)
+- Rating inference in auto mode — assumption conflicted with the ADR (§6 specifies response-time based rating; auto mode has no response time signal)
+
+**Required outcome**:
+- DS01 marked Rejected ✅ (done)
+- Rewrite DS01 after EP23 is defined ← pending
+- Create EP23 epic next, guided by question-by-question clarification ← next step
