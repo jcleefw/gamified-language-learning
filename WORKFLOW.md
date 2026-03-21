@@ -113,34 +113,9 @@ Draft → Accepted → In Progress → Impl-Complete → BDD Pending → Complet
 | Transition                    | Entry Criteria                                                                                                                                                                              | Validator        |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
 | `Accepted → In Progress`      | Design spec ready, ADRs accepted, schema available (if DB epic), all upstream deps are `Impl-Complete`. Multiple parallel epics (same `Depends on`) may enter `In Progress` simultaneously. | Agent self-check |
-| `In Progress → Impl-Complete` | All stories Done, local tests pass, changelog + CODEMAP + memory updated                                                                                                                    | Human approves   |
+| `In Progress → Impl-Complete` | All stories Done, local tests pass, changelog + CODEMAP synced + memory updated | Human approves   |
 | `Impl-Complete → BDD Pending` | PRD agent writes BDD scenarios, human confirms before QA picks up                                                                                                                           | Human confirms   |
 | `BDD Pending → Completed`     | Agent creates PR; human monitors CI, merges when green                                                                                                                                      | Human            |
-
----
-
-## Branching Model
-
-```
-main → feature/EP##-slug → feature/EP##-ST##-slug
-```
-
-Story branch merges to epic branch when Done. Epic branch merges to main via human-approved PR at Impl-Complete.
-
-### Parallel Epics
-
-When multiple epics share a dependency and can run concurrently, each branches independently from `main` after the shared dependency is merged:
-
-```
-main (EP02 merged)
-  ├── feature/EP03-batch-composition
-  ├── feature/EP04-active-window
-  └── feature/EP05-foundational-deck
-```
-
-- Each parallel epic produces its own PR and merges to `main` independently
-- The downstream epic (e.g., EP06 orchestrator) may only start after all parallel epic branches are merged
-- Parallel epics must not import from each other's feature branches
 
 ---
 
@@ -165,29 +140,6 @@ Titles → Design spec → Stories detailed → Epic Accepted → agent picks up
 - Agent proposes split inline, waits for approval — no files created until approved.
 - PLAN phase only. CODE started = no splitting.
 
----
-
-## PR Template
-
-```
-## What
-[Story ID + one-line summary]
-
-## Why
-[Acceptance criteria this closes]
-
-## Test evidence
-[Test command + pass/fail summary]
-
-## Linked artifacts
-[Story file, Design spec, ADR(s)]
-
-## Checklist
-- [ ] Full package suite passes
-- [ ] CODEMAP updated
-- [ ] Changelog entry written
-- [ ] Memory updated
-```
 
 ---
 

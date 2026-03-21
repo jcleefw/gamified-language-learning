@@ -6,9 +6,8 @@ description: Master workflow for ANY story implementation. Ensures consistency a
 
 ## Step 0 — Session Start
 
-1. If you're NOT told you're in a worktree, SKIP this. else run `git worktree list` — if more than one entry, read **WORKTREE.md** before continuing.
-2. Confirm with user: "Picking up EP##-ST## on `{current-branch}` — ready to start PLAN?"
-3. **STOP** — wait for user confirmation before continuing.
+1. Confirm with user: "Picking up EP##-ST## on `{current-branch}` — ready to start PLAN?"
+2. **STOP** — wait for user confirmation before continuing.
 
 ## Step 1 — PLAN (`tdd-plan`)
 
@@ -32,7 +31,7 @@ description: Master workflow for ANY story implementation. Ensures consistency a
 
 1. Self-review: check code standards (RULES.md §Code Standards)
 2. Write ST changelog using `ST-CHANGELOG-TEMPLATE.md` → save to `.agents/changelogs/EP##--slug/`
-3. Update `CODEMAP.md` if any files were added, removed, or repurposed
+3. Run **`code-mapper` skill**: update `CODEMAP.md` if any files were added, removed, or repurposed (refer to [.agents/docs/code-map-guide.md](../docs/code-map-guide.md))
 4. If this is the last story of the epic: update epic plan `**Status**` → `Impl-Complete`
 5. Write memory to `.agents/memory/{your-branch}/` (NOT `.agents/memory/main/`):
    - `current-focus.md` — story complete, what's next

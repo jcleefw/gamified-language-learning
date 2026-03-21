@@ -117,18 +117,6 @@ Each package owns its own CODEMAP. Navigate there for file-level detail.
 | `packages/srs-engine-v2/` | `@gll/srs-engine-v2` — Interactive SRS quiz engine (Thai, CLI runner) → [CODEMAP](packages/srs-engine-v2/CODEMAP.md) |
 | `packages/api-contract/`  | `@gll/api-contract` — Shared HTTP wire-format types (no runtime deps) → [CODEMAP](packages/api-contract/CODEMAP.md) |
 
----
 
-## `src/` — Application Source (TBD)
 
-> Not yet created. Will be populated in CODEMAP when implementation begins.
 
----
-
-## Update Instructions
-
-**Root CODEMAP**: Update only when root-level files, `.agents/` structure, `product-documentation/`, or packages change.
-**Package/folder detail**: Update the folder-level `CODEMAP.md` (e.g. `packages/srs-engine/CODEMAP.md`) — not this file.
-**Every non-`__tests__` folder** owns its own `CODEMAP.md`. When adding a new package or subfolder, create its CODEMAP.
-
-Do NOT let any CODEMAP drift from actual structure.
