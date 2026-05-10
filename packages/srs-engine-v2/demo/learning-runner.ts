@@ -42,11 +42,7 @@ const mockFoundational = [
 let runState: RunState = new Map();
 
 for (; ;) {
-<<<<<<< HEAD:packages/srs-engine-v2/src/learning/learning-runner.ts
-  // Select deck (auto or interactive)
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-=======
->>>>>>> 37a1051 (feat(srs-engine-v2): establish library boundary — src/index.ts, demo/, remove src/learning/):packages/srs-engine-v2/demo/learning-runner.ts
   const deck = AUTO_MODE ? mockDecks[0] : await selectDeck(mockDecks);
 
   const deckWords = deck.wordIds.flatMap(id => {
@@ -83,10 +79,6 @@ for (; ;) {
     strategy,
   );
 
-<<<<<<< HEAD:packages/srs-engine-v2/src/learning/learning-runner.ts
-  // In auto mode, exit after one run; in interactive mode, loop
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-=======
->>>>>>> 37a1051 (feat(srs-engine-v2): establish library boundary — src/index.ts, demo/, remove src/learning/):packages/srs-engine-v2/demo/learning-runner.ts
   if (AUTO_MODE) break;
 }
