@@ -160,7 +160,7 @@ async function runBatch(
   const questions = [...foundationalQs, ...wordQs].sort(() => Math.random() - 0.5);
 
   if (strategy) {
-    return await runAutoInteractive(questions, strategy);
+    return runAutoInteractive(questions, strategy);
   } else {
     return await runInteractive(questions);
   }
