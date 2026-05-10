@@ -26,6 +26,7 @@ export const FOUNDATIONAL_DIRECTIONS: Record<
   ],
 };
 
+/** Consonants are formatted as "sound (class)", e.g. "k (middle)". */
 function getEnglishLabel(item: QuizItem): string {
   if ('foundationalType' in item && item.foundationalType === 'consonant') {
     return `${item.english} (${item.class})`;
@@ -33,6 +34,7 @@ function getEnglishLabel(item: QuizItem): string {
   return item.english;
 }
 
+/** Fisher-Yates shuffle — returns a new array, does not mutate input. */
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -42,6 +44,10 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+/**
+ * Builds a 4-choice set from one correct value and up to 3 distractors,
+ * shuffled and labelled a–d.
+ */
 function makeChoices(correct: string, distractors: string[]): QuizChoice[] {
   const labels = ['a', 'b', 'c', 'd'] as const;
   const values = shuffle([correct, ...distractors.slice(0, 3)]);
@@ -77,6 +83,7 @@ export function composeBatchMulti(
   return shouldShuffle ? shuffle(batch) : batch;
 }
 
+/** Builds one question for a given direction, drawing distractors from pool. */
 function makeQuestion(item: QuizItem, direction: QuizDirection, pool: QuizItem[]): QuizQuestion {
   const others = pool.filter(c => c.id !== item.id);
 
