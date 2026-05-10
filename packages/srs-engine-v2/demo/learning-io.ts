@@ -4,7 +4,6 @@ import {
   composeBatchMulti,
   nextActivePool,
   updateMasteryState,
-  isMastered,
   type QuizQuestion,
   type QuizResult,
   type QuizItem,

@@ -3,10 +3,10 @@
 import type { QuizQuestion, QuizResult } from '../src/index.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 
-export async function runAutoInteractive(
+export function runAutoInteractive(
   questions: QuizQuestion[],
   strategy: AutoAnswerStrategy,
-): Promise<{ correct: number; total: number; results: QuizResult[] }> {
+): { correct: number; total: number; results: QuizResult[] } {
   if (questions.length === 0) {
     throw new Error('runAutoInteractive: No questions provided');
   }
