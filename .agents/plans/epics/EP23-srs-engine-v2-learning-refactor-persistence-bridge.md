@@ -58,29 +58,5 @@ This specification covers the full scope of EP23: refactoring the `srs-engine-v2
 - Extract constants to `src/learning/config.ts`.
 - Update `package.json` with `learnv2` script.
 
-### EP23-ST02: Unified WordStore & Schema
-**Scope**: SQLite implementation and initial migration.
-- Implement `SrsStore` class in `src/persistence/srs-store.ts`.
-- Implement `Schema` management (CREATE TABLE IF NOT EXISTS).
-- Implement **Migration Logic**: On first start, parse `data/mock/mock-decks.ts` and `mock-word-pool.ts`. Insert into `decks` and `deck_words`.
 
-### EP23-ST03: Session Seeding & Wiring
-**Scope**: Progress persistence and write-on-answer.
-- Inject `SrsStore` into `learning-runner.ts`.
-- **Session Seed**: Before starting the interactive loop, check `word_states` for all words in the selected deck. Insert missing words with 0 mastery.
-- Update `learning-io.ts` to fetch and update states from `SrsStore` instead of in-memory `Map`.
 
-### EP23-ST04: Batch History & Truncation Tooling
-**Scope**: Analytics and testing tools.
-- Log every answer to `batch_history`.
-- Implement `src/scripts/db-ops.ts`:
-    - `pnpm db:clear`: Calls `DROP TABLE` on all tables.
-    - `pnpm db:seed`: Repopulates `decks` and mandatory consonants.
-
-## 5. Success Criteria
-
-1. `pnpm learnv2` picks up exactly where the previous run left off (persisted mastery).
-2. Clean folder structure under `src/learning/`.
-3. `data/srs-v2.db` correctly contains tables and data after a run.
-4. `pnpm db:clear` successfully resets the environment.
-5. No dangling imports or type errors.

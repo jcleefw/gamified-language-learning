@@ -10,15 +10,13 @@ SRS engine development progressing through scripting phase.
 Target Working directory: `packages/srs-engine-v2`
 
 ## Completed Epics
-- EP21-ST01 completed
+- EP20-ST13 support for other foundational words (vowels, etc)
 
 ## Current Work
-- EP21-ST02
-- migrate thai foundational into 
+- migrate SRS engine learning quiz to use persistence layer
 
 ## What's next
-- EP21 - Review/Revision Phase (when starting)
-- add support for other foundational words (vowels, etc)
 - migrate SRS engine learning quiz to use persistence layer
+- EP21 - Review/Revision Phase (when starting)
 
 
