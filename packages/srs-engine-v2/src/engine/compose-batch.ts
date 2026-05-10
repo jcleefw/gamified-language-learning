@@ -1,6 +1,7 @@
 import type { MockWord } from '../../data/mock/mock-words.js';
 import type { QuizChoice, QuizDirection, QuizQuestion } from '../types/quiz.js';
 import type { MockFoundational } from '../types/foundational.js';
+import { shuffle } from '../utils/shuffle.js';
 
 export type QuizItem = MockFoundational | MockWord;
 
@@ -32,16 +33,6 @@ function getEnglishLabel(item: QuizItem): string {
     return `${item.english} (${item.class})`;
   }
   return item.english;
-}
-
-/** Fisher-Yates shuffle — returns a new array, does not mutate input. */
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
 }
 
 /**
