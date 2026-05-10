@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextActivePool } from '../../learning/learning-io.js';
+import { nextActivePool } from '../../engine/session.js';
 import type { RunState } from '../../types/word-state.js';
 import type { QuizItem } from '../../engine/compose-batch.js';
 

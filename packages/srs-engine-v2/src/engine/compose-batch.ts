@@ -52,6 +52,10 @@ function makeChoices(correct: string, distractors: string[]): QuizChoice[] {
   }));
 }
 
+/**
+ * Generates up to `questionLimit` questions across multiple items,
+ * guaranteeing at least one question per item.
+ */
 export function composeBatchMulti(
   words: QuizItem[],
   pool: QuizItem[],
@@ -108,6 +112,10 @@ function makeQuestion(item: QuizItem, direction: QuizDirection, pool: QuizItem[]
   }
 }
 
+/**
+ * Generates one question per direction for a single item. Foundational
+ * types use their type-specific direction set; words use all four.
+ */
 export function composeBatch(item: QuizItem, pool: QuizItem[]): QuizQuestion[] {
   const directions: QuizDirection[] =
     'foundationalType' in item
