@@ -1,21 +1,12 @@
 /* eslint-disable no-console */
 
-import type { QuizQuestion } from '../types/quiz.js';
+import type { QuizQuestion, QuizResult } from '../src/index.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 
-export interface QuizResult {
-  wordId: string;
-  correct: boolean;
-}
-
-/**
- * Automatically answer a batch of quiz questions using a provided strategy.
- * Mirrors runInteractive() contract but with no user input.
- */
-export function runAutoInteractive(
+export async function runAutoInteractive(
   questions: QuizQuestion[],
   strategy: AutoAnswerStrategy,
-): { correct: number; total: number; results: QuizResult[] } {
+): Promise<{ correct: number; total: number; results: QuizResult[] }> {
   if (questions.length === 0) {
     throw new Error('runAutoInteractive: No questions provided');
   }
@@ -33,7 +24,6 @@ export function runAutoInteractive(
       throw new Error(`runAutoInteractive: Question ${String(i + 1)} has no correct answer marked`);
     }
 
-    // Use strategy to select answer
     const selectedIndex = strategy.selectAnswer(question);
 
     if (selectedIndex < 0 || selectedIndex >= question.choices.length) {

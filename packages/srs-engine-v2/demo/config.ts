@@ -1,12 +1,4 @@
-/**
- * Learning Phase Configuration
- *
- * Defines thresholds, counts, and behavior flags for the interactive
- * and automated learning sessions.
- */
-
-// AUTO_MODE: Set to true to run automated quiz answering without user input
-export const AUTO_MODE = true;
+export const AUTO_MODE = false;
 
 export const LEARNING_CONFIG = {
   questionLimit: 8,
@@ -15,8 +7,6 @@ export const LEARNING_CONFIG = {
   correctStreakThreshold: 2,
   wrongStreakThreshold: 2,
 };
-
-
 
 export const STREAK_THRESHOLDS = {
   correctStreakThreshold: LEARNING_CONFIG.correctStreakThreshold,

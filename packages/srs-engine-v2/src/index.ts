@@ -1,0 +1,16 @@
+// Engine — question generation
+export { composeBatch, composeBatchMulti, FOUNDATIONAL_DIRECTIONS } from './engine/compose-batch.js';
+export type { QuizItem } from './engine/compose-batch.js';
+
+// Engine — session state
+export { processRecheckResult, nextActivePool, updateMasteryState } from './engine/session.js';
+export type { RecheckResultOutput, MasteryUpdateResult } from './engine/session.js';
+
+// Word state
+export { updateRunState, isMastered } from './types/word-state.js';
+export type { WordState, RunState, StreakThresholds } from './types/word-state.js';
+
+// Types
+export type { QuizQuestion, QuizChoice, QuizDirection, QuizResult } from './types/quiz.js';
+export type { MockDeck, MockLine } from './types/deck.js';
+export type { MockFoundational, ThaiFoundational, MockVowel, MockTone, ThaiFoundationalType, JapaneseFoundationalType } from './types/foundational.js';

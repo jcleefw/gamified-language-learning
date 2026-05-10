@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { runAutoInteractive } from '../../learning/auto-answerer.js';
+import { runAutoInteractive } from '../../../demo/auto-answerer.js';
 import {
   CorrectAutoAnswerStrategy,
   RandomAutoAnswerStrategy,
   WeightedAccuracyAutoAnswerStrategy,
-} from '../../learning/auto-answer-strategy.js';
+} from '../../../demo/auto-answer-strategy.js';
 import type { QuizQuestion } from '../../types/quiz.js';
 
 const createTestQuestion = (wordId: string = 'word1'): QuizQuestion => ({
@@ -28,11 +28,11 @@ const createTestBatch = (count: number): QuizQuestion[] => {
 };
 
 describe('runAutoInteractive', () => {
-  it('with CorrectAnswerStrategy, returns all correct', () => {
+  it('with CorrectAnswerStrategy, returns all correct', async () => {
     const strategy = new CorrectAutoAnswerStrategy();
     const questions = createTestBatch(4);
 
-    const result = runAutoInteractive(questions, strategy);
+    const result = await runAutoInteractive(questions, strategy);
 
     expect(result.correct).toBe(4);
     expect(result.total).toBe(4);
@@ -42,11 +42,11 @@ describe('runAutoInteractive', () => {
     }
   });
 
-  it('with WeightedAccuracyStrategy(0.0), returns all incorrect', () => {
+  it('with WeightedAccuracyStrategy(0.0), returns all incorrect', async () => {
     const strategy = new WeightedAccuracyAutoAnswerStrategy(0.0);
     const questions = createTestBatch(4);
 
-    const result = runAutoInteractive(questions, strategy);
+    const result = await runAutoInteractive(questions, strategy);
 
     expect(result.correct).toBe(0);
     expect(result.total).toBe(4);
@@ -55,11 +55,11 @@ describe('runAutoInteractive', () => {
     }
   });
 
-  it('with WeightedAccuracyStrategy(1.0), returns all correct', () => {
+  it('with WeightedAccuracyStrategy(1.0), returns all correct', async () => {
     const strategy = new WeightedAccuracyAutoAnswerStrategy(1.0);
     const questions = createTestBatch(4);
 
-    const result = runAutoInteractive(questions, strategy);
+    const result = await runAutoInteractive(questions, strategy);
 
     expect(result.correct).toBe(4);
     expect(result.total).toBe(4);
@@ -68,33 +68,33 @@ describe('runAutoInteractive', () => {
     }
   });
 
-  it('with WeightedAccuracyStrategy(0.5), returns mixed correct/incorrect', () => {
+  it('with WeightedAccuracyStrategy(0.5), returns mixed correct/incorrect', async () => {
     const strategy = new WeightedAccuracyAutoAnswerStrategy(0.5);
     const questions = createTestBatch(100);
 
-    const result = runAutoInteractive(questions, strategy);
+    const result = await runAutoInteractive(questions, strategy);
 
     expect(result.correct).toBeGreaterThan(30);
     expect(result.correct).toBeLessThan(70);
     expect(result.total).toBe(100);
   });
 
-  it('with RandomAnswerStrategy, returns unpredictable results', () => {
+  it('with RandomAnswerStrategy, returns unpredictable results', async () => {
     const strategy = new RandomAutoAnswerStrategy();
     const questions = createTestBatch(10);
 
-    const result = runAutoInteractive(questions, strategy);
+    const result = await runAutoInteractive(questions, strategy);
 
     expect(result.total).toBe(10);
     expect(result.correct).toBeGreaterThanOrEqual(0);
     expect(result.correct).toBeLessThanOrEqual(10);
   });
 
-  it('results array contains all wordIds', () => {
+  it('results array contains all wordIds', async () => {
     const strategy = new CorrectAutoAnswerStrategy();
     const questions = createTestBatch(5);
 
-    const result = runAutoInteractive(questions, strategy);
+    const result = await runAutoInteractive(questions, strategy);
 
     expect(result.results).toHaveLength(5);
 
@@ -103,25 +103,25 @@ describe('runAutoInteractive', () => {
     }
   });
 
-  it('throws error if no questions provided', () => {
+  it('throws error if no questions provided', async () => {
     const strategy = new CorrectAutoAnswerStrategy();
 
-    expect(() => runAutoInteractive([], strategy)).toThrow('No questions provided');
+    await expect(runAutoInteractive([], strategy)).rejects.toThrow('No questions provided');
   });
 
-  it('throws error if question has no correct answer', () => {
+  it('throws error if question has no correct answer', async () => {
     const strategy = new CorrectAutoAnswerStrategy();
     const questions = createTestBatch(1);
     questions[0].choices.forEach(c => (c.isCorrect = false));
 
-    expect(() => runAutoInteractive(questions, strategy)).toThrow('no correct answer marked');
+    await expect(runAutoInteractive(questions, strategy)).rejects.toThrow('no correct answer marked');
   });
 
-  it('throws error if question has no choices', () => {
+  it('throws error if question has no choices', async () => {
     const strategy = new CorrectAutoAnswerStrategy();
     const question = createTestQuestion();
     question.choices = [];
 
-    expect(() => runAutoInteractive([question], strategy)).toThrow('has no choices');
+    await expect(runAutoInteractive([question], strategy)).rejects.toThrow('has no choices');
   });
 });

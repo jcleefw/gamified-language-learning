@@ -3,7 +3,7 @@ import {
   CorrectAutoAnswerStrategy,
   RandomAutoAnswerStrategy,
   WeightedAccuracyAutoAnswerStrategy,
-} from '../../learning/auto-answer-strategy.js';
+} from '../../../demo/auto-answer-strategy.js';
 import type { QuizQuestion } from '../../types/quiz.js';
 
 const createTestQuestion = (wordId: string = 'word1'): QuizQuestion => ({

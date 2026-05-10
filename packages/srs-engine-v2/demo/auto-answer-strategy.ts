@@ -1,22 +1,9 @@
-import type { QuizQuestion } from '../types/quiz.js';
+import type { QuizQuestion } from '../src/index.js';
 
-/**
- * AutoAnswerStrategy determines which choice a quiz runner will select
- * for a given question, without user input.
- */
 export interface AutoAnswerStrategy {
-  /**
-   * Select an answer choice index (0–3) for a question.
-   * @param question - the quiz question
-   * @returns choice index 0–3
-   */
   selectAnswer(question: QuizQuestion): number;
 }
 
-/**
- * Always select the correct answer.
- * Used for "perfect run" test scenarios.
- */
 export class CorrectAutoAnswerStrategy implements AutoAnswerStrategy {
   selectAnswer(question: QuizQuestion): number {
     const index = question.choices.findIndex(c => c.isCorrect);
@@ -27,21 +14,12 @@ export class CorrectAutoAnswerStrategy implements AutoAnswerStrategy {
   }
 }
 
-/**
- * Select a random choice (including possibly the correct answer).
- * Used for edge case / chaos testing.
- */
 export class RandomAutoAnswerStrategy implements AutoAnswerStrategy {
   selectAnswer(question: QuizQuestion): number {
     return Math.floor(Math.random() * question.choices.length);
   }
 }
 
-/**
- * Select an answer with a target accuracy rate.
- * If accuracy is 0.8, answer correctly ~80% of the time, randomly ~20%.
- * Used for "realistic accuracy" scenarios.
- */
 export class WeightedAccuracyAutoAnswerStrategy implements AutoAnswerStrategy {
   constructor(private accuracy: number) {
     if (accuracy < 0 || accuracy > 1) {
@@ -51,26 +29,21 @@ export class WeightedAccuracyAutoAnswerStrategy implements AutoAnswerStrategy {
 
   selectAnswer(question: QuizQuestion): number {
     if (Math.random() < this.accuracy) {
-      // Answer correctly
       const index = question.choices.findIndex(c => c.isCorrect);
       if (index === -1) {
         throw new Error(`No correct answer found for question ${question.wordId}`);
       }
       return index;
     } else {
-      // Answer incorrectly (random wrong choice)
       const wrongChoices = question.choices
         .map((c, i) => (!c.isCorrect ? i : null))
         .filter((i): i is number => i !== null);
 
       if (wrongChoices.length === 0) {
-        // Only one choice is correct and no wrong choices exist, must answer correctly
-        const index = question.choices.findIndex(c => c.isCorrect);
-        return index;
+        return question.choices.findIndex(c => c.isCorrect);
       }
 
       return wrongChoices[Math.floor(Math.random() * wrongChoices.length)];
     }
   }
 }
-

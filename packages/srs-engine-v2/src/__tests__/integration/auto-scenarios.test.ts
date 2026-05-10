@@ -2,12 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { mockConsonants } from '../../../data/mock/mock-consonants.js';
 import { wordPool } from '../../../data/mock/mock-word-pool.js';
 import { mockDecks } from '../../../data/mock/mock-decks.js';
-import { runAdaptiveLoop } from '../../learning/learning-io.js';
+import { runAdaptiveLoop } from '../../../demo/learning-io.js';
 import {
   CorrectAutoAnswerStrategy,
   WeightedAccuracyAutoAnswerStrategy,
   RandomAutoAnswerStrategy,
-} from '../../learning/auto-answer-strategy.js';
+} from '../../../demo/auto-answer-strategy.js';
 import { isMastered } from '../../types/word-state.js';
 
 const config = {

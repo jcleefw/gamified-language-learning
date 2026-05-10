@@ -1,10 +1,11 @@
-import { mockConsonants } from '../../data/mock/mock-consonants.js';
-import { mockVowels } from '../../data/mock/mock-vowels.js';
-import { mockTones } from '../../data/mock/mock-tones.js';
-import { wordPool } from '../../data/mock/mock-word-pool.js';
-import { mockDecks } from '../../data/mock/mock-decks.js';
+import { mockConsonants } from '../data/mock/mock-consonants.js';
+import { mockVowels } from '../data/mock/mock-vowels.js';
+import { mockTones } from '../data/mock/mock-tones.js';
+import { wordPool } from '../data/mock/mock-word-pool.js';
+import { mockDecks } from '../data/mock/mock-decks.js';
 import { selectDeck, runAdaptiveLoop } from './learning-io.js';
-import { type RunState, isMastered } from '../types/word-state.js';
+import { isMastered } from '../src/index.js';
+import type { RunState } from '../src/index.js';
 import {
   CorrectAutoAnswerStrategy,
 } from './auto-answer-strategy.js';
@@ -41,8 +42,11 @@ const mockFoundational = [
 let runState: RunState = new Map();
 
 for (; ;) {
+<<<<<<< HEAD:packages/srs-engine-v2/src/learning/learning-runner.ts
   // Select deck (auto or interactive)
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+=======
+>>>>>>> 37a1051 (feat(srs-engine-v2): establish library boundary — src/index.ts, demo/, remove src/learning/):packages/srs-engine-v2/demo/learning-runner.ts
   const deck = AUTO_MODE ? mockDecks[0] : await selectDeck(mockDecks);
 
   const deckWords = deck.wordIds.flatMap(id => {
@@ -50,14 +54,12 @@ for (; ;) {
     return w !== undefined ? [w] : [];
   });
 
-  // For testing purposes: 1 consonant, 1 vowel, 1 tone first to ensure they show up
   const words = [
     mockConsonants[0],
     mockVowels[0],
     mockTones[0],
     ...deckWords,
   ];
-
 
   const recheckIds = new Set(
     deck.wordIds.filter(id => {
@@ -81,7 +83,10 @@ for (; ;) {
     strategy,
   );
 
+<<<<<<< HEAD:packages/srs-engine-v2/src/learning/learning-runner.ts
   // In auto mode, exit after one run; in interactive mode, loop
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+=======
+>>>>>>> 37a1051 (feat(srs-engine-v2): establish library boundary — src/index.ts, demo/, remove src/learning/):packages/srs-engine-v2/demo/learning-runner.ts
   if (AUTO_MODE) break;
 }
