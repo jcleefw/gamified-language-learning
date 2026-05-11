@@ -8,19 +8,23 @@ Start reading the CODEMAP.md on the srs-engine-v2 package to understand high lev
 
 You will be provided a short description on the task to complete with a STORY ID. Read and always ask clarifying questions before planning.
 
-Plan your approach based on the story and write it to the Parent EPIC file `.agents/plans/epics/EP20-srs-engine-v2-rebuild.md`
+Plan your approach based on the story and write it to the Parent EPIC file `.agents/plans/epics/EP21-srs-engine-v2-revision-phase.md`
 
 Every atomic setup should be configurable. 
 
-Stop after you plan for approval.
+run `.agents/skills/dev/tdd-plan/SKILL.md` to plan the changes.
+
+STOP after you plan for approval.
+
+Do not start implementation without approval.
 
 After approval is given, use `.agents/skills/dev/tdd-implement/SKILL.md` to implement the changes.
 
-Stop and ask for manual validation on implementation completion.
+STOP and ask for manual validation on implementation completion.
 
 When user say "complete", 
 1. update changelog using `.agents/skills/dev/change-log-updater/SKILL.md`. 
-2. Update the Parent EPIC file `.agents/plans/epics/EP20-srs-engine-v2-rebuild.md` to mark the story as complete.
+2. Update the Parent EPIC file `.agents/plans/epics/EP21-srs-engine-v2-revision-phase.md` to mark the story as complete.
 
 
 

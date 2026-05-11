@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
-  CorrectAnswerStrategy,
-  RandomAnswerStrategy,
-  WeightedAccuracyStrategy,
-} from '../../types/answer-strategy.js';
+  CorrectAutoAnswerStrategy,
+  RandomAutoAnswerStrategy,
+  WeightedAccuracyAutoAnswerStrategy,
+} from '../../../demo/auto-answer-strategy.js';
 import type { QuizQuestion } from '../../types/quiz.js';
 
 const createTestQuestion = (wordId: string = 'word1'): QuizQuestion => ({
@@ -18,9 +18,9 @@ const createTestQuestion = (wordId: string = 'word1'): QuizQuestion => ({
   ],
 });
 
-describe('CorrectAnswerStrategy', () => {
+describe('CorrectAutoAnswerStrategy', () => {
   it('always returns index of correct choice', () => {
-    const strategy = new CorrectAnswerStrategy();
+    const strategy = new CorrectAutoAnswerStrategy();
     const question = createTestQuestion();
 
     for (let i = 0; i < 10; i++) {
@@ -31,7 +31,7 @@ describe('CorrectAnswerStrategy', () => {
   });
 
   it('works with correct choice at different positions', () => {
-    const strategy = new CorrectAnswerStrategy();
+    const strategy = new CorrectAutoAnswerStrategy();
 
     // Correct at index 0
     let question = createTestQuestion('word2');
@@ -47,7 +47,7 @@ describe('CorrectAnswerStrategy', () => {
   });
 
   it('throws error when no correct answer exists', () => {
-    const strategy = new CorrectAnswerStrategy();
+    const strategy = new CorrectAutoAnswerStrategy();
     const question = createTestQuestion();
     question.choices.forEach(c => (c.isCorrect = false));
 
@@ -57,9 +57,9 @@ describe('CorrectAnswerStrategy', () => {
   });
 });
 
-describe('RandomAnswerStrategy', () => {
+describe('RandomAutoAnswerStrategy', () => {
   it('returns a valid choice index (0-3)', () => {
-    const strategy = new RandomAnswerStrategy();
+    const strategy = new RandomAutoAnswerStrategy();
     const question = createTestQuestion();
 
     for (let i = 0; i < 20; i++) {
@@ -70,7 +70,7 @@ describe('RandomAnswerStrategy', () => {
   });
 
   it('can select both correct and incorrect answers', () => {
-    const strategy = new RandomAnswerStrategy();
+    const strategy = new RandomAutoAnswerStrategy();
     const question = createTestQuestion();
     const selected = new Set<number>();
 
@@ -83,18 +83,18 @@ describe('RandomAnswerStrategy', () => {
   });
 });
 
-describe('WeightedAccuracyStrategy', () => {
+describe('WeightedAccuracyAutoAnswerStrategy', () => {
   it('constructor rejects invalid accuracy values', () => {
-    expect(() => new WeightedAccuracyStrategy(-0.1)).toThrow(
+    expect(() => new WeightedAccuracyAutoAnswerStrategy(-0.1)).toThrow(
       'Accuracy must be between 0 and 1'
     );
-    expect(() => new WeightedAccuracyStrategy(1.1)).toThrow(
+    expect(() => new WeightedAccuracyAutoAnswerStrategy(1.1)).toThrow(
       'Accuracy must be between 0 and 1'
     );
   });
 
   it('with accuracy 1.0, always returns correct answer', () => {
-    const strategy = new WeightedAccuracyStrategy(1.0);
+    const strategy = new WeightedAccuracyAutoAnswerStrategy(1.0);
     const question = createTestQuestion();
 
     for (let i = 0; i < 10; i++) {
@@ -104,7 +104,7 @@ describe('WeightedAccuracyStrategy', () => {
   });
 
   it('with accuracy 0.0, always returns incorrect answer', () => {
-    const strategy = new WeightedAccuracyStrategy(0.0);
+    const strategy = new WeightedAccuracyAutoAnswerStrategy(0.0);
     const question = createTestQuestion();
 
     for (let i = 0; i < 10; i++) {
@@ -114,7 +114,7 @@ describe('WeightedAccuracyStrategy', () => {
   });
 
   it('with accuracy 0.5, returns mix of correct and incorrect', () => {
-    const strategy = new WeightedAccuracyStrategy(0.5);
+    const strategy = new WeightedAccuracyAutoAnswerStrategy(0.5);
     const question = createTestQuestion();
     let correctCount = 0;
 
@@ -131,7 +131,7 @@ describe('WeightedAccuracyStrategy', () => {
   });
 
   it('with accuracy 0.8, returns ~80% correct answers', () => {
-    const strategy = new WeightedAccuracyStrategy(0.8);
+    const strategy = new WeightedAccuracyAutoAnswerStrategy(0.8);
     const question = createTestQuestion();
     let correctCount = 0;
 
@@ -148,7 +148,7 @@ describe('WeightedAccuracyStrategy', () => {
   });
 
   it('when only correct choice exists, always returns correct', () => {
-    const strategy = new WeightedAccuracyStrategy(0.0);
+    const strategy = new WeightedAccuracyAutoAnswerStrategy(0.0);
     const question = createTestQuestion();
     // Set all choices as correct (edge case)
     question.choices.forEach(c => (c.isCorrect = true));

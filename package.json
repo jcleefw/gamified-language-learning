@@ -15,7 +15,7 @@
     "typecheck": "turbo typecheck",
     "quiz": "tsx scripts/quiz-runner.ts",
     "dev:server": "pnpm --filter @gll/server dev",
-    "quizv2": "tsx packages/srs-engine-v2/src/main.ts"
+    "learnv2": "tsx packages/srs-engine-v2/demo/learning-runner.ts"
   },
   "devDependencies": {
     "@gll/srs-engine": "workspace:*",

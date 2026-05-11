@@ -10,17 +10,13 @@ SRS engine development progressing through scripting phase.
 Target Working directory: `packages/srs-engine-v2`
 
 ## Completed Epics
-- ✅ EP20 - SRS Engine MVP learning phase (interactive quiz runner)
-- ✅ EP22 - Auto-Script SRS Quiz Runner (automated test scenarios with answer strategies)
+- EP20-ST13 support for other foundational words (vowels, etc)
 
 ## Current Work
-- Finalizing auto-mode implementation with deterministic question ordering
-- All 111 tests passing (20 new tests added)
-- Ready for code review
+- migrate SRS engine learning quiz to use persistence layer
 
 ## What's next
+- migrate SRS engine learning quiz to use persistence layer
 - EP21 - Review/Revision Phase (when starting)
-- Optional: CLI argument for scenario selection
-- Optional: Grafana dashboard for test run visualization 
 
 

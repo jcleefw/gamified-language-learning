@@ -16,7 +16,7 @@ This skill handles the formal documentation of story-level work in the project.
 4.  **Generate Identifiers**:
     - Run **`.agents/tools/generate-timestamp.sh`** to populate all `{TIMESTAMP}` placeholders in the document body.
     - Run **`.agents/tools/generate-filename.sh EP##-ST## <slug>`** to determine the final destination path.
-5.  **Finalize Artifact**: Write the completed changelog to the correct epic subfolder in `.agents/changelogs/`.
+5.  **Finalize Artifact**: Write the completed changelog to the correct epic subfolder in `.agents/changelogs/EP-##`.
 6.  **Trigger Map Sync**: Once the log is written, use the **`code-mapper`** skill to verify if any folder-level `CODEMAP.md` requires updates based on the documented changes.
 
 ## Compliance Requirements

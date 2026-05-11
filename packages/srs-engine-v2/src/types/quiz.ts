@@ -1,3 +1,8 @@
+export interface QuizResult {
+  wordId: string;
+  correct: boolean;
+}
+
 export type QuizDirection =
   | 'native-to-english'
   | 'english-to-native'

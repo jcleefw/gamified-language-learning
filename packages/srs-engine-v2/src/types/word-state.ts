@@ -15,6 +15,10 @@ export interface StreakThresholds {
   maxMastery: number;
 }
 
+/**
+ * Returns a new RunState with the word's streak and mastery updated
+ * for one answer. Does not mutate the input.
+ */
 export function updateRunState(
   state: RunState,
   wordId: string,
@@ -59,6 +63,7 @@ export function updateRunState(
   return next;
 }
 
+/** Returns true when mastery meets or exceeds the given threshold. */
 export function isMastered(ws: WordState, threshold: number): boolean {
   return ws.mastery >= threshold;
 }

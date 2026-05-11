@@ -2,8 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { mockConsonants } from '../../../data/mock/mock-consonants.js';
 import { wordPool } from '../../../data/mock/mock-word-pool.js';
 import { mockDecks } from '../../../data/mock/mock-decks.js';
-import { runAdaptiveLoop } from '../../runner/interactive.js';
-import { CorrectAnswerStrategy, WeightedAccuracyStrategy, RandomAnswerStrategy } from '../../types/answer-strategy.js';
+import { runAdaptiveLoop } from '../../../demo/learning-io.js';
+import {
+  CorrectAutoAnswerStrategy,
+  WeightedAccuracyAutoAnswerStrategy,
+  RandomAutoAnswerStrategy,
+} from '../../../demo/auto-answer-strategy.js';
 import { isMastered } from '../../types/word-state.js';
 
 const config = {
@@ -22,7 +26,7 @@ const streakThresholds = {
 };
 
 describe('Auto Mode Scenarios', () => {
-  it('perfect scenario: CorrectAnswerStrategy reaches 100% accuracy', async () => {
+  it('perfect scenario: CorrectAutoAnswerStrategy reaches 100% accuracy', async () => {
     const deck = mockDecks[0];
     const deckWords = deck.wordIds.flatMap(id => {
       const w = wordPool.find(word => word.id === id);
@@ -33,7 +37,7 @@ describe('Auto Mode Scenarios', () => {
       ...mockConsonants.slice(0, config.foundationalWordsCount),
     ];
 
-    const strategy = new CorrectAnswerStrategy();
+    const strategy = new CorrectAutoAnswerStrategy();
     const runState = await runAdaptiveLoop(
       words,
       wordPool,
@@ -57,7 +61,7 @@ describe('Auto Mode Scenarios', () => {
     }
   });
 
-  it('realistic scenario: WeightedAccuracyStrategy(0.8) completes with ~80% accuracy', async () => {
+  it('realistic scenario: WeightedAccuracyAutoAnswerStrategy(0.8) completes with ~80% accuracy', async () => {
     const deck = mockDecks[0];
     const deckWords = deck.wordIds.flatMap(id => {
       const w = wordPool.find(word => word.id === id);
@@ -68,7 +72,7 @@ describe('Auto Mode Scenarios', () => {
       ...mockConsonants.slice(0, config.foundationalWordsCount),
     ];
 
-    const strategy = new WeightedAccuracyStrategy(0.8);
+    const strategy = new WeightedAccuracyAutoAnswerStrategy(0.8);
     const runState = await runAdaptiveLoop(
       words,
       wordPool,
@@ -98,7 +102,7 @@ describe('Auto Mode Scenarios', () => {
     expect(accuracy).toBeLessThan(0.95);
   });
 
-  it('edge case scenario: RandomAnswerStrategy completes without crashing', async () => {
+  it('edge case scenario: RandomAutoAnswerStrategy completes without crashing', async () => {
     const deck = mockDecks[0];
     const deckWords = deck.wordIds.flatMap(id => {
       const w = wordPool.find(word => word.id === id);
@@ -109,7 +113,7 @@ describe('Auto Mode Scenarios', () => {
       ...mockConsonants.slice(0, config.foundationalWordsCount),
     ];
 
-    const strategy = new RandomAnswerStrategy();
+    const strategy = new RandomAutoAnswerStrategy();
     const runState = await runAdaptiveLoop(
       words,
       wordPool,
@@ -146,7 +150,7 @@ describe('Auto Mode Scenarios', () => {
       ...mockConsonants.slice(0, config.foundationalWordsCount),
     ];
 
-    const strategy1 = new CorrectAnswerStrategy();
+    const strategy1 = new CorrectAutoAnswerStrategy();
     const runState1 = await runAdaptiveLoop(
       words,
       wordPool,
@@ -159,7 +163,7 @@ describe('Auto Mode Scenarios', () => {
       strategy1,
     );
 
-    const strategy2 = new CorrectAnswerStrategy();
+    const strategy2 = new CorrectAutoAnswerStrategy();
     const runState2 = await runAdaptiveLoop(
       words,
       wordPool,
@@ -172,7 +176,7 @@ describe('Auto Mode Scenarios', () => {
       strategy2,
     );
 
-    // Results should be identical with CorrectAnswerStrategy (100% accuracy)
+    // Results should be identical with CorrectAutoAnswerStrategy (100% accuracy)
     expect(runState1.size).toBe(runState2.size);
     for (const [wordId, state1] of runState1) {
       const state2 = runState2.get(wordId);

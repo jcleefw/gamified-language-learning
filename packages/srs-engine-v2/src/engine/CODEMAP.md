@@ -1,6 +1,7 @@
 # CODEMAP.md — `src/engine/`
 
-Quiz generation logic. Pure functions only — no I/O, no side effects.
+Quiz generation and session state logic. Pure functions only — no I/O,
+no side effects.
 
 ---
 
@@ -9,6 +10,7 @@ Quiz generation logic. Pure functions only — no I/O, no side effects.
 | File | Purpose |
 | --- | --- |
 | `compose-batch.ts` | Composes `QuizQuestion[]` from language content |
+| `session.ts` | Session state transitions — recheck, pool rotation, mastery updates |
 
 ---
 
@@ -16,24 +18,30 @@ Quiz generation logic. Pure functions only — no I/O, no side effects.
 
 | Export | Signature | Purpose |
 | --- | --- | --- |
-| `composeBatch` | `(consonant: MockConsonant, pool: MockConsonant[]) → QuizQuestion[4]` | One question per `QuizDirection` for a single consonant; uses `pool` for distractors |
-| `composeBatchMulti` | `(words: QuizItem[], pool: QuizItem[], options: { questionLimit: number; shuffle?: boolean }) → QuizQuestion[N]` | Covers all input words, fills to `questionLimit`; optional `shuffle` parameter controls randomness (default: `true`); when `shuffle: false`, returns deterministic order for testing |
-
-### Internal Helpers
-
-| Helper | Purpose |
-| --- | --- |
-| `englishWithClass` | Formats English as `"sound (class)"` |
-| `makeChoices` | Builds 4-choice set (1 correct + 3 distractors), assigns labels a–d |
-| `shuffle` | Fisher-Yates in-place shuffle |
+| `composeBatch` | `(item: QuizItem, pool: QuizItem[]) → QuizQuestion[]` | One question per direction for a single item; uses `pool` for distractors |
+| `composeBatchMulti` | `(words: QuizItem[], pool: QuizItem[], options: { questionLimit: number; shuffle?: boolean }) → QuizQuestion[N]` | Covers all input words, fills to `questionLimit`; `shuffle: false` for deterministic order |
+| `FOUNDATIONAL_DIRECTIONS` | `Record<FoundationalType, QuizDirection[]>` | Direction sets per foundational type (consonant/vowel = 4, tone = 2) |
+| `QuizItem` | `type` | `MockFoundational \| MockWord` |
 
 ### `composeBatchMulti` Algorithm
 
-1. Generate 4 questions per word via `composeBatch`
+1. Generate all directions per word via `composeBatch`
 2. Take first question from each word → coverage guaranteed
 3. Collect remaining questions as leftover
-4. Fill gap to `questionLimit` with shuffled leftover
-5. Shuffle final array
+4. Fill gap to `questionLimit` with (optionally shuffled) leftover
+5. Optionally shuffle final array
+
+---
+
+## Exports — `session.ts`
+
+| Export | Signature | Purpose |
+| --- | --- | --- |
+| `processRecheckResult` | `(wordId, wasCorrect, runState, recheckPending, recheckReentered, masteryThreshold, streakThresholds?) → RecheckResultOutput` | Applies one answer; suppresses streak/mastery on first recheck attempt |
+| `nextActivePool` | `(active, queue, questionLimit, runState, masteryThreshold, recheckExempt?) → { active, queue }` | Retires mastered words and fills freed slots from queue |
+| `updateMasteryState` | `(results, runState, prevState, recheckPending, recheckReentered, masteryThreshold, streakThresholds) → MasteryUpdateResult` | Applies a full batch of results; returns `newlyMasteredIds` for this batch |
+| `RecheckResultOutput` | `interface` | `{ runState, recheckPending, recheckReentered }` |
+| `MasteryUpdateResult` | `interface` | `{ runState, recheckPending, recheckReentered, masteredCount, newlyMasteredIds }` |
 
 ---
 
@@ -41,11 +49,18 @@ Quiz generation logic. Pure functions only — no I/O, no side effects.
 
 | Import | Source |
 | --- | --- |
-| `QuizQuestion`, `QuizDirection`, `QuizChoice` | `../types/quiz` |
-| `MockConsonant` | `../../../data/mock/mock-consonants` |
+| `QuizQuestion`, `QuizDirection`, `QuizChoice`, `QuizResult` | `../types/quiz` |
+| `MockFoundational` | `../types/foundational` |
+| `MockWord` | `../../data/mock/mock-words` |
+| `RunState`, `StreakThresholds`, `updateRunState`, `isMastered` | `../types/word-state` |
 
 ---
 
 ## Unit Tests
 
-`src/__tests__/unit/compose-batch.test.ts`
+| Test file | Covers |
+| --- | --- |
+| `src/__tests__/unit/compose-batch.test.ts` | `composeBatch`, `composeBatchMulti` |
+| `src/__tests__/unit/recheck.test.ts` | `processRecheckResult`, `nextActivePool` |
+| `src/__tests__/unit/adaptive-loop.test.ts` | `nextActivePool` pool rotation |
+| `src/__tests__/unit/update-mastery-state.test.ts` | `updateMasteryState` |
