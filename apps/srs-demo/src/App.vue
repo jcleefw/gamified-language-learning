@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import {
   composeBatchMulti,
   nextActivePool,
   updateMasteryState,
+  isMastered,
   type QuizItem,
   type QuizQuestion,
   type QuizResult,
@@ -34,6 +35,27 @@ const runState = ref<RunState>(new Map())
 const recheckPending = ref(new Set<string>())
 const recheckReentered = ref(new Set<string>())
 
+const defaultWordState = { wordId: '', seen: 0, correct: 0, mastery: 0, correctStreak: 0, wrongStreak: 0 }
+
+const masteredDeck = computed<QuizItem[]>(() => {
+  const deck = appDecks.find(d => d.id === deckId.value)
+  if (!deck) return []
+  return deckToQuizItems(deck).filter(w =>
+    isMastered(runState.value.get(w.id) ?? { ...defaultWordState, wordId: w.id }, CONFIG.masteryThreshold)
+  ) as QuizItem[]
+})
+
+const masteredGlobal = computed<QuizItem[]>(() =>
+  wordPool.filter(w =>
+    isMastered(runState.value.get(w.id) ?? { ...defaultWordState, wordId: w.id }, CONFIG.masteryThreshold)
+  )
+)
+
+const nextDeckId = computed<string | null>(() => {
+  const idx = appDecks.findIndex(d => d.id === deckId.value)
+  return idx !== -1 && idx + 1 < appDecks.length ? appDecks[idx + 1].id : null
+})
+
 const questions = ref<QuizQuestion[]>([])
 const currentIndex = ref(0)
 const answers = ref<QuizResult[]>([])
@@ -57,7 +79,7 @@ function startBatch() {
 function initSession(id: string) {
   deckId.value = id
   const words = getDeckWords(id)
-  const pool = nextActivePool(words, [], CONFIG.questionLimit, new Map(), CONFIG.masteryThreshold)
+  const pool = nextActivePool([], words, CONFIG.questionLimit, new Map(), CONFIG.masteryThreshold)
   activeItems.value = pool.active
   queue.value = pool.queue
   runState.value = new Map()
@@ -93,13 +115,7 @@ function onClear() {
   screen.value = 'select'
 }
 
-function onAnswered(result: QuizResult) {
-  answers.value.push(result)
-  currentIndex.value++
-
-  if (currentIndex.value < questions.value.length) return
-
-  // Batch complete
+function finishBatch() {
   const prevState = new Map(runState.value)
   const masteryResult = updateMasteryState(
     answers.value,
@@ -146,8 +162,38 @@ function onAnswered(result: QuizResult) {
   screen.value = 'results'
 }
 
+function onAnswered(result: QuizResult) {
+  answers.value.push(result)
+  currentIndex.value++
+  if (currentIndex.value === questions.value.length) finishBatch()
+}
+
+function onExitBatch() {
+  if (answers.value.length === 0) {
+    screen.value = 'select'
+    return
+  }
+  finishBatch()
+}
+
 function onNext() {
   startBatch()
+}
+
+function onSelectDeck() {
+  clearSession()
+  deckId.value = null
+  activeItems.value = []
+  queue.value = []
+  runState.value = new Map()
+  recheckPending.value = new Set()
+  recheckReentered.value = new Set()
+  screen.value = 'select'
+}
+
+function onNextDeck(id: string) {
+  clearSession()
+  initSession(id)
 }
 
 onMounted(() => {
@@ -168,6 +214,7 @@ onMounted(() => {
     :index="currentIndex"
     :total="questions.length"
     @answered="onAnswered"
+    @exit="onExitBatch"
   />
 
   <BatchResults
@@ -176,6 +223,12 @@ onMounted(() => {
     :batch-score="batchScore"
     :active-items="activeItems"
     :queue="queue"
+    :mastered-deck="masteredDeck"
+    :mastered-global="masteredGlobal"
+    :max-mastery="CONFIG.streakThresholds.maxMastery"
+    :next-deck-id="nextDeckId"
     @next="onNext"
+    @select-deck="onSelectDeck"
+    @next-deck="onNextDeck"
   />
 </template>
