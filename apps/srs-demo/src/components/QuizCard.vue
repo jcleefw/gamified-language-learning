@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { QuizQuestion, QuizResult } from '@gll/srs-engine-v2'
+import type { QuizQuestion, QuizResult, QuizItem } from '@gll/srs-engine-v2'
 
-const props = defineProps<{ question: QuizQuestion; index: number; total: number }>()
+const props = defineProps<{
+  question: QuizQuestion
+  index: number
+  total: number
+  activeItems: QuizItem[]
+  queue: QuizItem[]
+  masteredDeck: QuizItem[]
+}>()
 const emit = defineEmits<{ answered: [result: QuizResult]; exit: [] }>()
 
 const cheatMode = import.meta.env.VITE_CHEAT_MODE === 'true'
@@ -55,6 +62,41 @@ watch(() => props.question, () => {
         </button>
       </li>
     </ul>
+
+    <template v-if="cheatMode">
+      <div class="pool-panel">
+        <div class="pool-col">
+          <p class="pool-label">Active ({{ activeItems.length }})</p>
+          <ul>
+            <li v-for="item in activeItems" :key="item.id" class="pool-item">
+              <span class="pool-native">{{ item.native }}</span>
+              <span class="pool-id">{{ item.id }}</span>
+            </li>
+            <li v-if="activeItems.length === 0" class="pool-empty">—</li>
+          </ul>
+        </div>
+        <div class="pool-col">
+          <p class="pool-label">Queue ({{ queue.length }})</p>
+          <ul>
+            <li v-for="item in queue" :key="item.id" class="pool-item">
+              <span class="pool-native">{{ item.native }}</span>
+              <span class="pool-id">{{ item.id }}</span>
+            </li>
+            <li v-if="queue.length === 0" class="pool-empty">empty</li>
+          </ul>
+        </div>
+        <div class="pool-col">
+          <p class="pool-label">Mastered ({{ masteredDeck.length }})</p>
+          <ul>
+            <li v-for="item in masteredDeck" :key="item.id" class="pool-item">
+              <span class="pool-native">{{ item.native }}</span>
+              <span class="pool-id">{{ item.id }}</span>
+            </li>
+            <li v-if="masteredDeck.length === 0" class="pool-empty">none yet</li>
+          </ul>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -115,6 +157,24 @@ watch(() => props.question, () => {
   flex-shrink: 0;
 }
 .value { flex: 1; }
+.pool-panel {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 12px;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+.pool-col { flex: 1; }
+.pool-label { margin: 0 0 6px; font-weight: 600; color: #374151; }
+.pool-panel ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.pool-item { display: flex; justify-content: space-between; gap: 8px; }
+.pool-native { font-weight: 500; color: #111827; }
+.pool-id { color: #9ca3af; font-size: 0.7rem; }
+.pool-empty { color: #9ca3af; font-style: italic; }
 .cheat-hint {
   margin: -20px 0 20px;
   font-size: 0.8rem;
