@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { WordState, QuizItem } from '@gll/srs-engine-v2'
 
 export interface BatchSummary {
@@ -8,16 +8,22 @@ export interface BatchSummary {
   newlyMastered: boolean
 }
 
-defineProps<{
+const props = defineProps<{
   summary: BatchSummary[]
   batchScore: { correct: number; total: number }
   activeItems: QuizItem[]
   queue: QuizItem[]
+  masteredDeck: QuizItem[]
+  masteredGlobal: QuizItem[]
+  maxMastery: number
+  nextDeckId: string | null
 }>()
 
 const showPool = ref(false)
 
-const emit = defineEmits<{ next: [] }>()
+const deckComplete = computed(() => props.activeItems.length === 0 && props.queue.length === 0)
+
+const emit = defineEmits<{ next: []; selectDeck: []; nextDeck: [deckId: string] }>()
 </script>
 
 <template>
@@ -45,7 +51,7 @@ const emit = defineEmits<{ next: [] }>()
           <td>
             <span class="mastery-dots">
               <span
-                v-for="i in 5"
+                v-for="i in maxMastery"
                 :key="i"
                 class="dot"
                 :class="{ filled: i <= row.state.mastery }"
@@ -58,7 +64,17 @@ const emit = defineEmits<{ next: [] }>()
       </tbody>
     </table>
 
-    <button class="btn-next" @click="emit('next')">Next Batch →</button>
+    <div v-if="deckComplete" class="deck-complete">
+      <p class="deck-complete-msg">All words mastered! 🎉</p>
+      <div class="deck-complete-actions">
+        <button class="btn-secondary" @click="emit('selectDeck')">Back to decks</button>
+        <button v-if="nextDeckId" class="btn-primary" @click="emit('nextDeck', nextDeckId)">Next deck →</button>
+      </div>
+    </div>
+    <div v-else class="batch-actions">
+      <button class="btn-secondary" @click="emit('selectDeck')">Back to decks</button>
+      <button class="btn-next" @click="emit('next')">Next Batch →</button>
+    </div>
 
     <details class="pool-debug" :open="showPool" @toggle="showPool = ($event.target as HTMLDetailsElement).open">
       <summary class="pool-debug-toggle">Pool state</summary>
@@ -80,6 +96,26 @@ const emit = defineEmits<{ next: [] }>()
             <span class="pool-id">{{ item.id }}</span>
           </li>
           <li v-if="queue.length === 0" class="pool-empty">empty</li>
+        </ul>
+      </div>
+      <div class="pool-section">
+        <p class="pool-label">Mastered — this deck ({{ masteredDeck.length }})</p>
+        <ul>
+          <li v-for="item in masteredDeck" :key="item.id" class="pool-item">
+            <span class="pool-native">{{ item.native }}</span>
+            <span class="pool-id">{{ item.id }}</span>
+          </li>
+          <li v-if="masteredDeck.length === 0" class="pool-empty">none yet</li>
+        </ul>
+      </div>
+      <div class="pool-section">
+        <p class="pool-label">Mastered — all decks ({{ masteredGlobal.length }})</p>
+        <ul>
+          <li v-for="item in masteredGlobal" :key="item.id" class="pool-item">
+            <span class="pool-native">{{ item.native }}</span>
+            <span class="pool-id">{{ item.id }}</span>
+          </li>
+          <li v-if="masteredGlobal.length === 0" class="pool-empty">none yet</li>
         </ul>
       </div>
     </details>
@@ -131,6 +167,33 @@ th { color: #6b7280; font-weight: 600; font-size: 0.8rem; text-transform: upperc
   font-weight: 600;
   vertical-align: middle;
 }
+.deck-complete {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 28px;
+  text-align: center;
+}
+.deck-complete-msg {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #15803d;
+  margin: 0 0 16px;
+}
+.deck-complete-actions { display: flex; gap: 10px; justify-content: center; }
+.btn-primary, .btn-secondary {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.btn-primary { background: #2563eb; color: white; }
+.btn-primary:hover { background: #1d4ed8; }
+.btn-secondary { background: #e5e7eb; color: #374151; }
+.btn-secondary:hover { background: #d1d5db; }
+.batch-actions { display: flex; gap: 10px; margin-bottom: 28px; }
 .btn-next {
   padding: 12px 28px;
   background: #2563eb;
