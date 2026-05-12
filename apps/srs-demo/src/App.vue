@@ -28,6 +28,7 @@ const CONFIG = {
 type Screen = 'select' | 'quiz' | 'results'
 
 const screen = ref<Screen>('select')
+const hasSavedSession = ref(false)
 const deckId = ref<string | null>(null)
 const activeItems = ref<QuizItem[]>([])
 const queue = ref<QuizItem[]>([])
@@ -50,6 +51,19 @@ const masteredGlobal = computed<QuizItem[]>(() =>
     isMastered(runState.value.get(w.id) ?? { ...defaultWordState, wordId: w.id }, CONFIG.masteryThreshold)
   )
 )
+
+const completedDeckIds = computed<Set<string>>(() => {
+  const completed = new Set<string>()
+  for (const deck of appDecks) {
+    const words = deckToQuizItems(deck)
+    if (words.length > 0 && words.every(w =>
+      isMastered(runState.value.get(w.id) ?? { ...defaultWordState, wordId: w.id }, CONFIG.masteryThreshold)
+    )) {
+      completed.add(deck.id)
+    }
+  }
+  return completed
+})
 
 const nextDeckId = computed<string | null>(() => {
   const idx = appDecks.findIndex(d => d.id === deckId.value)
@@ -79,12 +93,15 @@ function startBatch() {
 function initSession(id: string) {
   deckId.value = id
   const words = getDeckWords(id)
-  const pool = nextActivePool([], words, CONFIG.questionLimit, new Map(), CONFIG.masteryThreshold)
+  // Preserve runState across deck switches — mastery is global
+  const pool = nextActivePool([], words, CONFIG.questionLimit, runState.value, CONFIG.masteryThreshold)
   activeItems.value = pool.active
   queue.value = pool.queue
-  runState.value = new Map()
   recheckPending.value = new Set()
   recheckReentered.value = new Set()
+  // Persist immediately so deck switch survives reload before first batch
+  saveSession(id, pool.active, pool.queue, runState.value, recheckPending.value, recheckReentered.value)
+  hasSavedSession.value = true
   startBatch()
 }
 
@@ -106,6 +123,7 @@ function onResume() {
 
 function onClear() {
   clearSession()
+  hasSavedSession.value = false
   deckId.value = null
   activeItems.value = []
   queue.value = []
@@ -149,6 +167,7 @@ function finishBatch() {
     recheckPending.value,
     recheckReentered.value,
   )
+  hasSavedSession.value = true
 
   const correct = answers.value.filter(a => a.correct).length
   batchScore.value = { correct, total: answers.value.length }
@@ -181,38 +200,34 @@ function onNext() {
 }
 
 function onSelectDeck() {
-  clearSession()
-  deckId.value = null
-  activeItems.value = []
-  queue.value = []
-  runState.value = new Map()
-  recheckPending.value = new Set()
-  recheckReentered.value = new Set()
   screen.value = 'select'
 }
 
 function onNextDeck(id: string) {
-  clearSession()
   initSession(id)
 }
 
 onMounted(() => {
   const saved = loadSession()
   if (saved) {
-    // Stay on select — DeckSelector will show the resume banner
+    hasSavedSession.value = true
+    deckId.value = saved.deckId
     screen.value = 'select'
   }
 })
 </script>
 
 <template>
-  <DeckSelector v-if="screen === 'select'" @select="onSelect" @resume="onResume" @clear="onClear" />
+  <DeckSelector v-if="screen === 'select'" :has-saved-session="hasSavedSession" :saved-deck-id="deckId" :completed-deck-ids="completedDeckIds" @select="onSelect" @resume="onResume" @clear="onClear" />
 
   <QuizCard
     v-else-if="screen === 'quiz' && questions.length > 0"
     :question="questions[currentIndex]"
     :index="currentIndex"
     :total="questions.length"
+    :active-items="activeItems"
+    :queue="queue"
+    :mastered-deck="masteredDeck"
     @answered="onAnswered"
     @exit="onExitBatch"
   />

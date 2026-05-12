@@ -1,23 +1,22 @@
 <script setup lang="ts">
 import { appDecks } from '../data/decks'
 import { deckToQuizItems } from '../data/transformer'
-import { loadSession } from '../composables/useSession'
+
+defineProps<{ hasSavedSession: boolean; savedDeckId: string | null; completedDeckIds: Set<string> }>()
 
 const emit = defineEmits<{
   select: [deckId: string]
   resume: []
   clear: []
 }>()
-
-const savedSession = loadSession()
 </script>
 
 <template>
   <div class="deck-selector">
     <h1>SRS Demo</h1>
 
-    <div v-if="savedSession" class="resume-banner">
-      <p>You have a saved session for deck <strong>{{ savedSession.deckId }}</strong>.</p>
+    <div v-if="hasSavedSession" class="resume-banner">
+      <p>You have a saved session for deck <strong>{{ savedDeckId }}</strong>.</p>
       <button class="btn-primary" @click="emit('resume')">Resume session</button>
       <button class="btn-secondary" @click="emit('clear')">Clear &amp; start over</button>
     </div>
@@ -27,7 +26,8 @@ const savedSession = loadSession()
       <li v-for="deck in appDecks" :key="deck.id">
         <button class="deck-btn" @click="emit('select', deck.id)">
           <span class="deck-topic">{{ deck.topic }}</span>
-          <span class="deck-count">{{ deckToQuizItems(deck).length }} words</span>
+          <span v-if="completedDeckIds.has(deck.id)" class="deck-complete-badge">Complete ★</span>
+          <span v-else class="deck-count">{{ deckToQuizItems(deck).length }} words</span>
         </button>
       </li>
     </ul>
@@ -81,4 +81,12 @@ h2 { font-size: 1.1rem; margin: 24px 0 12px; color: #555; }
 .deck-btn:hover { border-color: #2563eb; background: #f0f7ff; }
 .deck-topic { font-weight: 500; }
 .deck-count { color: #6b7280; font-size: 0.85rem; }
+.deck-complete-badge {
+  padding: 2px 10px;
+  background: #16a34a;
+  color: white;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
 </style>
