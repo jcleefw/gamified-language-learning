@@ -61,6 +61,27 @@ describe('nextActivePool', () => {
     expect(result.queue).toHaveLength(0);
   });
 
+  it('does not pull mastered words from queue into active', () => {
+    const active = [makeItem('w1')];
+    const queue = [makeItem('w2'), makeItem('w3')];
+    const runState = makeState({ w2: { seen: 3, correct: 3, mastery: 3 } });
+    const result = nextActivePool(active, queue, 3, runState, 3);
+    expect(result.active.map(i => i.id)).toEqual(['w1', 'w3']);
+    expect(result.queue).toHaveLength(0);
+  });
+
+  it('drops all mastered words from queue when queue contains only mastered words', () => {
+    const active = [makeItem('w1')];
+    const queue = [makeItem('w2'), makeItem('w3')];
+    const runState = makeState({
+      w2: { seen: 3, correct: 3, mastery: 3 },
+      w3: { seen: 3, correct: 3, mastery: 3 },
+    });
+    const result = nextActivePool(active, queue, 3, runState, 3);
+    expect(result.active.map(i => i.id)).toEqual(['w1']);
+    expect(result.queue).toHaveLength(0);
+  });
+
   it('does not mutate input arrays', () => {
     const active = [makeItem('w1')];
     const queue = [makeItem('w2')];
