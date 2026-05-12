@@ -5,6 +5,8 @@ import type { QuizQuestion, QuizResult } from '@gll/srs-engine-v2'
 const props = defineProps<{ question: QuizQuestion; index: number; total: number }>()
 const emit = defineEmits<{ answered: [result: QuizResult] }>()
 
+const cheatMode = import.meta.env.VITE_CHEAT_MODE === 'true'
+
 const answered = ref(false)
 const selectedLabel = ref<string | null>(null)
 
@@ -28,6 +30,10 @@ watch(() => props.question, () => {
     <div class="progress">{{ index + 1 }} / {{ total }}</div>
     <p class="direction">{{ question.direction.replace(/-/g, ' → ') }}</p>
     <h2 class="prompt">{{ question.prompt }}</h2>
+
+    <p v-if="cheatMode" class="cheat-hint">
+      ✓ {{ question.choices.find(c => c.isCorrect)?.label }} — {{ question.choices.find(c => c.isCorrect)?.value }}
+    </p>
 
     <ul class="choices">
       <li v-for="choice in question.choices" :key="choice.label">
@@ -95,4 +101,13 @@ watch(() => props.question, () => {
   flex-shrink: 0;
 }
 .value { flex: 1; }
+.cheat-hint {
+  margin: -20px 0 20px;
+  font-size: 0.8rem;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px dashed #fcd34d;
+  border-radius: 6px;
+  padding: 6px 12px;
+}
 </style>

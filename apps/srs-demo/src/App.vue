@@ -140,6 +140,7 @@ function onAnswered(result: QuizResult) {
   summary.value = [...new Set(answers.value.map(a => a.wordId))].map(wid => ({
     wordId: wid,
     state: runState.value.get(wid) ?? { wordId: wid, seen: 0, correct: 0, mastery: 0, correctStreak: 0, wrongStreak: 0 },
+    newlyMastered: masteryResult.newlyMasteredIds.includes(wid),
   }))
 
   screen.value = 'results'
@@ -173,6 +174,8 @@ onMounted(() => {
     v-else-if="screen === 'results'"
     :summary="summary"
     :batch-score="batchScore"
+    :active-items="activeItems"
+    :queue="queue"
     @next="onNext"
   />
 </template>
