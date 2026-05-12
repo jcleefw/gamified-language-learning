@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import type { QuizQuestion, QuizResult } from '@gll/srs-engine-v2'
 
 const props = defineProps<{ question: QuizQuestion; index: number; total: number }>()
-const emit = defineEmits<{ answered: [result: QuizResult] }>()
+const emit = defineEmits<{ answered: [result: QuizResult]; exit: [] }>()
 
 const cheatMode = import.meta.env.VITE_CHEAT_MODE === 'true'
 
@@ -27,7 +27,10 @@ watch(() => props.question, () => {
 
 <template>
   <div class="quiz-card">
-    <div class="progress">{{ index + 1 }} / {{ total }}</div>
+    <div class="quiz-header">
+      <div class="progress">{{ index + 1 }} / {{ total }}</div>
+      <button class="btn-exit" @click="emit('exit')">Exit</button>
+    </div>
     <p class="direction">{{ question.direction.replace(/-/g, ' → ') }}</p>
     <h2 class="prompt">{{ question.prompt }}</h2>
 
@@ -62,7 +65,18 @@ watch(() => props.question, () => {
   padding: 0 16px;
   font-family: sans-serif;
 }
-.progress { color: #6b7280; font-size: 0.85rem; margin-bottom: 4px; }
+.quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.progress { color: #6b7280; font-size: 0.85rem; }
+.btn-exit {
+  padding: 4px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  color: #6b7280;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.btn-exit:hover { border-color: #9ca3af; color: #374151; }
 .direction { color: #9ca3af; font-size: 0.8rem; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.05em; }
 .prompt {
   font-size: 2rem;
