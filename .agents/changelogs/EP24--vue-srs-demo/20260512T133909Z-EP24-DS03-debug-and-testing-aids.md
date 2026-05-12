@@ -53,6 +53,13 @@ Four debugging and testing aids added to speed up manual testing and pool inspec
 - "Back to decks" reuses existing `selectDeck` emit — already wired in `App.vue`
 - Deck complete state: "Back to decks" + optional "Next deck →" unchanged
 
+### `DeckSelector.vue` + `App.vue` (session resume fix)
+- `DeckSelector` no longer calls `loadSession()` at setup — was stale after "Clear & start over" since Vue reused the component instance
+- `hasSavedSession: boolean` and `savedDeckId: string | null` passed as props from `App.vue`
+- `hasSavedSession` ref set to `true` on `saveSession`, `false` on `onClear` and `onNextDeck`
+- `deckId` set from saved session in `onMounted` so banner shows correct deck name before user resumes
+- `onSelectDeck` ("Back to decks") simplified to `screen.value = 'select'` only — session preserved so resume banner appears on return; only `onClear` destroys the session
+
 ### `.env.local` (not committed)
 - `VITE_CHEAT_MODE=true` — enables cheat hint during local testing; gitignored by Vite convention
 
@@ -66,5 +73,6 @@ Four debugging and testing aids added to speed up manual testing and pool inspec
 - Mastered (this deck) scoped to `deckToQuizItems(currentDeck)` so it reflects only words the user has actively studied, not the full global pool.
 - Exit with zero answers goes to deck select rather than results — nothing to summarise.
 - `finishBatch()` extracted (not duplicated) so exit and normal completion share identical mastery update logic.
+- "Back to decks" does not clear session — user expects to be able to resume. Only explicit "Clear & start over" destroys session state.
 - No changes to `srs-engine-v2` — `isMastered` was already exported.
 - `.env.local` not committed — each developer opts in locally; production builds see `undefined` and tree-shake the hint.
