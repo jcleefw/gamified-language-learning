@@ -1,41 +1,31 @@
 # current-focus
 
 **Branch**: feature/EP24--srs-demo-webapp
-**Last updated**: 20260515T232300Z
+**Last updated**: 20260515T232500Z
 
 ## Status
 
 EP23 (SRS engine scheduling) is complete in main. 
-EP24 Vue SRS demo webapp is in progress. EP25 per-deck word state is being branched from main.
+EP24 Vue SRS demo webapp is the current focus. EP25 (per-deck word state) was withdrawn as global mastery is correct.
 
 ## Completed Epics
 - EP20-ST13 support for other foundational words (vowels, etc)
 - EP21 srs-engine-v2 library boundary + revision phase
 - EP22 auto-script SRS quiz runner
 - EP23 SRS engine scheduling (Sentence Quiz)
-- EP24 Vue SRS demo app (in progress — most stories complete, open issues below)
+- EP24 Vue SRS demo app (stories complete, queue filter bug fixed)
 
-## EP24 Open Bug — STOP POINT
+## EP24 Bug — FIXED (20260512T220218Z)
 
-**Bug**: `nextActivePool` pulls mastered words from queue blindly — mastered words re-enter active pool when switching decks.
+**Bug**: `nextActivePool` pulled mastered words from queue blindly — mastered words re-entered active pool on deck switch.
 
-**Root cause**: `queue.slice(0, freeSlots)` in `session.ts:72` has no mastery check, unlike the `active` filter on line 65.
-
-**Decision**: Do NOT fix this in the engine yet. Option D (EP25) will rewrite `nextActivePool` to use per-deck mastery — fixing it now creates conflicting logic that EP25 will delete.
-
-**App-side workaround (not yet applied)**: pre-filter mastered words in `initSession` before passing to `nextActivePool`. Apply this temporarily if unblocking EP24 testing is needed.
-
-**Return here after EP25 ships** — revisit whether the bug still exists or is resolved by Option D.
+**Fix**: filtered mastered words from queue before slicing in `nextActivePool` (`session.ts:72`). Two new tests added. Engine rebuilt. Commit: `ce2e3d7`.
 
 ## What's next
 
-- **EP25** (branch from main): per-deck word state — `WordState.decks: Record<deckId, DeckWordState>` (Option D)
-  - Breaking change to `WordState` shape
-  - Rewrites `updateRunState`, `nextActivePool`, `isMastered` to be deck-aware
-  - Covers cross-deck mastery re-test behaviour
-  - See conversation on feature/EP24--srs-demo-webapp (2026-05-12) for full design discussion
-
-- **EP24** (resume after EP25): return to fix remaining open bug, verify full quiz loop with new per-deck mastery
+1. **Registry runner — Next focus**: implement composer registry + `assembleBatchQuestions` per ADR `20260513T000000Z-engineering-batch-execution-mechanics.md` D5.
+2. **Post-mastery scheduling** — FSRS/ANKI (already in original product docs, planned)
+3. **Sentence/word-block question type** — new EP, tests contextual usage
 
 ## Registry runner — Next focus
 
@@ -60,3 +50,9 @@ Key decisions:
 - `mock-db.ts` exposes `getWordsForDeck`, `getWordPool`, `getSentenceContexts` — same contract as future DB query layer
 
 Open: OQ6 (ingestion script — separate library, deferred), OQ7 resolved.
+
+## Open product questions (captured 20260512T220218Z)
+
+- Is "word block" the intended name for the sentence construction question type?
+- Should post-mastery scheduling or sentence questions come first?
+- Does `composeBatch` need to be aware of sentence-level question types, or is that a separate system outside the SRS engine?
