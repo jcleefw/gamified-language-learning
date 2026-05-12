@@ -8,12 +8,13 @@
 
 ## 1. Feature Overview
 
-Four debugging and testing aids added to speed up manual testing and pool inspection:
+Five debugging and testing aids added to speed up manual testing and pool inspection:
 
 1. **Mastered badge** — `BatchResults` highlights newly mastered words with a green row background and a "Mastered ★" pill, sourced from `masteryResult.newlyMasteredIds`.
 2. **Pool state inspector** — collapsible `<details>` panel at the bottom of `BatchResults` with four sections: Active, Queue, Mastered (this deck), Mastered (all decks).
-3. **Cheat mode** — feature-flagged answer hint on `QuizCard` controlled by `VITE_CHEAT_MODE=true` in `.env.local`.
+3. **Cheat mode** — feature-flagged answer hint on `QuizCard` controlled by `VITE_CHEAT_MODE=true` in `.env.local`. Also shows live Active/Queue/Mastered pool panel during the quiz.
 4. **Exit batch** — "Exit" button on `QuizCard` lets user cut a batch short; partial answers are processed through `updateMasteryState` and results screen is shown.
+5. **Engine bug fix** — `nextActivePool` now filters mastered words from the queue before filling active slots, fixing mastered words re-entering the pool on deck switch.
 
 ---
 
@@ -74,5 +75,5 @@ Four debugging and testing aids added to speed up manual testing and pool inspec
 - Exit with zero answers goes to deck select rather than results — nothing to summarise.
 - `finishBatch()` extracted (not duplicated) so exit and normal completion share identical mastery update logic.
 - "Back to decks" does not clear session — user expects to be able to resume. Only explicit "Clear & start over" destroys session state.
-- No changes to `srs-engine-v2` — `isMastered` was already exported.
 - `.env.local` not committed — each developer opts in locally; production builds see `undefined` and tree-shake the hint.
+- **`srs-engine-v2` engine fix** — `nextActivePool` queue filter bug fixed in `session.ts:72`. `queue.slice(0, freeSlots)` was pulling mastered words blindly; now filters by `isMastered` before slicing, matching the `active` filter pattern. Two new unit tests added in `adaptive-loop.test.ts`.
