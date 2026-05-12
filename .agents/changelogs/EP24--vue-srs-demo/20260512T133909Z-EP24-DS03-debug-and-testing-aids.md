@@ -8,11 +8,12 @@
 
 ## 1. Feature Overview
 
-Two debugging aids added to speed up manual testing and pool inspection:
+Four debugging and testing aids added to speed up manual testing and pool inspection:
 
 1. **Mastered badge** — `BatchResults` highlights newly mastered words with a green row background and a "Mastered ★" pill, sourced from `masteryResult.newlyMasteredIds`.
-2. **Pool state inspector** — collapsible `<details>` panel at the bottom of `BatchResults` showing the post-batch active pool and queue (word + ID per item).
+2. **Pool state inspector** — collapsible `<details>` panel at the bottom of `BatchResults` with four sections: Active, Queue, Mastered (this deck), Mastered (all decks).
 3. **Cheat mode** — feature-flagged answer hint on `QuizCard` controlled by `VITE_CHEAT_MODE=true` in `.env.local`.
+4. **Exit batch** — "Exit" button on `QuizCard` lets user cut a batch short; partial answers are processed through `updateMasteryState` and results screen is shown.
 
 ---
 
@@ -20,18 +21,37 @@ Two debugging aids added to speed up manual testing and pool inspection:
 
 ### `BatchResults.vue`
 - Added `newlyMastered: boolean` to `BatchSummary` interface
-- Added `activeItems: QuizItem[]` and `queue: QuizItem[]` props
+- Added `activeItems: QuizItem[]`, `queue: QuizItem[]`, `masteredDeck: QuizItem[]`, `masteredGlobal: QuizItem[]` props
 - Mastered rows: green background + "Mastered ★" badge on word cell
-- Pool state `<details>` panel: collapsed by default, lists active and queued words with native script + ID
+- Pool state `<details>` panel: collapsed by default, four sections:
+  - **Active** — words currently in rotation
+  - **Queue** — words waiting to enter the active pool
+  - **Mastered — this deck** — deck words that crossed the mastery threshold this session
+  - **Mastered — all decks** — union across the global word pool (catches shared words across decks)
 
 ### `App.vue`
+- Import `isMastered` from `@gll/srs-engine-v2`; add `computed` to vue imports
 - `summary` mapping includes `newlyMastered: masteryResult.newlyMasteredIds.includes(wid)`
-- Passes `:active-items` and `:queue` to `BatchResults`
+- `masteredDeck` — `computed`: filters `deckToQuizItems(currentDeck)` by `isMastered` against `runState`
+- `masteredGlobal` — `computed`: filters global `wordPool` by `isMastered` against `runState`
+- Passes `:active-items`, `:queue`, `:mastered-deck`, `:mastered-global` to `BatchResults`
 
 ### `QuizCard.vue`
 - `const cheatMode = import.meta.env.VITE_CHEAT_MODE === 'true'`
 - When enabled: amber hint bar renders correct label + value below the prompt
 - `tsconfig.json` — added `"types": ["vite/client"]` to resolve `import.meta.env`
+- Added `exit` emit; "Exit" button rendered top-right of quiz header
+- Clicking Exit emits `exit` — parent calls `finishBatch()` with partial answers
+
+### `App.vue` (exit batch)
+- Batch completion logic extracted from `onAnswered` into `finishBatch()` — called by both normal completion and early exit
+- `onExitBatch()`: if answers exist, calls `finishBatch()`; if no answers yet, returns to deck select
+- `QuizCard` template wires `@exit="onExitBatch"`
+
+### `BatchResults.vue` (navigation)
+- Normal state (deck not complete): "Back to decks" + "Next Batch →" shown side by side
+- "Back to decks" reuses existing `selectDeck` emit — already wired in `App.vue`
+- Deck complete state: "Back to decks" + optional "Next deck →" unchanged
 
 ### `.env.local` (not committed)
 - `VITE_CHEAT_MODE=true` — enables cheat hint during local testing; gitignored by Vite convention
@@ -42,4 +62,9 @@ Two debugging aids added to speed up manual testing and pool inspection:
 
 - `VITE_CHEAT_MODE` string comparison (`=== 'true'`) rather than a boolean env var — Vite env vars are always strings.
 - Pool inspector uses native `<details>`/`<summary>` — no JS toggle state needed.
+- `masteredDeck` and `masteredGlobal` are `computed` refs, not stored state — they derive reactively from `runState` on every render.
+- Mastered (this deck) scoped to `deckToQuizItems(currentDeck)` so it reflects only words the user has actively studied, not the full global pool.
+- Exit with zero answers goes to deck select rather than results — nothing to summarise.
+- `finishBatch()` extracted (not duplicated) so exit and normal completion share identical mastery update logic.
+- No changes to `srs-engine-v2` — `isMastered` was already exported.
 - `.env.local` not committed — each developer opts in locally; production builds see `undefined` and tree-shake the hint.
