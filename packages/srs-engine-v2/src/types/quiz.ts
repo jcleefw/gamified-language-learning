@@ -15,9 +15,28 @@ export interface QuizChoice {
   isCorrect: boolean;
 }
 
-export interface QuizQuestion {
+export interface MCQQuestion {
+  kind: 'mcq';
   wordId: string;
   direction: QuizDirection;
   prompt: string;
   choices: QuizChoice[];
 }
+
+export interface SentenceTile {
+  native: string;
+  romanization: string;
+  english: string;
+  wordId: string;
+}
+
+export interface SentenceQuestion {
+  kind: 'word-block';
+  sentenceId: string;
+  direction: 'english-to-native' | 'native-to-english';
+  prompt: string;
+  tiles: SentenceTile[];
+  answer: string[];
+}
+
+export type QuizQuestion = MCQQuestion | SentenceQuestion;

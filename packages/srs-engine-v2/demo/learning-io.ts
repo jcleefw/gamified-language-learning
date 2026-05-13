@@ -4,7 +4,7 @@ import {
   composeWordBatchMulti,
   nextActivePool,
   updateMasteryState,
-  type QuizQuestion,
+  type MCQQuestion,
   type QuizResult,
   type QuizItem,
   type RunState,
@@ -65,7 +65,7 @@ export async function selectDeck(decks: MockDeck[]): Promise<MockDeck> {
   }
 }
 
-export async function runInteractive(questions: QuizQuestion[]): Promise<{ correct: number; total: number; results: QuizResult[] }> {
+export async function runInteractive(questions: MCQQuestion[]): Promise<{ correct: number; total: number; results: QuizResult[] }> {
   if (questions.length === 0) {
     throw new Error('runInteractive: No questions provided');
   }

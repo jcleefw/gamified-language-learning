@@ -14,6 +14,6 @@ export { updateRunState, isMastered } from './types/word-state.js';
 export type { WordState, RunState, StreakThresholds } from './types/word-state.js';
 
 // Types
-export type { QuizQuestion, QuizChoice, QuizDirection, QuizResult } from './types/quiz.js';
+export type { QuizQuestion, MCQQuestion, SentenceQuestion, SentenceTile, QuizChoice, QuizDirection, QuizResult } from './types/quiz.js';
 export type { MockDeck, MockLine } from './types/deck.js';
 export type { MockFoundational, ThaiFoundational, MockVowel, MockTone, ThaiFoundationalType, JapaneseFoundationalType } from './types/foundational.js';

@@ -1,5 +1,5 @@
 import type { MockWord } from '../../data/mock/mock-words.js';
-import type { QuizChoice, QuizDirection, QuizQuestion } from '../types/quiz.js';
+import type { QuizChoice, QuizDirection, MCQQuestion } from '../types/quiz.js';
 import type { MockFoundational } from '../types/foundational.js';
 import { shuffle } from '../utils/shuffle.js';
 
@@ -57,7 +57,7 @@ export function composeWordBatchMulti(
   words: QuizItem[],
   pool: QuizItem[],
   options: { questionLimit: number; shuffle?: boolean },
-): QuizQuestion[] {
+): MCQQuestion[] {
   const { questionLimit, shuffle: shouldShuffle = true } = options;
 
   const questionsByWord = words.map(word => {
@@ -75,12 +75,13 @@ export function composeWordBatchMulti(
 }
 
 /** Builds one question for a given direction, drawing distractors from pool. */
-function makeQuestion(item: QuizItem, direction: QuizDirection, pool: QuizItem[]): QuizQuestion {
+function makeQuestion(item: QuizItem, direction: QuizDirection, pool: QuizItem[]): MCQQuestion {
   const others = pool.filter(c => c.id !== item.id);
 
   switch (direction) {
     case 'native-to-english':
       return {
+        kind: 'mcq',
         wordId: item.id,
         direction: 'native-to-english',
         prompt: item.native,
@@ -88,6 +89,7 @@ function makeQuestion(item: QuizItem, direction: QuizDirection, pool: QuizItem[]
       };
     case 'english-to-native':
       return {
+        kind: 'mcq',
         wordId: item.id,
         direction: 'english-to-native',
         prompt: getEnglishLabel(item),
@@ -95,6 +97,7 @@ function makeQuestion(item: QuizItem, direction: QuizDirection, pool: QuizItem[]
       };
     case 'native-to-romanization':
       return {
+        kind: 'mcq',
         wordId: item.id,
         direction: 'native-to-romanization',
         prompt: item.native,
@@ -102,6 +105,7 @@ function makeQuestion(item: QuizItem, direction: QuizDirection, pool: QuizItem[]
       };
     case 'romanization-to-native':
       return {
+        kind: 'mcq',
         wordId: item.id,
         direction: 'romanization-to-native',
         prompt: item.romanization,
@@ -114,7 +118,7 @@ function makeQuestion(item: QuizItem, direction: QuizDirection, pool: QuizItem[]
  * Generates one question per direction for a single item. Foundational
  * types use their type-specific direction set; words use all four.
  */
-export function composeWordBatch(item: QuizItem, pool: QuizItem[]): QuizQuestion[] {
+export function composeWordBatch(item: QuizItem, pool: QuizItem[]): MCQQuestion[] {
   const directions: QuizDirection[] =
     'foundationalType' in item
       ? FOUNDATIONAL_DIRECTIONS[item.foundationalType]

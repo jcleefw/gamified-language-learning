@@ -1,10 +1,10 @@
 /* eslint-disable no-console */
 
-import type { QuizQuestion, QuizResult } from '../src/index.js';
+import type { MCQQuestion, QuizResult } from '../src/index.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 
 export function runAutoInteractive(
-  questions: QuizQuestion[],
+  questions: MCQQuestion[],
   strategy: AutoAnswerStrategy,
 ): { correct: number; total: number; results: QuizResult[] } {
   if (questions.length === 0) {
