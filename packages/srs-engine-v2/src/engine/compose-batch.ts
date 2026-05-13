@@ -53,7 +53,7 @@ function makeChoices(correct: string, distractors: string[]): QuizChoice[] {
  * Generates up to `questionLimit` questions across multiple items,
  * guaranteeing at least one question per item.
  */
-export function composeBatchMulti(
+export function composeWordBatchMulti(
   words: QuizItem[],
   pool: QuizItem[],
   options: { questionLimit: number; shuffle?: boolean },
@@ -61,7 +61,7 @@ export function composeBatchMulti(
   const { questionLimit, shuffle: shouldShuffle = true } = options;
 
   const questionsByWord = words.map(word => {
-    const questions = composeBatch(word, pool);
+    const questions = composeWordBatch(word, pool);
     return shouldShuffle ? shuffle(questions) : questions;
   });
 
@@ -114,7 +114,7 @@ function makeQuestion(item: QuizItem, direction: QuizDirection, pool: QuizItem[]
  * Generates one question per direction for a single item. Foundational
  * types use their type-specific direction set; words use all four.
  */
-export function composeBatch(item: QuizItem, pool: QuizItem[]): QuizQuestion[] {
+export function composeWordBatch(item: QuizItem, pool: QuizItem[]): QuizQuestion[] {
   const directions: QuizDirection[] =
     'foundationalType' in item
       ? FOUNDATIONAL_DIRECTIONS[item.foundationalType]
@@ -127,4 +127,6 @@ export function composeBatch(item: QuizItem, pool: QuizItem[]): QuizQuestion[] {
 
   return directions.map(direction => makeQuestion(item, direction, pool));
 }
+
+export const composeWordBatchItems = composeWordBatchMulti;
 

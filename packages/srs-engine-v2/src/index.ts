@@ -2,7 +2,7 @@
 export { shuffle } from './utils/shuffle.js';
 
 // Engine — question generation
-export { composeBatch, composeBatchMulti, FOUNDATIONAL_DIRECTIONS } from './engine/compose-batch.js';
+export { composeWordBatch, composeWordBatchMulti, composeWordBatchItems, FOUNDATIONAL_DIRECTIONS } from './engine/compose-batch.js';
 export type { QuizItem } from './engine/compose-batch.js';
 
 // Engine — session state

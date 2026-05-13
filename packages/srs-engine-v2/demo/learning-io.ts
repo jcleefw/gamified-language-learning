@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 
 import {
-  composeBatchMulti,
+  composeWordBatchMulti,
   nextActivePool,
   updateMasteryState,
   type QuizQuestion,
@@ -152,10 +152,10 @@ async function runBatch(
 
   const shouldShuffle = !strategy;
   const foundationalQs = activeFoundational.length > 0
-    ? composeBatchMulti(activeFoundational, foundationalPool, { questionLimit: consonantLimit, shuffle: shouldShuffle })
+    ? composeWordBatchMulti(activeFoundational, foundationalPool, { questionLimit: consonantLimit, shuffle: shouldShuffle })
     : [];
   const wordQs = activeWords.length > 0
-    ? composeBatchMulti(activeWords, wordPool, { questionLimit: wordLimit, shuffle: shouldShuffle })
+    ? composeWordBatchMulti(activeWords, wordPool, { questionLimit: wordLimit, shuffle: shouldShuffle })
     : [];
   const questions = [...foundationalQs, ...wordQs].sort(() => Math.random() - 0.5);
 
