@@ -1,62 +1,38 @@
-# EP23 - SRS Engine v2: Learning Phase Refactor & Persistence Bridge
+# EP23 - SRS Engine v2: Batch Composition
 
 **Created**: 20260321T192340Z
-**Status**: Draft
+**Status**: In Progress
 
 ---
 
 ## 1. Feature Overview
 
-This specification covers the full scope of EP23: refactoring the `srs-engine-v2` package to isolate the Learning phase and introducing a unified SQLite persistence layer for word states, decks, and batch history. This bridge ensures that learning progress is preserved between sessions and provides the data foundation for the Revision phase.
+This epic establishes the naming boundaries and type foundations for the `srs-engine-v2` batch composition layer. It renames existing composers to communicate their true input-shape boundary, introduces the `MCQQuestion` / `QuizQuestion` union type that will support sentence-level question types, and lays the groundwork for a composer registry pattern.
 
 ## 2. Core Requirements
 
 | Requirement | Decision | Rationale |
 | ----------- | -------- | --------- |
-| Phase Scoping | `src/learning/` | Isolation of learning logic from shared engine logic and future revision logic. |
-| Persistence | `better-sqlite3` | Unified SQLite DB (`data/srs-v2.db`) for all phases. |
-| Store Injection | Wiring Layer | `LearningRunner` (main) owns the store and injects it into the IO layer. |
-| Write-on-Answer | Immediate Ops | Every result is persisted immediately to prevent progress loss. |
-| Seed/Migration | Mock-Driven | First run parses `mock-decks.ts` to populate DB; fallback seeding on session start. |
+| `composeBatch` rename | `composeWordBatch` | Communicates word-item input boundary; prevents misuse as sentence composer entry point |
+| `composeBatchMulti` rename | `composeWordBatchMulti` + `composeWordBatchItems` alias | Consistent naming; alias bridges registry wiring name per batch-execution-mechanics ADR |
+| `QuizQuestion` type | `MCQQuestion \| SentenceQuestion` union | Discriminated union (`kind`) enables session and UI type-narrowing without guessing |
+| `MCQQuestion` | Renamed from `QuizQuestion`, adds `kind: 'mcq'` | Honest name for the existing MCQ shape |
+| `SentenceQuestion` stub | `kind: 'word-block'` + `SentenceTile[]` | Type boundary for future `composeSentenceBatch` work |
 
-## 3. Data Structures
+## 3. ADRs
 
-### Unified Database Schema (`data/srs-v2.db`)
-
-#### Table: `word_states`
-- `word_id` (TEXT PK)
-- `mastery` (INTEGER)
-- `correct_streak` (INTEGER)
-- `wrong_streak` (INTEGER)
-- `lapses` (INTEGER)
-- `seen` (INTEGER)
-- `correct` (INTEGER)
-
-#### Table: `decks`
-- `deck_id` (TEXT PK)
-- `topic` (TEXT)
-
-#### Table: `deck_words`
-- `deck_id` (TEXT)
-- `word_id` (TEXT)
-- PK(`deck_id`, `word_id`)
-
-#### Table: `batch_history`
-- `batch_id` (INTEGER PK AUTOINCREMENT)
-- `timestamp` (TEXT)
-- `word_id` (TEXT)
-- `was_correct` (BOOLEAN)
+- `product-documentation/architecture/20260512T220218Z-engineering-mastery-is-global-not-per-deck.md`
+- `product-documentation/architecture/20260512T230000Z-engineering-compose-word-batch-boundary.md`
+- `product-documentation/architecture/20260512T235900Z-engineering-compose-sentence-batch-boundary.md`
+- `product-documentation/architecture/20260513T000000Z-engineering-batch-execution-mechanics.md`
+- `product-documentation/architecture/reference/data-pipeline-boundary.md`
 
 ## 4. Stories & Tasks
 
-### EP23-ST01: Structural Refactor & Naming — **Complete ✅**
-**Scope**: Logical isolation in `src/learning/`.
-- Move `src/main.ts` → `src/learning/learning-runner.ts` (Entry Point).
-- Move `src/runner/interactive.ts` → `src/learning/learning-io.ts` (IO/Orchestration).
-- Move `src/runner/auto-answerer.ts` → `src/learning/auto-answerer.ts`.
-- Rename `AnswerStrategy` → `AutoAnswerStrategy`.
-- Extract constants to `src/learning/config.ts`.
-- Update `package.json` with `learnv2` script.
+### EP23-ST01: Rename `composeBatch` → `composeWordBatch` — **Complete ✅**
 
+See DS01: `.agents/changelogs/EP23--srs-engine-scheduling/20260513T233802Z-EP23-DS01-compose-word-batch-rename.md`
 
+### EP23-ST02: Introduce `MCQQuestion` + `QuizQuestion` union type — **Complete ✅**
 
+See DS01: `.agents/changelogs/EP23--srs-engine-scheduling/20260513T233802Z-EP23-DS01-compose-word-batch-rename.md`
