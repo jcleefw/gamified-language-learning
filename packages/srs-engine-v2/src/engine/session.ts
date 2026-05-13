@@ -1,4 +1,4 @@
-import type { QuizItem } from './compose-batch.js';
+import type { QuizItem } from './compose-word-batch.js';
 import { type RunState, type StreakThresholds, updateRunState, isMastered } from '../types/word-state.js';
 import type { QuizResult } from '../types/quiz.js';
 

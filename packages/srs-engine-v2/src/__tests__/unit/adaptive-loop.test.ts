@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { nextActivePool } from '../../engine/session.js';
 import type { RunState } from '../../types/word-state.js';
-import type { QuizItem } from '../../engine/compose-batch.js';
+import type { QuizItem } from '../../engine/compose-word-batch.js';
 
 function makeItem(id: string): QuizItem {
   return { id, native: id, english: id, romanization: id, type: 'word', language: 'th' } as QuizItem;

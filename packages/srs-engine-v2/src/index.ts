@@ -2,8 +2,8 @@
 export { shuffle } from './utils/shuffle.js';
 
 // Engine — question generation
-export { composeWordBatch, composeWordBatchMulti, composeWordBatchItems, FOUNDATIONAL_DIRECTIONS } from './engine/compose-batch.js';
-export type { QuizItem } from './engine/compose-batch.js';
+export { composeWordBatch, composeWordBatchMulti, composeWordBatchItems, FOUNDATIONAL_DIRECTIONS } from './engine/compose-word-batch.js';
+export type { QuizItem } from './engine/compose-word-batch.js';
 
 // Engine — session state
 export { processRecheckResult, nextActivePool, updateMasteryState } from './engine/session.js';
