@@ -1,7 +1,7 @@
 # EP23-DS01: `composeWordBatch` Rename & `composeWordBatchItems` Alias
 
 **Date**: 20260513T233802Z
-**Status**: Draft
+**Status**: Accepted
 **Epic**: [EP23 - SRS Engine v2: Learning Phase Refactor & Persistence Bridge](../../plans/epics/EP23-srs-engine-v2-learning-refactor-persistence-bridge.md)
 
 ---
@@ -81,19 +81,46 @@ packages/srs-engine-v2/src/
 
 **Tasks**:
 
-- [ ] In `compose-batch.ts`: rename `composeBatch` → `composeWordBatch` (line 117) and `composeBatchMulti` → `composeWordBatchMulti` (line 56); update the internal call at line 64 (`composeBatch` → `composeWordBatch`); add `export const composeWordBatchItems = composeWordBatchMulti` after `composeWordBatchMulti`
-- [ ] In `index.ts` line 5: replace `composeBatch, composeBatchMulti` → `composeWordBatch, composeWordBatchMulti, composeWordBatchItems`
-- [ ] In `compose-batch.test.ts` line 6: update import from `composeBatch, composeBatchMulti` → `composeWordBatch, composeWordBatchMulti`; replace all 23 `composeBatch(` call sites → `composeWordBatch(`; replace all 18 `composeBatchMulti(` call sites → `composeWordBatchMulti(`
-- [ ] Delete `packages/srs-engine-v2/src/engine/compose-word-batch.ts`
-- [ ] Delete `packages/srs-engine-v2/src/__tests__/unit/compose-word-batch.test.ts`
+- [x] In `compose-batch.ts`: rename `composeBatch` → `composeWordBatch` (line 117) and `composeBatchMulti` → `composeWordBatchMulti` (line 56); update the internal call at line 64 (`composeBatch` → `composeWordBatch`); add `export const composeWordBatchItems = composeWordBatchMulti` after `composeWordBatchMulti`
+- [x] In `index.ts` line 5: replace `composeBatch, composeBatchMulti` → `composeWordBatch, composeWordBatchMulti, composeWordBatchItems`
+- [x] In `compose-batch.test.ts` line 6: update import from `composeBatch, composeBatchMulti` → `composeWordBatch, composeWordBatchMulti`; replace all 23 `composeBatch(` call sites → `composeWordBatch(`; replace all 18 `composeBatchMulti(` call sites → `composeWordBatchMulti(`
+- [x] Delete `packages/srs-engine-v2/src/engine/compose-word-batch.ts`
+- [x] Delete `packages/srs-engine-v2/src/__tests__/unit/compose-word-batch.test.ts`
 
 **Acceptance Criteria**:
-- [ ] `grep -r "composeBatch[^M]" packages/srs-engine-v2/src` returns zero results (no old single-function name remains)
-- [ ] `grep -r "composeBatchMulti" packages/srs-engine-v2/src` returns zero results (old multi name is gone)
-- [ ] `composeWordBatchItems` is exported from `index.ts` and equals `composeWordBatchMulti`
-- [ ] `compose-word-batch.ts` and `compose-word-batch.test.ts` no longer exist
-- [ ] `pnpm --filter @gll/srs-engine-v2 test` passes with no changes to test logic
-- [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` passes
+- [x] `grep -r "composeBatch[^M]" packages/srs-engine-v2/src` returns zero results (no old single-function name remains)
+- [x] `grep -r "composeBatchMulti" packages/srs-engine-v2/src` returns zero results (old multi name is gone)
+- [x] `composeWordBatchItems` is exported from `index.ts` and equals `composeWordBatchMulti`
+- [x] `compose-word-batch.ts` and `compose-word-batch.test.ts` no longer exist
+- [x] `pnpm --filter @gll/srs-engine-v2 test` passes with no changes to test logic
+- [x] `pnpm --filter @gll/srs-engine-v2 typecheck` passes
+
+---
+
+### EP23-ST02: Rename `QuizQuestion` → `MCQQuestion` + introduce `QuizQuestion` union type
+
+**ADR**: `product-documentation/architecture/20260512T235900Z-engineering-compose-sentence-batch-boundary.md` (B1)
+
+**Scope**: Mechanical rename + union type introduction. No logic changes.
+
+**Read List**:
+- `packages/srs-engine-v2/src/types/quiz.ts`
+- `packages/srs-engine-v2/src/index.ts`
+- `packages/srs-engine-v2/src/engine/compose-batch.ts`
+- `packages/srs-engine-v2/src/__tests__/unit/compose-batch.test.ts`
+- `packages/srs-engine-v2/demo/learning-io.ts`
+
+**Tasks**:
+
+- [x] In `src/types/quiz.ts`: rename `QuizQuestion` → `MCQQuestion`; add `kind: 'mcq'` field; add `SentenceQuestion` interface with `kind: 'word-block'`, `sentenceId`, `direction`, `prompt`, `tiles: SentenceTile[]`, `answer: string[]`; add `type QuizQuestion = MCQQuestion | SentenceQuestion`
+- [x] Update all `QuizQuestion` import/usage sites in `src/engine/`, `src/index.ts`, `demo/`, and tests to use `MCQQuestion` where the MCQ-only type is needed, or `QuizQuestion` where the union is appropriate
+
+**Acceptance Criteria**:
+- [x] `QuizQuestion` in `src/types/quiz.ts` is the union type `MCQQuestion | SentenceQuestion`
+- [x] `MCQQuestion` has `kind: 'mcq'` field
+- [x] `SentenceQuestion` has `kind: 'word-block'` field
+- [x] `pnpm --filter @gll/srs-engine-v2 test` passes
+- [x] `pnpm --filter @gll/srs-engine-v2 typecheck` passes
 
 ---
 
