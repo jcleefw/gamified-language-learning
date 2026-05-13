@@ -113,7 +113,7 @@ packages/srs-engine-v2/
 │   │   └── sentence.ts                      ← NEW: SentenceContext (no fill-in-the-blank fields)
 │   ├── engine/
 │   │   ├── compose-word-batch.ts            ← unchanged (renamed from compose-batch.ts in DS01)
-│   │   └── compose-sentence-batch.ts        ← NEW: composeSentenceBatch + 4 direction functions
+│   │   └── compose-sentence-batch.ts        ← NEW: composeSentenceBatch (public) + private per-direction helpers
 │   ├── __tests__/unit/
 │   │   └── compose-sentence-batch.test.ts   ← NEW
 │   └── index.ts                             ← add SentenceContext, composeSentenceBatch exports
@@ -150,11 +150,11 @@ packages/srs-engine-v2/
 
 ---
 
-### EP23-ST04: Implement word-block `english-to-native` + wire into runner
+### EP23-ST04: Implement `english-to-native` direction + wire runner
 
 #### (a) Engine
 
-**Scope**: First direction. Establishes `compose-sentence-batch.ts` and the resolved-tile pattern.
+**Scope**: Create `compose-sentence-batch.ts`. Implement `en→na` direction as a private helper. Export `composeSentenceBatch` — it currently produces only `en→na` questions; later stories add more directions inside the same function without changing the public API or the runner.
 
 **Read List**:
 - `packages/srs-engine-v2/src/types/quiz.ts`
@@ -163,11 +163,13 @@ packages/srs-engine-v2/
 
 **Tasks**:
 - [ ] Create `src/engine/compose-sentence-batch.ts`
-- [ ] Implement `composeSentenceBlockEnToNa(ctx, resolvedTiles, options?): SentenceQuestion` — prompt = `ctx.englishSentence`; tiles = `resolvedTiles`; answer = `ctx.nativeWordOrder`; shuffle unless `shuffle: false`
+- [ ] Implement private helper for `en→na`: prompt = `ctx.englishSentence`; tiles = `resolvedTiles`; answer = `ctx.nativeWordOrder`; shuffle unless `shuffle: false`
+- [ ] Export `composeSentenceBatch(ctx, resolvedTiles, options?): SentenceQuestion[]` — calls `en→na` helper; returns array
+- [ ] Export `composeSentenceBatch` from `src/index.ts`
 - [ ] Write unit tests: correct prompt, tile fields (`native`, `romanization`, `english`, `wordId`), answer order, `shuffle: false` determinism
 
 **Acceptance Criteria**:
-- [ ] `kind` is `'word-block'`, `direction` is `'english-to-native'`
+- [ ] `composeSentenceBatch` returns 1 question with `direction: 'english-to-native'`
 - [ ] Each tile has all four fields
 - [ ] `answer` equals `ctx.nativeWordOrder`
 - [ ] `shuffle: false` produces same tile order across calls
@@ -185,7 +187,7 @@ packages/srs-engine-v2/
 - [ ] Extend `QuizResult` with `sentenceId?: string` — sentence answers populate `sentenceId`; word answers populate `wordId`
 - [ ] In `runAdaptiveLoop`: derive `eligibleSentenceContexts` — all corpus entries where all `nativeWordOrder` word ids have `runState.get(id)?.seen >= MIN_SEEN_FOR_SENTENCE`; bypass seen check when `DEBUG_SENTENCE_ELIGIBILITY` is true
 - [ ] Resolve `SentenceTile[]` for each eligible context (look up each `wordId` in word pool)
-- [ ] In `runBatch`: call `composeSentenceBlockEnToNa` for each eligible context; append to question array
+- [ ] In `runBatch`: call `composeSentenceBatch(ctx, resolvedTiles)` for each eligible context; append to question array
 - [ ] In `runInteractive`: handle `kind === 'word-block'` — display numbered tiles, print correct tile order as cheat sheet (e.g. `Correct order: 3 1 4 2`) before prompting input; evaluate answer against `answer`; record `sentenceId` in result
 - [ ] In `CorrectAutoAnswerStrategy`: auto-answer word-block with correct tile order
 
@@ -193,86 +195,79 @@ packages/srs-engine-v2/
 
 ---
 
-### EP23-ST05: Implement word-block `romanization-to-native` + wire into runner
+### EP23-ST05: Add `romanization-to-native` direction
 
 #### (a) Engine
 
-**Scope**: Second native-tile direction. Shares `resolvedTiles` pattern with ST04.
+**Scope**: Add `roman→na` private helper inside `composeSentenceBatch`. Public API and runner are unchanged — new direction appears automatically.
 
 **Read List**:
 - `packages/srs-engine-v2/src/engine/compose-sentence-batch.ts`
 - `packages/srs-engine-v2/src/types/sentence.ts`
 
 **Tasks**:
-- [ ] Implement `composeSentenceBlockRomanToNa(ctx, resolvedTiles, options?): SentenceQuestion` — prompt = `ctx.romanizationSentence`; tiles = `resolvedTiles`; answer = `ctx.nativeWordOrder`; shuffle unless `shuffle: false`
-- [ ] Write unit tests: correct prompt, tile shape, answer order, `shuffle: false`
+- [ ] Add private helper for `roman→na`: prompt = `ctx.romanizationSentence`; tiles = `resolvedTiles`; answer = `ctx.nativeWordOrder`; shuffle unless `shuffle: false`; skip if `ctx.romanizationSentence` is absent
+- [ ] `composeSentenceBatch` calls `roman→na` helper alongside `en→na`
+- [ ] Add unit tests: correct prompt, tile shape, answer order, `shuffle: false`, skipped when `romanizationSentence` absent
 
 **Acceptance Criteria**:
-- [ ] `direction` is `'romanization-to-native'`; tile shape matches ST04
-- [ ] `answer` equals `ctx.nativeWordOrder`
+- [ ] Full corpus entry returns 2 questions: `en→na` + `roman→na`
+- [ ] Entry without `romanizationSentence` returns 1 question (`en→na` only)
 - [ ] `pnpm --filter @gll/srs-engine-v2 test` passes
 
 #### (b) Runner
 
-**Tasks**:
-- [ ] In `runBatch`: add `composeSentenceBlockRomanToNa` call for eligible contexts with `romanizationSentence` defined
+No runner changes needed — `composeSentenceBatch` already called; new direction appears automatically.
 
-**Manual Test**: Run learning runner — both `en→na` and `roman→na` questions appear.
+**Manual Test**: Run learning runner — both `en→na` and `roman→na` questions appear for corpus entries with `romanizationSentence`.
 
 ---
 
-### EP23-ST06: Implement word-block `native-to-english` + `native-to-romanization` + wire into runner
+### EP23-ST06: Add `native-to-english` and `native-to-romanization` directions
 
 #### (a) Engine
 
-**Scope**: Two plain-string tile directions. No `resolvedTiles` needed — tokens come directly from `ctx`.
+**Scope**: Add `na→en` and `na→roman` private helpers inside `composeSentenceBatch`. Public API and runner unchanged.
 
 **Read List**:
 - `packages/srs-engine-v2/src/engine/compose-sentence-batch.ts`
 - `packages/srs-engine-v2/src/types/sentence.ts`
 
 **Tasks**:
-- [ ] Implement `composeSentenceBlockNaToEn(ctx, options?): SentenceQuestion` — prompt = `ctx.nativeSentence`; tiles from `ctx.englishWordOrder`; answer = `ctx.englishWordOrder`; shuffle unless `shuffle: false`
-- [ ] Implement `composeSentenceBlockNaToRoman(ctx, options?): SentenceQuestion` — prompt = `ctx.nativeSentence`; tiles from `ctx.romanizationWordOrder`; answer = `ctx.romanizationWordOrder`; shuffle unless `shuffle: false`
-- [ ] Write unit tests for both: prompt, tile count, answer order, `shuffle: false`
+- [ ] Add private helper for `na→en`: prompt = `ctx.nativeSentence`; tiles from `ctx.englishWordOrder` (resolved via `resolvedTiles`); answer = `ctx.englishWordOrder`; shuffle unless `shuffle: false`
+- [ ] Add private helper for `na→roman`: prompt = `ctx.nativeSentence`; tiles from `ctx.romanizationWordOrder` (resolved via `resolvedTiles`); answer = `ctx.romanizationWordOrder`; skip if `ctx.romanizationWordOrder` absent
+- [ ] `composeSentenceBatch` calls all four helpers; returns flat array
+- [ ] Add unit tests for both: prompt, tile count, answer order, `shuffle: false`, romanization skipped when absent
 
 **Acceptance Criteria**:
-- [ ] `na→en`: `direction` is `'native-to-english'`; tile count equals `ctx.englishWordOrder.length`
-- [ ] `na→roman`: `direction` is `'native-to-romanization'`; tile count equals `ctx.romanizationWordOrder.length`
+- [ ] Full corpus entry returns 4 questions: `en→na`, `roman→na`, `na→en`, `na→roman`
+- [ ] Entry without romanization fields returns 2 questions
 - [ ] `pnpm --filter @gll/srs-engine-v2 test` passes
 
 #### (b) Runner
 
-**Tasks**:
-- [ ] In `runBatch`: add `composeSentenceBlockNaToEn` and `composeSentenceBlockNaToRoman` calls for eligible contexts
+No runner changes needed — all four directions appear automatically.
 
 **Manual Test**: Run learning runner — all four word-block directions appear across eligible sentence questions.
 
 ---
 
-### EP23-ST07: Wire `composeSentenceBatch` wrapper + export
+### EP23-ST07: Integration test + typecheck gate
 
-#### (a) Engine
-
-**Scope**: Thin wrapper that calls ST04–ST06 functions and returns a flat array. No new logic.
+**Scope**: No new logic. Add an integration test asserting the full output contract. Confirm typecheck is clean end-to-end.
 
 **Read List**:
 - `packages/srs-engine-v2/src/engine/compose-sentence-batch.ts`
 - `packages/srs-engine-v2/src/index.ts`
 
 **Tasks**:
-- [ ] Implement `composeSentenceBatch(ctx, resolvedTiles, options?): SentenceQuestion[]` — calls all four direction functions; skips romanization directions if `ctx.romanizationSentence` / `ctx.romanizationWordOrder` are absent; returns flat array
-- [ ] Export `composeSentenceBatch` from `src/index.ts`
-- [ ] Add integration test: full corpus entry (all fields) produces 4 questions; entry without romanization fields produces 2 questions
-
-#### (b) Runner
-
-**Tasks**:
-- [ ] Replace direct per-direction calls in `runBatch` with single `composeSentenceBatch` call per eligible context
+- [ ] Add integration test: full corpus entry produces exactly 4 questions with correct `direction` values in order; entry without romanization produces exactly 2
+- [ ] Verify `composeSentenceBatch` is importable from `@gll/srs-engine-v2`
 
 **Acceptance Criteria**:
 - [ ] `composeSentenceBatch` importable from `@gll/srs-engine-v2`
-- [ ] Full entry returns 4 questions; entry without romanization returns 2
+- [ ] Full entry: `['english-to-native', 'romanization-to-native', 'native-to-english', 'native-to-romanization']`
+- [ ] Entry without romanization: `['english-to-native', 'native-to-english']`
 - [ ] `pnpm --filter @gll/srs-engine-v2 test` passes
 - [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` passes
 
