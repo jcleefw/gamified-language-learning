@@ -1,4 +1,4 @@
-# EP23-DS01: `composeWordBatch` Rename & `composeWordBatchItems` Alias
+# EP23-DS01: Word Batch Rename & `QuizQuestion` Type System
 
 **Date**: 20260513T233802Z
 **Status**: Accepted
@@ -8,11 +8,13 @@
 
 ## 1. Feature Overview
 
-`compose-batch.ts` exports `composeBatch` (single-item) and `composeBatchMulti` (multi-item wrapper). The ADR `20260512T230000Z-engineering-compose-word-batch-boundary.md` defines the boundary for word-item composers: any question type that derives from a single `QuizItem` belongs here. The current names don't communicate that boundary and will mislead developers adding sentence-level composers.
+This DS covers two mechanical changes with no logic impact:
 
-This DS renames both functions, adds a `composeWordBatchItems` alias for the multi-word wrapper (the name used in the registry design from `20260513T000000Z-engineering-batch-execution-mechanics.md`), and deletes the duplicate `compose-word-batch.ts` file and its duplicate test.
+1. **Function renames** — `composeBatch` → `composeWordBatch`, `composeBatchMulti` → `composeWordBatchMulti`, `composeWordBatchItems` alias added. Names now communicate the word-item boundary per ADR `20260512T230000Z-engineering-compose-word-batch-boundary.md`.
 
-No logic changes. All consumers — `index.ts`, test files, and the demo — are updated to the new names.
+2. **Type system update** — `QuizQuestion` renamed to `MCQQuestion` (with `kind: 'mcq'`); `QuizQuestion` becomes the union `MCQQuestion | SentenceQuestion`. `SentenceQuestion` stub added. Enables DS02 sentence composer to join the same type union without touching the word composer.
+
+Composer registry, re-serve mechanics, and `assembleBatchQuestions` are out of scope — those belong to a separate EP.
 
 ---
 
