@@ -1,11 +1,11 @@
 # current-focus
 
-**Branch**: feature/EP24--srs-demo-webapp
-**Last updated**: 20260512T220218Z
+**Branch**: feature/EP23--srs-engine-scheduling
+**Last updated**: 20260514T000000Z
 
 ## Status
 
-EP24 Vue SRS demo webapp — queue filter bug fixed. EP25 was withdrawn; see decision record in `product-documentation/prds/20260512T165320Z-per-deck-word-state.md`.
+EP23 DS01 complete. DS02 designed (ST03–ST07) but blocked on corpus ingestion ADR — must be written before ST03 starts.
 
 ## Completed Epics
 - EP20-ST13 support for other foundational words (vowels, etc)
@@ -13,19 +13,33 @@ EP24 Vue SRS demo webapp — queue filter bug fixed. EP25 was withdrawn; see dec
 - EP22 auto-script SRS quiz runner
 - EP24 Vue SRS demo app (stories complete, queue filter bug fixed)
 
-## EP24 Bug — FIXED (20260512T220218Z)
+## EP23 DS01 — Complete ✅
 
-**Bug**: `nextActivePool` pulled mastered words from queue blindly — mastered words re-entered active pool on deck switch.
+ST01: `composeBatch` → `composeWordBatch` rename + `composeWordBatchItems` alias
+ST02: `QuizQuestion` → `MCQQuestion` + `QuizQuestion` union type introduced
+File rename: `compose-batch.ts` → `compose-word-batch.ts` (all import paths updated)
 
-**Fix**: filtered mastered words from queue before slicing in `nextActivePool` (`session.ts:72`). Two new tests added. Engine rebuilt. Commit: `ce2e3d7`.
+## EP23 DS02 — Blocked on ADR
 
-## What's next (after bug fix)
+`composeSentenceBatch` design is complete (ST03–ST07) but ST03 cannot start until the corpus ingestion ADR is written.
 
-1. Post-mastery scheduling — FSRS/ANKI (already in original product docs, planned)
-2. Sentence/word-block question type — new EP, tests contextual usage
+### Why blocked
 
-## Open product questions (captured 20260512T220218Z)
+`SentenceContext` is the engine-ready shape. We have not designed:
+1. **Raw authored form** — what a content author actually writes
+2. **Transform boundary** — who converts raw → `SentenceContext` (build-time, runtime, or manual)
+3. **Corpus storage** — where authoritative data lives (flat files, DB, mock fixtures derived from it)
+4. **Impact on `SentenceContext` shape** — ingestion design may change the engine type
 
-- Is "word block" the intended name for the sentence construction question type?
-- Should post-mastery scheduling or sentence questions come first?
-- Does `composeBatch` need to be aware of sentence-level question types, or is that a separate system outside the SRS engine?
+The mock corpus fixture (ST03) will bake in assumptions if this is unresolved. The ADR must come first.
+
+### Next action
+
+Write ADR: corpus authoring format + ingestion pipeline boundary.
+Suggested filename: `product-documentation/architecture/YYYYMMDDTHHMMSSZ-engineering-sentence-corpus-ingestion.md`
+
+Questions to resolve in the ADR:
+- What is the raw authored form? (one record per sentence, one per word, structured text?)
+- Does one sentence produce one `SentenceContext` or multiple (one per testable word)?
+- Where does the raw→engine transform happen?
+- Does this change any fields on `SentenceContext`?
