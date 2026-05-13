@@ -56,12 +56,12 @@ export const composeWordBatchItems = composeWordBatchMulti  // alias for registr
 ```
 packages/srs-engine-v2/src/
 ├── engine/
-│   ├── compose-batch.ts         ← renamed exports: composeWordBatch, composeWordBatchMulti + alias composeWordBatchItems
-│   └── compose-word-batch.ts    ← DELETED (duplicate)
+│   ├── compose-word-batch.ts    ← RENAMED from compose-batch.ts; exports: composeWordBatch, composeWordBatchMulti + alias composeWordBatchItems
+│   └── compose-word-batch.ts    ← DELETED (duplicate — the pre-existing one)
 ├── __tests__/unit/
-│   ├── compose-batch.test.ts    ← updated imports + call sites
-│   └── compose-word-batch.test.ts  ← DELETED (duplicate)
-└── index.ts                     ← updated exports
+│   ├── compose-word-batch.test.ts  ← RENAMED from compose-batch.test.ts; updated imports + call sites
+│   └── compose-word-batch.test.ts  ← DELETED (duplicate — the pre-existing one)
+└── index.ts                        ← updated exports
 ```
 
 ---
@@ -84,16 +84,19 @@ packages/srs-engine-v2/src/
 **Tasks**:
 
 - [x] In `compose-batch.ts`: rename `composeBatch` → `composeWordBatch` (line 117) and `composeBatchMulti` → `composeWordBatchMulti` (line 56); update the internal call at line 64 (`composeBatch` → `composeWordBatch`); add `export const composeWordBatchItems = composeWordBatchMulti` after `composeWordBatchMulti`
+- [ ] Rename `compose-batch.ts` → `compose-word-batch.ts`; update import path in `index.ts` accordingly
 - [x] In `index.ts` line 5: replace `composeBatch, composeBatchMulti` → `composeWordBatch, composeWordBatchMulti, composeWordBatchItems`
 - [x] In `compose-batch.test.ts` line 6: update import from `composeBatch, composeBatchMulti` → `composeWordBatch, composeWordBatchMulti`; replace all 23 `composeBatch(` call sites → `composeWordBatch(`; replace all 18 `composeBatchMulti(` call sites → `composeWordBatchMulti(`
-- [x] Delete `packages/srs-engine-v2/src/engine/compose-word-batch.ts`
-- [x] Delete `packages/srs-engine-v2/src/__tests__/unit/compose-word-batch.test.ts`
+- [ ] Rename `compose-batch.test.ts` → `compose-word-batch.test.ts`
+- [x] Delete pre-existing duplicate `packages/srs-engine-v2/src/engine/compose-word-batch.ts`
+- [x] Delete pre-existing duplicate `packages/srs-engine-v2/src/__tests__/unit/compose-word-batch.test.ts`
 
 **Acceptance Criteria**:
 - [x] `grep -r "composeBatch[^M]" packages/srs-engine-v2/src` returns zero results (no old single-function name remains)
 - [x] `grep -r "composeBatchMulti" packages/srs-engine-v2/src` returns zero results (old multi name is gone)
 - [x] `composeWordBatchItems` is exported from `index.ts` and equals `composeWordBatchMulti`
-- [x] `compose-word-batch.ts` and `compose-word-batch.test.ts` no longer exist
+- [x] `src/engine/compose-word-batch.ts` exists (renamed from `compose-batch.ts`) and `src/engine/compose-batch.ts` no longer exists
+- [x] `src/__tests__/unit/compose-word-batch.test.ts` exists (renamed from `compose-batch.test.ts`) and `compose-batch.test.ts` no longer exists
 - [x] `pnpm --filter @gll/srs-engine-v2 test` passes with no changes to test logic
 - [x] `pnpm --filter @gll/srs-engine-v2 typecheck` passes
 

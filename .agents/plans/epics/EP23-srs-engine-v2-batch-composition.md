@@ -58,14 +58,12 @@ Changelog: `.agents/changelogs/EP23--batch-composition/20260513T233802Z-EP23-DS0
 
 Changelog: `.agents/changelogs/EP23--batch-composition/20260514T000000Z-EP23-DS02-compose-sentence-batch.md`
 
-#### EP23-ST03: Define `SentenceContext` type — **Pending**
+#### EP23-ST03: Define `SentenceContext` type + mock corpus fixture — **Pending**
 
-#### EP23-ST04: Implement fill-in-the-blank question format — **Pending**
+#### EP23-ST04: Fill-in-the-blank (a) engine + (b) runner wiring — **Pending**
 
-#### EP23-ST05: Implement word-block `english-to-native` format — **Pending**
+#### EP23-ST05: Word-block `english-to-native` + `romanization-to-native` (a) engine + (b) runner wiring — **Pending**
 
-#### EP23-ST06: Implement word-block `native-to-english` format — **Pending**
+#### EP23-ST06: Word-block `native-to-english` + `native-to-romanization` (a) engine + (b) runner wiring — **Pending**
 
-#### EP23-ST07: Wire `composeSentenceBatch` wrapper + export — **Pending**
-
-#### EP23-ST08: Wire sentence batch into the learning runner — **Pending**
+#### EP23-ST07: `composeSentenceBatch` wrapper + export (a) engine + (b) runner consolidation — **Pending**

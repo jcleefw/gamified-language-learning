@@ -1,4 +1,4 @@
-# EP23-DS02: `composeSentenceBatch` — Sentence Composer Implementation
+# EP23-DS02: `composeSentenceBatch` — Word-Block Sentence Composer
 
 **Date**: 20260514T000000Z
 **Status**: Proposed
@@ -8,14 +8,18 @@
 
 ## 1. Feature Overview
 
-DS01 established the registry, re-serve mechanics, and the `QuizQuestion = MCQQuestion | SentenceQuestion` union type. DS02 implements `composeSentenceBatch` — the sentence-level composer that registers as a thunk alongside `composeWordBatchItems`.
+DS01 established the `QuizQuestion = MCQQuestion | SentenceQuestion` union type. DS02 implements `composeSentenceBatch` — the sentence-level composer for word-block construction questions — and wires each direction into the learning runner incrementally so it is manually testable after every story.
 
-`composeSentenceBatch` takes a `SentenceContext` (pre-written corpus record), a resolved `QuizItem` (the target word), and a distractor pool. It produces two question formats:
+`composeSentenceBatch` takes a `SentenceContext` (pre-written corpus record) and a single resolved `SentenceTile[]` (caller resolves all wordIds once). It produces four word-block directions:
 
-- **Fill-in-the-blank** — MCQ using `nativeGappedTemplate` as prompt; distractors from pool
-- **Word-block construction** — tile-ordering question in either `english-to-native` or `native-to-english` direction; no distractors needed
+- **Word-block english-to-native** — arrange native tiles into correct order
+- **Word-block native-to-english** — arrange English tiles into correct order
+- **Word-block native-to-romanization** — arrange romanization tiles into correct order
+- **Word-block romanization-to-native** — arrange native tiles from a romanization prompt
 
-Both formats are produced inside a single composer because both require a `SentenceContext`. Routing is by input shape, not output format (per ADR `20260512T235900Z-engineering-compose-sentence-batch-boundary.md`).
+All four directions share one composer because all require a `SentenceContext`. Fill-in-the-blank is a separate skill track (contextual recognition → `ContextState`) and belongs in a future `composeContextBatch` composer — it is out of scope for DS02.
+
+Each story (ST04–ST07) has a **(a) engine** section and a **(b) runner** section. The runner section wires that story's direction into the learning runner so it can be manually tested immediately.
 
 ---
 
@@ -23,14 +27,15 @@ Both formats are produced inside a single composer because both require a `Sente
 
 | Requirement | Decision | Rationale |
 |---|---|---|
-| `composeSentenceBatch` signature | `(ctx: SentenceContext, target: QuizItem, pool: QuizItem[], options?: { shuffle?: boolean }): (MCQQuestion \| SentenceQuestion)[]` | ADR M1: `QuizItem` passed in by caller; engine never resolves word data from DB |
-| Fill-in-the-blank prompt source | Use `ctx.nativeGappedTemplate` directly | ADR M3: runtime reconstruction unsafe for space-less languages (Thai) |
-| Fill-in-the-blank distractors | Drawn from `pool` (learner's mastered words), same pattern as `composeWordBatch` | ADR M2: more meaningful than global pool |
-| Word-block tiles | Resolved `SentenceTile[]` built from `ctx.nativeWordOrder` × `QuizItem` data | PRD §3b: UI receives fully-resolved tiles; no secondary lookups |
+| `composeSentenceBatch` signature | `(ctx: SentenceContext, resolvedTiles: SentenceTile[], options?: { shuffle?: boolean }): SentenceQuestion[]` | Caller resolves all wordIds to `SentenceTile[]` once; composer picks the tile face field per direction |
+| Fill-in-the-blank | Out of scope — belongs in `composeContextBatch` (future EP) | Contextual recognition is a distinct mastery skill track from word-block production |
+| Word-block tile directions | Four directions matching `QuizDirection` | Consistent with word question directions |
 | Tile shuffle | `shuffle: true` by default; `shuffle: false` option for tests | Consistent with `composeWordBatchItems` pattern |
-| `pool` for word-block | Accepted in signature but ignored | ADR M2: pool is for fill-in-the-blank only; word-block ordering challenge needs no distractors |
 | `SentenceContext` type | Defined in `src/types/sentence.ts` | New type; fields from PRD §4 |
-| Registry wiring | Session registers `() => composeSentenceBatch(ctx, target, pool)` per eligible `SentenceContext` | ADR D5: composer is a stateless function; session owns routing |
+| `MIN_SEEN_FOR_SENTENCE` | Configurable threshold (default `2`) in `LEARNING_CONFIG` | A sentence question only becomes eligible when every word in the sentence has been seen at least this many times — ensures the learner has encountered each tile before being asked to arrange them; tunable without code changes |
+| `SentenceQuestion.direction` | `'english-to-native' \| 'native-to-english' \| 'native-to-romanization' \| 'romanization-to-native'` | Full direction set matching word questions |
+| `answer` semantics | All directions: `wordId[]` | All word orders are `wordId` refs; evaluator compares `wordId[]` regardless of direction |
+| Runner wiring | Direct call in `runBatch`; no registry | Same direct-call pattern as word questions today |
 
 ---
 
@@ -41,37 +46,59 @@ Both formats are produced inside a single composer because both require a `Sente
 ```ts
 export interface SentenceContext {
   sentenceId: string;
-  targetWordId: string;
   nativeSentence: string;
   englishSentence: string;
-  nativeGappedTemplate: string;
-  nativeWordOrder: string[];     // wordId refs — resolved to SentenceTile[] by caller
-  englishWordOrder: string[];    // plain English tokens
-  blankPosition: number;         // index of target word in nativeWordOrder
+  romanizationSentence?: string;     // prompt for romanization-to-native; required when romanizationWordOrder is set
+  nativeWordOrder: string[];         // wordId refs
+  englishWordOrder: string[];        // wordId refs — same words, tile face is tile.english
+  romanizationWordOrder?: string[];  // wordId refs — same words, tile face is tile.romanization
 }
 ```
 
-> `nativeWordOrder` contains `wordId` references. The caller resolves them to `SentenceTile` fields (`native`, `romanization`, `english`) before passing into the engine. The engine receives resolved tiles — it never touches the DB.
+> All three word orders are `wordId[]` refs into the same word pool. The caller resolves them all to `SentenceTile[]` once. The composer picks which field to use as the tile face per direction (`tile.native`, `tile.english`, or `tile.romanization`).
+>
+> `targetWordId`, `nativeGappedTemplate`, and `blankPosition` are removed — they belong to the fill-in-the-blank EP.
 
-### `SentenceQuestion` (already in `src/types/quiz.ts` from DS01)
+### `SentenceTile` (unchanged from DS01)
+
+```ts
+interface SentenceTile {
+  wordId: string;
+  native: string;
+  romanization: string;
+  english: string;
+}
+```
+
+### `SentenceQuestion` (update `src/types/quiz.ts`)
 
 ```ts
 interface SentenceQuestion {
   kind: 'word-block';
   sentenceId: string;
-  direction: 'english-to-native' | 'native-to-english';
+  direction: 'english-to-native' | 'native-to-english' | 'native-to-romanization' | 'romanization-to-native';
   prompt: string;
-  tiles: SentenceTile[];
-  answer: string[];   // correct wordId order
+  tiles: SentenceTile[];  // shuffled; composer sets tile face field per direction
+  answer: string[];       // wordId[] — correct tile order for all directions
 }
 ```
+
+### Tile face per direction
+
+| Direction | Prompt | Tile face shown | `answer` |
+|---|---|---|---|
+| `en→na` | `englishSentence` | `tile.native` | `nativeWordOrder` |
+| `roman→na` | `romanizationSentence` | `tile.native` | `nativeWordOrder` |
+| `na→en` | `nativeSentence` | `tile.english` | `englishWordOrder` |
+| `na→roman` | `nativeSentence` | `tile.romanization` | `romanizationWordOrder` |
 
 ### `composeSentenceBatch` output
 
 ```
-fill-in-the-blank  → MCQQuestion  (kind: 'mcq')
-word-block (en→na) → SentenceQuestion (kind: 'word-block', direction: 'english-to-native')
-word-block (na→en) → SentenceQuestion (kind: 'word-block', direction: 'native-to-english')
+word-block (en→na)    → SentenceQuestion (direction: 'english-to-native')
+word-block (na→en)    → SentenceQuestion (direction: 'native-to-english')
+word-block (na→roman) → SentenceQuestion (direction: 'native-to-romanization')
+word-block (roman→na) → SentenceQuestion (direction: 'romanization-to-native')
 ```
 
 ---
@@ -82,81 +109,62 @@ word-block (na→en) → SentenceQuestion (kind: 'word-block', direction: 'nativ
 packages/srs-engine-v2/
 ├── src/
 │   ├── types/
-│   │   ├── quiz.ts                          ← unchanged (SentenceQuestion already defined in DS01)
-│   │   └── sentence.ts                      ← NEW: SentenceContext
+│   │   ├── quiz.ts                          ← update SentenceQuestion.direction
+│   │   └── sentence.ts                      ← NEW: SentenceContext (no fill-in-the-blank fields)
 │   ├── engine/
-│   │   ├── compose-batch.ts                 ← unchanged
-│   │   └── compose-sentence-batch.ts        ← NEW: composeSentenceBatch
+│   │   ├── compose-word-batch.ts            ← unchanged (renamed from compose-batch.ts in DS01)
+│   │   └── compose-sentence-batch.ts        ← NEW: composeSentenceBatch + 4 direction functions
 │   ├── __tests__/unit/
-│   │   └── compose-sentence-batch.test.ts   ← NEW (3 test files, one per ST)
+│   │   └── compose-sentence-batch.test.ts   ← NEW
 │   └── index.ts                             ← add SentenceContext, composeSentenceBatch exports
 ├── data/mock/
-│   └── mock-sentence-corpus.ts              ← NEW: SentenceContext fixtures for mock words
+│   └── mock-sentence-corpus.ts              ← NEW: SentenceContext fixtures (no targetWordId)
 └── demo/
-    ├── learning-io.ts                        ← updated: eligibility, runBatch, runInteractive
-    └── config.ts                             ← updated: MIN_SEEN_FOR_SENTENCE constant
+    ├── learning-io.ts                        ← updated per story (b) sections
+    └── config.ts                             ← updated: MIN_SEEN_FOR_SENTENCE, DEBUG_SENTENCE_ELIGIBILITY
 ```
 
 ---
 
 ## 5. Stories
 
-### EP23-ST03: Define `SentenceContext` type
+### EP23-ST03: Define `SentenceContext` type + mock corpus fixture
 
-**Scope**: Create `src/types/sentence.ts` with `SentenceContext` interface. Export from `index.ts`.
+**Scope**: Type definition and mock data only. No composer code yet.
 
 **Read List**:
 - `product-documentation/prds/20260513T000000Z-sentence-question-ep.md` §4
+- `packages/srs-engine-v2/data/mock/mock-word-pool.ts`
 
 **Tasks**:
-- [ ] Create `packages/srs-engine-v2/src/types/sentence.ts` with `SentenceContext` interface (fields per PRD §4)
+- [ ] Create `src/types/sentence.ts` with `SentenceContext` interface (fields per §3 above — no fill-in-the-blank fields)
+- [ ] Update `src/types/quiz.ts`: expand `SentenceQuestion.direction` to 4-way union
 - [ ] Export `SentenceContext` from `src/index.ts`
+- [ ] Create `data/mock/mock-sentence-corpus.ts` — at least 2 entries using real word ids from `mock-word-pool.ts`; include `nativeWordOrder`, `englishWordOrder`, `romanizationSentence`, `romanizationWordOrder`
 
 **Acceptance Criteria**:
-- [ ] `SentenceContext` importable from `@gll/srs-engine-v2`
-- [ ] All fields present: `sentenceId`, `targetWordId`, `nativeSentence`, `englishSentence`, `nativeGappedTemplate`, `nativeWordOrder`, `englishWordOrder`, `blankPosition`
+- [ ] `SentenceContext` importable from `@gll/srs-engine-v2`; no fill-in-the-blank fields present
+- [ ] `SentenceQuestion.direction` accepts all four values
+- [ ] Mock corpus compiles without type errors
 - [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` passes
 
 ---
 
-### EP23-ST04: Implement fill-in-the-blank question format
+### EP23-ST04: Implement word-block `english-to-native` + wire into runner
 
-**Scope**: First format inside `compose-sentence-batch.ts`. Isolated function; no word-block code yet.
+#### (a) Engine
+
+**Scope**: First direction. Establishes `compose-sentence-batch.ts` and the resolved-tile pattern.
 
 **Read List**:
 - `packages/srs-engine-v2/src/types/quiz.ts`
 - `packages/srs-engine-v2/src/types/sentence.ts`
-- `packages/srs-engine-v2/src/engine/compose-batch.ts`
-- `product-documentation/architecture/20260512T235900Z-engineering-compose-sentence-batch-boundary.md` (M2, M3)
-- `product-documentation/prds/20260513T000000Z-sentence-question-ep.md` §3a
+- `packages/srs-engine-v2/src/engine/compose-word-batch.ts`
 
 **Tasks**:
 - [ ] Create `src/engine/compose-sentence-batch.ts`
-- [ ] Implement `composeFillInTheBlank(ctx, target, pool, options?): MCQQuestion` — prompt from `ctx.nativeGappedTemplate`; correct choice = `target.native`; 3 distractors from `pool` excluding `target`; shuffle choices unless `shuffle: false`
-- [ ] Write `src/__tests__/unit/compose-sentence-batch.test.ts` covering: correct prompt, correct answer in choices, distractor exclusion, `shuffle: false` determinism, fewer than 3 pool items
-
-**Acceptance Criteria**:
-- [ ] `kind` is `'mcq'`
-- [ ] Prompt equals `ctx.nativeGappedTemplate`
-- [ ] Exactly one choice has `isCorrect: true` and `value === target.native`
-- [ ] Distractors do not include `target`
-- [ ] `shuffle: false` produces same choice order across calls
-- [ ] `pnpm --filter @gll/srs-engine-v2 test` passes
-
----
-
-### EP23-ST05: Implement word-block `english-to-native` format
-
-**Scope**: Second format in `compose-sentence-batch.ts`. Adds `composeSentenceBlockEnToNa`.
-
-**Read List**:
-- `packages/srs-engine-v2/src/types/quiz.ts` (SentenceTile, SentenceQuestion)
-- `packages/srs-engine-v2/src/types/sentence.ts`
-- `product-documentation/prds/20260513T000000Z-sentence-question-ep.md` §3b
-
-**Tasks**:
-- [ ] Implement `composeSentenceBlockEnToNa(ctx, resolvedTiles, options?): SentenceQuestion` — prompt = `ctx.englishSentence`; tiles = resolved `SentenceTile[]` (passed in pre-resolved by caller); answer = `ctx.nativeWordOrder`; shuffle tiles unless `shuffle: false`
-- [ ] Add tests: correct prompt, tile fields (`native`, `romanization`, `english`, `wordId`), answer order, `shuffle: false` determinism
+- [ ] Implement `composeSentenceBlockEnToNa(ctx, resolvedTiles, options?): SentenceQuestion` — prompt = `ctx.englishSentence`; tiles = `resolvedTiles`; answer = `ctx.nativeWordOrder`; shuffle unless `shuffle: false`
+- [ ] Write unit tests: correct prompt, tile fields (`native`, `romanization`, `english`, `wordId`), answer order, `shuffle: false` determinism
 
 **Acceptance Criteria**:
 - [ ] `kind` is `'word-block'`, `direction` is `'english-to-native'`
@@ -165,86 +173,129 @@ packages/srs-engine-v2/
 - [ ] `shuffle: false` produces same tile order across calls
 - [ ] `pnpm --filter @gll/srs-engine-v2 test` passes
 
----
-
-### EP23-ST06: Implement word-block `native-to-english` format
-
-**Scope**: Third format. Adds `composeSentenceBlockNaToEn`. English tokens are plain strings — no `wordId` needed.
+#### (b) Runner
 
 **Read List**:
-- `packages/srs-engine-v2/src/types/quiz.ts`
-- `packages/srs-engine-v2/src/types/sentence.ts`
-- `product-documentation/prds/20260513T000000Z-sentence-question-ep.md` §3b
+- `packages/srs-engine-v2/demo/learning-io.ts`
+- `packages/srs-engine-v2/demo/config.ts`
+- `packages/srs-engine-v2/data/mock/mock-sentence-corpus.ts`
 
 **Tasks**:
-- [ ] Implement `composeSentenceBlockNaToEn(ctx, options?): SentenceQuestion` — prompt = `ctx.nativeSentence`; tiles built from `ctx.englishWordOrder` as plain-string tiles (no `wordId`; use empty string or index-based synthetic id); answer = `ctx.englishWordOrder`; shuffle unless `shuffle: false`
-- [ ] Add tests: correct prompt, tile count matches `englishWordOrder`, answer order, `shuffle: false`
+- [ ] Add `MIN_SEEN_FOR_SENTENCE: 2` and `DEBUG_SENTENCE_ELIGIBILITY: false` to `LEARNING_CONFIG` in `config.ts`
+- [ ] Extend `QuizResult` with `sentenceId?: string` — sentence answers populate `sentenceId`; word answers populate `wordId`
+- [ ] In `runAdaptiveLoop`: derive `eligibleSentenceContexts` — all corpus entries where all `nativeWordOrder` word ids have `runState.get(id)?.seen >= MIN_SEEN_FOR_SENTENCE`; bypass seen check when `DEBUG_SENTENCE_ELIGIBILITY` is true
+- [ ] Resolve `SentenceTile[]` for each eligible context (look up each `wordId` in word pool)
+- [ ] In `runBatch`: call `composeSentenceBlockEnToNa` for each eligible context; append to question array
+- [ ] In `runInteractive`: handle `kind === 'word-block'` — display numbered tiles, print correct tile order as cheat sheet (e.g. `Correct order: 3 1 4 2`) before prompting input; evaluate answer against `answer`; record `sentenceId` in result
+- [ ] In `CorrectAutoAnswerStrategy`: auto-answer word-block with correct tile order
+
+**Manual Test**: Set `DEBUG_SENTENCE_ELIGIBILITY: true`, run learning runner — `en→na` word-block questions appear immediately; cheat sheet visible; numbered tile input accepted.
+
+---
+
+### EP23-ST05: Implement word-block `romanization-to-native` + wire into runner
+
+#### (a) Engine
+
+**Scope**: Second native-tile direction. Shares `resolvedTiles` pattern with ST04.
+
+**Read List**:
+- `packages/srs-engine-v2/src/engine/compose-sentence-batch.ts`
+- `packages/srs-engine-v2/src/types/sentence.ts`
+
+**Tasks**:
+- [ ] Implement `composeSentenceBlockRomanToNa(ctx, resolvedTiles, options?): SentenceQuestion` — prompt = `ctx.romanizationSentence`; tiles = `resolvedTiles`; answer = `ctx.nativeWordOrder`; shuffle unless `shuffle: false`
+- [ ] Write unit tests: correct prompt, tile shape, answer order, `shuffle: false`
 
 **Acceptance Criteria**:
-- [ ] `kind` is `'word-block'`, `direction` is `'native-to-english'`
-- [ ] Tile count equals `ctx.englishWordOrder.length`
-- [ ] `answer` equals `ctx.englishWordOrder`
+- [ ] `direction` is `'romanization-to-native'`; tile shape matches ST04
+- [ ] `answer` equals `ctx.nativeWordOrder`
 - [ ] `pnpm --filter @gll/srs-engine-v2 test` passes
+
+#### (b) Runner
+
+**Tasks**:
+- [ ] In `runBatch`: add `composeSentenceBlockRomanToNa` call for eligible contexts with `romanizationSentence` defined
+
+**Manual Test**: Run learning runner — both `en→na` and `roman→na` questions appear.
+
+---
+
+### EP23-ST06: Implement word-block `native-to-english` + `native-to-romanization` + wire into runner
+
+#### (a) Engine
+
+**Scope**: Two plain-string tile directions. No `resolvedTiles` needed — tokens come directly from `ctx`.
+
+**Read List**:
+- `packages/srs-engine-v2/src/engine/compose-sentence-batch.ts`
+- `packages/srs-engine-v2/src/types/sentence.ts`
+
+**Tasks**:
+- [ ] Implement `composeSentenceBlockNaToEn(ctx, options?): SentenceQuestion` — prompt = `ctx.nativeSentence`; tiles from `ctx.englishWordOrder`; answer = `ctx.englishWordOrder`; shuffle unless `shuffle: false`
+- [ ] Implement `composeSentenceBlockNaToRoman(ctx, options?): SentenceQuestion` — prompt = `ctx.nativeSentence`; tiles from `ctx.romanizationWordOrder`; answer = `ctx.romanizationWordOrder`; shuffle unless `shuffle: false`
+- [ ] Write unit tests for both: prompt, tile count, answer order, `shuffle: false`
+
+**Acceptance Criteria**:
+- [ ] `na→en`: `direction` is `'native-to-english'`; tile count equals `ctx.englishWordOrder.length`
+- [ ] `na→roman`: `direction` is `'native-to-romanization'`; tile count equals `ctx.romanizationWordOrder.length`
+- [ ] `pnpm --filter @gll/srs-engine-v2 test` passes
+
+#### (b) Runner
+
+**Tasks**:
+- [ ] In `runBatch`: add `composeSentenceBlockNaToEn` and `composeSentenceBlockNaToRoman` calls for eligible contexts
+
+**Manual Test**: Run learning runner — all four word-block directions appear across eligible sentence questions.
 
 ---
 
 ### EP23-ST07: Wire `composeSentenceBatch` wrapper + export
 
-**Scope**: Thin wrapper that calls ST04–ST06 and returns the flat array. No new logic.
+#### (a) Engine
+
+**Scope**: Thin wrapper that calls ST04–ST06 functions and returns a flat array. No new logic.
 
 **Read List**:
 - `packages/srs-engine-v2/src/engine/compose-sentence-batch.ts`
 - `packages/srs-engine-v2/src/index.ts`
 
 **Tasks**:
-- [ ] Implement `composeSentenceBatch(ctx, target, resolvedTiles, pool, options?): (MCQQuestion | SentenceQuestion)[]` — calls `composeFillInTheBlank`, `composeSentenceBlockEnToNa`, `composeSentenceBlockNaToEn`; returns flat array of 3 questions
+- [ ] Implement `composeSentenceBatch(ctx, resolvedTiles, options?): SentenceQuestion[]` — calls all four direction functions; skips romanization directions if `ctx.romanizationSentence` / `ctx.romanizationWordOrder` are absent; returns flat array
 - [ ] Export `composeSentenceBatch` from `src/index.ts`
-- [ ] Add integration test: single `SentenceContext` produces exactly 3 questions with correct `kind` values
+- [ ] Add integration test: full corpus entry (all fields) produces 4 questions; entry without romanization fields produces 2 questions
+
+#### (b) Runner
+
+**Tasks**:
+- [ ] Replace direct per-direction calls in `runBatch` with single `composeSentenceBatch` call per eligible context
 
 **Acceptance Criteria**:
-- [ ] Returns exactly 3 questions: `['mcq', 'word-block', 'word-block']`
 - [ ] `composeSentenceBatch` importable from `@gll/srs-engine-v2`
+- [ ] Full entry returns 4 questions; entry without romanization returns 2
 - [ ] `pnpm --filter @gll/srs-engine-v2 test` passes
 - [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` passes
 
 ---
 
-### EP23-ST08: Wire sentence batch into the learning runner
+## 6. Open Questions
 
-**Scope**: End-to-end wiring in `demo/`. No engine changes, no registry. `runBatch` calls `composeSentenceBatch` directly for each eligible context, the same way it calls `composeWordBatchMulti` today. Manually testable by running the learning runner and observing sentence questions appear after words are seen twice.
-
-**Read List**:
-- `packages/srs-engine-v2/demo/learning-io.ts`
-- `packages/srs-engine-v2/demo/config.ts`
-- `packages/srs-engine-v2/demo/learning-runner.ts`
-- `packages/srs-engine-v2/src/index.ts`
-- `packages/srs-engine-v2/data/mock/mock-word-pool.ts` (to understand existing word ids for corpus fixture)
-- `product-documentation/architecture/reference/data-pipeline-boundary.md`
-- `product-documentation/architecture/20260513T000000Z-engineering-batch-execution-mechanics.md` (D6)
-
-**Tasks**:
-- [ ] Create `data/mock/mock-sentence-corpus.ts` — at least 2 `SentenceContext` entries using word ids from `mock-word-pool.ts`; include `nativeGappedTemplate`, `nativeWordOrder` with real word ids, `englishWordOrder`
-- [ ] Add `MIN_SEEN_FOR_SENTENCE: 2` to `LEARNING_CONFIG` in `config.ts`
-- [ ] Extend `QuizResult` to carry `sentenceId?: string` alongside `wordId` — sentence answers populate `sentenceId`; word answers populate `wordId`
-- [ ] In `runAdaptiveLoop`: after `nextActivePool`, derive `eligibleSentenceContexts` — filter corpus entries where all `nativeWordOrder` word ids have `runState.get(id)?.seen >= MIN_SEEN_FOR_SENTENCE`
-- [ ] In `runAdaptiveLoop`: resolve `SentenceTile[]` for each eligible context (look up each `wordId` in the combined word pool) before passing to `runBatch`
-- [ ] In `runBatch`: accept `eligibleSentenceContexts` param; call `composeSentenceBatch(ctx, target, resolvedTiles, wordPool)` directly for each; append sentence questions to the flat question array alongside word questions
-- [ ] In `runInteractive`: handle `SentenceQuestion` (`kind === 'word-block'`) — display numbered tiles, prompt learner to type tile order (e.g. `2 4 1 3`), evaluate against `answer`
-- [ ] In `runAutoInteractive` / `AutoAnswerStrategy`: handle `SentenceQuestion` — auto-answer with correct tile order for `CorrectAutoAnswerStrategy`
-
-**Acceptance Criteria**:
-- [ ] Running the learning runner in `AUTO_MODE`: sentence questions appear in output after the target words have been seen twice
-- [ ] Sentence question results are recorded and printed in the batch summary
-- [ ] Interactive mode: word-block question displays tiles with numbers; learner input is accepted and evaluated
-- [ ] `CorrectAutoAnswerStrategy` produces correct answers for sentence questions
-- [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` passes
+| # | Question | Severity | Owner | Status |
+|---|----------|----------|-------|--------|
+| OQ1 | Fill-in-the-blank is a distinct mastery skill track (contextual recognition → `ContextState`), separate from word-block production (`SentenceState`) and word recognition (`WordState`). Removed from DS02. Belongs in a future `composeContextBatch` EP. | Critical | — | **Resolved — out of scope** |
+| OQ2 | `SentenceTile` has required `wordId` but `na→en` and `na→roman` tiles were plain strings with no word id. | Critical | Dev | **Resolved** — all three word orders (`nativeWordOrder`, `englishWordOrder`, `romanizationWordOrder`) are `wordId[]` refs. Caller resolves all to `SentenceTile[]` once; composer picks tile face field per direction (`tile.native`, `tile.english`, `tile.romanization`). `wordId` is always present. |
+| OQ3 | `answer` semantics differed by direction — `na→en`/`na→roman` were plain string tokens, not `wordId[]`. | Medium | Dev | **Resolved** — all directions use `wordId[]` as answer. Evaluator compares `wordId[]` uniformly regardless of direction. |
+| OQ4 | `romanizationSentence` and `romanizationWordOrder` are optional in `SentenceContext`. `composeSentenceBatch` skips romanization directions when absent. Corpus authors can add romanization support incrementally. | Medium | — | **Resolved — optional fields** |
+| OQ5 | Feature Overview said "both formats share one composer" — copy from when only two formats existed. Corrected to "all four directions share one composer." | Low | — | **Resolved** |
 
 ---
 
-## 6. Success Criteria
+## 7. Success Criteria
 
 1. `composeSentenceBatch` and `SentenceContext` are importable from `@gll/srs-engine-v2`
-2. Both fill-in-the-blank and word-block construction are produced from a single `SentenceContext`
-3. Learning runner surfaces sentence questions after `MIN_SEEN_FOR_SENTENCE` threshold is crossed
-4. No changes required to `composeWordBatch` or `composeWordBatchMulti`
-5. All tests pass, no type errors
+2. All four word-block directions produced from a single `composeSentenceBatch` call
+3. Fill-in-the-blank is not part of this DS — reserved for `composeContextBatch`
+4. Learning runner surfaces sentence questions after `MIN_SEEN_FOR_SENTENCE` threshold is crossed
+5. Manually testable after ST04(b) — `en→na` word-block appears in runner immediately
+6. No changes required to `composeWordBatch` or `composeWordBatchMulti`
+7. All tests pass, no type errors

@@ -60,6 +60,8 @@ The learner arranges word tiles into the correct sentence order. Two directions 
 |-----------|--------|-------|
 | `english-to-native` | English sentence shown | Native word tiles to arrange |
 | `native-to-english` | Native sentence shown | English word tiles to arrange |
+| `native-to-romanization` | Native sentence shown | Romanization tiles to arrange |
+| `romanization-to-native` | Romanization sentence shown | Native word tiles to arrange |
 
 **Example — english-to-native:**
 Prompt: `"I eat an apple."`
@@ -118,13 +120,14 @@ Minimum fields required:
 | Field | Type | Purpose |
 |-------|------|---------|
 | `sentenceId` | `string` | Stable identifier |
-| `targetWordId` | `string` | The mastered word this sentence tests |
+| `targetWordId` | `string?` | The word this sentence tests for fill-in-the-blank. Optional — word-block-only sentences omit it. Must equal `nativeWordOrder[blankPosition]` when present. |
 | `nativeSentence` | `string` | Full native sentence — used as prompt for `native-to-english` word-block and display context |
 | `englishSentence` | `string` | Full English sentence — used as prompt for `english-to-native` word-block |
-| `nativeGappedTemplate` | `string` | Pre-built gapped native sentence for fill-in-the-blank (e.g. `"หิวแล้วไป___อะไรกัน"`) — authored at ingestion time; runtime construction is unsafe for space-less languages |
-| `nativeWordOrder` | `string[]` | Ordered `wordId` references for the native sentence — tiles for `english-to-native` word-block; resolved to `native`/`romanization`/`english` via DB join |
-| `englishWordOrder` | `string[]` | Ordered English word tokens — tiles for `native-to-english` word-block (plain strings; English tokens don't need a separate word table entry) |
-| `blankPosition` | `number` | Index of target word in `nativeWordOrder` — used by answer evaluator to identify the correct choice |
+| `nativeGappedTemplate` | `string?` | Pre-built gapped native sentence for fill-in-the-blank (e.g. `"หิวแล้วไป___อะไรกัน"`) — required when `targetWordId` is set; omitted for word-block-only sentences; runtime construction is unsafe for space-less languages |
+| `nativeWordOrder` | `string[]` | Ordered `wordId` refs — tiles for `english-to-native` and `romanization-to-native`; tile face is `tile.native` |
+| `englishWordOrder` | `string[]` | Ordered `wordId` refs — same words as `nativeWordOrder`; tile face is `tile.english` for `native-to-english` |
+| `romanizationSentence` | `string?` | Full romanized sentence — prompt for `romanization-to-native`; required when `romanizationWordOrder` is set |
+| `romanizationWordOrder` | `string[]?` | Ordered `wordId` refs — same words; tile face is `tile.romanization` for `native-to-romanization` |
 
 > **Note**: A single sentence can serve multiple target words if each appears in it, but each `SentenceContext` record is scoped to one `targetWordId`. Two records pointing at the same sentence is fine.
 
