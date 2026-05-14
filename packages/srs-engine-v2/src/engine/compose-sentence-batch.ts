@@ -4,7 +4,7 @@ import { LANGUAGE_CONFIG } from '../config/language.js';
 import { shuffle } from '../utils/shuffle.js';
 
 function joinTiles(tiles: SentenceTile[], field: keyof Pick<SentenceTile, 'native' | 'romanization'>, language: string): string {
-  const separator = LANGUAGE_CONFIG[language]?.wordJoin === 'no-space' ? '' : ' ';
+  const separator = field === 'native' && LANGUAGE_CONFIG[language]?.wordJoin === 'no-space' ? '' : ' ';
   return tiles.map(t => t[field]).join(separator);
 }
 
@@ -36,6 +36,9 @@ export function composeSentenceBatch(
 
   // english-to-native — prompt is the authored English sentence
   questions.push(buildQuestion(ctx, resolvedTiles, 'english-to-native', ctx.englishSentence, shouldShuffle));
+
+  // romanization-to-native — prompt derived from romanization tiles
+  questions.push(buildQuestion(ctx, resolvedTiles, 'romanization-to-native', joinTiles(resolvedTiles, 'romanization', language), shouldShuffle));
 
   return questions;
 }

@@ -54,4 +54,43 @@ describe('composeSentenceBatch', () => {
       expect(q.sentenceId).toBe('sent::001');
     });
   });
+
+  describe('romanization-to-native', () => {
+    it('produces a word-block question with correct direction', () => {
+      const [, q] = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      expect(q.kind).toBe('word-block');
+      expect(q.direction).toBe('romanization-to-native');
+    });
+
+    it('prompt is romanization tiles always space-joined regardless of language', () => {
+      const [, q] = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      expect(q.prompt).toBe('hǐw bpai gin');
+    });
+
+    it('prompt is romanization tiles joined with space for English-script languages', () => {
+      const enCtx: SentenceContext = { sentenceId: 's', englishSentence: 'I eat', wordOrder: ['a', 'b'] };
+      const enTiles: SentenceTile[] = [
+        { wordId: 'a', native: 'Je',    romanization: 'je',   english: 'I'   },
+        { wordId: 'b', native: 'mange', romanization: 'mɑ̃ʒ', english: 'eat' },
+      ];
+      const [, q] = composeSentenceBatch(enCtx, enTiles, 'en', { shuffle: false });
+      expect(q.prompt).toBe('je mɑ̃ʒ');
+    });
+
+    it('tiles are the same resolved tiles (native face)', () => {
+      const [, q] = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      expect(q.tiles.map(t => t.native)).toEqual(expect.arrayContaining(['หิว', 'ไป', 'กิน']));
+    });
+
+    it('answer equals wordOrder', () => {
+      const [, q] = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      expect(q.answer).toEqual(ctx.wordOrder);
+    });
+
+    it('shuffle: false produces deterministic tile order', () => {
+      const [, a] = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      const [, b] = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      expect(a.tiles.map(t => t.wordId)).toEqual(b.tiles.map(t => t.wordId));
+    });
+  });
 });

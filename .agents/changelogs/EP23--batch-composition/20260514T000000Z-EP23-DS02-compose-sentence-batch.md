@@ -181,7 +181,7 @@ packages/srs-engine-v2/
 
 ---
 
-### EP23-ST05: Add `romanization-to-native` direction
+### EP23-ST05: Add `romanization-to-native` direction — **Complete ✅**
 
 #### (a) Engine
 
@@ -192,13 +192,13 @@ packages/srs-engine-v2/
 - `packages/srs-engine-v2/src/types/sentence.ts`
 
 **Tasks**:
-- [ ] Add private helper for `roman→na`: prompt = `joinTiles(resolvedTiles, 'romanization', language)`; tiles = `resolvedTiles`; answer = `ctx.wordOrder`; shuffle unless `shuffle: false`
-- [ ] `composeSentenceBatch` calls `roman→na` helper alongside `en→na`
-- [ ] Add unit tests: prompt derived from tile romanization fields joined via `LANGUAGE_CONFIG`, tile face is `native`, answer = `ctx.wordOrder`, `shuffle: false` determinism
+- [x] Add private helper for `roman→na`: prompt = `joinTiles(resolvedTiles, 'romanization', language)`; tiles = `resolvedTiles`; answer = `ctx.wordOrder`; shuffle unless `shuffle: false`
+- [x] `composeSentenceBatch` calls `roman→na` helper alongside `en→na`
+- [x] Add unit tests: direction, prompt joined from romanization tiles via `LANGUAGE_CONFIG` (no-space for Thai, space for en), tile face is `native`, answer = `ctx.wordOrder`, `shuffle: false` determinism
 
 **Acceptance Criteria**:
-- [ ] Every corpus entry returns 2 questions: `en→na` + `roman→na`
-- [ ] `pnpm --filter @gll/srs-engine-v2 test` passes
+- [x] Every corpus entry returns 2 questions: `en→na` + `roman→na`
+- [x] `pnpm --filter @gll/srs-engine-v2 test` passes
 
 #### (b) Runner
 

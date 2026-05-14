@@ -121,7 +121,9 @@ async function runInteractiveWordBlock(question: SentenceQuestion, index: number
   process.stdout.write('Your order (e.g. 2 1 3): ');
 
   const input = await readLine();
-  const selectedIds = input.split(' ')
+  // accept "4 3 2 1" or "4321" — split on whitespace, then expand any run-together digits
+  const tokens = input.trim().split(/\s+/).flatMap(t => t.length > 1 ? t.split('') : [t]);
+  const selectedIds = tokens
     .map(n => parseInt(n, 10) - 1)
     .filter(i => i >= 0 && i < question.tiles.length)
     .map(i => question.tiles[i].wordId);
