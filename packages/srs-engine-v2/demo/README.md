@@ -45,6 +45,24 @@ After a wrong answer, the identical question is re-queued within the current bat
 
 Words that exhaust `maxRetryPerWord` carry over to the next batch. Words that exhaust `maxRetryPerSession` are shelved for the session.
 
+**Effect on the queue:** The queue is not touched by ST03. Re-serves are internal to `runBatch` — they replay a cached question and never promote or demote anything. The queue only moves when `nextActivePool` is called *between* batches. A word that exhausts `maxRetryPerSession` is excluded from future active pools, which means it will never be promoted from active → mastered through normal means, but it does not re-enter the queue either — it is simply skipped when `nextActivePool` fills slots.
+
+```
+Batch N (re-serve loop active):
+  active = [w1, w2, w3]   queue = [w4, w5]
+
+  w2 answered wrong → re-queued inside runBatch (internal retry queue)
+  w2 answered wrong again → maxRetryPerWord(2) exhausted → batch closes
+  queue = [w4, w5]   ← unchanged, re-serve loop never touched it
+
+Between batch N and N+1 (nextActivePool):
+  w1 mastered → retired
+  → pulls w4 from queue
+
+  active = [w2, w3, w4]   queue = [w5]
+  (w2 still in active because it was not mastered — it carries over)
+```
+
 ### Composer registry
 
 The session layer registers each active composer as a pre-bound thunk `() => QuizQuestion[]` before calling `assembleBatchQuestions(registry)`. This produces a flat merged `QuizQuestion[]` without any direct coupling between composers. Adding a new question type (e.g. audio) is a registration, not a change to session logic.
