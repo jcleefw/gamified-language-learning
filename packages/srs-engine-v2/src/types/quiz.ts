@@ -1,7 +1,14 @@
-export interface QuizResult {
+export interface WordQuizResult {
   wordId: string;
   correct: boolean;
 }
+
+export interface SentenceQuizResult {
+  sentenceId: string;
+  correct: boolean;
+}
+
+export type QuizResult = WordQuizResult | SentenceQuizResult;
 
 export type QuizDirection =
   | 'native-to-english'

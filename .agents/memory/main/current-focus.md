@@ -32,5 +32,6 @@ Questions to resolve in the ADR:
 - Does one sentence produce one `SentenceContext` or multiple (one per testable word)?
 - Where does the raw→engine transform happen? (build-time, runtime, or manual)
 - Does the ingestion design change any fields on `SentenceContext`?
+- What is the `sentenceId` format and ownership? (who generates it, what namespace, is it stable across re-ingestion, does it encode any meaning e.g. language/deck/source?)
 
 Suggested filename: `product-documentation/architecture/YYYYMMDDTHHMMSSZ-engineering-sentence-corpus-ingestion.md`

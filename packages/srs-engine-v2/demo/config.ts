@@ -6,6 +6,8 @@ export const LEARNING_CONFIG = {
   maxMastery: 2,
   correctStreakThreshold: 2,
   wrongStreakThreshold: 2,
+  minSeenForSentence: 2,
+  debugSentenceEligibility: true,
 };
 
 export const STREAK_THRESHOLDS = {

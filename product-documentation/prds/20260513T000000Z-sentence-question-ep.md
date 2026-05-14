@@ -121,9 +121,10 @@ Minimum fields required:
 |-------|------|---------|
 | `sentenceId` | `string` | Stable identifier |
 | `targetWordId` | `string?` | The word this sentence tests for fill-in-the-blank. Optional — word-block-only sentences omit it. Must equal `nativeWordOrder[blankPosition]` when present. |
+| `englishSentence` | `string` | Authored English sentence — prompt for `en→na`; required because English grammar may differ from native word order |
 | `wordOrder` | `string[]` | Ordered `wordId` refs — single source of truth for tile order across all directions; caller resolves to `SentenceTile[]` once |
 
-> Sentence prompt strings (`nativeSentence`, `englishSentence`, etc.) are not stored on `SentenceContext`. The consumer composes them from resolved tiles joined by `LANGUAGE_CONFIG[language].wordJoin` (`'space' | 'no-space'`). This handles space-less languages (Thai, Japanese, Chinese, Korean) without hardcoding separators. `nativeGappedTemplate` and fill-in-the-blank fields belong to the future `composeContextBatch` EP.
+> All prompts except `englishSentence` are derived at render time from resolved tiles joined by `LANGUAGE_CONFIG[language].wordJoin` (`'space' | 'no-space'`). Native and romanization word order is consistent with tile order so no authoring is needed. `nativeGappedTemplate` and fill-in-the-blank fields belong to the future `composeContextBatch` EP.
 
 > **Note**: A single sentence can serve multiple target words if each appears in it, but each `SentenceContext` record is scoped to one `targetWordId`. Two records pointing at the same sentence is fine.
 

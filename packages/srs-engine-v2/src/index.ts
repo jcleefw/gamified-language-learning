@@ -3,6 +3,7 @@ export { shuffle } from './utils/shuffle.js';
 
 // Engine — question generation
 export { composeWordBatch, composeWordBatchMulti, composeWordBatchItems, FOUNDATIONAL_DIRECTIONS } from './engine/compose-word-batch.js';
+export { composeSentenceBatch } from './engine/compose-sentence-batch.js';
 export type { QuizItem } from './engine/compose-word-batch.js';
 
 // Engine — session state
@@ -14,7 +15,7 @@ export { updateRunState, isMastered } from './types/word-state.js';
 export type { WordState, RunState, StreakThresholds } from './types/word-state.js';
 
 // Types
-export type { QuizQuestion, MCQQuestion, SentenceQuestion, SentenceTile, QuizChoice, QuizDirection, QuizResult } from './types/quiz.js';
+export type { QuizQuestion, MCQQuestion, SentenceQuestion, SentenceTile, QuizChoice, QuizDirection, QuizResult, WordQuizResult, SentenceQuizResult } from './types/quiz.js';
 export type { SentenceContext } from './types/sentence.js';
 
 // Config

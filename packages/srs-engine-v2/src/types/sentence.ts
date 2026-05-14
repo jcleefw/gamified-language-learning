@@ -1,4 +1,5 @@
 export interface SentenceContext {
   sentenceId: string;
-  wordOrder: string[]; // wordId refs — single source of truth for tile order across all directions
+  englishSentence: string; // authored — English grammar may differ from native word order
+  wordOrder: string[];     // wordId refs — tile order for all directions
 }
