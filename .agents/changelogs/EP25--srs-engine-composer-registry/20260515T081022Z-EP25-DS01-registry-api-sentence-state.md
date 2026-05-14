@@ -1,7 +1,7 @@
 # EP25-DS01: Composer Registry API
 
 **Date**: 20260515T081022Z
-**Status**: Draft
+**Status**: Completed
 **Epic**: [EP25 - SRS Engine v2: Composer Registry & Batch Execution](.agents/plans/epics/EP25-srs-engine-composer-registry.md)
 
 ---
@@ -85,17 +85,17 @@ packages/srs-engine-v2/
 - `packages/srs-engine-v2/src/index.ts`
 
 **Tasks**:
-- [ ] Create `src/engine/compose-registry.ts` — `ComposerRegistry` interface + `createComposerRegistry` + `assembleBatchQuestions`
-- [ ] Unit tests (`compose-registry.test.ts`):
-  - [ ] Empty registry → `[]`
-  - [ ] Single thunk → returns thunk output flat
-  - [ ] Multiple thunks → flat merged array, registration order preserved
-  - [ ] Each thunk called exactly once per `assembleBatchQuestions` call
-- [ ] Export `ComposerRegistry`, `createComposerRegistry`, `assembleBatchQuestions` from `src/index.ts`
+- [x] Create `src/engine/compose-registry.ts` — `ComposerRegistry` interface + `createComposerRegistry` + `assembleBatchQuestions`
+- [x] Unit tests (`compose-registry.test.ts`):
+  - [x] Empty registry → `[]`
+  - [x] Single thunk → returns thunk output flat
+  - [x] Multiple thunks → flat merged array, registration order preserved
+  - [x] Each thunk called exactly once per `assembleBatchQuestions` call
+- [x] Export `ComposerRegistry`, `createComposerRegistry`, `assembleBatchQuestions` from `src/index.ts`
 
 **Acceptance Criteria**:
-- [ ] All 4 unit tests pass
-- [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
+- [x] All 4 unit tests pass
+- [x] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
 
 ---
 
@@ -108,15 +108,15 @@ packages/srs-engine-v2/
 - `packages/srs-engine-v2/src/engine/compose-word-batch.ts` (line 135 — `composeWordBatchItems` alias)
 
 **Tasks**:
-- [ ] Update imports: add `createComposerRegistry`, `assembleBatchQuestions`, `composeWordBatchItems`; remove `composeWordBatchMulti` from `runBatch` call sites (keep `composeSentenceBatch` — still called as thunk body)
-- [ ] Replace the 3 direct calls in `runBatch()` with `registry.add(() => ...)` registrations
-- [ ] Call `assembleBatchQuestions(registry)` to build `questions` array (final `.sort()` shuffle stays)
-- [ ] No changes to `runAdaptiveLoop` or `runInteractive`
+- [x] Update imports: add `createComposerRegistry`, `assembleBatchQuestions`, `composeWordBatchItems`; remove `composeWordBatchMulti` from `runBatch` call sites (keep `composeSentenceBatch` — still called as thunk body)
+- [x] Replace the 3 direct calls in `runBatch()` with `registry.add(() => ...)` registrations
+- [x] Call `assembleBatchQuestions(registry)` to build `questions` array (final `.sort()` shuffle stays)
+- [x] No changes to `runAdaptiveLoop` or `runInteractive`
 
 **Acceptance Criteria**:
-- [ ] `runBatch()` contains no direct calls to `composeWordBatchMulti`
-- [ ] Batch output is functionally identical — same questions, same shuffle behaviour
-- [ ] `pnpm --filter @gll/srs-engine-v2 test` green (all existing tests pass)
+- [x] `runBatch()` contains no direct calls to `composeWordBatchMulti`
+- [x] Batch output is functionally identical — same questions, same shuffle behaviour
+- [x] `pnpm --filter @gll/srs-engine-v2 test` green (all existing tests pass)
 
 ---
 
