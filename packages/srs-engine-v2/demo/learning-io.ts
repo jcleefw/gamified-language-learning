@@ -106,11 +106,13 @@ async function runInteractiveWordBlock(question: SentenceQuestion, index: number
   console.log(question.prompt);
   console.log('Arrange the tiles:');
   question.tiles.forEach((tile, i) => {
-    const face = question.direction === 'english-to-native' || question.direction === 'romanization-to-native'
-      ? tile.native
-      : question.direction === 'native-to-english'
-        ? tile.english
-        : tile.romanization;
+    let face: string;
+    switch (question.direction) {
+      case 'english-to-native':
+      case 'romanization-to-native': face = tile.native; break;
+      case 'native-to-romanization': face = tile.romanization; break;
+      default: throw new Error(`Unsupported word-block direction: ${question.direction}`);
+    }
     console.log(`  ${String(i + 1)}) ${face}`);
   });
 
