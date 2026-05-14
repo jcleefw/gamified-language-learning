@@ -1,11 +1,14 @@
 # current-focus
 
 **Branch**: feature/EP23--srs-engine-scheduling
-**Last updated**: 20260514T000000Z
+**Last updated**: 20260514T150000Z
 
 ## Status
 
-EP23 DS01 complete. DS02 designed (ST03–ST07) but blocked on corpus ingestion ADR — must be written before ST03 starts.
+EP23 DS01 complete. DS02 ST03 + ST04 complete. ST05/ST06/ST07 pending.
+Corpus ingestion ADR written and committed (`20260514T120000Z-engineering-sentence-corpus-ingestion.md`). OQ7 resolved: `wordId = th::native_form::type`.
+
+Next: implement composer registry + `assembleBatchQuestions` per ADR `20260513T000000Z-engineering-batch-execution-mechanics.md` D5.
 
 ## Completed Epics
 - EP20-ST13 support for other foundational words (vowels, etc)
@@ -19,19 +22,37 @@ ST01: `composeBatch` → `composeWordBatch` rename + `composeWordBatchItems` ali
 ST02: `QuizQuestion` → `MCQQuestion` + `QuizQuestion` union type introduced
 File rename: `compose-batch.ts` → `compose-word-batch.ts` (all import paths updated)
 
-## EP23 DS02 — Ready to start ST03
+## EP23 DS02 — In Progress
 
-`composeSentenceBatch` design is complete (ST03–ST07). ST03 can start — `SentenceContext` shape is fully defined in DS02 §3 and the mock corpus fixture only needs real word ids from `mock-word-pool.ts`.
+### Complete ✅
+- ST03: `SentenceContext` type + `LANGUAGE_CONFIG` + mock corpus fixture
+- ST04: `composeSentenceBatch` `en→na` direction + runner wiring (`resolveEligibleContexts`, `runBatch`, `runInteractive`, `runAutoInteractive`)
 
-### Corpus ingestion ADR — needed before real corpus is authored
+### Pending
+- ST05: add `romanization-to-native` direction
+- ST06: add `native-to-romanization` direction
+- ST07: integration test + typecheck gate
 
-The ADR is not a blocker for ST03. It becomes a pre-condition before real (non-mock) sentence content is authored for production use.
+## Registry runner — Next focus
 
-Questions to resolve in the ADR:
-- What is the raw authored form? (one record per sentence, one per word, structured text?)
-- Does one sentence produce one `SentenceContext` or multiple (one per testable word)?
-- Where does the raw→engine transform happen? (build-time, runtime, or manual)
-- Does the ingestion design change any fields on `SentenceContext`?
-- What is the `sentenceId` format and ownership? (who generates it, what namespace, is it stable across re-ingestion, does it encode any meaning e.g. language/deck/source?)
+ADR `20260513T000000Z-engineering-batch-execution-mechanics.md` D5 specifies a composer registry pattern:
 
-Suggested filename: `product-documentation/architecture/YYYYMMDDTHHMMSSZ-engineering-sentence-corpus-ingestion.md`
+- Each composer registered as a pre-bound thunk `() => QuizQuestion[]`
+- `assembleBatchQuestions(registry)` runs all thunks, returns flat `QuizQuestion[]`
+- Session layer registers thunks before calling `assembleBatchQuestions`
+- Registry lives in `srs-engine-v2`; current `runBatch` direct calls are the demo stand-in
+
+This replaces the current direct calls to `composeWordBatchMulti` and `composeSentenceBatch` in `runBatch`. Needs a design story (DS03) before implementation.
+
+## Corpus ingestion ADR — Written ✅
+
+`product-documentation/architecture/20260514T120000Z-engineering-sentence-corpus-ingestion.md`
+
+Key decisions:
+- `wordId = th::native_form::type` (e.g. `th::หิว::adjective`) — type suffix disambiguates homographs
+- Words global; sentences per conversation
+- One `breakdown` entry → one `SentenceContext`
+- Mock data layer mirrors DB schema: `mock-words.ts`, `mock-decks.ts`, `mock-sentence-corpus.ts`, `mock-db.ts` (new)
+- `mock-db.ts` exposes `getWordsForDeck`, `getWordPool`, `getSentenceContexts` — same contract as future DB query layer
+
+Open: OQ6 (ingestion script — separate library, deferred), OQ7 resolved.
