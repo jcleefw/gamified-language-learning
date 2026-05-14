@@ -18,7 +18,10 @@ export function runAutoInteractive(
     const question = questions[i];
 
     if (question.kind === 'word-block') {
-      // word-block: always answer correctly (correct tile order)
+      console.log(`\nQuestion ${String(i + 1)} [word-block: ${question.direction}]`);
+      console.log(question.prompt);
+      console.log(`Tiles: ${question.tiles.map(t => t.native).join(' | ')}`);
+      console.log('Auto: correct');
       results.push({ sentenceId: question.sentenceId, correct: true });
       score++;
       continue;
