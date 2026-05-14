@@ -1,10 +1,14 @@
 import type { SentenceContext } from '../types/sentence.js';
 import type { SentenceQuestion, SentenceTile } from '../types/quiz.js';
-import { LANGUAGE_CONFIG } from '../config/language.js';
+import { LANGUAGE_CONFIG, type WordJoin } from '../config/language.js';
 import { shuffle } from '../utils/shuffle.js';
 
+const DEFAULT_WORD_JOIN: WordJoin = 'space';
+
 function joinTiles(tiles: SentenceTile[], field: keyof Pick<SentenceTile, 'native' | 'romanization'>, language: string): string {
-  const separator = field === 'native' && LANGUAGE_CONFIG[language]?.wordJoin === 'no-space' ? '' : ' ';
+  const wordJoin = LANGUAGE_CONFIG[language]?.wordJoin ?? DEFAULT_WORD_JOIN;
+  // only native script respects wordJoin — romanization is always space-separated
+  const separator = field === 'native' && wordJoin === 'no-space' ? '' : ' ';
   return tiles.map(t => t[field]).join(separator);
 }
 

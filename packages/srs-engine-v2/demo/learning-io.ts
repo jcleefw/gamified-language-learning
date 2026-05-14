@@ -82,6 +82,7 @@ async function runInteractiveMCQ(question: MCQQuestion, index: number, total: nu
   for (const choice of question.choices) {
     console.log(`  ${choice.label}) ${choice.value}`);
   }
+  // safe: guard above already throws if no correct choice exists
   const correct = question.choices.find(c => c.isCorrect)!;
   console.log(`Correct answer: ${correct.label}) ${correct.value}`);
   process.stdout.write('Your answer (a/b/c/d): ');

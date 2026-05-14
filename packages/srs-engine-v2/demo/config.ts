@@ -7,7 +7,7 @@ export const LEARNING_CONFIG = {
   correctStreakThreshold: 2,
   wrongStreakThreshold: 2,
   minSeenForSentence: 2,
-  debugSentenceEligibility: true,
+  debugSentenceEligibility: false,
 };
 
 export const STREAK_THRESHOLDS = {

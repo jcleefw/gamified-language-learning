@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 
-import type { MCQQuestion, QuizQuestion, QuizResult } from '../src/index.js';
+import type { QuizQuestion, QuizResult } from '../src/index.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 
 export function runAutoInteractive(
@@ -24,31 +24,29 @@ export function runAutoInteractive(
       continue;
     }
 
-    const mcq = question as MCQQuestion;
-
-    if (mcq.choices.length === 0) {
+    if (question.choices.length === 0) {
       throw new Error(`runAutoInteractive: Question ${String(i + 1)} has no choices`);
     }
-    if (!mcq.choices.find(c => c.isCorrect)) {
+    if (!question.choices.find(c => c.isCorrect)) {
       throw new Error(`runAutoInteractive: Question ${String(i + 1)} has no correct answer marked`);
     }
 
-    const selectedIndex = strategy.selectAnswer(mcq);
+    const selectedIndex = strategy.selectAnswer(question);
 
-    if (selectedIndex < 0 || selectedIndex >= mcq.choices.length) {
+    if (selectedIndex < 0 || selectedIndex >= question.choices.length) {
       throw new Error(
         `runAutoInteractive: Strategy returned invalid index ${String(selectedIndex)} for question ${String(i + 1)}`
       );
     }
 
-    const selected = mcq.choices[selectedIndex];
+    const selected = question.choices[selectedIndex];
     const wasCorrect = selected.isCorrect;
 
     if (wasCorrect) {
       score++;
     }
 
-    results.push({ wordId: mcq.wordId, correct: wasCorrect });
+    results.push({ wordId: question.wordId, correct: wasCorrect });
   }
 
   console.log(`\nScore: ${String(score)} / ${String(questions.length)}`);
