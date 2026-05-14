@@ -208,7 +208,7 @@ No runner changes needed — `composeSentenceBatch` already called; new directio
 
 ---
 
-### EP23-ST06: Add `native-to-romanization` direction
+### EP23-ST06: Add `native-to-romanization` direction — **Complete ✅**
 
 #### (a) Engine
 
@@ -219,9 +219,9 @@ No runner changes needed — `composeSentenceBatch` already called; new directio
 - `packages/srs-engine-v2/src/types/sentence.ts`
 
 **Tasks**:
-- [ ] Add private helper for `na→roman`: prompt = `joinTiles(resolvedTiles, 'native', language)`; tiles = `resolvedTiles`; tile face shown = `tile.romanization`; answer = `ctx.wordOrder`; shuffle unless `shuffle: false`
-- [ ] `composeSentenceBatch` calls all three helpers; returns flat array
-- [ ] Add unit tests: prompt is native tiles joined by language config, tile face is romanization, answer = `ctx.wordOrder`, `shuffle: false`
+- [x] Add private helper for `na→roman`: prompt = `joinTiles(resolvedTiles, 'native', language)`; tile face shown = `tile.romanization`; answer = `ctx.wordOrder`; shuffle unless `shuffle: false`
+- [x] `composeSentenceBatch` calls all three helpers; returns flat array
+- [x] Add unit tests: direction, prompt joined from native tiles via `LANGUAGE_CONFIG` (no-space for Thai), answer = `ctx.wordOrder`, `shuffle: false` determinism
 
 **Acceptance Criteria**:
 - [ ] Every corpus entry returns 3 questions: `en→na`, `roman→na`, `na→roman`

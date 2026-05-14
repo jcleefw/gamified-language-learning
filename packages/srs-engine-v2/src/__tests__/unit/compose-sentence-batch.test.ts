@@ -93,4 +93,28 @@ describe('composeSentenceBatch', () => {
       expect(a.tiles.map(t => t.wordId)).toEqual(b.tiles.map(t => t.wordId));
     });
   });
+
+  describe('native-to-romanization', () => {
+    it('produces a word-block question with correct direction', () => {
+      const [,, q] = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      expect(q.kind).toBe('word-block');
+      expect(q.direction).toBe('native-to-romanization');
+    });
+
+    it('prompt is native tiles joined with no-space for Thai', () => {
+      const [,, q] = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      expect(q.prompt).toBe('หิวไปกิน');
+    });
+
+    it('answer equals wordOrder', () => {
+      const [,, q] = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      expect(q.answer).toEqual(ctx.wordOrder);
+    });
+
+    it('shuffle: false produces deterministic tile order', () => {
+      const [,, a] = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      const [,, b] = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      expect(a.tiles.map(t => t.wordId)).toEqual(b.tiles.map(t => t.wordId));
+    });
+  });
 });

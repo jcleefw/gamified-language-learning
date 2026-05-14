@@ -40,5 +40,8 @@ export function composeSentenceBatch(
   // romanization-to-native — prompt derived from romanization tiles
   questions.push(buildQuestion(ctx, resolvedTiles, 'romanization-to-native', joinTiles(resolvedTiles, 'romanization', language), shouldShuffle));
 
+  // native-to-romanization — prompt derived from native tiles; tile face is romanization
+  questions.push(buildQuestion(ctx, resolvedTiles, 'native-to-romanization', joinTiles(resolvedTiles, 'native', language), shouldShuffle));
+
   return questions;
 }
