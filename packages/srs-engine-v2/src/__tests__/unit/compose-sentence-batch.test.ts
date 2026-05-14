@@ -117,4 +117,26 @@ describe('composeSentenceBatch', () => {
       expect(a.tiles.map(t => t.wordId)).toEqual(b.tiles.map(t => t.wordId));
     });
   });
+
+  describe('integration', () => {
+    it('returns all 3 directions in order for a full corpus entry', () => {
+      const questions = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      expect(questions).toHaveLength(3);
+      expect(questions.map(q => q.direction)).toEqual([
+        'english-to-native',
+        'romanization-to-native',
+        'native-to-romanization',
+      ]);
+    });
+
+    it('all questions share the same sentenceId', () => {
+      const questions = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      expect(questions.every(q => q.sentenceId === 'sent::001')).toBe(true);
+    });
+
+    it('all questions have the same answer (wordOrder)', () => {
+      const questions = composeSentenceBatch(ctx, tiles, 'th', { shuffle: false });
+      expect(questions.every(q => JSON.stringify(q.answer) === JSON.stringify(ctx.wordOrder))).toBe(true);
+    });
+  });
 });

@@ -235,7 +235,7 @@ No runner changes needed — new direction appears automatically.
 
 ---
 
-### EP23-ST07: Integration test + typecheck gate
+### EP23-ST07: Integration test + typecheck gate — **Complete ✅**
 
 **Scope**: No new logic. Add an integration test asserting the full output contract. Confirm typecheck is clean end-to-end.
 
@@ -244,14 +244,14 @@ No runner changes needed — new direction appears automatically.
 - `packages/srs-engine-v2/src/index.ts`
 
 **Tasks**:
-- [ ] Add integration test: any corpus entry produces exactly 3 questions with correct `direction` values in the fixed order below
-- [ ] Verify `composeSentenceBatch` is importable from `@gll/srs-engine-v2`
+- [x] Add integration tests: 3 directions in fixed order, all share sentenceId, all share wordOrder as answer
+- [x] Verify `composeSentenceBatch` importable from `@gll/srs-engine-v2`
 
 **Acceptance Criteria**:
-- [ ] `composeSentenceBatch` importable from `@gll/srs-engine-v2`
-- [ ] Output directions (fixed order): `['english-to-native', 'romanization-to-native', 'native-to-romanization']`
-- [ ] `pnpm --filter @gll/srs-engine-v2 test` passes
-- [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` passes
+- [x] `composeSentenceBatch` importable from `@gll/srs-engine-v2`
+- [x] Output directions (fixed order): `['english-to-native', 'romanization-to-native', 'native-to-romanization']`
+- [x] `pnpm --filter @gll/srs-engine-v2 test` passes (160 tests)
+- [x] `pnpm --filter @gll/srs-engine-v2 typecheck` passes
 
 ---
 
