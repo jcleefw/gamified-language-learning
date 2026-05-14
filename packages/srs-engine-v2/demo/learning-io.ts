@@ -1,8 +1,10 @@
 /* eslint-disable no-console */
 
 import {
-  composeWordBatchMulti,
+  composeWordBatchItems,
   composeSentenceBatch,
+  createComposerRegistry,
+  assembleBatchQuestions,
   nextActivePool,
   updateMasteryState,
   type MCQQuestion,
@@ -201,19 +203,20 @@ async function runBatch(
   const wordLimit = questionLimit - consonantLimit;
 
   const shouldShuffle = !strategy;
-  const foundationalQs = activeFoundational.length > 0
-    ? composeWordBatchMulti(activeFoundational, foundationalPool, { questionLimit: consonantLimit, shuffle: shouldShuffle })
-    : [];
-  const wordQs = activeWords.length > 0
-    ? composeWordBatchMulti(activeWords, wordPool, { questionLimit: wordLimit, shuffle: shouldShuffle })
-    : [];
-
   const allPool = [...wordPool, ...foundationalPool];
-  const sentenceQs = resolveEligibleContexts(runState, allPool).flatMap(({ ctx, tiles }) =>
-    composeSentenceBatch(ctx, tiles, 'th', { shuffle: shouldShuffle })
-  );
+  const registry = createComposerRegistry();
 
-  const questions: QuizQuestion[] = [...foundationalQs, ...wordQs, ...sentenceQs].sort(() => Math.random() - 0.5);
+  if (activeFoundational.length > 0) {
+    registry.add(() => composeWordBatchItems(activeFoundational, foundationalPool, { questionLimit: consonantLimit, shuffle: shouldShuffle }));
+  }
+  if (activeWords.length > 0) {
+    registry.add(() => composeWordBatchItems(activeWords, wordPool, { questionLimit: wordLimit, shuffle: shouldShuffle }));
+  }
+  for (const { ctx, tiles } of resolveEligibleContexts(runState, allPool)) {
+    registry.add(() => composeSentenceBatch(ctx, tiles, 'th', { shuffle: shouldShuffle }));
+  }
+
+  const questions: QuizQuestion[] = assembleBatchQuestions(registry).sort(() => Math.random() - 0.5);
 
   if (strategy) {
     return runAutoInteractive(questions, strategy);

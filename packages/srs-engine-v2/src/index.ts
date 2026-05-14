@@ -4,6 +4,8 @@ export { shuffle } from './utils/shuffle.js';
 // Engine — question generation
 export { composeWordBatch, composeWordBatchMulti, composeWordBatchItems, FOUNDATIONAL_DIRECTIONS } from './engine/compose-word-batch.js';
 export { composeSentenceBatch } from './engine/compose-sentence-batch.js';
+export { createComposerRegistry, assembleBatchQuestions } from './engine/compose-registry.js';
+export type { ComposerRegistry } from './engine/compose-registry.js';
 export type { QuizItem } from './engine/compose-word-batch.js';
 
 // Engine — session state
