@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { updateMasteryState } from '../../engine/session.js';
 import type { RunState } from '../../types/word-state.js';
-import type { QuizResult } from '../../types/quiz.js';
+import type { WordQuizResult } from '../../types/quiz.js';
 
 const streakThresholds = { correctStreakThreshold: 2, wrongStreakThreshold: 2, maxMastery: 3 };
 
@@ -13,7 +13,7 @@ function makeState(entries: Record<string, { mastery: number; seen?: number; cor
   return m;
 }
 
-function results(...pairs: [string, boolean][]): QuizResult[] {
+function results(...pairs: [string, boolean][]): WordQuizResult[] {
   return pairs.map(([wordId, correct]) => ({ wordId, correct }));
 }
 

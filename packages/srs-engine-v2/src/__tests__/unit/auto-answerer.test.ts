@@ -5,9 +5,10 @@ import {
   RandomAutoAnswerStrategy,
   WeightedAccuracyAutoAnswerStrategy,
 } from '../../../demo/auto-answer-strategy.js';
-import type { QuizQuestion } from '../../types/quiz.js';
+import type { MCQQuestion } from '../../types/quiz.js';
 
-const createTestQuestion = (wordId: string = 'word1'): QuizQuestion => ({
+const createTestQuestion = (wordId: string = 'word1'): MCQQuestion => ({
+  kind: 'mcq',
   wordId,
   direction: 'native-to-english',
   prompt: 'Test prompt',
@@ -19,8 +20,8 @@ const createTestQuestion = (wordId: string = 'word1'): QuizQuestion => ({
   ],
 });
 
-const createTestBatch = (count: number): QuizQuestion[] => {
-  const batch: QuizQuestion[] = [];
+const createTestBatch = (count: number): MCQQuestion[] => {
+  const batch: MCQQuestion[] = [];
   for (let i = 0; i < count; i++) {
     batch.push(createTestQuestion(`word${String(i + 1)}`));
   }
@@ -99,7 +100,8 @@ describe('runAutoInteractive', () => {
     expect(result.results).toHaveLength(5);
 
     for (let iter = 0; iter < 5; iter++) {
-      expect(result.results[iter].wordId).toBe(`word${String(iter + 1)}`);
+      const r = result.results[iter];
+      expect('wordId' in r ? r.wordId : undefined).toBe(`word${String(iter + 1)}`);
     }
   });
 

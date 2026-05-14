@@ -18,14 +18,15 @@ no side effects.
 
 | Export | Signature | Purpose |
 | --- | --- | --- |
-| `composeBatch` | `(item: QuizItem, pool: QuizItem[]) → QuizQuestion[]` | One question per direction for a single item; uses `pool` for distractors |
-| `composeBatchMulti` | `(words: QuizItem[], pool: QuizItem[], options: { questionLimit: number; shuffle?: boolean }) → QuizQuestion[N]` | Covers all input words, fills to `questionLimit`; `shuffle: false` for deterministic order |
+| `composeWordBatch` | `(item: QuizItem, pool: QuizItem[]) → QuizQuestion[]` | One question per direction for a single item; uses `pool` for distractors |
+| `composeWordBatchMulti` | `(words: QuizItem[], pool: QuizItem[], options: { questionLimit: number; shuffle?: boolean }) → QuizQuestion[N]` | Covers all input words, fills to `questionLimit`; `shuffle: false` for deterministic order |
+| `composeWordBatchItems` | alias for `composeWordBatchMulti` | Registry-wiring name per batch-execution-mechanics ADR D5 |
 | `FOUNDATIONAL_DIRECTIONS` | `Record<FoundationalType, QuizDirection[]>` | Direction sets per foundational type (consonant/vowel = 4, tone = 2) |
 | `QuizItem` | `type` | `MockFoundational \| MockWord` |
 
-### `composeBatchMulti` Algorithm
+### `composeWordBatchMulti` Algorithm
 
-1. Generate all directions per word via `composeBatch`
+1. Generate all directions per word via `composeWordBatch`
 2. Take first question from each word → coverage guaranteed
 3. Collect remaining questions as leftover
 4. Fill gap to `questionLimit` with (optionally shuffled) leftover
@@ -60,7 +61,7 @@ no side effects.
 
 | Test file | Covers |
 | --- | --- |
-| `src/__tests__/unit/compose-batch.test.ts` | `composeBatch`, `composeBatchMulti` |
+| `src/__tests__/unit/compose-batch.test.ts` | `composeWordBatch`, `composeWordBatchMulti` |
 | `src/__tests__/unit/recheck.test.ts` | `processRecheckResult`, `nextActivePool` |
 | `src/__tests__/unit/adaptive-loop.test.ts` | `nextActivePool` pool rotation |
 | `src/__tests__/unit/update-mastery-state.test.ts` | `updateMasteryState` |

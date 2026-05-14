@@ -1,6 +1,6 @@
-import type { QuizItem } from './compose-batch.js';
+import type { QuizItem } from './compose-word-batch.js';
 import { type RunState, type StreakThresholds, updateRunState, isMastered } from '../types/word-state.js';
-import type { QuizResult } from '../types/quiz.js';
+import type { WordQuizResult } from '../types/quiz.js';
 
 const DEFAULT_STREAK_THRESHOLDS: StreakThresholds = {
   correctStreakThreshold: 2,
@@ -88,7 +88,7 @@ export interface MasteryUpdateResult {
  * that crossed the mastery threshold for the first time this batch.
  */
 export function updateMasteryState(
-  results: QuizResult[],
+  results: WordQuizResult[],
   runState: RunState,
   prevState: RunState,
   recheckPending: Set<string>,

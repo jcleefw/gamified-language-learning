@@ -4,9 +4,10 @@ import {
   RandomAutoAnswerStrategy,
   WeightedAccuracyAutoAnswerStrategy,
 } from '../../../demo/auto-answer-strategy.js';
-import type { QuizQuestion } from '../../types/quiz.js';
+import type { MCQQuestion } from '../../types/quiz.js';
 
-const createTestQuestion = (wordId: string = 'word1'): QuizQuestion => ({
+const createTestQuestion = (wordId: string = 'word1'): MCQQuestion => ({
+  kind: 'mcq',
   wordId,
   direction: 'native-to-english',
   prompt: 'Test prompt',

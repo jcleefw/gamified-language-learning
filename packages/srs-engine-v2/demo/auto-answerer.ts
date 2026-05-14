@@ -17,6 +17,16 @@ export function runAutoInteractive(
   for (let i = 0; i < questions.length; i++) {
     const question = questions[i];
 
+    if (question.kind === 'word-block') {
+      console.log(`\nQuestion ${String(i + 1)} [word-block: ${question.direction}]`);
+      console.log(question.prompt);
+      console.log(`Tiles: ${question.tiles.map(t => t.native).join(' | ')}`);
+      console.log('Auto: correct');
+      results.push({ sentenceId: question.sentenceId, correct: true });
+      score++;
+      continue;
+    }
+
     if (question.choices.length === 0) {
       throw new Error(`runAutoInteractive: Question ${String(i + 1)} has no choices`);
     }

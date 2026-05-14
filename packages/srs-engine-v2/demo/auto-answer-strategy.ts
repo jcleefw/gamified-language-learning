@@ -1,11 +1,11 @@
-import type { QuizQuestion } from '../src/index.js';
+import type { MCQQuestion } from '../src/index.js';
 
 export interface AutoAnswerStrategy {
-  selectAnswer(question: QuizQuestion): number;
+  selectAnswer(question: MCQQuestion): number;
 }
 
 export class CorrectAutoAnswerStrategy implements AutoAnswerStrategy {
-  selectAnswer(question: QuizQuestion): number {
+  selectAnswer(question: MCQQuestion): number {
     const index = question.choices.findIndex(c => c.isCorrect);
     if (index === -1) {
       throw new Error(`No correct answer found for question ${question.wordId}`);
@@ -15,7 +15,7 @@ export class CorrectAutoAnswerStrategy implements AutoAnswerStrategy {
 }
 
 export class RandomAutoAnswerStrategy implements AutoAnswerStrategy {
-  selectAnswer(question: QuizQuestion): number {
+  selectAnswer(question: MCQQuestion): number {
     return Math.floor(Math.random() * question.choices.length);
   }
 }
@@ -27,7 +27,7 @@ export class WeightedAccuracyAutoAnswerStrategy implements AutoAnswerStrategy {
     }
   }
 
-  selectAnswer(question: QuizQuestion): number {
+  selectAnswer(question: MCQQuestion): number {
     if (Math.random() < this.accuracy) {
       const index = question.choices.findIndex(c => c.isCorrect);
       if (index === -1) {
