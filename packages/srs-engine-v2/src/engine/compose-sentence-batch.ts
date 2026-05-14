@@ -6,7 +6,7 @@ import { shuffle } from '../utils/shuffle.js';
 const DEFAULT_WORD_JOIN: WordJoin = 'space';
 
 function joinTiles(tiles: SentenceTile[], field: keyof Pick<SentenceTile, 'native' | 'romanization'>, language: string): string {
-  const wordJoin = LANGUAGE_CONFIG[language]?.wordJoin ?? DEFAULT_WORD_JOIN;
+  const wordJoin = (LANGUAGE_CONFIG[language] ?? { wordJoin: DEFAULT_WORD_JOIN }).wordJoin;
   // only native script respects wordJoin — romanization is always space-separated
   const separator = field === 'native' && wordJoin === 'no-space' ? '' : ' ';
   return tiles.map(t => t[field]).join(separator);

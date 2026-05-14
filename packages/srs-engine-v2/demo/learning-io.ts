@@ -75,15 +75,14 @@ export async function selectDeck(decks: MockDeck[]): Promise<MockDeck> {
 
 async function runInteractiveMCQ(question: MCQQuestion, index: number, total: number): Promise<QuizResult> {
   if (question.choices.length === 0) throw new Error(`runInteractive: Question ${String(index + 1)} has no choices`);
-  if (!question.choices.find(c => c.isCorrect)) throw new Error(`runInteractive: Question ${String(index + 1)} has no correct answer marked`);
 
   console.log(`\nQuestion ${String(index + 1)} of ${String(total)}`);
   console.log(question.prompt);
   for (const choice of question.choices) {
     console.log(`  ${choice.label}) ${choice.value}`);
   }
-  // safe: guard above already throws if no correct choice exists
-  const correct = question.choices.find(c => c.isCorrect)!;
+  const correct = question.choices.find(c => c.isCorrect);
+  if (!correct) throw new Error(`runInteractiveMCQ: Question ${String(index + 1)} has no correct answer marked`);
   console.log(`Correct answer: ${correct.label}) ${correct.value}`);
   process.stdout.write('Your answer (a/b/c/d): ');
 
@@ -95,8 +94,8 @@ async function runInteractiveMCQ(question: MCQQuestion, index: number, total: nu
   }
   console.log(answer);
 
-  const selected = question.choices.find(c => c.label === answer)!;
-  const wasCorrect = selected.isCorrect;
+  const selected = question.choices.find(c => c.label === answer);
+  const wasCorrect = selected?.isCorrect === true;
   console.log(wasCorrect ? 'Correct!' : `Wrong — correct answer was: ${correct.value}`);
   return { wordId: question.wordId, correct: wasCorrect };
 }
