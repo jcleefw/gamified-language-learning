@@ -1,6 +1,6 @@
 # ADR: Sentence Corpus Ingestion — JSON to Engine Data Shape
 
-**Status:** Draft
+**Status:** Proposed
 
 **Date:** 2026-05-14
 
@@ -162,6 +162,7 @@ These are the same queries a real DB layer would execute. Swapping to a real DB 
 | OQ5 | Should `mock-db.ts` live in `data/mock/` (alongside mock data) or `demo/` (alongside the runner)? | Architect | **Resolved** — `data/mock/`. The engine has no knowledge of the storage layer; the query layer is a data concern, not a runner concern. `demo/` calls `mock-db.ts`, same as it would call a real DB client. |
 | OQ6 | Does the ingestion transform need to be a runnable script (JSON → mock files), or is manual maintenance of mock files acceptable for Phase 1? | Dev | **Deferred** — ingestion tooling is out of scope for `srs-engine-v2`. Likely a separate package or library. Manual mock maintenance is acceptable until that package exists. |
 | OQ7 | `wordId` collision for homographs — is `th::` + native form sufficient for all Phase 1 Thai content? | Content | **Resolved — adopt `th::native_form::type`** (Option B). Research confirmed all major Thai dictionaries model homographs as one headword with multiple senses; apps like Anki and Memrise split by `form + gloss`; no precedent for `form::POS` as a primary key, but it is the most stable discriminator available from the source JSON without new infrastructure. Migration cost of retrofitting later is high (existing `wordOrder` refs + learner state must all be updated). Adopting the suffix now, before any homograph enters the corpus, costs one mock data refactor at zero migration risk. The `type` vocabulary must be standardised across conversations. See `product-documentation/research/20260514T140000Z-gap-wordid-homograph-scheme.md`. |
+| OQ8 | What is the `sentenceId` format and ownership? (who generates it, what namespace, is it stable across re-ingestion, does it encode any meaning e.g. language/deck/source?) | Architect | **Open** — current mock uses sequential integers (`sent::001`); D3 proposes `conversationId + position index` but position is fragile if sentences are reordered. Alternatives: content hash of `(conversationId + nativeSentence)` for stability, or human-readable slug. Deferred for revisit before ingestion tooling is built. |
 
 ---
 
