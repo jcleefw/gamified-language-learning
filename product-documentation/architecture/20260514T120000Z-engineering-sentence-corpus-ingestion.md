@@ -56,9 +56,9 @@ Each conversation in the JSON has:
 
 ### D1 — Word ID scheme
 
-`wordId` = language prefix + native form: `th::หิว`
+`wordId` = language prefix + native form + type: `th::หิว::adjective`
 
-This is stable, human-readable, and already in use across `mock-word-pool.ts`, `mock-sentence-corpus.ts`, and `mock-decks.ts`. Words are globally unique by `wordId` — the same word appearing in multiple conversations maps to the same ID.
+Human-readable, stable, and derived deterministically from fields already present in the source JSON (`components[].thai` + `components[].type`). The `type` suffix disambiguates homographs — words that share the same written form but have different grammatical roles (e.g. `th::ที่::noun` vs `th::ที่::preposition`). For unambiguous words the suffix is redundant but required for consistency. Words are globally unique by `wordId` — the same word appearing in multiple conversations maps to the same ID. See `product-documentation/research/20260514T140000Z-gap-wordid-homograph-scheme.md` for the full analysis.
 
 ### D2 — Words are global; sentences belong to a conversation
 
@@ -138,7 +138,7 @@ These are the same queries a real DB layer would execute. Swapping to a real DB 
 
 **Positive:**
 - Engine inputs are fully derivable from the conversation JSON — no hand-authored corpus files needed
-- The same word appearing in multiple conversations always produces the same `wordId` — `กิน` in the "eat" deck and `กิน` in the "weather" deck both become `th::กิน`. The global words store gets one row, not two, because the ID scheme makes duplicates structurally impossible rather than relying on manual checks
+- The same word appearing in multiple conversations always produces the same `wordId` — `กิน` in the "eat" deck and `กิน` in the "weather" deck both become `th::กิน::verb`. The global words store gets one row, not two, because the ID is derived deterministically from `(language, native, type)`
 - Mock layer and future DB layer share the same interface — migration is a drop-in replacement
 
 **Negative / Risks:**
@@ -161,7 +161,7 @@ These are the same queries a real DB layer would execute. Swapping to a real DB 
 | OQ4 | Does the ingestion design change any fields on `SentenceContext`? | Architect | **Resolved** — `SentenceContext` gains `conversationId` to anchor it to its deck. `wordOrder` and `englishSentence` are derived from `breakdown` as specified in D3. No other field changes. |
 | OQ5 | Should `mock-db.ts` live in `data/mock/` (alongside mock data) or `demo/` (alongside the runner)? | Architect | **Resolved** — `data/mock/`. The engine has no knowledge of the storage layer; the query layer is a data concern, not a runner concern. `demo/` calls `mock-db.ts`, same as it would call a real DB client. |
 | OQ6 | Does the ingestion transform need to be a runnable script (JSON → mock files), or is manual maintenance of mock files acceptable for Phase 1? | Dev | **Deferred** — ingestion tooling is out of scope for `srs-engine-v2`. Likely a separate package or library. Manual mock maintenance is acceptable until that package exists. |
-| OQ7 | `wordId` collision for homographs — is `th::` + native form sufficient for all Phase 1 Thai content? | Content | **Open — two options under consideration:** **A** — accept collision: `th::ที่` = one record, one mastery counter; works for beginner content where only one meaning is introduced at a time. **B** — type suffix: `th::ที่::noun`, `th::ที่::preposition` — separate mastery per grammatical role using the `type` field already present in the JSON; more accommodating with less variation than gloss-based disambiguation. B is preferred if the engine should treat different meanings as separate learning items. **Research required**: how do real-world dictionaries (e.g. Thai Royal Institute Dictionary, Wiktionary, Longdo) model homographs — as one entry with multiple senses, or as separate headword entries per grammatical role? That convention should inform whether Option A or B is the more natural fit. Decision deferred pending research and content review. |
+| OQ7 | `wordId` collision for homographs — is `th::` + native form sufficient for all Phase 1 Thai content? | Content | **Resolved — adopt `th::native_form::type`** (Option B). Research confirmed all major Thai dictionaries model homographs as one headword with multiple senses; apps like Anki and Memrise split by `form + gloss`; no precedent for `form::POS` as a primary key, but it is the most stable discriminator available from the source JSON without new infrastructure. Migration cost of retrofitting later is high (existing `wordOrder` refs + learner state must all be updated). Adopting the suffix now, before any homograph enters the corpus, costs one mock data refactor at zero migration risk. The `type` vocabulary must be standardised across conversations. See `product-documentation/research/20260514T140000Z-gap-wordid-homograph-scheme.md`. |
 
 ---
 
