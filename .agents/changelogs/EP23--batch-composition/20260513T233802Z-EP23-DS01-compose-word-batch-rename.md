@@ -1,7 +1,7 @@
 # EP23-DS01: Word Batch Rename & `QuizQuestion` Type System
 
 **Date**: 20260513T233802Z
-**Status**: Accepted
+**Status**: Completed
 **Epic**: [EP23 - SRS Engine v2: Learning Phase Refactor & Persistence Bridge](../../plans/epics/EP23-srs-engine-v2-learning-refactor-persistence-bridge.md)
 
 ---

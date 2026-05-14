@@ -1,7 +1,7 @@
 # EP23-DS02: `composeSentenceBatch` — Word-Block Sentence Composer
 
 **Date**: 20260514T000000Z
-**Status**: Proposed
+**Status**: Completed
 **Epic**: EP23 — Batch Composition
 
 ---
