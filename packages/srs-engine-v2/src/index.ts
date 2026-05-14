@@ -15,5 +15,10 @@ export type { WordState, RunState, StreakThresholds } from './types/word-state.j
 
 // Types
 export type { QuizQuestion, MCQQuestion, SentenceQuestion, SentenceTile, QuizChoice, QuizDirection, QuizResult } from './types/quiz.js';
+export type { SentenceContext } from './types/sentence.js';
+
+// Config
+export { LANGUAGE_CONFIG } from './config/language.js';
+export type { LanguageConfig, WordJoin } from './config/language.js';
 export type { MockDeck, MockLine } from './types/deck.js';
 export type { MockFoundational, ThaiFoundational, MockVowel, MockTone, ThaiFoundationalType, JapaneseFoundationalType } from './types/foundational.js';

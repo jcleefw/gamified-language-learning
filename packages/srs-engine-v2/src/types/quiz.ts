@@ -33,7 +33,7 @@ export interface SentenceTile {
 export interface SentenceQuestion {
   kind: 'word-block';
   sentenceId: string;
-  direction: 'english-to-native' | 'native-to-english';
+  direction: 'english-to-native' | 'native-to-english' | 'native-to-romanization' | 'romanization-to-native';
   prompt: string;
   tiles: SentenceTile[];
   answer: string[];

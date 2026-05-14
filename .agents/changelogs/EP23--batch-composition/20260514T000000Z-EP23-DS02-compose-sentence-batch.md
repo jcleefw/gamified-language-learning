@@ -27,7 +27,7 @@ Each story (ST04–ST07) has a **(a) engine** section and a **(b) runner** secti
 
 | Requirement | Decision | Rationale |
 |---|---|---|
-| `composeSentenceBatch` signature | `(ctx: SentenceContext, resolvedTiles: SentenceTile[], options?: { shuffle?: boolean }): SentenceQuestion[]` | Caller resolves all wordIds to `SentenceTile[]` once; composer picks the tile face field per direction |
+| `composeSentenceBatch` signature | `(ctx: SentenceContext, resolvedTiles: SentenceTile[], language: string, options?: { shuffle?: boolean }): SentenceQuestion[]` | Caller resolves wordIds to `SentenceTile[]` once and passes language code; composer builds prompts using `LANGUAGE_CONFIG` |
 | Fill-in-the-blank | Out of scope — belongs in `composeContextBatch` (future EP) | Contextual recognition is a distinct mastery skill track from word-block production |
 | Word-block tile directions | Four directions matching `QuizDirection` | Consistent with word question directions |
 | Tile shuffle | `shuffle: true` by default; `shuffle: false` option for tests | Consistent with `composeWordBatchItems` pattern |
@@ -46,16 +46,11 @@ Each story (ST04–ST07) has a **(a) engine** section and a **(b) runner** secti
 ```ts
 export interface SentenceContext {
   sentenceId: string;
-  nativeSentence: string;
-  englishSentence: string;
-  romanizationSentence?: string;     // prompt for romanization-to-native; required when romanizationWordOrder is set
-  nativeWordOrder: string[];         // wordId refs
-  englishWordOrder: string[];        // wordId refs — same words, tile face is tile.english
-  romanizationWordOrder?: string[];  // wordId refs — same words, tile face is tile.romanization
+  wordOrder: string[]; // wordId refs — single source of truth for tile order across all directions
 }
 ```
 
-> All three word orders are `wordId[]` refs into the same word pool. The caller resolves them all to `SentenceTile[]` once. The composer picks which field to use as the tile face per direction (`tile.native`, `tile.english`, or `tile.romanization`).
+> All sentence strings (prompts) are composed at the consumer side from resolved tiles + `LANGUAGE_CONFIG`. The config maps language code to `WordJoin` (`'space' | 'no-space'`), allowing space-less languages (Thai, Japanese, Chinese, Korean) to join tiles correctly without hardcoding separators.
 >
 > `targetWordId`, `nativeGappedTemplate`, and `blankPosition` are removed — they belong to the fill-in-the-blank EP.
 
@@ -87,10 +82,10 @@ interface SentenceQuestion {
 
 | Direction | Prompt | Tile face shown | `answer` |
 |---|---|---|---|
-| `en→na` | `englishSentence` | `tile.native` | `nativeWordOrder` |
-| `roman→na` | `romanizationSentence` | `tile.native` | `nativeWordOrder` |
-| `na→en` | `nativeSentence` | `tile.english` | `englishWordOrder` |
-| `na→roman` | `nativeSentence` | `tile.romanization` | `romanizationWordOrder` |
+| `en→na` | tiles joined by `tile.english` + `LANGUAGE_CONFIG[lang].wordJoin` | `tile.native` | `wordOrder` |
+| `roman→na` | tiles joined by `tile.romanization` + `LANGUAGE_CONFIG[lang].wordJoin` | `tile.native` | `wordOrder` |
+| `na→en` | tiles joined by `tile.native` + `LANGUAGE_CONFIG[lang].wordJoin` | `tile.english` | `wordOrder` |
+| `na→roman` | tiles joined by `tile.native` + `LANGUAGE_CONFIG[lang].wordJoin` | `tile.romanization` | `wordOrder` |
 
 ### `composeSentenceBatch` output
 
@@ -137,13 +132,15 @@ packages/srs-engine-v2/
 - `packages/srs-engine-v2/data/mock/mock-word-pool.ts`
 
 **Tasks**:
-- [ ] Create `src/types/sentence.ts` with `SentenceContext` interface (fields per §3 above — no fill-in-the-blank fields)
+- [ ] Create `src/types/sentence.ts` with `SentenceContext` interface (`sentenceId`, `wordOrder` only)
+- [ ] Create `src/config/language.ts` with `LANGUAGE_CONFIG` mapping language codes to `WordJoin`
 - [ ] Update `src/types/quiz.ts`: expand `SentenceQuestion.direction` to 4-way union
-- [ ] Export `SentenceContext` from `src/index.ts`
-- [ ] Create `data/mock/mock-sentence-corpus.ts` — at least 2 entries using real word ids from `mock-word-pool.ts`; include `nativeWordOrder`, `englishWordOrder`, `romanizationSentence`, `romanizationWordOrder`
+- [ ] Export `SentenceContext`, `LANGUAGE_CONFIG`, `WordJoin` from `src/index.ts`
+- [ ] Create `data/mock/mock-sentence-corpus.ts` — at least 2 entries using real word ids from `mock-word-pool.ts`; `wordOrder` only, no sentence strings
 
 **Acceptance Criteria**:
-- [ ] `SentenceContext` importable from `@gll/srs-engine-v2`; no fill-in-the-blank fields present
+- [ ] `SentenceContext` importable from `@gll/srs-engine-v2`; only `sentenceId` and `wordOrder` fields
+- [ ] `LANGUAGE_CONFIG` importable from `@gll/srs-engine-v2`; includes `th`, `ja`, `zh`, `ko`, `en`
 - [ ] `SentenceQuestion.direction` accepts all four values
 - [ ] Mock corpus compiles without type errors
 - [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` passes
@@ -185,7 +182,7 @@ packages/srs-engine-v2/
 **Tasks**:
 - [ ] Add `MIN_SEEN_FOR_SENTENCE: 2` and `DEBUG_SENTENCE_ELIGIBILITY: false` to `LEARNING_CONFIG` in `config.ts`
 - [ ] Extend `QuizResult` with `sentenceId?: string` — sentence answers populate `sentenceId`; word answers populate `wordId`
-- [ ] In `runAdaptiveLoop`: derive `eligibleSentenceContexts` — all corpus entries where all `nativeWordOrder` word ids have `runState.get(id)?.seen >= MIN_SEEN_FOR_SENTENCE`; bypass seen check when `DEBUG_SENTENCE_ELIGIBILITY` is true
+- [ ] In `runAdaptiveLoop`: derive `eligibleSentenceContexts` — all corpus entries where all `wordOrder` word ids have `runState.get(id)?.seen >= MIN_SEEN_FOR_SENTENCE`; bypass seen check when `DEBUG_SENTENCE_ELIGIBILITY` is true
 - [ ] Resolve `SentenceTile[]` for each eligible context (look up each `wordId` in word pool)
 - [ ] In `runBatch`: call `composeSentenceBatch(ctx, resolvedTiles)` for each eligible context; append to question array
 - [ ] In `runInteractive`: handle `kind === 'word-block'` — display numbered tiles, print correct tile order as cheat sheet (e.g. `Correct order: 3 1 4 2`) before prompting input; evaluate answer against `answer`; record `sentenceId` in result
