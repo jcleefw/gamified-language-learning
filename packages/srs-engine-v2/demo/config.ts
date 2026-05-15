@@ -1,7 +1,7 @@
 export const AUTO_MODE = false;
 
 export const LEARNING_CONFIG = {
-  questionLimit: 8,
+  wordsPerBatch: 3,
   masteryThreshold: 2,
   maxMastery: 2,
   correctStreakThreshold: 2,

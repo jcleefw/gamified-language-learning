@@ -189,7 +189,7 @@ async function runBatch(
   activeItems: QuizItem[],
   wordPool: QuizItem[],
   foundationalPool: QuizItem[],
-  questionLimit: number,
+  wordsPerBatch: number,
   runState: RunState,
   strategy?: AutoAnswerStrategy,
 ): Promise<{ correct: number; total: number; results: QuizResult[] }> {
@@ -198,9 +198,9 @@ async function runBatch(
   const activeFoundational = activeItems.filter(item => 'foundationalType' in item);
   const activeWords = activeItems.filter(item => !('foundationalType' in item));
   const consonantLimit = activeItems.length > 0
-    ? Math.round(questionLimit * activeFoundational.length / activeItems.length)
+    ? Math.round(wordsPerBatch * activeFoundational.length / activeItems.length)
     : 0;
-  const wordLimit = questionLimit - consonantLimit;
+  const wordLimit = wordsPerBatch - consonantLimit;
 
   const shouldShuffle = !strategy;
   const allPool = [...wordPool, ...foundationalPool];
@@ -229,7 +229,7 @@ export async function runAdaptiveLoop(
   words: QuizItem[],
   wordPool: QuizItem[],
   foundationalPool: QuizItem[],
-  questionLimit: number,
+  wordsPerBatch: number,
   masteryThreshold: number,
   streakThresholds: StreakThresholds,
   initialRunState: RunState = new Map(),
@@ -248,14 +248,14 @@ export async function runAdaptiveLoop(
 
   for (;;) {
     const recheckExempt = new Set([...recheckPending, ...recheckReentered]);
-    ({ active, queue } = nextActivePool(active, queue, questionLimit, runState, masteryThreshold, recheckExempt));
+    ({ active, queue } = nextActivePool(active, queue, wordsPerBatch, runState, masteryThreshold, recheckExempt));
 
     if (active.length === 0 && queue.length === 0) break;
 
     batchNum++;
     const prevState = runState;
 
-    const { correct, total, results } = await runBatch(batchNum, active, wordPool, foundationalPool, questionLimit, runState, strategy);
+    const { correct, total, results } = await runBatch(batchNum, active, wordPool, foundationalPool, wordsPerBatch, runState, strategy);
     totalCorrect += correct;
     totalQuestions += total;
 
@@ -275,7 +275,7 @@ export async function runAdaptiveLoop(
     }
 
     const peekExempt = new Set([...recheckPending, ...recheckReentered]);
-    const peek = nextActivePool(active, queue, questionLimit, runState, masteryThreshold, peekExempt);
+    const peek = nextActivePool(active, queue, wordsPerBatch, runState, masteryThreshold, peekExempt);
     if (peek.active.length > 0 || peek.queue.length > 0) {
       if (strategy) {
         continue;

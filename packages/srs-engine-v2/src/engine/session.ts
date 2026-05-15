@@ -1,5 +1,10 @@
 import type { QuizItem } from './compose-word-batch.js';
-import { type RunState, type StreakThresholds, updateRunState, isMastered } from '../types/word-state.js';
+import {
+  type RunState,
+  type StreakThresholds,
+  updateRunState,
+  isMastered,
+} from '../types/word-state.js';
 import type { WordQuizResult } from '../types/quiz.js';
 
 const DEFAULT_STREAK_THRESHOLDS: StreakThresholds = {
@@ -33,9 +38,20 @@ export function processRecheckResult(
 
   if (nextPending.has(wordId)) {
     nextPending.delete(wordId);
-    const existing = runState.get(wordId) ?? { wordId, seen: 0, correct: 0, mastery: 0, correctStreak: 0, wrongStreak: 0 };
+    const existing = runState.get(wordId) ?? {
+      wordId,
+      seen: 0,
+      correct: 0,
+      mastery: 0,
+      correctStreak: 0,
+      wrongStreak: 0,
+    };
     const updated = new Map(runState);
-    updated.set(wordId, { ...existing, seen: existing.seen + 1, correct: existing.correct + (wasCorrect ? 1 : 0) });
+    updated.set(wordId, {
+      ...existing,
+      seen: existing.seen + 1,
+      correct: existing.correct + (wasCorrect ? 1 : 0),
+    });
     nextState = updated;
     if (!wasCorrect) {
       nextReentered.add(wordId);
@@ -50,32 +66,31 @@ export function processRecheckResult(
     }
   }
 
-  return { runState: nextState, recheckPending: nextPending, recheckReentered: nextReentered };
+  return {
+    runState: nextState,
+    recheckPending: nextPending,
+    recheckReentered: nextReentered,
+  };
 }
 
 /** Retires mastered words from active and fills freed slots from the queue. */
 export function nextActivePool(
   active: QuizItem[],
   queue: QuizItem[],
-  questionLimit: number,
+  wordsPerBatch: number,
   runState: RunState,
   masteryThreshold: number,
   recheckExempt: Set<string> = new Set(),
 ): { active: QuizItem[]; queue: QuizItem[] } {
-  const remaining = active.filter(item => {
+  const remaining = active.filter((item) => {
     if (recheckExempt.has(item.id)) return true;
     const wordState = runState.get(item.id);
     return !wordState || !isMastered(wordState, masteryThreshold);
   });
 
-  const eligibleQueue = queue.filter(item => {
-    const wordState = runState.get(item.id);
-    return !wordState || !isMastered(wordState, masteryThreshold);
-  });
-
-  const freeSlots = questionLimit - remaining.length;
-  const newItems = eligibleQueue.slice(0, freeSlots);
-  const newQueue = eligibleQueue.slice(freeSlots);
+  const freeSlots = wordsPerBatch - remaining.length;
+  const newItems = queue.slice(0, freeSlots);
+  const newQueue = queue.slice(freeSlots);
 
   return { active: [...remaining, ...newItems], queue: newQueue };
 }
@@ -106,12 +121,22 @@ export function updateMasteryState(
   let nextRecheckReentered = recheckReentered;
 
   for (const result of results) {
-    ({ runState: nextRunState, recheckPending: nextRecheckPending, recheckReentered: nextRecheckReentered } = processRecheckResult(
-      result.wordId, result.correct, nextRunState, nextRecheckPending, nextRecheckReentered, masteryThreshold, streakThresholds,
+    ({
+      runState: nextRunState,
+      recheckPending: nextRecheckPending,
+      recheckReentered: nextRecheckReentered,
+    } = processRecheckResult(
+      result.wordId,
+      result.correct,
+      nextRunState,
+      nextRecheckPending,
+      nextRecheckReentered,
+      masteryThreshold,
+      streakThresholds,
     ));
   }
 
-  const batchWordIds = [...new Set(results.map(r => r.wordId))];
+  const batchWordIds = [...new Set(results.map((r) => r.wordId))];
   const newlyMasteredIds: string[] = [];
 
   for (const wordId of batchWordIds) {

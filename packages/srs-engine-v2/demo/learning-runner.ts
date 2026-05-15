@@ -71,7 +71,7 @@ for (; ;) {
     words,
     wordPool,
     mockFoundational,
-    LEARNING_CONFIG.questionLimit,
+    LEARNING_CONFIG.wordsPerBatch,
     LEARNING_CONFIG.masteryThreshold,
     STREAK_THRESHOLDS,
     runState,
