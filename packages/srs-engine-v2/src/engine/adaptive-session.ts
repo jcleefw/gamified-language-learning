@@ -1,6 +1,6 @@
 import type { QuizItem } from './compose-word-batch.js';
-import type { QuizResult } from '../types/quiz.js';
 import { type RunState, type StreakThresholds } from '../types/word-state.js';
+import { type BatchOutput } from './batch-queue.js';
 
 export interface AdaptiveSessionState {
   active: QuizItem[];
@@ -19,23 +19,21 @@ export interface SessionConfig {
   maxRetryPerSession: number;
 }
 
-export interface BatchOutput {
-  results: ReadonlyArray<QuizResult>;
-  sessionRetryCounts: ReadonlyMap<string, number>;
-}
-
 export function initAdaptiveSession(
   words: QuizItem[],
   config: SessionConfig,
   recheckIds: Set<string> = new Set(),
-  initialRunState?: RunState
+  initialRunState?: RunState,
 ): AdaptiveSessionState {
   const recheckItems = words.filter((w) => recheckIds.has(w.id));
   const otherItems = words.filter((w) => !recheckIds.has(w.id));
 
   const active = [
     ...recheckItems,
-    ...otherItems.slice(0, Math.max(0, config.wordsPerBatch - recheckItems.length)),
+    ...otherItems.slice(
+      0,
+      Math.max(0, config.wordsPerBatch - recheckItems.length),
+    ),
   ];
 
   const activeIds = new Set(active.map((w) => w.id));
@@ -58,11 +56,11 @@ import type { WordQuizResult } from '../types/quiz.js';
 export function advanceAdaptiveSession(
   state: AdaptiveSessionState,
   batchOutput: BatchOutput,
-  config: SessionConfig
+  config: SessionConfig,
 ): AdaptiveSessionState {
   // Filter mixed results to word results only (Phase 2)
   const wordResults = batchOutput.results.filter(
-    (r): r is WordQuizResult => 'wordId' in r
+    (r): r is WordQuizResult => 'wordId' in r,
   );
 
   const { runState, recheckPending, recheckReentered } = updateMasteryState(
@@ -71,7 +69,7 @@ export function advanceAdaptiveSession(
     state.recheckPending,
     state.recheckReentered,
     config.masteryThreshold,
-    config.streakThresholds
+    config.streakThresholds,
   );
 
   const { active, queue } = nextActivePool(
@@ -80,7 +78,7 @@ export function advanceAdaptiveSession(
     config.wordsPerBatch,
     runState,
     config.masteryThreshold,
-    recheckPending // words still in recheck are exempt from retirement
+    recheckPending, // words still in recheck are exempt from retirement
   );
 
   // Merge updated session retry counts

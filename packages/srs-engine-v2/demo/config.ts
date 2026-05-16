@@ -8,6 +8,8 @@ export const LEARNING_CONFIG = {
   wrongStreakThreshold: 2,
   minSeenForSentence: 2,
   debugSentenceEligibility: false,
+  maxRetryPerWord: 2,
+  maxRetryPerSession: 5,
 };
 
 export const STREAK_THRESHOLDS = {

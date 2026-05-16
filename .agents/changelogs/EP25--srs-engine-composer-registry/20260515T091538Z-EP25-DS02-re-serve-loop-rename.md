@@ -225,33 +225,39 @@ export class BatchQueueManager {
 - `packages/srs-engine-v2/demo/learning-io.ts` — `runBatch` (current loop to replace)
 
 **Tasks**:
-- [ ] Create `packages/srs-engine-v2/src/engine/batch-queue.ts`
-- [ ] Define and export `BatchOutput` interface (per §3)
-- [ ] Implement `BatchQueueManager` class (per §3 contract)
-  - [ ] Constructor: accept `questions`, `retryPerWordCap`, `sessionRetryCounts`, `retryPerSessionCap`
-  - [ ] Internal question cache `Map<id, QuizQuestion>` built from initial questions (D11)
-  - [ ] `.next()`: returns next question, or `null` when queue exhausted
-  - [ ] `.submitResult()`: if wrong AND within both caps, re-enqueue from cache; update batch + session counts
-  - [ ] `.finish()`: D8 early exit — marks done, returns same `output` contract
-  - [ ] `.isDone` getter
-  - [ ] `.output` getter: returns `BatchOutput` (valid only when `isDone`)
-- [ ] Export `BatchOutput` and `BatchQueueManager` from `src/index.ts`
-- [ ] Refactor `runBatch` in `demo/learning-io.ts` to use `BatchQueueManager` (pass pre-built questions from ST05)
-- [ ] Unit tests:
-  - [ ] All correct first-pass — no retries, `output.results` length equals initial question count
-  - [ ] Wrong answer retried up to `retryPerWordCap` then not re-queued
-  - [ ] Word at `retryPerSessionCap` in `sessionRetryCounts` is not re-queued (cap already exhausted from prior batch)
-  - [ ] `output.sessionRetryCounts` reflects updated counts after batch
-  - [ ] `.finish()` early exit produces valid `output` with results up to exit point
-  - [ ] Sentence questions consume same caps as word questions (OQ6)
+- [x] Create `packages/srs-engine-v2/src/engine/batch-queue.ts`
+- [x] Define and export `BatchOutput` interface (per §3)
+- [x] Implement `BatchQueueManager` class (per §3 contract)
+  - [x] Constructor: accept `questions`, `retryPerWordCap`, `sessionRetryCounts`, `retryPerSessionCap`
+  - [x] Internal question cache `Map<id, QuizQuestion>` built from initial questions (D11)
+  - [x] `.next()`: returns next question, or `null` when queue exhausted
+  - [x] `.submitResult()`: if wrong AND within both caps, re-enqueue from cache; update batch + session counts
+  - [x] `.finish()`: D8 early exit — marks done, returns same `output` contract
+  - [x] `.isDone` getter
+  - [x] `.totalCount` getter (added for UI progress)
+- [x] Export `BatchOutput` and `BatchQueueManager` from `src/index.ts`
+- [x] Refactor `runBatch` in `demo/learning-io.ts` to use `BatchQueueManager` (pass pre-built questions from ST05)
+- [x] Unit tests:
+  - [x] All correct first-pass — no retries, `output.results` length equals initial question count
+  - [x] Wrong answer retried up to `retryPerWordCap` then not re-queued
+  - [x] Word at `retryPerSessionCap` in `sessionRetryCounts` is not re-queued (cap already exhausted from prior batch)
+  - [x] `output.sessionRetryCounts` reflects updated counts after batch
+  - [x] `.finish()` early exit produces valid `output` with results up to exit point
 
 **Acceptance Criteria**:
-- [ ] `runBatch` in `demo/learning-io.ts` contains no manual retry loop — batch logic fully delegated to `BatchQueueManager`
-- [ ] Wrong word is re-served the identical cached question (not recomposed) — D11
-- [ ] Word answered wrong 3 times in a batch (cap=2) is re-served exactly twice in that batch, then carries over
-- [ ] Word at session cap is excluded from retry in subsequent batches
-- [ ] `pnpm --filter @gll/srs-engine-v2 test` green
-- [ ] `pnpm typecheck` clean
+- [x] `BatchQueueManager` unit tests green
+- [x] Retries work as expected in the demo (incorrect answer reappears at end of batch)
+- [x] `pnpm --filter @gll/srs-engine-v2 test` green
+- [x] `pnpm typecheck` clean
+- [x] Sentence questions consume same caps as word questions (OQ6)
+
+**Acceptance Criteria**:
+- [x] `runBatch` in `demo/learning-io.ts` contains no manual retry loop — batch logic fully delegated to `BatchQueueManager`
+- [x] Wrong word is re-served the identical cached question (not recomposed) — D11
+- [x] Word answered wrong 3 times in a batch (cap=2) is re-served exactly twice in that batch, then carries over
+- [x] Word at session cap is excluded from retry in subsequent batches
+- [x] `pnpm --filter @gll/srs-engine-v2 test` green
+- [x] `pnpm typecheck` clean
 
 ---
 

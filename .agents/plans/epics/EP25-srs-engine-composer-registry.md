@@ -94,7 +94,7 @@ export type SentenceRunState = Map<string, SentenceState>;
 
 **Scope**: Implement Registry/Dependency Injection Pattern. Engine provides pure `assembleBatch(activeItems, composers)`. Consumer app injects specific composers.
 
-### EP25-ST06: Batch Queue Manager (`batch-queue.ts`)
+### EP25-ST06: Batch Queue Manager (Completed)
 
 **Scope**: Introduce stateful `BatchQueueManager` class/module to handle the within-batch retry loop. UI instantiates queue with assembled questions and `retryCap`, calls `batch.next()`, and engine handles re-queueing automatically.
 

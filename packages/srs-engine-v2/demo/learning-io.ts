@@ -6,6 +6,7 @@ import {
   initAdaptiveSession,
   advanceAdaptiveSession,
   getNewlyMasteredIds,
+  BatchQueueManager,
   type AdaptiveSessionState,
   type SessionConfig,
   type BatchOutput,
@@ -178,28 +179,29 @@ async function runInteractiveWordBlock(
 }
 
 export async function runInteractive(
-  questions: QuizQuestion[],
-): Promise<{ correct: number; total: number; results: QuizResult[] }> {
-  if (questions.length === 0)
-    throw new Error('runInteractive: No questions provided');
-
+  manager: BatchQueueManager,
+): Promise<{ correct: number; total: number }> {
   let score = 0;
-  const results: QuizResult[] = [];
+  let count = 0;
 
-  for (let i = 0; i < questions.length; i++) {
-    const question = questions[i];
+  for (;;) {
+    const question = manager.next();
+    if (!question) break;
+    count++;
+
     const result =
       question.kind === 'mcq'
-        ? await runInteractiveMCQ(question, i, questions.length)
-        : await runInteractiveWordBlock(question, i, questions.length);
+        ? await runInteractiveMCQ(question, count - 1, manager.totalCount)
+        : await runInteractiveWordBlock(question, count - 1, manager.totalCount);
 
     if (result.correct) score++;
-    results.push(result);
+    manager.submitResult(result);
   }
 
-  console.log(`\nScore: ${String(score)} / ${String(questions.length)}`);
-  return { correct: score, total: questions.length, results };
+  console.log(`\nScore: ${String(score)} / ${String(manager.totalCount)}`);
+  return { correct: score, total: count };
 }
+
 
 function printWordSummary(
   runState: RunState,
@@ -256,7 +258,7 @@ async function runBatch(
   foundationalPool: QuizItem[],
   wordsPerBatch: number,
   strategy?: AutoAnswerStrategy,
-): Promise<{ correct: number; total: number; results: QuizResult[] }> {
+): Promise<BatchOutput & { correct: number; total: number }> {
   console.log(`\n=== Batch ${String(batchNum)} ===`);
 
   const allPool = [...wordPool, ...foundationalPool];
@@ -277,11 +279,26 @@ async function runBatch(
     },
   );
 
+  const manager = new BatchQueueManager(
+    questions,
+    LEARNING_CONFIG.maxRetryPerWord,
+    state.sessionRetryCounts,
+    LEARNING_CONFIG.maxRetryPerSession,
+  );
+
+  let runStats;
   if (strategy) {
-    return runAutoInteractive(questions, strategy);
+    runStats = await runAutoInteractive(manager, strategy);
   } else {
-    return await runInteractive(questions);
+    runStats = await runInteractive(manager);
   }
+
+  const output = manager.finish();
+  return {
+    ...output,
+    correct: runStats.correct,
+    total: runStats.total,
+  };
 }
 
 export async function runAdaptiveLoop(
@@ -310,7 +327,12 @@ export async function runAdaptiveLoop(
   for (;;) {
     if (state.active.length === 0 && state.queue.length === 0) break;
 
-    const { correct, total, results } = await runBatch(
+    const {
+      correct,
+      total,
+      results,
+      sessionRetryCounts,
+    } = await runBatch(
       state.batchNum + 1,
       state,
       wordPool,
@@ -323,7 +345,7 @@ export async function runAdaptiveLoop(
 
     const batchOutput: BatchOutput = {
       results,
-      sessionRetryCounts: new Map(),
+      sessionRetryCounts,
     };
 
     const prevState = state.runState;
