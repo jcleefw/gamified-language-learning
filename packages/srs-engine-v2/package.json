@@ -3,12 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
+    },
+    "./data/mock/mock-decks": {
+      "import": "./dist/data/mock/mock-decks.js",
+      "types": "./dist/data/mock/mock-decks.d.ts"
+    },
+    "./data/mock/mock-words": {
+      "import": "./dist/data/mock/mock-words.js",
+      "types": "./dist/data/mock/mock-words.d.ts"
+    },
+    "./data/mock/mock-word-pool": {
+      "import": "./dist/data/mock/mock-word-pool.js",
+      "types": "./dist/data/mock/mock-word-pool.d.ts"
+    },
+    "./data/mock/mock-consonants": {
+      "import": "./dist/data/mock/mock-consonants.js",
+      "types": "./dist/data/mock/mock-consonants.d.ts"
     }
   },
   "scripts": {
