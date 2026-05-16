@@ -193,25 +193,25 @@ export class BatchQueueManager {
 
 ---
 
-### EP25-ST05: Thunk Registration Boundary
+### EP25-ST05: Batch Assembler (`assemble-batch.ts`)
 
-**Scope**: No new engine file or function. `createComposerRegistry` and `assembleBatchQuestions` (ST01) are already the correct implementation. This story moves thunk registration logic *out of* `runBatch` in `demo/learning-io.ts` and *up to* the consumer call site — so the consumer (not the batch loop) owns which composers run. Batch Mechanics ADR D5 is already satisfied; this is a demo-layer refactor.
+**Scope**: Implement a high-level `assembleBatch` utility in the engine. This function encapsulates the logic for partitioning active items (foundational vs. vocabulary), calculating limits based on `wordsPerBatch`, and merging them with external thunks (like sentences) via the `ComposerRegistry`.
 
 **Read List**:
 - `product-documentation/architecture/20260513T000000Z-engineering-batch-execution-mechanics.md` — D5, OQ1, OQ10
 - `packages/srs-engine-v2/src/engine/compose-registry.ts`
-- `packages/srs-engine-v2/demo/learning-io.ts` — lines 207–219 (current thunk registration site)
 
 **Tasks**:
-- [ ] Extract thunk registration block from `runBatch` into a helper or into the `runAdaptiveLoop` call site
-- [ ] `runBatch` receives a pre-built `registry` (or the assembled `QuizQuestion[]`) as a parameter — it no longer calls `registry.add()` internally
-- [ ] Update `demo/learning-runner.ts` call site accordingly
-- [ ] No changes to `src/engine/compose-registry.ts`
+- [x] Create `packages/srs-engine-v2/src/engine/assemble-batch.ts`
+- [x] Implement `assembleBatch(active, wordPool, foundationalPool, wordsPerBatch, options)`
+- [x] Export `assembleBatch` from `src/index.ts`
+- [x] Refactor `demo/learning-io.ts` to use the new engine-level utility
 
 **Acceptance Criteria**:
-- [ ] `runBatch` contains no `registry.add()` calls — thunk registration is at the caller level
-- [ ] `pnpm --filter @gll/srs-engine-v2 test` green (all existing tests pass)
-- [ ] `pnpm typecheck` clean
+- [x] `assembleBatch` unit tests pass (verifying partitioning and limits)
+- [x] `runBatch` in the demo is simplified to a single `assembleBatch` call
+- [x] `pnpm --filter @gll/srs-engine-v2 test` green
+- [x] `pnpm typecheck` clean
 
 ---
 

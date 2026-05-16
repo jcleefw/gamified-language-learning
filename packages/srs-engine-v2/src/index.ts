@@ -12,6 +12,8 @@ export { processRecheckResult, nextActivePool, updateMasteryState, getNewlyMaste
 export type { RecheckResultOutput, MasteryUpdateResult } from './engine/session.js';
 export { initAdaptiveSession, advanceAdaptiveSession } from './engine/adaptive-session.js';
 export type { AdaptiveSessionState, SessionConfig, BatchOutput } from './engine/adaptive-session.js';
+export { assembleBatch } from './engine/assemble-batch.js';
+export type { AssembleBatchOptions } from './engine/assemble-batch.js';
 
 // Word state
 export { updateRunState, isMastered } from './types/word-state.js';
