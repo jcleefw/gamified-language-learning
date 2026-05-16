@@ -1,7 +1,7 @@
 # ADR: Extracting Adaptive Session Orchestrator
 
 **Date**: 20260516T113156Z
-**Status**: Proposed
+**Status**: Accepted
 
 **Superseded by**: N/A
 **Epic**: N/A
@@ -60,11 +60,15 @@ Because the Orchestrator, State Manager, and Batch Assembler are strictly pure f
 
 - **Client-Side Deployment (Current)**: The engine runs entirely on the user's device (browser or Node). Scalability is infinite as the compute load is distributed across users' hardware, with zero server load or network latency during the adaptive loop.
 - **Server-Side API (Future)**: The pure-functional design allows for flawless horizontal scaling (e.g., AWS Lambda/Kubernetes). To handle the stateful `BatchQueueManager` in a stateless backend, two paths are identified:
-    - **Stateless/Payload**: The client sends the entire queue state in the request payload (High scalability, high payload).
-    - **Fast Cache (Redis)**: The queue state is persisted in a centralized cache, allowing any server instance to process the next answer (Optimized payload, requires shared cache).
+  - **Stateless/Payload**: The client sends the entire queue state in the request payload (High scalability, high payload).
+  - **Fast Cache (Redis)**: The queue state is persisted in a centralized cache, allowing any server instance to process the next answer (Optimized payload, requires shared cache).
 
 ## Open Questions
 
 1. **Handling the "Sentence" Track**: Should `advanceAdaptiveSession` accept mixed `QuizResult[]` and internally filter out sentences (or route them to a future `updateSentenceState`), or should the consumer app filter them out before passing word results to the session state?
 2. **State Serialization**: `AdaptiveSessionState` contains `Map` (for `RunState`) and `Set` (for rechecks) which don't serialize natively to JSON. Should we provide serialization/deserialization helpers in the engine?
 3. **Global Mastery vs. Local Deck State**: When initializing a new deck via `initAdaptiveSession`, we pass in the existing `RunState`. We need to ensure that `initAdaptiveSession` doesn't accidentally prune mastery states for words that exist in _other_ decks. Is cloning the passed-in `Map` sufficient for global tracking?
+
+## Related
+
+- ADR: `20260513T000000Z-engineering-batch-execution-mechanics.md` — Defines the underlying business rules (retry caps, sentence thresholds) that the `BatchQueueManager` and `adaptive-session.ts` must enforce.
