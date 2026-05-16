@@ -261,12 +261,46 @@ export class BatchQueueManager {
 
 ---
 
+### EP25-ST06b: Refactor `BatchQueueManager` to Pure Functions
+
+**Scope**: Runs **after ST06 is complete and before ST07**. The original ST06 implemented `BatchQueueManager` as a stateful class. During ST07 planning, it was identified that this pattern creates a state ownership conflict with Vue's reactivity system. The class instance owns state that Vue cannot natively observe or persist. This story refactors the BQM to a **pure function pattern** with an explicit `BatchState` interface, consistent with how `AdaptiveSessionState` works.
+
+**Decision Reference**: `product-documentation/architecture/20260516T234600Z-engineering-batch-queue-manager-pattern.md` — Decision 2 (2026-05-17)
+
+**Read List**:
+- `packages/srs-engine-v2/src/engine/batch-queue.ts` — current class implementation
+- `packages/srs-engine-v2/demo/learning-io.ts` — `runInteractive()`, `runBatch()`
+- `packages/srs-engine-v2/demo/auto-answerer.ts`
+- `packages/srs-engine-v2/src/__tests__/unit/batch-queue.test.ts`
+
+**Tasks**:
+- [x] Define `BatchState` interface (plain serializable object: `queue`, `results`, `batchRetryCounts`, `questionCache`, `retryPerWordCap`, `retryPerSessionCap`, `sessionRetryCounts`, `initialCount`)
+- [x] Replace `BatchQueueManager` class with pure functions: `initBatchState`, `nextQuestion`, `submitBatchResult`, `finishBatch`, `isBatchDone`
+- [x] Remove `BatchQueueManager` class export from `src/index.ts`; export `BatchState` interface and new functions
+- [x] Refactor `runInteractive()` in `demo/learning-io.ts` to thread `batchState` as a loop variable
+- [x] Refactor `runBatch()` in `demo/learning-io.ts` to use `initBatchState` / `finishBatch`
+- [x] Refactor `runAutoInteractive()` in `demo/auto-answerer.ts` to thread `batchState`
+- [x] Rewrite `src/__tests__/unit/batch-queue.test.ts` using new pure function API
+- [x] Update `src/__tests__/unit/auto-answerer.test.ts`
+- [x] `pnpm --filter @gll/srs-engine-v2 test` green
+- [x] `pnpm typecheck` clean
+
+**Acceptance Criteria**:
+- [x] No `class BatchQueueManager` exists in the engine
+- [x] `BatchState` is a plain serializable interface (no class instances inside)
+- [x] Terminal demo produces identical behaviour to ST06 (retry logic, caps, D11 consistency)
+- [x] All unit tests green
+- [x] `pnpm typecheck` clean
+
+---
+
 ### EP25-ST07: Integrate Orchestrator in `srs-demo` Web App
 
-**Scope**: Runs **after ST04–ST06 are complete**. Refactor `apps/srs-demo/src/App.vue` to replace its current legacy implementation (direct `composeWordBatchMulti` call, manual `recheckPending`/`recheckReentered` tracking) with the full Orchestrator API (`AdaptiveSessionState`, `BatchQueueManager`, registry-based assembly). The Vue app is deliberately left broken/stale during Phase 2 engine development; ST07 is the single integration pass once the engine is stable.
+**Scope**: Runs **after ST04–ST06b are complete**. Refactor `apps/srs-demo/src/App.vue` to replace its current legacy implementation (direct `composeWordBatchMulti` call, manual `recheckPending`/`recheckReentered` tracking) with the full Orchestrator API (`AdaptiveSessionState`, pure BQM functions, registry-based assembly). The Vue app is deliberately left broken/stale during Phase 2 engine development; ST07 is the single integration pass once the engine is stable.
 
 **Read List**:
 - `product-documentation/architecture/20260516T113156Z-engineering-adaptive-session-orchestrator.md`
+- `product-documentation/architecture/20260516T234600Z-engineering-batch-queue-manager-pattern.md` — Decision 2
 - `product-documentation/architecture/20260513T000000Z-engineering-batch-execution-mechanics.md` — D5, D8
 - `apps/srs-demo/src/App.vue` — full file
 - `apps/srs-demo/src/composables/useSession.ts` — persistence layer (OQ3: Map/Set serialization)
@@ -274,17 +308,18 @@ export class BatchQueueManager {
 
 **Tasks**:
 - [ ] Replace `ref<RunState>`, `ref<Set>`, `ref<Set>` individual refs with a single `ref<AdaptiveSessionState>` holding the full session state
-- [ ] Remove `composeWordBatchMulti` import (H4 — ADR D5 violation); replace `startBatch()` with registry-based thunk registration + `assembleBatchQuestions`
-- [ ] Replace manual `recheckPending`/`recheckReentered` tracking in `finishBatch()` with `advanceAdaptiveSession(state, batch.output, config)` call
-- [ ] Wire `BatchQueueManager` into the quiz rendering loop: `.next()` yields current question; `onAnswered()` calls `.submitResult()`; `isDone` triggers `finishBatch()`
-- [ ] Handle D8 early exit: `onExitBatch()` calls `batch.finish()` before passing output to `advanceAdaptiveSession`
-- [ ] Update `useSession` composable to serialize/deserialize `AdaptiveSessionState` (address OQ3: `Map`/`Set` → JSON; implement `serializeSessionState` / `deserializeSessionState` helpers if the engine does not provide them)
+- [ ] Remove `composeWordBatchMulti` import (H4 — ADR D5 violation); replace `startBatch()` with registry-based thunk registration + `assembleBatch`
+- [ ] Replace manual `recheckPending`/`recheckReentered` tracking in `finishBatch()` with `advanceAdaptiveSession(state, finishBatch(batchState), config)` call
+- [ ] Hold `batchState` in a `ref<BatchState>` — wire `initBatchState` on batch start; `nextQuestion` drives `currentQuestion`; `onAnswered()` calls `submitBatchResult()`; `isBatchDone` triggers `finishBatch()`
+- [ ] Handle D8 early exit: `onExitBatch()` calls `finishBatch(batchState.value)` before passing output to `advanceAdaptiveSession`
+- [ ] Update `useSession` composable to serialize/deserialize `AdaptiveSessionState` (address OQ3: `Map`/`Set` → JSON)
 - [ ] Verify all computed properties (`masteredDeck`, `masteredGlobal`, `completedDeckIds`) re-evaluate correctly on `AdaptiveSessionState` reference swap
 - [ ] `pnpm --filter @gll/srs-demo build` succeeds
 
 **Acceptance Criteria**:
 - [ ] `App.vue` contains no `composeWordBatchMulti` import or call
 - [ ] `App.vue` holds a single `ref<AdaptiveSessionState>` — no standalone `recheckPending` / `recheckReentered` refs
+- [ ] `App.vue` holds a `ref<BatchState>` for in-progress batch — no class instance refs
 - [ ] The web app runs a full learning session end-to-end using the new Orchestrator APIs
 - [ ] Session persistence survives a page reload (load → resume flow works)
 - [ ] `pnpm typecheck` clean

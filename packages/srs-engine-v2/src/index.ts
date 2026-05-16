@@ -12,8 +12,8 @@ export { processRecheckResult, nextActivePool, updateMasteryState, getNewlyMaste
 export type { RecheckResultOutput, MasteryUpdateResult } from './engine/session.js';
 export { initAdaptiveSession, advanceAdaptiveSession } from './engine/adaptive-session.js';
 export type { AdaptiveSessionState, SessionConfig } from './engine/adaptive-session.js';
-export { BatchQueueManager } from './engine/batch-queue.js';
-export type { BatchOutput } from './engine/batch-queue.js';
+export { initBatchState, nextQuestion, submitBatchResult, finishBatch, isBatchDone } from './engine/batch-queue.js';
+export type { BatchOutput, BatchState } from './engine/batch-queue.js';
 export { assembleBatch } from './engine/assemble-batch.js';
 export type { AssembleBatchOptions } from './engine/assemble-batch.js';
 

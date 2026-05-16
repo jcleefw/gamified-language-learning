@@ -10,101 +10,150 @@ export interface BatchOutput {
 }
 
 /**
- * Manages the serving and re-enqueueing of questions within a single batch.
- * Enforces per-batch and per-session retry limits and ensures replay consistency (D11).
+ * Serializable state for a batch execution.
+ * This should be owned by the host environment (e.g. Vue ref, CLI loop).
  */
-export class BatchQueueManager {
-  private queue: QuizQuestion[];
-  private results: QuizResult[] = [];
+export interface BatchState {
+  queue: QuizQuestion[];
+  results: QuizResult[];
   /** Tracks retries used EXCLUSIVELY within this batch instance. */
-  private currentBatchRetryCounts: Map<string, number> = new Map();
+  batchRetryCounts: Map<string, number>;
   /** Caches the first instance of a question served to ensure identical retries (D11). */
-  private questionCache: Map<string, QuizQuestion> = new Map();
+  questionCache: Map<string, QuizQuestion>;
   /** Initial number of questions in the batch (for UI progress). */
-  public readonly totalCount: number;
+  initialCount: number;
+  // Config/Session constraints
+  retryPerWordCap: number;
+  retryPerSessionCap: number;
+  sessionRetryCounts: Map<string, number>;
+}
 
-  constructor(
-    initialQuestions: QuizQuestion[],
-    private retryPerWordCap: number,
-    private sessionRetryCounts: Map<string, number>,
-    private retryPerSessionCap: number,
-  ) {
-    this.queue = [...initialQuestions];
-    this.totalCount = initialQuestions.length;
+/**
+ * Initializes a new batch state.
+ */
+export function initBatchState(
+  initialQuestions: QuizQuestion[],
+  retryPerWordCap: number,
+  sessionRetryCounts: Map<string, number>,
+  retryPerSessionCap: number,
+): BatchState {
+  return {
+    queue: [...initialQuestions],
+    results: [],
+    batchRetryCounts: new Map(),
+    questionCache: new Map(),
+    initialCount: initialQuestions.length,
+    retryPerWordCap,
+    retryPerSessionCap,
+    sessionRetryCounts: new Map(sessionRetryCounts),
+  };
+}
+
+/**
+ * Returns true if there are no more questions to serve in this batch.
+ */
+export function isBatchDone(state: BatchState): boolean {
+  return state.queue.length === 0;
+}
+
+/**
+ * Serves the next question from the queue.
+ * Returns the question and the updated state.
+ */
+export function nextQuestion(state: BatchState): {
+  question: QuizQuestion | null;
+  state: BatchState;
+} {
+  if (state.queue.length === 0) {
+    return { question: null, state };
   }
 
-  /**
-   * Returns true if there are no more questions to serve in this batch.
-   */
-  get isDone(): boolean {
-    return this.queue.length === 0;
+  const nextQueue = [...state.queue];
+  const q = nextQueue.shift();
+  if (!q) {
+    return { question: null, state };
   }
 
-  /**
-   * Serves the next question from the queue.
-   * Returns null if the queue is empty.
-   */
-  next(): QuizQuestion | null {
-    const q = this.queue.shift() || null;
-    if (q) {
-      const id = this.getQuestionId(q);
-      // D11: Cache the first time we see an ID to ensure replay consistency
-      if (!this.questionCache.has(id)) {
-        this.questionCache.set(id, q);
+  const id = getQuestionId(q);
+
+  const nextCache = new Map(state.questionCache);
+  if (!nextCache.has(id)) {
+    nextCache.set(id, q);
+  }
+
+  const question = nextCache.get(id);
+  if (!question) {
+    return { question: null, state };
+  }
+  return {
+    question,
+    state: {
+      ...state,
+      queue: nextQueue,
+      questionCache: nextCache,
+    },
+  };
+}
+
+/**
+ * Submits a result for a question and returns the updated state.
+ * If incorrect, re-enqueues the item if it hasn't hit retry caps.
+ */
+export function submitBatchResult(
+  state: BatchState,
+  result: QuizResult,
+): BatchState {
+  const nextResults = [...state.results, result];
+  const nextQueue = [...state.queue];
+  const nextBatchRetryCounts = new Map(state.batchRetryCounts);
+
+  if (!result.correct) {
+    const id = getResultId(result);
+    const batchRetries = nextBatchRetryCounts.get(id) || 0;
+    const totalSessionRetries = state.sessionRetryCounts.get(id) || 0;
+
+    // Check both the per-batch cap and the per-session cap
+    const canRetryInBatch = batchRetries < state.retryPerWordCap;
+    const canRetryInSession = totalSessionRetries < state.retryPerSessionCap;
+
+    if (canRetryInBatch && canRetryInSession) {
+      nextBatchRetryCounts.set(id, batchRetries + 1);
+      const cached = state.questionCache.get(id);
+      if (cached) {
+        nextQueue.push(cached);
       }
-      return this.questionCache.get(id)!;
-    }
-    return null;
-  }
-
-  /**
-   * Submits a result for the last served question.
-   * If incorrect, re-enqueues the item if it hasn't hit retry caps.
-   */
-  submitResult(result: QuizResult): void {
-    this.results.push(result);
-
-    if (!result.correct) {
-      const id = this.getResultId(result);
-      const batchRetries = this.currentBatchRetryCounts.get(id) || 0;
-      const totalSessionRetries = this.sessionRetryCounts.get(id) || 0;
-
-      // Check both the per-batch cap and the per-session cap
-      const canRetryInBatch = batchRetries < this.retryPerWordCap;
-      const canRetryInSession = totalSessionRetries < this.retryPerSessionCap;
-
-      if (canRetryInBatch && canRetryInSession) {
-        this.currentBatchRetryCounts.set(id, batchRetries + 1);
-        const cached = this.questionCache.get(id);
-        if (cached) {
-          this.queue.push(cached);
-        }
-      }
     }
   }
 
-  /**
-   * Finalizes the batch, calculating the updated session-wide retry counts.
-   */
-  finish(): BatchOutput {
-    const updatedSessionCounts = new Map(this.sessionRetryCounts);
+  return {
+    ...state,
+    results: nextResults,
+    queue: nextQueue,
+    batchRetryCounts: nextBatchRetryCounts,
+  };
+}
 
-    for (const [id, count] of this.currentBatchRetryCounts.entries()) {
-      const previousTotal = updatedSessionCounts.get(id) || 0;
-      updatedSessionCounts.set(id, previousTotal + count);
-    }
+/**
+ * Finalizes the batch, calculating the updated session-wide retry counts.
+ */
+export function finishBatch(state: BatchState): BatchOutput {
+  const updatedSessionCounts = new Map(state.sessionRetryCounts);
 
-    return {
-      results: this.results,
-      sessionRetryCounts: updatedSessionCounts,
-    };
+  for (const [id, count] of state.batchRetryCounts.entries()) {
+    const previousTotal = updatedSessionCounts.get(id) || 0;
+    updatedSessionCounts.set(id, previousTotal + count);
   }
 
-  private getQuestionId(q: QuizQuestion): string {
-    return q.kind === 'mcq' ? q.wordId : q.sentenceId;
-  }
+  return {
+    results: state.results,
+    sessionRetryCounts: updatedSessionCounts,
+  };
+}
 
-  private getResultId(r: QuizResult): string {
-    return 'wordId' in r ? r.wordId : r.sentenceId;
-  }
+function getQuestionId(q: QuizQuestion): string {
+  return q.kind === 'mcq' ? q.wordId : q.sentenceId;
+}
+
+function getResultId(r: QuizResult): string {
+  return 'wordId' in r ? r.wordId : r.sentenceId;
 }

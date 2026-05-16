@@ -1,17 +1,23 @@
 /* eslint-disable no-console */
 
-import { type BatchQueueManager } from '../src/index.js';
+import {
+  nextQuestion,
+  submitBatchResult,
+  type BatchState,
+} from '../src/index.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 
 export function runAutoInteractive(
-  manager: BatchQueueManager,
+  initialState: BatchState,
   strategy: AutoAnswerStrategy,
-): { correct: number; total: number } {
+): { correct: number; total: number; state: BatchState } {
   let score = 0;
   let count = 0;
+  let state = initialState;
 
   for (;;) {
-    const question = manager.next();
+    const { question, state: nextState } = nextQuestion(state);
+    state = nextState;
     if (!question) break;
     count++;
 
@@ -23,7 +29,10 @@ export function runAutoInteractive(
       console.log(`Tiles: ${question.tiles.map((t) => t.native).join(' | ')}`);
       console.log('Auto: correct');
 
-      manager.submitResult({ sentenceId: question.sentenceId, correct: true });
+      state = submitBatchResult(state, {
+        sentenceId: question.sentenceId,
+        correct: true,
+      });
       score++;
       continue;
     }
@@ -54,9 +63,12 @@ export function runAutoInteractive(
       score++;
     }
 
-    manager.submitResult({ wordId: question.wordId, correct: wasCorrect });
+    state = submitBatchResult(state, {
+      wordId: question.wordId,
+      correct: wasCorrect,
+    });
   }
 
-  console.log(`\nScore: ${String(score)} / ${String(manager.totalCount)}`);
-  return { correct: score, total: count };
+  console.log(`\nScore: ${String(score)} / ${String(state.initialCount)}`);
+  return { correct: score, total: count, state };
 }

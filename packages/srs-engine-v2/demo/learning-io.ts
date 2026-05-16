@@ -6,10 +6,15 @@ import {
   initAdaptiveSession,
   advanceAdaptiveSession,
   getNewlyMasteredIds,
-  BatchQueueManager,
+  initBatchState,
+  nextQuestion,
+  submitBatchResult,
+  finishBatch,
+  isBatchDone,
   type AdaptiveSessionState,
   type SessionConfig,
   type BatchOutput,
+  type BatchState,
   type MCQQuestion,
   type QuizQuestion,
   type SentenceQuestion,
@@ -179,27 +184,29 @@ async function runInteractiveWordBlock(
 }
 
 export async function runInteractive(
-  manager: BatchQueueManager,
-): Promise<{ correct: number; total: number }> {
+  initialState: BatchState,
+): Promise<{ correct: number; total: number; state: BatchState }> {
   let score = 0;
   let count = 0;
+  let state = initialState;
 
   for (;;) {
-    const question = manager.next();
+    const { question, state: nextState } = nextQuestion(state);
+    state = nextState;
     if (!question) break;
     count++;
 
     const result =
       question.kind === 'mcq'
-        ? await runInteractiveMCQ(question, count - 1, manager.totalCount)
-        : await runInteractiveWordBlock(question, count - 1, manager.totalCount);
+        ? await runInteractiveMCQ(question, count - 1, state.initialCount)
+        : await runInteractiveWordBlock(question, count - 1, state.initialCount);
 
     if (result.correct) score++;
-    manager.submitResult(result);
+    state = submitBatchResult(state, result);
   }
 
-  console.log(`\nScore: ${String(score)} / ${String(manager.totalCount)}`);
-  return { correct: score, total: count };
+  console.log(`\nScore: ${String(score)} / ${String(state.initialCount)}`);
+  return { correct: score, total: count, state };
 }
 
 
@@ -279,7 +286,7 @@ async function runBatch(
     },
   );
 
-  const manager = new BatchQueueManager(
+  let batchState = initBatchState(
     questions,
     LEARNING_CONFIG.maxRetryPerWord,
     state.sessionRetryCounts,
@@ -288,12 +295,12 @@ async function runBatch(
 
   let runStats;
   if (strategy) {
-    runStats = await runAutoInteractive(manager, strategy);
+    runStats = await runAutoInteractive(batchState, strategy);
   } else {
-    runStats = await runInteractive(manager);
+    runStats = await runInteractive(batchState);
   }
 
-  const output = manager.finish();
+  const output = finishBatch(runStats.state);
   return {
     ...output,
     correct: runStats.correct,
