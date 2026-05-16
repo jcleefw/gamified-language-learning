@@ -8,9 +8,10 @@ export { createComposerRegistry, assembleBatchQuestions } from './engine/compose
 export type { ComposerRegistry } from './engine/compose-registry.js';
 export type { QuizItem } from './engine/compose-word-batch.js';
 
-// Engine — session state
-export { processRecheckResult, nextActivePool, updateMasteryState } from './engine/session.js';
+export { processRecheckResult, nextActivePool, updateMasteryState, getNewlyMasteredIds } from './engine/session.js';
 export type { RecheckResultOutput, MasteryUpdateResult } from './engine/session.js';
+export { initAdaptiveSession, advanceAdaptiveSession } from './engine/adaptive-session.js';
+export type { AdaptiveSessionState, SessionConfig, BatchOutput } from './engine/adaptive-session.js';
 
 // Word state
 export { updateRunState, isMastered } from './types/word-state.js';

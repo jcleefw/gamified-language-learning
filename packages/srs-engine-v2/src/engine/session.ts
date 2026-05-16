@@ -104,8 +104,6 @@ export interface MasteryUpdateResult {
   runState: RunState;
   recheckPending: Set<string>;
   recheckReentered: Set<string>;
-  masteredCount: number;
-  newlyMasteredIds: string[];
 }
 
 /**
@@ -115,7 +113,6 @@ export interface MasteryUpdateResult {
 export function updateMasteryState(
   results: WordQuizResult[],
   runState: RunState,
-  prevState: RunState,
   recheckPending: Set<string>,
   recheckReentered: Set<string>,
   masteryThreshold: number,
@@ -141,11 +138,26 @@ export function updateMasteryState(
     ));
   }
 
-  const batchWordIds = [...new Set(results.map((r) => r.wordId))];
+  return {
+    runState: nextRunState,
+    recheckPending: nextRecheckPending,
+    recheckReentered: nextRecheckReentered,
+  };
+}
+
+/**
+ * Compares two states to find words that crossed the mastery threshold in the most recent batch.
+ */
+export function getNewlyMasteredIds(
+  prevState: RunState,
+  nextState: RunState,
+  wordIds: string[],
+  masteryThreshold: number,
+): string[] {
   const newlyMasteredIds: string[] = [];
 
-  for (const wordId of batchWordIds) {
-    const wordState = nextRunState.get(wordId);
+  for (const wordId of new Set(wordIds)) {
+    const wordState = nextState.get(wordId);
     if (wordState && isMastered(wordState, masteryThreshold)) {
       const prevWordState = prevState.get(wordId);
       if (!prevWordState || !isMastered(prevWordState, masteryThreshold)) {
@@ -154,11 +166,5 @@ export function updateMasteryState(
     }
   }
 
-  return {
-    runState: nextRunState,
-    recheckPending: nextRecheckPending,
-    recheckReentered: nextRecheckReentered,
-    masteredCount: newlyMasteredIds.length,
-    newlyMasteredIds,
-  };
+  return newlyMasteredIds;
 }

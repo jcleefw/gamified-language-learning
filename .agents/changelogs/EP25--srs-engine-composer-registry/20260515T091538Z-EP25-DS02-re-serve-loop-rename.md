@@ -100,6 +100,14 @@ export interface BatchOutput {
 }
 ```
 
+### Engine Function Signatures
+
+- `updateMasteryState(results: WordQuizResult[], runState: RunState, recheckPending: Set<string>, recheckReentered: Set<string>, masteryThreshold: number, streakThresholds: StreakThresholds): MasteryUpdateResult`
+  - Returns updated `runState`, `recheckPending`, and `recheckReentered`.
+  - **Refactor**: Diffing logic (newly mastered detection) removed to satisfy SoC; now handled by `getNewlyMasteredIds`.
+- `getNewlyMasteredIds(prevState: RunState, nextState: RunState, wordIds: string[], masteryThreshold: number): string[]`
+  - Returns IDs of words that crossed the threshold in the most recent state transition.
+
 ### `BatchQueueManager` (`src/engine/batch-queue.ts`)
 
 ```ts
@@ -152,7 +160,7 @@ export class BatchQueueManager {
 
 ### EP25-ST04: Session State Manager (`adaptive-session.ts`)
 
-**Scope**: Create `src/engine/adaptive-session.ts`. Define `AdaptiveSessionState` (6 fields including `batchNum` and `sessionRetryCounts`) and `SessionConfig`. Implement `initAdaptiveSession` (partitions `words` into `active`/`queue`, clones `RunState`) and `advanceAdaptiveSession` (wraps `updateMasteryState` + `nextActivePool`; accepts mixed `QuizResult[]`; filters to word results internally; sentence results silently ignored in Phase 2).
+**Scope**: Create `src/engine/adaptive-session.ts`. Define `AdaptiveSessionState` (6 fields including `batchNum` and `sessionRetryCounts`) and `SessionConfig`. Implement `initAdaptiveSession` (partitions `words` into `active`/`queue`, clones `RunState`) and `advanceAdaptiveSession` (wraps `updateMasteryState` + `nextActivePool`; accepts mixed `QuizResult[]`; filters to word results internally; sentence results silently ignored in Phase 2). **Refactor**: `updateMasteryState` was simplified to remove `prevState` and newly mastered detection, moving that logic to a separate `getNewlyMasteredIds` utility to improve separation of concerns (SoC).
 
 **Read List**:
 - `product-documentation/architecture/20260516T113156Z-engineering-adaptive-session-orchestrator.md`
@@ -161,24 +169,27 @@ export class BatchQueueManager {
 - `packages/srs-engine-v2/src/types/word-state.ts` — `RunState`, `StreakThresholds`
 
 **Tasks**:
-- [ ] Create `packages/srs-engine-v2/src/engine/adaptive-session.ts`
-- [ ] Define and export `AdaptiveSessionState` interface (6 fields per §3)
-- [ ] Define and export `SessionConfig` interface (per §3)
-- [ ] Implement `initAdaptiveSession`: partition words, clone `initialRunState` (prevents cross-deck mutation), initialise `batchNum: 0` and `sessionRetryCounts: new Map()`
-- [ ] Implement `advanceAdaptiveSession`: filter `batchOutput.results` to `WordQuizResult[]`, call `updateMasteryState`, call `nextActivePool`, increment `batchNum`, merge `batchOutput.sessionRetryCounts` into state
-- [ ] Export both from `src/index.ts`
-- [ ] Unit tests:
-  - [ ] `initAdaptiveSession` partitions `recheckIds` into `active`, remainder into `queue`
-  - [ ] `initAdaptiveSession` clones `RunState` — mutations to the original do not affect session state
-  - [ ] `advanceAdaptiveSession` round-trip produces same mastery outcome as calling `updateMasteryState` + `nextActivePool` directly
-  - [ ] `batchNum` increments by 1 each `advanceAdaptiveSession` call
-  - [ ] Sentence results (`SentenceQuizResult`) in `batchOutput.results` are silently ignored — `runState` unchanged
+- [x] Create `packages/srs-engine-v2/src/engine/adaptive-session.ts`
+- [x] Define and export `AdaptiveSessionState` interface (6 fields per §3)
+- [x] Define and export `SessionConfig` interface (per §3)
+- [x] Refactor `updateMasteryState`: remove `prevState` argument and `newlyMasteredIds` calculation
+- [x] Implement `getNewlyMasteredIds` utility for state diffing
+- [x] Implement `initAdaptiveSession`: partition words, clone `initialRunState` (prevents cross-deck mutation), initialise `batchNum: 0` and `sessionRetryCounts: new Map()`
+- [x] Implement `advanceAdaptiveSession`: filter `batchOutput.results` to `WordQuizResult[]`, call `updateMasteryState`, call `nextActivePool`, increment `batchNum`, merge `batchOutput.sessionRetryCounts` into state
+- [x] Export all from `src/index.ts`
+- [x] Unit tests:
+  - [x] `initAdaptiveSession` partitions `recheckIds` into `active`, remainder into `queue`
+  - [x] `initAdaptiveSession` clones `RunState` — mutations to the original do not affect session state
+  - [x] `advanceAdaptiveSession` round-trip produces same mastery outcome as calling `updateMasteryState` + `nextActivePool` directly
+  - [x] `batchNum` increments by 1 each `advanceAdaptiveSession` call
+  - [x] `getNewlyMasteredIds` correctly identifies words that crossed threshold
+  - [x] Sentence results (`SentenceQuizResult`) in `batchOutput.results` are silently ignored — `runState` unchanged
 
 **Acceptance Criteria**:
-- [ ] `initAdaptiveSession` + `advanceAdaptiveSession` round-trip over a deterministic auto-answer scenario produces identical `RunState` to current `runAdaptiveLoop`
-- [ ] `batchNum` correctly reflects batch count across multiple `advanceAdaptiveSession` calls
-- [ ] `pnpm --filter @gll/srs-engine-v2 test` green
-- [ ] `pnpm typecheck` clean
+- [x] `initAdaptiveSession` + `advanceAdaptiveSession` round-trip over a deterministic auto-answer scenario produces identical `RunState` to current `runAdaptiveLoop`
+- [x] `batchNum` correctly reflects batch count across multiple `advanceAdaptiveSession` calls
+- [x] `pnpm --filter @gll/srs-engine-v2 test` green
+- [x] `pnpm typecheck` clean
 
 ---
 

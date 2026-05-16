@@ -7,6 +7,7 @@ import {
   assembleBatchQuestions,
   nextActivePool,
   updateMasteryState,
+  getNewlyMasteredIds,
   type MCQQuestion,
   type QuizQuestion,
   type SentenceQuestion,
@@ -253,7 +254,6 @@ export async function runAdaptiveLoop(
     if (active.length === 0 && queue.length === 0) break;
 
     batchNum++;
-    const prevState = runState;
 
     const { correct, total, results } = await runBatch(batchNum, active, wordPool, foundationalPool, wordsPerBatch, runState, strategy);
     totalCorrect += correct;
@@ -261,8 +261,10 @@ export async function runAdaptiveLoop(
 
     const wordResults = results.filter((r): r is WordQuizResult => 'wordId' in r);
     const batchWordIds = [...new Set(wordResults.map(r => r.wordId))];
-    const { runState: nextRunState, recheckPending: nextRecheckPending, recheckReentered: nextRecheckReentered, newlyMasteredIds } =
-      updateMasteryState(wordResults, runState, prevState, recheckPending, recheckReentered, masteryThreshold, streakThresholds);
+    const { runState: nextRunState, recheckPending: nextRecheckPending, recheckReentered: nextRecheckReentered } =
+      updateMasteryState(wordResults, runState, recheckPending, recheckReentered, masteryThreshold, streakThresholds);
+
+    const newlyMasteredIds = getNewlyMasteredIds(runState, nextRunState, batchWordIds, masteryThreshold);
 
     runState = nextRunState;
     recheckPending = nextRecheckPending;
