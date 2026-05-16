@@ -10,13 +10,13 @@
 
 DS03 implements the per-sentence tracking and spacing rules from ADR D6/D7/D10/D13. It builds on DS01 (registry, `SentenceState` type shape agreed) and DS02 (re-serve loop, `wordsPerBatch` rename complete).
 
-The original EP25-ST05 is broken into three smaller independently testable stories:
+The original EP25-ST08 is broken into three smaller independently testable stories:
 
 | Story | Concern | What it touches |
 |---|---|---|
-| ST05 | `SentenceState` type + `SentenceRunState` + `defaultSentenceState` | `src/types/sentence-state.ts` (new) |
-| ST06 | Eligibility gates: `active` + batch gap (`lastBatchSeen`) | `resolveEligibleContexts` + `runAdaptiveLoop` |
-| ST07 | Streak tracking: correct streak exit + wrong streak shelving | `resolveEligibleContexts` + `runAdaptiveLoop` |
+| ST08 | `SentenceState` type + `SentenceRunState` + `defaultSentenceState` | `src/types/sentence-state.ts` (new) |
+| ST09 | Eligibility gates: `active` + batch gap (`lastBatchSeen`) | `resolveEligibleContexts` + `runAdaptiveLoop` |
+| ST10 | Streak tracking: correct streak exit + wrong streak shelving | `resolveEligibleContexts` + `runAdaptiveLoop` |
 
 `dailyCount` / `sentenceDailyMax` (D7 daily cap) is **deferred** — no real clock in the demo, and the mock fixture approach needs a separate discussion. It is recorded in Open Questions.
 
@@ -111,17 +111,17 @@ Updates `sentenceStreak`, `sessionWrongStreak`, `lastBatchSeen`, and `active` fo
 
 ## 4. Gate Logic
 
-### `resolveEligibleContexts` gate order (ST06 + ST07)
+### `resolveEligibleContexts` gate order (ST09 + ST10)
 
 ```
 for each sentence in corpus:
   1. word-seen gate (existing):   all wordIds seen >= minSeenForSentence
-  2. active gate (ST06):          sentenceState.active === true
-  3. batch-gap gate (ST06):       batchNum - sentenceState.lastBatchSeen > sentenceBatchGap
+  2. active gate (ST09):          sentenceState.active === true
+  3. batch-gap gate (ST09):       batchNum - sentenceState.lastBatchSeen > sentenceBatchGap
   → if all pass: include in eligible list
 ```
 
-### State update after batch (ST07)
+### State update after batch (ST10)
 
 ```
 for each SentenceQuizResult in batch results:
@@ -147,25 +147,25 @@ for each SentenceQuizResult in batch results:
 packages/srs-engine-v2/
 ├── src/
 │   ├── types/
-│   │   └── sentence-state.ts        ← NEW (ST05): SentenceState, SentenceRunState, defaultSentenceState
-│   └── index.ts                     ← updated (ST05): export SentenceState types
+│   │   └── sentence-state.ts        ← NEW (ST08): SentenceState, SentenceRunState, defaultSentenceState
+│   └── index.ts                     ← updated (ST08): export SentenceState types
 └── demo/
-    ├── config.ts                    ← updated (ST06): sentenceBatchGap + (ST07): streak thresholds
-    └── learning-io.ts               ← updated (ST06): resolveEligibleContexts gates + runAdaptiveLoop
-                                                (ST07): updateSentenceRunState + streak/shelve logic
+    ├── config.ts                    ← updated (ST09): sentenceBatchGap + (ST10): streak thresholds
+    └── learning-io.ts               ← updated (ST09): resolveEligibleContexts gates + runAdaptiveLoop
+                                                (ST10): updateSentenceRunState + streak/shelve logic
 ```
 
 Tests:
 ```
-src/__tests__/unit/sentence-state.test.ts    ← NEW (ST05): defaultSentenceState unit tests
-src/__tests__/unit/sentence-spacing.test.ts  ← NEW (ST06+ST07): gate and state-update unit tests
+src/__tests__/unit/sentence-state.test.ts    ← NEW (ST08): defaultSentenceState unit tests
+src/__tests__/unit/sentence-spacing.test.ts  ← NEW (ST09+ST10): gate and state-update unit tests
 ```
 
 ---
 
 ## 6. Stories
 
-### EP25-ST05: `SentenceState` type + `defaultSentenceState`
+### EP25-ST08: `SentenceState` type + `defaultSentenceState`
 
 **Scope**: New type file only. No wiring. No changes to `learning-io.ts`.
 
@@ -186,14 +186,14 @@ src/__tests__/unit/sentence-spacing.test.ts  ← NEW (ST06+ST07): gate and state
 
 ---
 
-### EP25-ST06: Eligibility gates — `active` + batch gap
+### EP25-ST09: Eligibility gates — `active` + batch gap
 
 **Scope**: Wire `SentenceRunState` into `runAdaptiveLoop`. Update `resolveEligibleContexts` to gate on `active` and `lastBatchSeen`. Update `lastBatchSeen` after each batch. No streak logic yet.
 
 **Read List**:
 - `packages/srs-engine-v2/demo/learning-io.ts` — `resolveEligibleContexts`, `runAdaptiveLoop`
 - `packages/srs-engine-v2/demo/config.ts`
-- `packages/srs-engine-v2/src/types/sentence-state.ts` (from ST05)
+- `packages/srs-engine-v2/src/types/sentence-state.ts` (from ST08)
 
 **Tasks**:
 - [ ] Add `sentenceBatchGap: 1` to `LEARNING_CONFIG`
@@ -212,7 +212,7 @@ src/__tests__/unit/sentence-spacing.test.ts  ← NEW (ST06+ST07): gate and state
 
 ---
 
-### EP25-ST07: Streak tracking — correct streak exit + wrong streak shelving
+### EP25-ST10: Streak tracking — correct streak exit + wrong streak shelving
 
 **Scope**: Implement `updateSentenceRunState`. Update `sentenceStreak`, `sessionWrongStreak`, and `active` from batch results. Wire into `runAdaptiveLoop` after each batch.
 
@@ -245,15 +245,15 @@ src/__tests__/unit/sentence-spacing.test.ts  ← NEW (ST06+ST07): gate and state
 | # | Question | Severity | Status |
 |---|----------|----------|--------|
 | OQ1 | `dailyCount` / `sentenceDailyMax` — no real clock in demo. Session = day boundary (same as `maxRetryPerSession`). Need to agree on mock fixture approach before implementation. Deferred from this DS. | Medium | Open — separate discussion before implementation |
-| OQ2 | `resolveEligibleContexts` is called inside `runBatch` which runs before results are processed. `lastBatchSeen` is set after the batch. Confirm: a sentence eligible at start of batch N will correctly be excluded from batch N+1 because `lastBatchSeen = N` is written before `nextActivePool` runs. | Low | Open — verify in ST06 |
+| OQ2 | `resolveEligibleContexts` is called inside `runBatch` which runs before results are processed. `lastBatchSeen` is set after the batch. Confirm: a sentence eligible at start of batch N will correctly be excluded from batch N+1 because `lastBatchSeen = N` is written before `nextActivePool` runs. | Low | Open — verify in ST09 |
 
 ---
 
 ## 8. Success Criteria
 
-1. `SentenceState`, `SentenceRunState`, `defaultSentenceState` importable from `@gll/srs-engine-v2` (ST05)
-2. Sentences with `active: false` never returned by `resolveEligibleContexts` (ST06)
-3. Sentences not served in back-to-back batches (ST06)
-4. Sentence graduating after `sentenceCorrectStreakThreshold` correct answers sets `active: false` (ST07)
-5. Sentence shelving after `sentenceWrongStreakThreshold` consecutive wrong answers sets `active: false` (ST07)
+1. `SentenceState`, `SentenceRunState`, `defaultSentenceState` importable from `@gll/srs-engine-v2` (ST08)
+2. Sentences with `active: false` never returned by `resolveEligibleContexts` (ST09)
+3. Sentences not served in back-to-back batches (ST09)
+4. Sentence graduating after `sentenceCorrectStreakThreshold` correct answers sets `active: false` (ST10)
+5. Sentence shelving after `sentenceWrongStreakThreshold` consecutive wrong answers sets `active: false` (ST10)
 6. `pnpm --filter @gll/srs-engine-v2 test` green; `pnpm typecheck` clean

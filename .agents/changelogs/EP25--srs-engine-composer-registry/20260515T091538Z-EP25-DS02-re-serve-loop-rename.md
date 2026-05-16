@@ -1,4 +1,4 @@
-# EP25-DS02: Re-serve Loop + `wordsPerBatch` Rename
+# EP25-DS02: Adaptive Session Orchestrator
 
 **Date**: 20260515T091534Z
 **Status**: Draft
@@ -8,15 +8,21 @@
 
 ## 1. Feature Overview
 
-DS02 covers Phase 2 of EP25 — two concerns delivered together because the `wordsPerBatch` rename is a prerequisite for the re-serve loop (ST03 introduces batch-level variable-length behaviour that makes `questionLimit` semantically wrong at the session layer).
+DS02 covers Phase 2 of EP25 — the Adaptive Session Orchestrator. This aligns with the architectural decisions documented in `product-documentation/architecture/20260516T113156Z-engineering-adaptive-session-orchestrator.md`.
 
-**ST03 — `questionLimit` → `wordsPerBatch` rename**
-Renames the session-layer parameter and config key. `questionLimit` on the engine composer (`composeWordBatchItems`) is unchanged — it remains accurate there.
+Phase 2 introduces a clean separation between the session state, the batch assembly process, and the within-batch retry mechanics.
 
-**ST04 — Feature flag + re-serve loop**
-Adds `enableReserveLoop` flag to `LEARNING_CONFIG` (off by default). When on, `runBatch` runs an inner loop: wrong answers re-queue the identical question (D11); caps `maxRetryPerWord` (per-batch) and `maxRetryPerSession` (session-wide) guard against infinite loops.
+**ST03 — `questionLimit` → `wordsPerBatch` rename** (Completed)
+Renames the session-layer parameter and config key. `questionLimit` on the engine composer remains unchanged.
 
-> **Note**: ST04 and ST05 were originally EP25-ST04/ST05 in Phase 3 (sentence state). Those are **renumbered** here as DS02 concerns. The sentence state stories move to EP25-DS03.
+**ST04 — Session State Manager (`adaptive-session.ts`)**
+Defines `AdaptiveSessionState` and `SessionConfig`. Provides `initAdaptiveSession` (starting state) and `advanceAdaptiveSession` (accepts mixed `QuizResult[]`; engine routes internally; sentence results silently ignored in Phase 2, active in Phase 3).
+
+**ST05 — Thunk Registration Boundary**
+No new engine file. Moves thunk registration out of `runBatch` and up to the consumer call site. `createComposerRegistry` and `assembleBatchQuestions` (ST01) are unchanged.
+
+**ST06 — Batch Queue Manager (`batch-queue.ts`)**
+Introduces `BatchQueueManager` and `BatchOutput`. Handles within-batch retries automatically (D1/D2/D11). Exposes `batch.output` as a plain data boundary for `advanceAdaptiveSession`.
 
 ---
 
@@ -24,130 +30,102 @@ Adds `enableReserveLoop` flag to `LEARNING_CONFIG` (off by default). When on, `r
 
 | Requirement | Decision | Rationale |
 |---|---|---|
-| `questionLimit` in session layer | Rename to `wordsPerBatch` | Post-ST04, a batch contains variable questions (re-serves add extra); `wordsPerBatch` describes slots in the active window, not question count |
-| `questionLimit` in `composeWordBatchItems` | Unchanged | Accurately describes max questions from that composer call; lives in engine layer, not session layer |
-| `nextActivePool` parameter | Rename to `wordsPerBatch` | Same concept — slot ceiling for the active window |
-| `wordsPerBatch` default value | `3` (was `8`) | Smaller active window makes re-serve loop behaviour easier to observe and test |
-| Feature flag | `enableReserveLoop: false` in `LEARNING_CONFIG` | Off by default so existing integration tests and manual runs are unaffected until explicitly enabled |
-| Re-serve identity | Identical question replayed (D11) — no recompose | Cache the question on first serve; retry from cache |
-| Retry caps | `maxRetryPerWord: 2`, `maxRetryPerSession: 6` | ADR D2 defaults |
-| Session retry tracking | `Map<wordId, number>` owned by `runAdaptiveLoop` | Survives across batches; reset on `runAdaptiveLoop` init |
-| Cap-exhausted words | Silent carry-over (D7 / ADR OQ7) | No UI signal; word stays in `active` pool, appears next batch |
-| Session-shelved words | Excluded from `nextActivePool` slot fills | Passed as `sessionShelved: Set<string>` alongside `recheckExempt`; never promoted back during session |
+| `wordsPerBatch` | Renamed from `questionLimit` | `wordsPerBatch` describes slots in the active window |
+| `AdaptiveSessionState` | Encapsulate all session state; consumer holds one object | Immutable replacement triggers Vue reactivity; CLI loop trivially driven |
+| `advanceAdaptiveSession` accepts `QuizResult[]` | Engine filters internally (Option A) | Multi-platform: no consumer knows about result type discrimination |
+| `BatchOutput` plain data type | Decouples `BatchQueueManager` from `adaptive-session.ts` | State manager must not import the queue manager class |
+| `maxRetryPerSession` in `AdaptiveSessionState` | Cross-batch count cannot live inside a per-batch `BatchQueueManager` | Passed in at construction; returned via `batch.output` for state update |
+| D8 early exit | `batch.finish()` drains queue; same output contract | Learner abort and natural completion produce identical output shape |
 
 ---
 
 ## 3. Data Structures
 
-### `LEARNING_CONFIG` changes (`demo/config.ts`)
+### `AdaptiveSessionState` (`src/engine/adaptive-session.ts`)
 
 ```ts
-export const LEARNING_CONFIG = {
-  wordsPerBatch: 3,          // renamed from questionLimit; active window size
-  masteryThreshold: 2,
-  maxMastery: 2,
-  correctStreakThreshold: 2,
-  wrongStreakThreshold: 2,
-  minSeenForSentence: 2,
-  debugSentenceEligibility: false,
-  enableReserveLoop: false,  // NEW — gates ST04 re-serve behaviour
-  maxRetryPerWord: 2,        // NEW — per-batch retry cap
-  maxRetryPerSession: 6,     // NEW — session retry cap
-};
+// Phase 2 (ST04)
+export interface AdaptiveSessionState {
+  active: QuizItem[];
+  queue: QuizItem[];
+  runState: RunState;
+  recheckPending: Set<string>;
+  recheckReentered: Set<string>;
+  batchNum: number;             // sentence spacing counter (D7/OQ9)
+  sessionRetryCounts: Map<string, number>; // cross-batch retry tracking (D2)
+}
+// Phase 3 addition (ST08): sentenceRunState: SentenceRunState
 ```
 
-### Re-serve loop internal types (`demo/learning-io.ts`)
+### `SessionConfig` (`src/engine/adaptive-session.ts`)
 
 ```ts
-// local to runBatch — discarded when batch ends
-type QuestionCache = Map<string, QuizQuestion>; // wordId/sentenceId → first-served question
-
-// owned by runAdaptiveLoop — survives across batches
-type SessionRetryCount = Map<string, number>;   // wordId → total re-serves this session
+export interface SessionConfig {
+  wordsPerBatch: number;
+  masteryThreshold: number;
+  streakThresholds: StreakThresholds;
+  maxRetryPerSession: number;   // D2 — session cap threshold
+}
 ```
 
-### `runAdaptiveLoop` signature change
+### `initAdaptiveSession` signature
 
 ```ts
-// before
-export async function runAdaptiveLoop(
+export function initAdaptiveSession(
   words: QuizItem[],
-  wordPool: QuizItem[],
-  foundationalPool: QuizItem[],
-  questionLimit: number,      // ← rename
-  ...
-)
+  config: SessionConfig,
+  recheckIds?: Set<string>,
+  initialRunState?: RunState,   // cloned internally — does not mutate the passed-in Map
+): AdaptiveSessionState
+```
 
-// after
-export async function runAdaptiveLoop(
-  words: QuizItem[],
-  wordPool: QuizItem[],
-  foundationalPool: QuizItem[],
-  wordsPerBatch: number,      // ← renamed
-  ...
-)
+### `advanceAdaptiveSession` signature
+
+```ts
+export function advanceAdaptiveSession(
+  state: AdaptiveSessionState,
+  batchOutput: BatchOutput,     // plain data — no BatchQueueManager import
+  config: SessionConfig,
+): AdaptiveSessionState
+// Phase 2: sentence results in batchOutput.results are silently ignored
+// Phase 3 (ST08): sentence results routed to updateSentenceRunState internally
+```
+
+### `BatchOutput` (`src/engine/batch-queue.ts`)
+
+```ts
+export interface BatchOutput {
+  results: ReadonlyArray<QuizResult>;
+  sessionRetryCounts: ReadonlyMap<string, number>; // updated counts for advanceAdaptiveSession
+}
+```
+
+### `BatchQueueManager` (`src/engine/batch-queue.ts`)
+
+```ts
+export class BatchQueueManager {
+  constructor(
+    questions: QuizQuestion[],
+    retryPerWordCap: number,              // maxRetryPerWord — per-batch cap (D2)
+    sessionRetryCounts: Map<string, number>, // current session counts (in)
+    retryPerSessionCap: number,          // maxRetryPerSession threshold (D2)
+  );
+
+  next(): QuizQuestion | null;           // null = queue exhausted (isDone)
+  submitResult(result: QuizResult): void; // triggers re-queue if wrong + within caps (D1/D11)
+  finish(): void;                        // D8 early exit — drains queue, produces output
+
+  readonly isDone: boolean;
+  readonly output: BatchOutput;          // valid only when isDone === true
+  // Internal: question cache Map<wordId|sentenceId, QuizQuestion> for D11 replay
+}
 ```
 
 ---
 
-## 4. Re-serve Loop Flow
+## 4. Stories
 
-```
-runBatch starts
-  → build questions via registry (first pass)
-  → build QuestionCache (wordId/sentenceId → question)
-  → pending = Set of all wordIds in batch
-
-  loop:
-    serve next question from queue
-    record result
-
-    if wrong AND enableReserveLoop:
-      if sessionRetryCount[wordId] < maxRetryPerSession:
-        if batchRetryCount[wordId] < maxRetryPerWord:
-          re-enqueue identical question from cache
-          increment batchRetryCount[wordId]
-          increment sessionRetryCount[wordId]
-        else:
-          // maxRetryPerWord exhausted — carry over silently
-      else:
-          // maxRetryPerSession exhausted — add to sessionShelved
-
-    if correct:
-      remove wordId from pending
-
-  batch ends when queue is empty
-
-runAdaptiveLoop:
-  nextActivePool excludes sessionShelved words from slot fills
-```
-
----
-
-## 5. File Map After DS02
-
-```
-packages/srs-engine-v2/
-├── src/
-│   └── engine/
-│       └── session.ts             ← ST03: rename questionLimit → wordsPerBatch in nextActivePool
-└── demo/
-    ├── config.ts                  ← ST03: rename + ST04: new constants + flag
-    ├── learning-io.ts             ← ST03: rename params + ST04: re-serve loop in runBatch,
-    │                                       sessionRetryCount + sessionShelved in runAdaptiveLoop
-    └── learning-runner.ts         ← ST03: update call site
-```
-
-Tests updated:
-```
-src/__tests__/integration/auto-scenarios.test.ts  ← ST03: rename config key
-```
-
----
-
-## 5. Stories
-
-### EP25-ST03: Rename `questionLimit` → `wordsPerBatch` + set default to 3
+### EP25-ST03: Rename `questionLimit` → `wordsPerBatch` + set default to 3 (Completed)
 
 **Scope**: Mechanical rename in session layer only. No logic changes. `composeWordBatchItems({ questionLimit })` option untouched.
 
@@ -172,47 +150,147 @@ src/__tests__/integration/auto-scenarios.test.ts  ← ST03: rename config key
 
 ---
 
-### EP25-ST04: Feature flag + re-serve loop in `runBatch`
+### EP25-ST04: Session State Manager (`adaptive-session.ts`)
 
-**Scope**: Add `enableReserveLoop`, `maxRetryPerWord`, `maxRetryPerSession` to `LEARNING_CONFIG`. Implement inner re-serve loop in `runBatch` (gated by `enableReserveLoop`). Add `sessionRetryCount` + `sessionShelved` to `runAdaptiveLoop`. Unit tests via auto-answer strategy with `enableReserveLoop: true`.
+**Scope**: Create `src/engine/adaptive-session.ts`. Define `AdaptiveSessionState` (6 fields including `batchNum` and `sessionRetryCounts`) and `SessionConfig`. Implement `initAdaptiveSession` (partitions `words` into `active`/`queue`, clones `RunState`) and `advanceAdaptiveSession` (wraps `updateMasteryState` + `nextActivePool`; accepts mixed `QuizResult[]`; filters to word results internally; sentence results silently ignored in Phase 2).
 
 **Read List**:
-- `packages/srs-engine-v2/demo/learning-io.ts` (full)
-- `packages/srs-engine-v2/demo/config.ts`
-- `packages/srs-engine-v2/demo/auto-answer-strategy.ts`
-- `packages/srs-engine-v2/src/__tests__/integration/auto-scenarios.test.ts` — test fixture pattern
+- `product-documentation/architecture/20260516T113156Z-engineering-adaptive-session-orchestrator.md`
+- `product-documentation/architecture/20260513T000000Z-engineering-batch-execution-mechanics.md` — D1, D2, D7, D8, OQ9
+- `packages/srs-engine-v2/src/engine/session.ts` — `updateMasteryState`, `nextActivePool` signatures
+- `packages/srs-engine-v2/src/types/word-state.ts` — `RunState`, `StreakThresholds`
 
 **Tasks**:
-- [ ] Add `enableReserveLoop: false`, `maxRetryPerWord: 2`, `maxRetryPerSession: 6` to `LEARNING_CONFIG`
-- [ ] `runBatch`: when `enableReserveLoop`, build `QuestionCache` on first pass; run inner loop; re-enqueue from cache on wrong answer within caps
-- [ ] `runAdaptiveLoop`: initialise `sessionRetryCount: Map<string, number>` and `sessionShelved: Set<string>`; pass `sessionRetryCount` into `runBatch`; update `sessionShelved` after each batch; exclude `sessionShelved` from `nextActivePool` slot fills
-- [ ] Unit tests (`auto-scenarios.test.ts` or new file):
-  - [ ] `enableReserveLoop: false` (default) — batch behaviour unchanged, existing tests still pass
-  - [ ] Wrong word re-served up to `maxRetryPerWord` times in one batch then carries over
-  - [ ] Word at `maxRetryPerSession` excluded from subsequent batches
-  - [ ] Batch with all correct on first attempt — no re-serves, same length as before
+- [ ] Create `packages/srs-engine-v2/src/engine/adaptive-session.ts`
+- [ ] Define and export `AdaptiveSessionState` interface (6 fields per §3)
+- [ ] Define and export `SessionConfig` interface (per §3)
+- [ ] Implement `initAdaptiveSession`: partition words, clone `initialRunState` (prevents cross-deck mutation), initialise `batchNum: 0` and `sessionRetryCounts: new Map()`
+- [ ] Implement `advanceAdaptiveSession`: filter `batchOutput.results` to `WordQuizResult[]`, call `updateMasteryState`, call `nextActivePool`, increment `batchNum`, merge `batchOutput.sessionRetryCounts` into state
+- [ ] Export both from `src/index.ts`
+- [ ] Unit tests:
+  - [ ] `initAdaptiveSession` partitions `recheckIds` into `active`, remainder into `queue`
+  - [ ] `initAdaptiveSession` clones `RunState` — mutations to the original do not affect session state
+  - [ ] `advanceAdaptiveSession` round-trip produces same mastery outcome as calling `updateMasteryState` + `nextActivePool` directly
+  - [ ] `batchNum` increments by 1 each `advanceAdaptiveSession` call
+  - [ ] Sentence results (`SentenceQuizResult`) in `batchOutput.results` are silently ignored — `runState` unchanged
 
 **Acceptance Criteria**:
-- [ ] When `enableReserveLoop: false`, all 164 existing tests pass unchanged
-- [ ] When `enableReserveLoop: true`, wrong words re-appear within the batch up to `maxRetryPerWord`
-- [ ] Words exhausting `maxRetryPerSession` do not appear in subsequent active pools
-- [ ] `pnpm --filter @gll/srs-engine-v2 test` green; `pnpm typecheck` clean
+- [ ] `initAdaptiveSession` + `advanceAdaptiveSession` round-trip over a deterministic auto-answer scenario produces identical `RunState` to current `runAdaptiveLoop`
+- [ ] `batchNum` correctly reflects batch count across multiple `advanceAdaptiveSession` calls
+- [ ] `pnpm --filter @gll/srs-engine-v2 test` green
+- [ ] `pnpm typecheck` clean
+
+---
+
+### EP25-ST05: Thunk Registration Boundary
+
+**Scope**: No new engine file or function. `createComposerRegistry` and `assembleBatchQuestions` (ST01) are already the correct implementation. This story moves thunk registration logic *out of* `runBatch` in `demo/learning-io.ts` and *up to* the consumer call site — so the consumer (not the batch loop) owns which composers run. Batch Mechanics ADR D5 is already satisfied; this is a demo-layer refactor.
+
+**Read List**:
+- `product-documentation/architecture/20260513T000000Z-engineering-batch-execution-mechanics.md` — D5, OQ1, OQ10
+- `packages/srs-engine-v2/src/engine/compose-registry.ts`
+- `packages/srs-engine-v2/demo/learning-io.ts` — lines 207–219 (current thunk registration site)
+
+**Tasks**:
+- [ ] Extract thunk registration block from `runBatch` into a helper or into the `runAdaptiveLoop` call site
+- [ ] `runBatch` receives a pre-built `registry` (or the assembled `QuizQuestion[]`) as a parameter — it no longer calls `registry.add()` internally
+- [ ] Update `demo/learning-runner.ts` call site accordingly
+- [ ] No changes to `src/engine/compose-registry.ts`
+
+**Acceptance Criteria**:
+- [ ] `runBatch` contains no `registry.add()` calls — thunk registration is at the caller level
+- [ ] `pnpm --filter @gll/srs-engine-v2 test` green (all existing tests pass)
+- [ ] `pnpm typecheck` clean
+
+---
+
+### EP25-ST06: Batch Queue Manager (`batch-queue.ts`)
+
+**Scope**: Create `src/engine/batch-queue.ts`. Implement `BatchOutput` (plain data interface) and `BatchQueueManager` class. The manager enforces `maxRetryPerWord` (per-batch cap) internally, receives `sessionRetryCounts` at construction to enforce `maxRetryPerSession` (cross-batch cap), caches first-served questions for D11 replay, and supports D8 early exit via `.finish()`. Refactor `runBatch` in `demo/learning-io.ts` to use `BatchQueueManager`.
+
+**Read List**:
+- `product-documentation/architecture/20260516T113156Z-engineering-adaptive-session-orchestrator.md`
+- `product-documentation/architecture/20260513T000000Z-engineering-batch-execution-mechanics.md` — D1, D2, D8, D11, OQ4, OQ6
+- `packages/srs-engine-v2/demo/learning-io.ts` — `runBatch` (current loop to replace)
+
+**Tasks**:
+- [ ] Create `packages/srs-engine-v2/src/engine/batch-queue.ts`
+- [ ] Define and export `BatchOutput` interface (per §3)
+- [ ] Implement `BatchQueueManager` class (per §3 contract)
+  - [ ] Constructor: accept `questions`, `retryPerWordCap`, `sessionRetryCounts`, `retryPerSessionCap`
+  - [ ] Internal question cache `Map<id, QuizQuestion>` built from initial questions (D11)
+  - [ ] `.next()`: returns next question, or `null` when queue exhausted
+  - [ ] `.submitResult()`: if wrong AND within both caps, re-enqueue from cache; update batch + session counts
+  - [ ] `.finish()`: D8 early exit — marks done, returns same `output` contract
+  - [ ] `.isDone` getter
+  - [ ] `.output` getter: returns `BatchOutput` (valid only when `isDone`)
+- [ ] Export `BatchOutput` and `BatchQueueManager` from `src/index.ts`
+- [ ] Refactor `runBatch` in `demo/learning-io.ts` to use `BatchQueueManager` (pass pre-built questions from ST05)
+- [ ] Unit tests:
+  - [ ] All correct first-pass — no retries, `output.results` length equals initial question count
+  - [ ] Wrong answer retried up to `retryPerWordCap` then not re-queued
+  - [ ] Word at `retryPerSessionCap` in `sessionRetryCounts` is not re-queued (cap already exhausted from prior batch)
+  - [ ] `output.sessionRetryCounts` reflects updated counts after batch
+  - [ ] `.finish()` early exit produces valid `output` with results up to exit point
+  - [ ] Sentence questions consume same caps as word questions (OQ6)
+
+**Acceptance Criteria**:
+- [ ] `runBatch` in `demo/learning-io.ts` contains no manual retry loop — batch logic fully delegated to `BatchQueueManager`
+- [ ] Wrong word is re-served the identical cached question (not recomposed) — D11
+- [ ] Word answered wrong 3 times in a batch (cap=2) is re-served exactly twice in that batch, then carries over
+- [ ] Word at session cap is excluded from retry in subsequent batches
+- [ ] `pnpm --filter @gll/srs-engine-v2 test` green
+- [ ] `pnpm typecheck` clean
+
+---
+
+### EP25-ST07: Integrate Orchestrator in `srs-demo` Web App
+
+**Scope**: Runs **after ST04–ST06 are complete**. Refactor `apps/srs-demo/src/App.vue` to replace its current legacy implementation (direct `composeWordBatchMulti` call, manual `recheckPending`/`recheckReentered` tracking) with the full Orchestrator API (`AdaptiveSessionState`, `BatchQueueManager`, registry-based assembly). The Vue app is deliberately left broken/stale during Phase 2 engine development; ST07 is the single integration pass once the engine is stable.
+
+**Read List**:
+- `product-documentation/architecture/20260516T113156Z-engineering-adaptive-session-orchestrator.md`
+- `product-documentation/architecture/20260513T000000Z-engineering-batch-execution-mechanics.md` — D5, D8
+- `apps/srs-demo/src/App.vue` — full file
+- `apps/srs-demo/src/composables/useSession.ts` — persistence layer (OQ3: Map/Set serialization)
+- `packages/srs-engine-v2/src/index.ts` — verify all new exports are present
+
+**Tasks**:
+- [ ] Replace `ref<RunState>`, `ref<Set>`, `ref<Set>` individual refs with a single `ref<AdaptiveSessionState>` holding the full session state
+- [ ] Remove `composeWordBatchMulti` import (H4 — ADR D5 violation); replace `startBatch()` with registry-based thunk registration + `assembleBatchQuestions`
+- [ ] Replace manual `recheckPending`/`recheckReentered` tracking in `finishBatch()` with `advanceAdaptiveSession(state, batch.output, config)` call
+- [ ] Wire `BatchQueueManager` into the quiz rendering loop: `.next()` yields current question; `onAnswered()` calls `.submitResult()`; `isDone` triggers `finishBatch()`
+- [ ] Handle D8 early exit: `onExitBatch()` calls `batch.finish()` before passing output to `advanceAdaptiveSession`
+- [ ] Update `useSession` composable to serialize/deserialize `AdaptiveSessionState` (address OQ3: `Map`/`Set` → JSON; implement `serializeSessionState` / `deserializeSessionState` helpers if the engine does not provide them)
+- [ ] Verify all computed properties (`masteredDeck`, `masteredGlobal`, `completedDeckIds`) re-evaluate correctly on `AdaptiveSessionState` reference swap
+- [ ] `pnpm --filter @gll/srs-demo build` succeeds
+
+**Acceptance Criteria**:
+- [ ] `App.vue` contains no `composeWordBatchMulti` import or call
+- [ ] `App.vue` holds a single `ref<AdaptiveSessionState>` — no standalone `recheckPending` / `recheckReentered` refs
+- [ ] The web app runs a full learning session end-to-end using the new Orchestrator APIs
+- [ ] Session persistence survives a page reload (load → resume flow works)
+- [ ] `pnpm typecheck` clean
+- [ ] `pnpm --filter @gll/srs-demo build` clean
+
+---
+
+## 5. Success Criteria
+
+1. All consumer session state encapsulated in a single immutable `AdaptiveSessionState` object
+2. `advanceAdaptiveSession` is the sole entry point for session state transitions — no raw calls to `updateMasteryState` / `nextActivePool` in consumer code
+3. `BatchQueueManager` owns all within-batch retry logic — no manual retry loops in consumer code
+4. Thunk registration is at the consumer call site, not inside the batch execution path
+5. Phase 2 engine changes are verified against the CLI demo (`demo/learning-io.ts`) only; Vue app integration deferred to ST07
+6. `pnpm --filter @gll/srs-engine-v2 test` green; `pnpm typecheck` clean after each story
 
 ---
 
 ## 6. Open Questions
 
-| # | Question | Severity | Status |
-|---|----------|----------|--------|
-| OQ1 | `runBatch` currently returns `{ correct, total, results }` — re-serve loop needs to also return `sessionRetryCount` updates back to `runAdaptiveLoop`. Consider returning `retryDeltas: Map<string, number>` alongside results, or mutating a passed-in ref. | Low | Open — resolved in ST04 |
-| OQ2 | Sentence questions in the re-serve loop — `sentenceId` is the cache key; retry cap shared with words (ADR OQ6 resolved: uniform caps). Confirm `QuestionCache` key is `wordId \| sentenceId` discriminated by result type. | Low | Open — resolved in ST04 |
-
----
-
-## 7. Success Criteria
-
-1. `questionLimit` absent from `demo/` layer after ST03; `composeWordBatchItems` option unchanged
-2. `wordsPerBatch: 3` in `LEARNING_CONFIG`
-3. `enableReserveLoop: false` by default — zero behaviour change for existing tests
-4. Re-serve loop correctly caps at `maxRetryPerWord` per batch and `maxRetryPerSession` per session when enabled
-5. `pnpm --filter @gll/srs-engine-v2 test` green; `pnpm typecheck` clean
+| # | Question | Severity | Status | Target Story |
+|---|---|---|---|---|
+| OQ1 | Does `advanceAdaptiveSession` accept mixed `QuizResult[]` or `WordQuizResult[]`? | High | **Resolved — Option A. Engine filters internally. Sentence results silently ignored in Phase 2.** | — |
+| OQ2 | Does `AdaptiveSessionState` include `batchNum` and `sessionRetryCounts`? | High | **Resolved — yes, both fields defined in §3.** | — |
+| OQ3 | Should the engine provide Map/Set JSON serialization helpers for browser persistence? | Medium | Open — `useSession` composable currently handles serialization; decision whether to move helpers into the engine | ST07 |
+| OQ4 | Does `initAdaptiveSession` clone the passed-in `RunState`? | Medium | **Resolved — yes, cloned internally to prevent cross-deck mastery mutation.** | — |

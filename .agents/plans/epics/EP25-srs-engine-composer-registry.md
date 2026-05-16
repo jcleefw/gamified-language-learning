@@ -80,23 +80,43 @@ export type SentenceRunState = Map<string, SentenceState>;
 
 ---
 
-### Phase 2: Re-serve loop (EP25-PH02)
+### Phase 2: Adaptive Session Orchestrator (EP25-PH02)
 
-### EP25-ST03: Within-batch re-serve loop (D1/D2)
+### EP25-ST03: Rename `questionLimit` → `wordsPerBatch` + set default to 3 (Completed)
 
-**Scope**: Add `maxRetryPerWord` + `maxRetryPerSession` to `LEARNING_CONFIG` (`demo/config.ts`); implement inner re-serve loop in `runBatch()` — batch does not close until every active word has been answered correctly at least once (within caps); session-level retry counter; unit tests for cap exhaustion and carry-over behaviour. Re-serves replay the identical question (D11).
+**Scope**: Mechanical rename in session layer. `composeWordBatchItems({ questionLimit })` option untouched.
+
+### EP25-ST04: Session State Manager (`adaptive-session.ts`)
+
+**Scope**: Define `AdaptiveSessionState` encapsulating core state properties. Provide `initAdaptiveSession` and `advanceAdaptiveSession` to process batch results and return immutable state.
+
+### EP25-ST05: Batch Assembler (`assemble-batch.ts`)
+
+**Scope**: Implement Registry/Dependency Injection Pattern. Engine provides pure `assembleBatch(activeItems, composers)`. Consumer app injects specific composers.
+
+### EP25-ST06: Batch Queue Manager (`batch-queue.ts`)
+
+**Scope**: Introduce stateful `BatchQueueManager` class/module to handle the within-batch retry loop. UI instantiates queue with assembled questions and `retryCap`, calls `batch.next()`, and engine handles re-queueing automatically.
+
+### EP25-ST07: Integrate Orchestrator in `srs-demo` Web App
+
+**Scope**: Refactor the web UI (`apps/srs-demo`) to consume the new `AdaptiveSessionState`, `assembleBatch`, and `BatchQueueManager` APIs instead of internal engine files or legacy loop logic.
 
 ---
 
 ### Phase 3: Sentence state & spacing (EP25-PH03)
 
-### EP25-ST04: `SentenceState` type + initialization
+### EP25-ST08: `SentenceState` type + initialization
 
 **Scope**: New `packages/srs-engine-v2/src/types/sentence-state.ts` (per DS01 contract); `SentenceRunState` map alias; factory / initializer; unit tests for default values and field semantics.
 
-### EP25-ST05: Sentence spacing rules (D6/D7/D10)
+### EP25-ST09: Eligibility gates — `active` + batch gap
 
-**Scope**: Update `resolveEligibleContexts` in `learning-io.ts` to gate on `SentenceState.active` + `lastBatchSeen` batch gap (D7); track `sentenceStreak` and exit when `sentenceCorrectStreakThreshold` reached (D7); increment `dailyCount` and enforce `sentenceDailyMax` cap (D7); auto-shelve (`active = false`) when `sessionWrongStreak >= sentenceWrongStreakThreshold` (D10); add constants to `LEARNING_CONFIG`; unit tests for each gating rule.
+**Scope**: Update `resolveEligibleContexts` in `learning-io.ts` to gate on `SentenceState.active` + `lastBatchSeen` batch gap (D7); track `lastBatchSeen`; add constants to `LEARNING_CONFIG`; unit tests for gating rules.
+
+### EP25-ST10: Streak tracking — correct streak exit + wrong streak shelving
+
+**Scope**: Track `sentenceStreak` and exit when `sentenceCorrectStreakThreshold` reached (D7); increment `dailyCount` and enforce `sentenceDailyMax` cap (D7); auto-shelve (`active = false`) when `sessionWrongStreak >= sentenceWrongStreakThreshold` (D10); unit tests for streak tracking.
 
 **Open (to discuss before DS):**
 
