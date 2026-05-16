@@ -88,9 +88,14 @@ export function nextActivePool(
     return !wordState || !isMastered(wordState, masteryThreshold);
   });
 
+  const eligibleQueue = queue.filter((item) => {
+    const wordState = runState.get(item.id);
+    return !wordState || !isMastered(wordState, masteryThreshold);
+  });
+
   const freeSlots = wordsPerBatch - remaining.length;
-  const newItems = queue.slice(0, freeSlots);
-  const newQueue = queue.slice(freeSlots);
+  const newItems = eligibleQueue.slice(0, freeSlots);
+  const newQueue = eligibleQueue.slice(freeSlots);
 
   return { active: [...remaining, ...newItems], queue: newQueue };
 }

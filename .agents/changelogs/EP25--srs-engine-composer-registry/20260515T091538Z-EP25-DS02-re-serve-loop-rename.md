@@ -159,16 +159,16 @@ src/__tests__/integration/auto-scenarios.test.ts  ← ST03: rename config key
 - `packages/srs-engine-v2/src/__tests__/integration/auto-scenarios.test.ts`
 
 **Tasks**:
-- [ ] `demo/config.ts`: rename `questionLimit → wordsPerBatch`, set value to `3`
-- [ ] `demo/learning-io.ts`: rename parameter `questionLimit → wordsPerBatch` in `runBatch` and `runAdaptiveLoop`; update all internal usages
-- [ ] `demo/learning-runner.ts`: update call site (`LEARNING_CONFIG.questionLimit → LEARNING_CONFIG.wordsPerBatch`)
-- [ ] `src/engine/session.ts`: rename `nextActivePool` parameter `questionLimit → wordsPerBatch`
-- [ ] `src/__tests__/integration/auto-scenarios.test.ts`: rename config key `questionLimit → wordsPerBatch`
+- [x] `demo/config.ts`: rename `questionLimit → wordsPerBatch`, set value to `3`
+- [x] `demo/learning-io.ts`: rename parameter `questionLimit → wordsPerBatch` in `runBatch` and `runAdaptiveLoop`; update all internal usages
+- [x] `demo/learning-runner.ts`: update call site (`LEARNING_CONFIG.questionLimit → LEARNING_CONFIG.wordsPerBatch`)
+- [x] `src/engine/session.ts`: rename `nextActivePool` parameter `questionLimit → wordsPerBatch`
+- [x] `src/__tests__/integration/auto-scenarios.test.ts`: rename config key `questionLimit → wordsPerBatch`
 
 **Acceptance Criteria**:
-- [ ] `grep -r "questionLimit" demo/` returns no results (engine composer option excluded)
-- [ ] `pnpm --filter @gll/srs-engine-v2 test` green — all 164 tests pass
-- [ ] `pnpm typecheck` clean
+- [x] `grep -r "questionLimit" demo/` returns no results (engine composer option excluded)
+- [x] `pnpm --filter @gll/srs-engine-v2 test` green — all 164 tests pass
+- [x] `pnpm typecheck` clean
 
 ---
 
