@@ -1,4 +1,5 @@
 export const AUTO_MODE = false;
+export const ENABLE_MOCK_DB = true;
 
 export const LEARNING_CONFIG = {
   wordsPerBatch: 3,

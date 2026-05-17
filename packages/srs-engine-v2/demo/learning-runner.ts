@@ -1,3 +1,6 @@
+import { readFileSync, writeFileSync, existsSync } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { mockConsonants } from '../data/mock/mock-consonants.js';
 import { mockVowels } from '../data/mock/mock-vowels.js';
 import { mockTones } from '../data/mock/mock-tones.js';
@@ -10,7 +13,40 @@ import {
   CorrectAutoAnswerStrategy,
 } from './auto-answer-strategy.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
-import { AUTO_MODE, LEARNING_CONFIG, STREAK_THRESHOLDS } from './config.js';
+import { AUTO_MODE, ENABLE_MOCK_DB, LEARNING_CONFIG, STREAK_THRESHOLDS } from './config.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const STATE_FILE = path.join(__dirname, '.demo-state.json');
+
+function loadRunState(): RunState {
+  if (!ENABLE_MOCK_DB) {
+    return new Map();
+  }
+  if (existsSync(STATE_FILE)) {
+    try {
+      const data = readFileSync(STATE_FILE, 'utf-8');
+      const parsed = JSON.parse(data) as [string, any][];
+      console.log(`\n[INFO] Loaded learning history from ${STATE_FILE}`);
+      return new Map(parsed);
+    } catch (e) {
+      console.warn(`\n[WARN] Failed to parse learning state file. Starting fresh.`, e);
+    }
+  }
+  return new Map();
+}
+
+function saveRunState(state: RunState): void {
+  if (!ENABLE_MOCK_DB) {
+    return;
+  }
+  try {
+    const serialized = JSON.stringify(Array.from(state.entries()), null, 2);
+    writeFileSync(STATE_FILE, serialized, 'utf-8');
+    console.log(`[INFO] Saved learning history to ${STATE_FILE}`);
+  } catch (e) {
+    console.error(`\n[ERROR] Failed to save learning history.`, e);
+  }
+}
 
 /**
  * Test Scenarios for Auto Mode
@@ -39,7 +75,7 @@ const mockFoundational = [
   ...mockTones,
 ];
 
-let runState: RunState = new Map();
+let runState: RunState = loadRunState();
 
 for (; ;) {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -78,6 +114,8 @@ for (; ;) {
     recheckIds,
     strategy,
   );
+
+  saveRunState(runState);
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (AUTO_MODE) break;

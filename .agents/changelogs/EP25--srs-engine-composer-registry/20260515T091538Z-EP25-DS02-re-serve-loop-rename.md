@@ -294,6 +294,30 @@ export class BatchQueueManager {
 
 ---
 
+### EP25-ST06c: Implement terminal app mock db persistence
+
+**Scope**: Runs **after ST06b is complete and before ST07**. The terminal app loop (`learning-runner.ts`) currently wipes learning history/mastery progress when the Node process exits, as it lacks a storage layer equivalent to `localStorage` in the browser. This ticket implements a lightweight file-based mock database (`.demo-state.json`) to persist global `RunState` and ensure sessions can be resumed across CLI process executions.
+
+**Read List**:
+- `packages/srs-engine-v2/demo/learning-runner.ts`
+- `packages/srs-engine-v2/demo/learning-io.ts`
+
+**Tasks**:
+- [x] Implement file-based JSON serialization helpers (converting `RunState` Map to arrays) for the terminal demo
+- [x] Update `learning-runner.ts` to load existing `RunState` from `.demo-state.json` on startup
+- [x] Update `learning-runner.ts` to write updated `RunState` to `.demo-state.json` after `runAdaptiveLoop` iterations or on early exit
+- [x] Add `.demo-state.json` to `.gitignore`
+- [x] Add `ENABLE_MOCK_DB` feature flag to `config.ts` to easily toggle persistence
+- [x] Verify that restarting the terminal CLI restores mastery history and streak counts
+
+**Acceptance Criteria**:
+- [x] Learning progress (mastery, streaks, seen counts) persists across CLI restarts
+- [x] `.demo-state.json` is ignored by Git
+- [x] CLI runs correctly in both interactive and auto mode
+- [x] Feature flag `ENABLE_MOCK_DB` toggles the mockdb persistence cleanly
+
+---
+
 ### EP25-ST07: Integrate Orchestrator in `srs-demo` Web App
 
 **Scope**: Runs **after ST04–ST06b are complete**. Refactor `apps/srs-demo/src/App.vue` to replace its current legacy implementation (direct `composeWordBatchMulti` call, manual `recheckPending`/`recheckReentered` tracking) with the full Orchestrator API (`AdaptiveSessionState`, pure BQM functions, registry-based assembly). The Vue app is deliberately left broken/stale during Phase 2 engine development; ST07 is the single integration pass once the engine is stable.
