@@ -81,41 +81,37 @@ const queue = computed<QuizItem[]>(() => {
 const masteredDeck = computed<QuizItem[]>(() => {
   const deck = appDecks.find((d) => d.id === deckId.value);
   if (!deck) return [];
-  return deckToQuizItems(deck).filter((w) =>
-    isMastered(
-      currentRunState.value.get(w.id) ?? { ...defaultWordState, wordId: w.id },
-      CONFIG.masteryThreshold,
-    ),
-  ) as QuizItem[];
+  return deckToQuizItems(deck).filter((w) => {
+    const ws = currentRunState.value.get(w.id);
+    return ws != null && isMastered(ws, CONFIG.masteryThreshold);
+  }) as QuizItem[];
 });
 
 const masteredGlobal = computed<QuizItem[]>(() =>
-  wordPool.filter((w) =>
-    isMastered(
-      currentRunState.value.get(w.id) ?? { ...defaultWordState, wordId: w.id },
-      CONFIG.masteryThreshold,
-    ),
-  ),
+  wordPool.filter((w) => {
+    const ws = currentRunState.value.get(w.id);
+    return ws != null && isMastered(ws, CONFIG.masteryThreshold);
+  }),
 );
 
-const completedDeckIds = computed<Set<string>>(() => {
+const completedDeckIds = ref<Set<string>>(new Set());
+
+function recalculateCompletedDecks() {
   const completed = new Set<string>();
   for (const deck of appDecks) {
     const words = deckToQuizItems(deck);
     if (
       words.length > 0 &&
-      words.every((w) =>
-        isMastered(
-          currentRunState.value.get(w.id) ?? { ...defaultWordState, wordId: w.id },
-          CONFIG.masteryThreshold,
-        ),
-      )
+      words.every((w) => {
+        const ws = currentRunState.value.get(w.id);
+        return ws != null && isMastered(ws, CONFIG.masteryThreshold);
+      })
     ) {
       completed.add(deck.id);
     }
   }
-  return completed;
-});
+  completedDeckIds.value = completed;
+}
 
 const nextDeckId = computed<string | null>(() => {
   const idx = appDecks.findIndex((d) => d.id === deckId.value);
@@ -196,7 +192,12 @@ function onResume() {
   deckId.value = saved.deckId;
   sessionState.value = saved.sessionState;
   globalRunState.value = saved.sessionState.runState;
-  startBatch();
+
+  if (sessionState.value.active.length === 0 && sessionState.value.queue.length === 0) {
+    screen.value = 'results';
+  } else {
+    startBatch();
+  }
 }
 
 function onClear() {
@@ -207,6 +208,7 @@ function onClear() {
   globalRunState.value = new Map();
   batchState.value = null;
   currentQuestion.value = null;
+  recalculateCompletedDecks();
   screen.value = 'select';
 }
 
@@ -250,6 +252,8 @@ function finishBatchAndTransition() {
 
   saveSession(deckId.value ?? '', sessionState.value);
   hasSavedSession.value = true;
+
+  recalculateCompletedDecks();
 
   screen.value = 'results';
 }
@@ -298,6 +302,7 @@ onMounted(() => {
     globalRunState.value = saved.sessionState.runState;
     screen.value = 'select';
   }
+  recalculateCompletedDecks();
 });
 </script>
 

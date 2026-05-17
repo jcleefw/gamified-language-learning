@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { appDecks } from '../data/decks'
 import { deckToQuizItems } from '../data/transformer'
 
@@ -9,6 +10,13 @@ const emit = defineEmits<{
   resume: []
   clear: []
 }>()
+
+const decksWithCounts = computed(() =>
+  appDecks.map((deck) => ({
+    ...deck,
+    wordCount: deckToQuizItems(deck).length,
+  }))
+)
 </script>
 
 <template>
@@ -23,11 +31,11 @@ const emit = defineEmits<{
 
     <h2>Choose a deck</h2>
     <ul class="deck-list">
-      <li v-for="deck in appDecks" :key="deck.id">
+      <li v-for="deck in decksWithCounts" :key="deck.id">
         <button class="deck-btn" @click="emit('select', deck.id)">
           <span class="deck-topic">{{ deck.topic }}</span>
           <span v-if="completedDeckIds.has(deck.id)" class="deck-complete-badge">Complete ★</span>
-          <span v-else class="deck-count">{{ deckToQuizItems(deck).length }} words</span>
+          <span v-else class="deck-count">{{ deck.wordCount }} words</span>
         </button>
       </li>
     </ul>

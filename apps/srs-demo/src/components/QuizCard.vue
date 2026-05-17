@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import type {
   QuizQuestion,
   MCQQuestion,
@@ -33,7 +33,6 @@ function answerMCQ(choice: MCQQuestion['choices'][number]) {
 }
 
 // Reset local state when question prop changes
-import { watch } from 'vue';
 watch(
   () => props.question,
   () => {

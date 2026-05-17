@@ -331,23 +331,25 @@ export class BatchQueueManager {
 - `packages/srs-engine-v2/src/index.ts` — verify all new exports are present
 
 **Tasks**:
-- [ ] Replace `ref<RunState>`, `ref<Set>`, `ref<Set>` individual refs with a single `ref<AdaptiveSessionState>` holding the full session state
-- [ ] Remove `composeWordBatchMulti` import (H4 — ADR D5 violation); replace `startBatch()` with registry-based thunk registration + `assembleBatch`
-- [ ] Replace manual `recheckPending`/`recheckReentered` tracking in `finishBatch()` with `advanceAdaptiveSession(state, finishBatch(batchState), config)` call
-- [ ] Hold `batchState` in a `ref<BatchState>` — wire `initBatchState` on batch start; `nextQuestion` drives `currentQuestion`; `onAnswered()` calls `submitBatchResult()`; `isBatchDone` triggers `finishBatch()`
-- [ ] Handle D8 early exit: `onExitBatch()` calls `finishBatch(batchState.value)` before passing output to `advanceAdaptiveSession`
-- [ ] Update `useSession` composable to serialize/deserialize `AdaptiveSessionState` (address OQ3: `Map`/`Set` → JSON)
-- [ ] Verify all computed properties (`masteredDeck`, `masteredGlobal`, `completedDeckIds`) re-evaluate correctly on `AdaptiveSessionState` reference swap
-- [ ] `pnpm --filter @gll/srs-demo build` succeeds
+- [x] Replace `ref<RunState>`, `ref<Set>`, `ref<Set>` individual refs with a single `ref<AdaptiveSessionState>` holding the full session state
+- [x] Remove `composeWordBatchMulti` import (H4 — ADR D5 violation); replace `startBatch()` with registry-based thunk registration + `assembleBatch`
+- [x] Replace manual `recheckPending`/`recheckReentered` tracking in `finishBatch()` with `advanceAdaptiveSession(state, finishBatch(batchState), config)` call
+- [x] Hold `batchState` in a `ref<BatchState>` — wire `initBatchState` on batch start; `nextQuestion` drives `currentQuestion`; `onAnswered()` calls `submitBatchResult()`; `isBatchDone` triggers `finishBatch()`
+- [x] Handle D8 early exit: `onExitBatch()` calls `finishBatch(batchState.value)` before passing output to `advanceAdaptiveSession`
+- [x] Update `useSession` composable to serialize/deserialize `AdaptiveSessionState` (address OQ3: `Map`/`Set` → JSON)
+- [x] Verify all computed properties (`masteredDeck`, `masteredGlobal`, `completedDeckIds`) re-evaluate correctly on `AdaptiveSessionState` reference swap
+- [x] `pnpm --filter @gll/srs-demo build` succeeds
+- [x] Refactor `completedDeckIds` to an event-driven `ref` + `recalculateCompletedDecks()` helper to prevent reactive performance loops at scale and align with future dynamic DB/API queries
+- [x] Resolve resume crash/blank screen edge cases & optimize computed fields to prevent garbage collection allocations
 
 **Acceptance Criteria**:
-- [ ] `App.vue` contains no `composeWordBatchMulti` import or call
-- [ ] `App.vue` holds a single `ref<AdaptiveSessionState>` — no standalone `recheckPending` / `recheckReentered` refs
-- [ ] `App.vue` holds a `ref<BatchState>` for in-progress batch — no class instance refs
-- [ ] The web app runs a full learning session end-to-end using the new Orchestrator APIs
-- [ ] Session persistence survives a page reload (load → resume flow works)
-- [ ] `pnpm typecheck` clean
-- [ ] `pnpm --filter @gll/srs-demo build` clean
+- [x] `App.vue` contains no `composeWordBatchMulti` import or call
+- [x] `App.vue` holds a single `ref<AdaptiveSessionState>` — no standalone `recheckPending` / `recheckReentered` refs
+- [x] `App.vue` holds a `ref<BatchState>` for in-progress batch — no class instance refs
+- [x] The web app runs a full learning session end-to-end using the new Orchestrator APIs
+- [x] Session persistence survives a page reload (load → resume flow works)
+- [x] `pnpm typecheck` clean
+- [x] `pnpm --filter @gll/srs-demo build` clean
 
 ---
 
@@ -368,5 +370,5 @@ export class BatchQueueManager {
 |---|---|---|---|---|
 | OQ1 | Does `advanceAdaptiveSession` accept mixed `QuizResult[]` or `WordQuizResult[]`? | High | **Resolved — Option A. Engine filters internally. Sentence results silently ignored in Phase 2.** | — |
 | OQ2 | Does `AdaptiveSessionState` include `batchNum` and `sessionRetryCounts`? | High | **Resolved — yes, both fields defined in §3.** | — |
-| OQ3 | Should the engine provide Map/Set JSON serialization helpers for browser persistence? | Medium | Open — `useSession` composable currently handles serialization; decision whether to move helpers into the engine | ST07 |
+| OQ3 | Should the engine provide Map/Set JSON serialization helpers for browser persistence? | Medium | **Resolved — handled in `useSession` composable persistence layer.** | ST07 |
 | OQ4 | Does `initAdaptiveSession` clone the passed-in `RunState`? | Medium | **Resolved — yes, cloned internally to prevent cross-deck mastery mutation.** | — |
