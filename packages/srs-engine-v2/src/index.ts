@@ -21,6 +21,10 @@ export type { AssembleBatchOptions } from './engine/assemble-batch.js';
 export { updateRunState, isMastered } from './types/word-state.js';
 export type { WordState, RunState, StreakThresholds } from './types/word-state.js';
 
+// Sentence state
+export { defaultSentenceState } from './types/sentence-state.js';
+export type { SentenceState, SentenceRunState } from './types/sentence-state.js';
+
 // Types
 export type { QuizQuestion, MCQQuestion, SentenceQuestion, SentenceTile, QuizChoice, QuizDirection, QuizResult, WordQuizResult, SentenceQuizResult } from './types/quiz.js';
 export type { SentenceContext } from './types/sentence.js';
