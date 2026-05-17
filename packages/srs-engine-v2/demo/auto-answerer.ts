@@ -1,44 +1,58 @@
 /* eslint-disable no-console */
 
-import type { QuizQuestion, QuizResult } from '../src/index.js';
+import {
+  nextQuestion,
+  submitBatchResult,
+  type BatchState,
+} from '../src/index.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 
 export function runAutoInteractive(
-  questions: QuizQuestion[],
+  initialState: BatchState,
   strategy: AutoAnswerStrategy,
-): { correct: number; total: number; results: QuizResult[] } {
-  if (questions.length === 0) {
-    throw new Error('runAutoInteractive: No questions provided');
-  }
-
+): { correct: number; total: number; state: BatchState } {
   let score = 0;
-  const results: QuizResult[] = [];
+  let count = 0;
+  let state = initialState;
 
-  for (let i = 0; i < questions.length; i++) {
-    const question = questions[i];
+  for (;;) {
+    const { question, state: nextState } = nextQuestion(state);
+    state = nextState;
+    if (!question) break;
+    count++;
 
     if (question.kind === 'word-block') {
-      console.log(`\nQuestion ${String(i + 1)} [word-block: ${question.direction}]`);
+      console.log(
+        `\nQuestion ${String(count)} [word-block: ${question.direction}]`,
+      );
       console.log(question.prompt);
-      console.log(`Tiles: ${question.tiles.map(t => t.native).join(' | ')}`);
+      console.log(`Tiles: ${question.tiles.map((t) => t.native).join(' | ')}`);
       console.log('Auto: correct');
-      results.push({ sentenceId: question.sentenceId, correct: true });
+
+      state = submitBatchResult(state, {
+        sentenceId: question.sentenceId,
+        correct: true,
+      });
       score++;
       continue;
     }
 
     if (question.choices.length === 0) {
-      throw new Error(`runAutoInteractive: Question ${String(i + 1)} has no choices`);
+      throw new Error(
+        `runAutoInteractive: Question ${String(count)} has no choices`,
+      );
     }
-    if (!question.choices.find(c => c.isCorrect)) {
-      throw new Error(`runAutoInteractive: Question ${String(i + 1)} has no correct answer marked`);
+    if (!question.choices.find((c) => c.isCorrect)) {
+      throw new Error(
+        `runAutoInteractive: Question ${String(count)} has no correct answer marked`,
+      );
     }
 
     const selectedIndex = strategy.selectAnswer(question);
 
     if (selectedIndex < 0 || selectedIndex >= question.choices.length) {
       throw new Error(
-        `runAutoInteractive: Strategy returned invalid index ${String(selectedIndex)} for question ${String(i + 1)}`
+        `runAutoInteractive: Strategy returned invalid index ${String(selectedIndex)} for question ${String(count)}`,
       );
     }
 
@@ -49,9 +63,12 @@ export function runAutoInteractive(
       score++;
     }
 
-    results.push({ wordId: question.wordId, correct: wasCorrect });
+    state = submitBatchResult(state, {
+      wordId: question.wordId,
+      correct: wasCorrect,
+    });
   }
 
-  console.log(`\nScore: ${String(score)} / ${String(questions.length)}`);
-  return { correct: score, total: questions.length, results };
+  console.log(`\nScore: ${String(score)} / ${String(state.initialCount)}`);
+  return { correct: score, total: count, state };
 }

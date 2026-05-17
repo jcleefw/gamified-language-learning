@@ -65,7 +65,10 @@ Because the Orchestrator, State Manager, and Batch Assembler are strictly pure f
 
 ## Open Questions
 
-1. **Handling the "Sentence" Track**: Should `advanceAdaptiveSession` accept mixed `QuizResult[]` and internally filter out sentences (or route them to a future `updateSentenceState`), or should the consumer app filter them out before passing word results to the session state?
+1. **Handling the "Sentence" Track**: **Resolved — Option A.** `advanceAdaptiveSession` accepts `QuizResult[]` (mixed). The engine filters and routes internally — consumers never need to know about result type discrimination.
+   - **Phase 2**: sentence results silently ignored (no `SentenceRunState` yet).
+   - **Phase 3**: internal implementation evolves to process sentence results and update `sentenceRunState` within `AdaptiveSessionState`. Consumer call site unchanged — no breaking API change.
+   - **Rationale**: Multi-platform consistency (CLI demo, Vue app, future mobile) requires the engine to own routing. The Vue app is accepted as broken/behind during Phase 2 and Phase 3; ST07 wires it after both phases complete.
 2. **State Serialization**: `AdaptiveSessionState` contains `Map` (for `RunState`) and `Set` (for rechecks) which don't serialize natively to JSON. Should we provide serialization/deserialization helpers in the engine?
 3. **Global Mastery vs. Local Deck State**: When initializing a new deck via `initAdaptiveSession`, we pass in the existing `RunState`. We need to ensure that `initAdaptiveSession` doesn't accidentally prune mastery states for words that exist in _other_ decks. Is cloning the passed-in `Map` sufficient for global tracking?
 

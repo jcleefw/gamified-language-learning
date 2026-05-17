@@ -1,0 +1,1081 @@
+[
+  {
+    "topic": "let's eat something",
+    "lines": [
+      {
+        "speaker": "A",
+        "thai": "หิวแล้ว ไปกินอะไรกัน?",
+        "english": "I'm hungry, let's go eat something?",
+        "romanization": "Hǐw láew, bpai gin a-rai gan?"
+      },
+      {
+        "speaker": "B",
+        "thai": "ดีเลย อยากกินอะไร?",
+        "english": "Good idea! What do you want to eat?",
+        "romanization": "Dee loey, yàak gin a-rai?"
+      },
+      {
+        "speaker": "A",
+        "thai": "กินก๋วยเตี๋ยวไหม?",
+        "english": "How about eating noodles?",
+        "romanization": "Gin gǔai dtǐao mái?"
+      },
+      {
+        "speaker": "B",
+        "thai": "โอเค ไปกันเลย!",
+        "english": "Okay, let's go now!",
+        "romanization": "O-kay, bpai gan loey!"
+      }
+    ],
+    "difficulty": "beginner",
+    "register": "informal",
+    "breakdown": [
+      {
+        "thai": "หิวแล้ว ไปกินอะไรกัน?",
+        "romanization": "hǐw lɛ́ɛo bpai gin a-rai gan?",
+        "english": "I'm hungry, let's go eat something?",
+        "components": [
+          {
+            "thai": "หิว",
+            "romanization": "hǐw",
+            "english": "hungry",
+            "type": "adjective"
+          },
+          {
+            "thai": "แล้ว",
+            "romanization": "lɛ́ɛo",
+            "english": "already; now (indicates a state change or completion)",
+            "type": "particle"
+          },
+          {
+            "thai": "ไป",
+            "romanization": "bpai",
+            "english": "to go",
+            "type": "verb"
+          },
+          {
+            "thai": "กิน",
+            "romanization": "gin",
+            "english": "to eat",
+            "type": "verb"
+          },
+          {
+            "thai": "อะไร",
+            "romanization": "a-rai",
+            "english": "what; something",
+            "type": "question"
+          },
+          {
+            "thai": "กัน",
+            "romanization": "gan",
+            "english": "together; each other (particle suggesting shared action)",
+            "type": "particle"
+          }
+        ]
+      },
+      {
+        "thai": "ดีเลย อยากกินอะไร?",
+        "romanization": "dii ləəi yàak gin a-rai?",
+        "english": "Good idea! What do you want to eat?",
+        "components": [
+          {
+            "thai": "ดี",
+            "romanization": "dii",
+            "english": "good",
+            "type": "adjective"
+          },
+          {
+            "thai": "เลย",
+            "romanization": "ləəi",
+            "english": "truly; immediately; (particle for emphasis)",
+            "type": "particle"
+          },
+          {
+            "thai": "อยาก",
+            "romanization": "yàak",
+            "english": "to want; to desire",
+            "type": "verb"
+          },
+          {
+            "thai": "กิน",
+            "romanization": "gin",
+            "english": "to eat",
+            "type": "verb"
+          },
+          {
+            "thai": "อะไร",
+            "romanization": "a-rai",
+            "english": "what; something",
+            "type": "question"
+          }
+        ]
+      },
+      {
+        "thai": "กินก๋วยเตี๋ยวไหม?",
+        "romanization": "gin gǔai-dtǐao mǎi?",
+        "english": "How about eating noodles?",
+        "components": [
+          {
+            "thai": "กิน",
+            "romanization": "gin",
+            "english": "to eat",
+            "type": "verb"
+          },
+          {
+            "thai": "ก๋วยเตี๋ยว",
+            "romanization": "gǔai-dtǐao",
+            "english": "noodles",
+            "type": "noun"
+          },
+          {
+            "thai": "ไหม",
+            "romanization": "mǎi",
+            "english": "question particle (yes/no)",
+            "type": "particle"
+          }
+        ]
+      },
+      {
+        "thai": "โอเค ไปกันเลย!",
+        "romanization": "oo-kêe bpai gan ləəi!",
+        "english": "Okay, let's go now!",
+        "components": [
+          {
+            "thai": "โอเค",
+            "romanization": "oo-kêe",
+            "english": "Okay",
+            "type": "interjection"
+          },
+          {
+            "thai": "ไป",
+            "romanization": "bpai",
+            "english": "to go",
+            "type": "verb"
+          },
+          {
+            "thai": "กัน",
+            "romanization": "gan",
+            "english": "together (particle suggesting shared action)",
+            "type": "particle"
+          },
+          {
+            "thai": "เลย",
+            "romanization": "ləəi",
+            "english": "immediately; right away (particle for emphasis)",
+            "type": "particle"
+          }
+        ]
+      }
+    ],
+    "uniqueWords": [
+      {
+        "thai": "หิว",
+        "romanization": "hǐw",
+        "english": "hungry",
+        "type": "adjective"
+      },
+      {
+        "thai": "แล้ว",
+        "romanization": "lɛ́ɛo",
+        "english": "already; now (indicates a state change or completion)",
+        "type": "particle"
+      },
+      {
+        "thai": "ไป",
+        "romanization": "bpai",
+        "english": "to go",
+        "type": "verb"
+      },
+      {
+        "thai": "กิน",
+        "romanization": "gin",
+        "english": "to eat",
+        "type": "verb"
+      },
+      {
+        "thai": "อะไร",
+        "romanization": "a-rai",
+        "english": "what; something",
+        "type": "question"
+      },
+      {
+        "thai": "กัน",
+        "romanization": "gan",
+        "english": "together; each other (particle suggesting shared action)",
+        "type": "particle"
+      },
+      {
+        "thai": "ดี",
+        "romanization": "dii",
+        "english": "good",
+        "type": "adjective"
+      },
+      {
+        "thai": "เลย",
+        "romanization": "ləəi",
+        "english": "truly; immediately; (particle for emphasis)",
+        "type": "particle"
+      },
+      {
+        "thai": "อยาก",
+        "romanization": "yàak",
+        "english": "to want; to desire",
+        "type": "verb"
+      },
+      {
+        "thai": "ก๋วยเตี๋ยว",
+        "romanization": "gǔai-dtǐao",
+        "english": "noodles",
+        "type": "noun"
+      },
+      {
+        "thai": "ไหม",
+        "romanization": "mǎi",
+        "english": "question particle (yes/no)",
+        "type": "particle"
+      },
+      {
+        "thai": "โอเค",
+        "romanization": "oo-kêe",
+        "english": "Okay",
+        "type": "interjection"
+      }
+    ],
+    "id": "5577296f-63bf-4b4a-b62e-5aebb7dbe4a7",
+    "createdAt": 1772376375736
+  },
+  {
+    "topic": "where did you buy that flower?",
+    "lines": [
+      {
+        "speaker": "A",
+        "thai": "เธอซื้อดอกไม้นั้นที่ไหน?",
+        "english": "Where did you buy that flower?",
+        "romanization": "Thoe sʉ́ʉ dòk-mái nán tîi-nǎi?"
+      },
+      {
+        "speaker": "B",
+        "thai": "ฉันซื้อที่ตลาด.",
+        "english": "I bought it at the market.",
+        "romanization": "Chǎn sʉ́ʉ tîi tà-làat."
+      },
+      {
+        "speaker": "A",
+        "thai": "โอ้โห สวยมากเลย!",
+        "english": "Wow, it's very beautiful!",
+        "romanization": "Ôo-hǒo sǔai mâak loei!"
+      },
+      {
+        "speaker": "B",
+        "thai": "ใช่ หอมด้วยนะ.",
+        "english": "Yes, it smells good too.",
+        "romanization": "Châi hɔ̌ɔm dûai ná."
+      }
+    ],
+    "difficulty": "beginner",
+    "register": "informal",
+    "breakdown": [],
+    "uniqueWords": [],
+    "id": "d4a0a608-20ed-4890-9fa6-94fd0b1e69b6",
+    "createdAt": 1772377056883
+  },
+  {
+    "topic": "market",
+    "lines": [
+      {
+        "speaker": "A",
+        "thai": "คุณไปตลาดไหมครับ?",
+        "english": "Do you go to the market?",
+        "romanization": "Khun bpai dtà-làat mái khráp?"
+      },
+      {
+        "speaker": "B",
+        "thai": "ไปครับ ซื้อผลไม้.",
+        "english": "Yes, I go. I buy fruit.",
+        "romanization": "Bpai khráp. Sʉ́ʉ pǒn-lá-mái."
+      }
+    ],
+    "difficulty": "beginner",
+    "register": "mixed",
+    "breakdown": [],
+    "uniqueWords": [],
+    "id": "d6fcfddf-4e2e-4de1-8b17-a5ca119f9f12",
+    "createdAt": 1771927397087
+  },
+  {
+    "topic": "The weather is hot today",
+    "lines": [
+      {
+        "speaker": "A",
+        "thai": "วันนี้ร้อนมากเลย!",
+        "english": "It's very hot today!",
+        "romanization": "wan-níi rɔ́ɔn mâak loei!"
+      },
+      {
+        "speaker": "B",
+        "thai": "ใช่ ร้อนจริงๆ ดื่มน้ำไหม?",
+        "english": "Yes, it's really hot. Drink some water?",
+        "romanization": "châi rɔ́ɔn jing-jing Dʉ̀ʉm náam mái?"
+      },
+      {
+        "speaker": "A",
+        "thai": "ดีเลย อยากดื่มน้ำเย็น",
+        "english": "Good idea. I want to drink cold water.",
+        "romanization": "dii loei yàak dʉ̀ʉm náam yen"
+      },
+      {
+        "speaker": "B",
+        "thai": "ไปซื้อที่ร้านกัน",
+        "english": "Let's go buy some at the shop.",
+        "romanization": "pai sʉ́ʉ tîi ráan gan"
+      }
+    ],
+    "difficulty": "beginner",
+    "register": "informal",
+    "breakdown": [
+      {
+        "thai": "วันนี้ร้อนมากเลย!",
+        "romanization": "wan-née ráwn mâak loie!",
+        "english": "It's very hot today!",
+        "components": [
+          {
+            "thai": "วันนี้",
+            "romanization": "wan-née",
+            "english": "today",
+            "type": "noun"
+          },
+          {
+            "thai": "ร้อน",
+            "romanization": "ráwn",
+            "english": "hot",
+            "type": "adjective"
+          },
+          {
+            "thai": "มาก",
+            "romanization": "mâak",
+            "english": "very",
+            "type": "adverb"
+          },
+          {
+            "thai": "เลย",
+            "romanization": "loie",
+            "english": "particle (for emphasis)",
+            "type": "particle"
+          }
+        ]
+      },
+      {
+        "thai": "ใช่ ร้อนจริงๆ ดื่มน้ำไหม?",
+        "romanization": "châi ráwn jing-jing deùm nám mái?",
+        "english": "Yes, it's really hot. Drink some water?",
+        "components": [
+          {
+            "thai": "ใช่",
+            "romanization": "châi",
+            "english": "yes",
+            "type": "interjection"
+          },
+          {
+            "thai": "ร้อน",
+            "romanization": "ráwn",
+            "english": "hot",
+            "type": "adjective"
+          },
+          {
+            "thai": "จริงๆ",
+            "romanization": "jing-jing",
+            "english": "really",
+            "type": "adverb"
+          },
+          {
+            "thai": "ดื่ม",
+            "romanization": "deùm",
+            "english": "drink",
+            "type": "verb"
+          },
+          {
+            "thai": "น้ำ",
+            "romanization": "nám",
+            "english": "water",
+            "type": "noun"
+          },
+          {
+            "thai": "ไหม",
+            "romanization": "mái",
+            "english": "question particle",
+            "type": "particle"
+          }
+        ]
+      },
+      {
+        "thai": "ดีเลย อยากดื่มน้ำเย็น",
+        "romanization": "dee loie yàak deùm nám yen",
+        "english": "Good idea. I want to drink cold water.",
+        "components": [
+          {
+            "thai": "ดี",
+            "romanization": "dee",
+            "english": "good",
+            "type": "adjective"
+          },
+          {
+            "thai": "เลย",
+            "romanization": "loie",
+            "english": "particle (for emphasis/affirmation)",
+            "type": "particle"
+          },
+          {
+            "thai": "อยาก",
+            "romanization": "yàak",
+            "english": "want",
+            "type": "verb"
+          },
+          {
+            "thai": "ดื่ม",
+            "romanization": "deùm",
+            "english": "drink",
+            "type": "verb"
+          },
+          {
+            "thai": "น้ำ",
+            "romanization": "nám",
+            "english": "water",
+            "type": "noun"
+          },
+          {
+            "thai": "เย็น",
+            "romanization": "yen",
+            "english": "cold",
+            "type": "adjective"
+          }
+        ]
+      },
+      {
+        "thai": "ไปซื้อที่ร้านกัน",
+        "romanization": "bpai seú têe ráan gan",
+        "english": "Let's go buy some at the shop.",
+        "components": [
+          {
+            "thai": "ไป",
+            "romanization": "bpai",
+            "english": "go",
+            "type": "verb"
+          },
+          {
+            "thai": "ซื้อ",
+            "romanization": "seú",
+            "english": "buy",
+            "type": "verb"
+          },
+          {
+            "thai": "ที่",
+            "romanization": "têe",
+            "english": "at",
+            "type": "preposition"
+          },
+          {
+            "thai": "ร้าน",
+            "romanization": "ráan",
+            "english": "shop",
+            "type": "noun"
+          },
+          {
+            "thai": "กัน",
+            "romanization": "gan",
+            "english": "together / particle (let's)",
+            "type": "particle"
+          }
+        ]
+      }
+    ],
+    "uniqueWords": [
+      {
+        "thai": "วันนี้",
+        "romanization": "wan-née",
+        "english": "today",
+        "type": "noun"
+      },
+      {
+        "thai": "ร้อน",
+        "romanization": "ráwn",
+        "english": "hot",
+        "type": "adjective"
+      },
+      {
+        "thai": "มาก",
+        "romanization": "mâak",
+        "english": "very",
+        "type": "adverb"
+      },
+      {
+        "thai": "เลย",
+        "romanization": "loie",
+        "english": "particle (for emphasis)",
+        "type": "particle"
+      },
+      {
+        "thai": "ใช่",
+        "romanization": "châi",
+        "english": "yes",
+        "type": "interjection"
+      },
+      {
+        "thai": "จริงๆ",
+        "romanization": "jing-jing",
+        "english": "really",
+        "type": "adverb"
+      },
+      {
+        "thai": "ดื่ม",
+        "romanization": "deùm",
+        "english": "drink",
+        "type": "verb"
+      },
+      {
+        "thai": "น้ำ",
+        "romanization": "nám",
+        "english": "water",
+        "type": "noun"
+      },
+      {
+        "thai": "ไหม",
+        "romanization": "mái",
+        "english": "question particle",
+        "type": "particle"
+      },
+      {
+        "thai": "ดี",
+        "romanization": "dee",
+        "english": "good",
+        "type": "adjective"
+      },
+      {
+        "thai": "อยาก",
+        "romanization": "yàak",
+        "english": "want",
+        "type": "verb"
+      },
+      {
+        "thai": "เย็น",
+        "romanization": "yen",
+        "english": "cold",
+        "type": "adjective"
+      },
+      {
+        "thai": "ไป",
+        "romanization": "bpai",
+        "english": "go",
+        "type": "verb"
+      },
+      {
+        "thai": "ซื้อ",
+        "romanization": "seú",
+        "english": "buy",
+        "type": "verb"
+      },
+      {
+        "thai": "ที่",
+        "romanization": "têe",
+        "english": "at",
+        "type": "preposition"
+      },
+      {
+        "thai": "ร้าน",
+        "romanization": "ráan",
+        "english": "shop",
+        "type": "noun"
+      },
+      {
+        "thai": "กัน",
+        "romanization": "gan",
+        "english": "together / particle (let's)",
+        "type": "particle"
+      }
+    ],
+    "id": "e63dd8f2-7d0d-49ca-8708-61d146cf8884",
+    "createdAt": 1772012200371
+  },
+  {
+    "breakdown": [
+      {
+        "thai": "สวัสดีครับ",
+        "romanization": "sà-wàt-dee khráp",
+        "english": "Hello.",
+        "components": [
+          {
+            "thai": "สวัสดี",
+            "romanization": "sà-wàt-dee",
+            "english": "hello",
+            "type": "interjection"
+          },
+          {
+            "thai": "ครับ",
+            "romanization": "khráp",
+            "english": "polite particle (male speaker)",
+            "type": "particle"
+          }
+        ]
+      },
+      {
+        "thai": "ผมกำลังหาที่ตู้ไปรษณีย์",
+        "romanization": "phŏm gam-lang hâa thîi dtûu bai-rás-nii",
+        "english": "I'm looking for the post office.",
+        "components": [
+          {
+            "thai": "ผม",
+            "romanization": "phŏm",
+            "english": "I (male speaker)",
+            "type": "pronoun"
+          },
+          {
+            "thai": "กำลัง",
+            "romanization": "gam-lang",
+            "english": "currently / in the process of",
+            "type": "adverb"
+          },
+          {
+            "thai": "หา",
+            "romanization": "hâa",
+            "english": "to look for",
+            "type": "verb"
+          },
+          {
+            "thai": "ที่",
+            "romanization": "thîi",
+            "english": "place / location",
+            "type": "noun"
+          },
+          {
+            "thai": "ตู้",
+            "romanization": "dtûu",
+            "english": "box / locker",
+            "type": "noun"
+          },
+          {
+            "thai": "ไปรษณีย์",
+            "romanization": "bai-rás-nii",
+            "english": "postal / post office",
+            "type": "noun"
+          }
+        ]
+      },
+      {
+        "thai": "ที่ตู้ไปรษณีย์อยู่ตรงข้ามกับตลาดนัดหน่อยครับ",
+        "romanization": "thîi dtûu bai-rás-nii yùu drong-khâam gàp dtà-làt nát nòi khráp",
+        "english": "The post office is opposite the market.",
+        "components": [
+          {
+            "thai": "ที่ตู้ไปรษณีย์",
+            "romanization": "thîi dtûu bai-rás-nii",
+            "english": "post office",
+            "type": "noun"
+          },
+          {
+            "thai": "อยู่",
+            "romanization": "yùu",
+            "english": "to be (location)",
+            "type": "verb"
+          },
+          {
+            "thai": "ตรงข้าม",
+            "romanization": "drong-khâam",
+            "english": "opposite",
+            "type": "preposition"
+          },
+          {
+            "thai": "กับ",
+            "romanization": "gàp",
+            "english": "with / at / to (directional)",
+            "type": "preposition"
+          },
+          {
+            "thai": "ตลาดนัด",
+            "romanization": "dtà-làt nát",
+            "english": "night market / weekend market",
+            "type": "noun"
+          },
+          {
+            "thai": "หน่อย",
+            "romanization": "nòi",
+            "english": "a little / somewhat (softener)",
+            "type": "adverb"
+          },
+          {
+            "thai": "ครับ",
+            "romanization": "khráp",
+            "english": "polite particle (male speaker)",
+            "type": "particle"
+          }
+        ]
+      },
+      {
+        "thai": "ขอบคุณมากครับ",
+        "romanization": "kòp-khun mâak khráp",
+        "english": "Thank you very much.",
+        "components": [
+          {
+            "thai": "ขอบคุณ",
+            "romanization": "kòp-khun",
+            "english": "thank you",
+            "type": "interjection"
+          },
+          {
+            "thai": "มาก",
+            "romanization": "mâak",
+            "english": "very",
+            "type": "adverb"
+          },
+          {
+            "thai": "ครับ",
+            "romanization": "khráp",
+            "english": "polite particle (male speaker)",
+            "type": "particle"
+          }
+        ]
+      },
+      {
+        "thai": "ฉันจะไปดู",
+        "romanization": "chăn jà bpai duu",
+        "english": "I'll go check.",
+        "components": [
+          {
+            "thai": "ฉัน",
+            "romanization": "chăn",
+            "english": "I (female speaker or neutral)",
+            "type": "pronoun"
+          },
+          {
+            "thai": "จะ",
+            "romanization": "jà",
+            "english": "will / going to (future marker)",
+            "type": "auxiliary verb"
+          },
+          {
+            "thai": "ไป",
+            "romanization": "bpai",
+            "english": "to go",
+            "type": "verb"
+          },
+          {
+            "thai": "ดู",
+            "romanization": "duu",
+            "english": "to look / check",
+            "type": "verb"
+          }
+        ]
+      },
+      {
+        "thai": "ยินดีค่ะ",
+        "romanization": "yin-dii khâ",
+        "english": "You're welcome.",
+        "components": [
+          {
+            "thai": "ยินดี",
+            "romanization": "yin-dii",
+            "english": "pleased / welcome",
+            "type": "adjective"
+          },
+          {
+            "thai": "ค่ะ",
+            "romanization": "khâ",
+            "english": "polite particle (female speaker)",
+            "type": "particle"
+          }
+        ]
+      },
+      {
+        "thai": "มีอะไรที่ฉันสามารถช่วยคุณได้อีกไหมคะ?",
+        "romanization": "mii à-rai thîi chăn sǎa-mâat chûai khun dâai èek mǎi khâ?",
+        "english": "Is there anything else I can help you with?",
+        "components": [
+          {
+            "thai": "มี",
+            "romanization": "mii",
+            "english": "to have / there is",
+            "type": "verb"
+          },
+          {
+            "thai": "อะไร",
+            "romanization": "à-rai",
+            "english": "what / anything",
+            "type": "pronoun"
+          },
+          {
+            "thai": "ที่",
+            "romanization": "thîi",
+            "english": "that / which (relative)",
+            "type": "relative"
+          },
+          {
+            "thai": "ฉัน",
+            "romanization": "chăn",
+            "english": "I (female speaker)",
+            "type": "pronoun"
+          },
+          {
+            "thai": "สามารถ",
+            "romanization": "sǎa-mâat",
+            "english": "can / able to",
+            "type": "verb"
+          },
+          {
+            "thai": "ช่วย",
+            "romanization": "chûai",
+            "english": "to help",
+            "type": "verb"
+          },
+          {
+            "thai": "คุณ",
+            "romanization": "khun",
+            "english": "you",
+            "type": "pronoun"
+          },
+          {
+            "thai": "ได้",
+            "romanization": "dâai",
+            "english": "can / able to (capability)",
+            "type": "auxiliary verb"
+          },
+          {
+            "thai": "อีก",
+            "romanization": "èek",
+            "english": "another / more / again",
+            "type": "adverb"
+          },
+          {
+            "thai": "ไหม",
+            "romanization": "mǎi",
+            "english": "question particle (yes/no)",
+            "type": "particle"
+          },
+          {
+            "thai": "คะ",
+            "romanization": "khâ",
+            "english": "polite particle (female speaker)",
+            "type": "particle"
+          }
+        ]
+      }
+    ],
+    "createdAt": 1772011582753,
+    "difficulty": "beginner",
+    "lines": [
+      {
+        "speaker": "A",
+        "thai": "สวัสดีครับ ผมกำลังหาที่ตู้ไปรษณีย์",
+        "english": "Hello, I'm looking for where the post office is.",
+        "romanization": "sà-wàt-dēe kráp, pǒm gam-lang hǎa têe dtôo bprai-sà-nee."
+      },
+      {
+        "speaker": "B",
+        "thai": "ที่ตู้ไปรษณีย์อยู่ตรงข้ามกับตลาดนัดหน่อยครับ",
+        "english": "The post office is opposite the market.",
+        "romanization": "têe dtôo bprai-sà-nee yòo dtrong-kâam gàp dtà-làat nát nòi kráp."
+      },
+      {
+        "speaker": "A",
+        "thai": "ขอบคุณมากครับ ฉันจะไปดู",
+        "english": "Thank you very much. I'll go check.",
+        "romanization": "kòp-kun mâak kráp, chǎn jà bpai doo."
+      },
+      {
+        "speaker": "B",
+        "thai": "ยินดีค่ะ มีอะไรที่ฉันสามารถช่วยคุณได้อีกไหมคะ?",
+        "english": "You're welcome. Is there anything else I can help you with?",
+        "romanization": "yin-dee kâ, mee à-rai têe chǎn sǎa-mâat chûay kun dâi èek mǎi ká?"
+      }
+    ],
+    "publishedAt": 1772012127283,
+    "register": "informal",
+    "topic": "Where is the post office",
+    "uniqueWords": [
+      {
+        "thai": "สวัสดี",
+        "romanization": "sà-wàt-dee",
+        "english": "hello",
+        "type": "interjection"
+      },
+      {
+        "thai": "ครับ",
+        "romanization": "khráp",
+        "english": "polite particle (male speaker)",
+        "type": "particle"
+      },
+      {
+        "thai": "ผม",
+        "romanization": "phŏm",
+        "english": "I (male speaker)",
+        "type": "pronoun"
+      },
+      {
+        "thai": "กำลัง",
+        "romanization": "gam-lang",
+        "english": "currently / in the process of",
+        "type": "adverb"
+      },
+      {
+        "thai": "หา",
+        "romanization": "hâa",
+        "english": "to look for",
+        "type": "verb"
+      },
+      {
+        "thai": "ที่",
+        "romanization": "thîi",
+        "english": "place / location",
+        "type": "noun"
+      },
+      {
+        "thai": "ตู้",
+        "romanization": "dtûu",
+        "english": "box / locker",
+        "type": "noun"
+      },
+      {
+        "thai": "ไปรษณีย์",
+        "romanization": "bai-rás-nii",
+        "english": "postal / post office",
+        "type": "noun"
+      },
+      {
+        "thai": "ที่ตู้ไปรษณีย์",
+        "romanization": "thîi dtûu bai-rás-nii",
+        "english": "post office",
+        "type": "noun"
+      },
+      {
+        "thai": "อยู่",
+        "romanization": "yùu",
+        "english": "to be (location)",
+        "type": "verb"
+      },
+      {
+        "thai": "ตรงข้าม",
+        "romanization": "drong-khâam",
+        "english": "opposite",
+        "type": "preposition"
+      },
+      {
+        "thai": "กับ",
+        "romanization": "gàp",
+        "english": "with / at / to (directional)",
+        "type": "preposition"
+      },
+      {
+        "thai": "ตลาดนัด",
+        "romanization": "dtà-làt nát",
+        "english": "night market / weekend market",
+        "type": "noun"
+      },
+      {
+        "thai": "หน่อย",
+        "romanization": "nòi",
+        "english": "a little / somewhat (softener)",
+        "type": "adverb"
+      },
+      {
+        "thai": "ขอบคุณ",
+        "romanization": "kòp-khun",
+        "english": "thank you",
+        "type": "interjection"
+      },
+      {
+        "thai": "มาก",
+        "romanization": "mâak",
+        "english": "very",
+        "type": "adverb"
+      },
+      {
+        "thai": "ฉัน",
+        "romanization": "chăn",
+        "english": "I (female speaker or neutral)",
+        "type": "pronoun"
+      },
+      {
+        "thai": "จะ",
+        "romanization": "jà",
+        "english": "will / going to (future marker)",
+        "type": "auxiliary verb"
+      },
+      {
+        "thai": "ไป",
+        "romanization": "bpai",
+        "english": "to go",
+        "type": "verb"
+      },
+      {
+        "thai": "ดู",
+        "romanization": "duu",
+        "english": "to look / check",
+        "type": "verb"
+      },
+      {
+        "thai": "ยินดี",
+        "romanization": "yin-dii",
+        "english": "pleased / welcome",
+        "type": "adjective"
+      },
+      {
+        "thai": "ค่ะ",
+        "romanization": "khâ",
+        "english": "polite particle (female speaker)",
+        "type": "particle"
+      },
+      {
+        "thai": "มี",
+        "romanization": "mii",
+        "english": "to have / there is",
+        "type": "verb"
+      },
+      {
+        "thai": "อะไร",
+        "romanization": "à-rai",
+        "english": "what / anything",
+        "type": "pronoun"
+      },
+      {
+        "thai": "สามารถ",
+        "romanization": "sǎa-mâat",
+        "english": "can / able to",
+        "type": "verb"
+      },
+      {
+        "thai": "ช่วย",
+        "romanization": "chûai",
+        "english": "to help",
+        "type": "verb"
+      },
+      {
+        "thai": "คุณ",
+        "romanization": "khun",
+        "english": "you",
+        "type": "pronoun"
+      },
+      {
+        "thai": "ได้",
+        "romanization": "dâai",
+        "english": "can / able to (capability)",
+        "type": "auxiliary verb"
+      },
+      {
+        "thai": "อีก",
+        "romanization": "èek",
+        "english": "another / more / again",
+        "type": "adverb"
+      },
+      {
+        "thai": "ไหม",
+        "romanization": "mǎi",
+        "english": "question particle (yes/no)",
+        "type": "particle"
+      },
+      {
+        "thai": "คะ",
+        "romanization": "khâ",
+        "english": "polite particle (female speaker)",
+        "type": "particle"
+      }
+    ],
+    "id": "f91ed0d8-1087-4342-a9f1-692499f8dc8f"
+  }
+]
