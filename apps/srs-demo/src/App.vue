@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import {
-  composeWordBatchMulti,
-  nextActivePool,
-  updateMasteryState,
+  assembleBatch,
+  initAdaptiveSession,
+  advanceAdaptiveSession,
+  getNewlyMasteredIds,
+  initBatchState,
+  nextQuestion,
+  submitBatchResult,
+  finishBatch,
+  isBatchDone,
   isMastered,
   type QuizItem,
   type QuizQuestion,
   type QuizResult,
   type WordQuizResult,
   type RunState,
+  type AdaptiveSessionState,
+  type SessionConfig,
+  type BatchState,
 } from '@gll/srs-engine-v2';
 import { appDecks } from './data/decks';
 import { deckToQuizItems, buildWordPool } from './data/transformer';
@@ -24,14 +33,16 @@ import BatchResults, { type BatchSummary } from './components/BatchResults.vue';
 
 const wordPool = buildWordPool(appDecks) as QuizItem[];
 
-const CONFIG = {
-  questionLimit: 8,
+const CONFIG: SessionConfig & { maxRetryPerWord: number } = {
+  wordsPerBatch: 3,
   masteryThreshold: 2,
   streakThresholds: {
     correctStreakThreshold: 2,
     wrongStreakThreshold: 2,
     maxMastery: 2,
   },
+  maxRetryPerSession: 5,
+  maxRetryPerWord: 2,
 };
 
 type Screen = 'select' | 'quiz' | 'results';
@@ -39,11 +50,12 @@ type Screen = 'select' | 'quiz' | 'results';
 const screen = ref<Screen>('select');
 const hasSavedSession = ref(false);
 const deckId = ref<string | null>(null);
-const activeItems = ref<QuizItem[]>([]);
-const queue = ref<QuizItem[]>([]);
-const runState = ref<RunState>(new Map());
-const recheckPending = ref(new Set<string>());
-const recheckReentered = ref(new Set<string>());
+
+// Adaptive session state refs
+const sessionState = ref<AdaptiveSessionState | null>(null);
+const globalRunState = ref<RunState>(new Map());
+const batchState = ref<BatchState | null>(null);
+const currentQuestion = ref<QuizQuestion | null>(null);
 
 const defaultWordState = {
   wordId: '',
@@ -54,12 +66,24 @@ const defaultWordState = {
   wrongStreak: 0,
 };
 
+const currentRunState = computed<RunState>(() => {
+  return sessionState.value ? sessionState.value.runState : globalRunState.value;
+});
+
+const activeItems = computed<QuizItem[]>(() => {
+  return sessionState.value ? sessionState.value.active : [];
+});
+
+const queue = computed<QuizItem[]>(() => {
+  return sessionState.value ? sessionState.value.queue : [];
+});
+
 const masteredDeck = computed<QuizItem[]>(() => {
   const deck = appDecks.find((d) => d.id === deckId.value);
   if (!deck) return [];
   return deckToQuizItems(deck).filter((w) =>
     isMastered(
-      runState.value.get(w.id) ?? { ...defaultWordState, wordId: w.id },
+      currentRunState.value.get(w.id) ?? { ...defaultWordState, wordId: w.id },
       CONFIG.masteryThreshold,
     ),
   ) as QuizItem[];
@@ -68,7 +92,7 @@ const masteredDeck = computed<QuizItem[]>(() => {
 const masteredGlobal = computed<QuizItem[]>(() =>
   wordPool.filter((w) =>
     isMastered(
-      runState.value.get(w.id) ?? { ...defaultWordState, wordId: w.id },
+      currentRunState.value.get(w.id) ?? { ...defaultWordState, wordId: w.id },
       CONFIG.masteryThreshold,
     ),
   ),
@@ -82,7 +106,7 @@ const completedDeckIds = computed<Set<string>>(() => {
       words.length > 0 &&
       words.every((w) =>
         isMastered(
-          runState.value.get(w.id) ?? { ...defaultWordState, wordId: w.id },
+          currentRunState.value.get(w.id) ?? { ...defaultWordState, wordId: w.id },
           CONFIG.masteryThreshold,
         ),
       )
@@ -98,11 +122,8 @@ const nextDeckId = computed<string | null>(() => {
   return idx !== -1 && idx + 1 < appDecks.length ? appDecks[idx + 1].id : null;
 });
 
-const questions = ref<QuizQuestion[]>([]);
-const currentIndex = ref(0);
-const answers = ref<QuizResult[]>([]);
-const summary = ref<BatchSummary[]>([]);
 const batchScore = ref({ correct: 0, total: 0 });
+const summary = ref<BatchSummary[]>([]);
 
 function getDeckWords(id: string): QuizItem[] {
   const deck = appDecks.find((d) => d.id === id);
@@ -111,39 +132,56 @@ function getDeckWords(id: string): QuizItem[] {
 }
 
 function startBatch() {
-  const qs = composeWordBatchMulti(activeItems.value, wordPool, {
-    questionLimit: CONFIG.questionLimit,
-  });
-  questions.value = qs;
-  currentIndex.value = 0;
-  answers.value = [];
+  if (!sessionState.value) return;
+
+  // Assemble batch questions using the composer registry pattern internally
+  const questions = assembleBatch(
+    sessionState.value.active,
+    wordPool,
+    [], // foundationalPool is empty in this demo
+    CONFIG.wordsPerBatch,
+  );
+
+  // Initialize serializable batch state
+  batchState.value = initBatchState(
+    questions,
+    CONFIG.maxRetryPerWord,
+    sessionState.value.sessionRetryCounts,
+    CONFIG.maxRetryPerSession,
+  );
+
+  // Fetch the first question from the queue
+  const { question, state: nextState } = nextQuestion(batchState.value);
+  batchState.value = nextState;
+  currentQuestion.value = question;
+
   screen.value = 'quiz';
 }
 
 function initSession(id: string) {
   deckId.value = id;
   const words = getDeckWords(id);
-  // Preserve runState across deck switches — mastery is global
-  const pool = nextActivePool(
-    [],
+
+  // Build recheck IDs based on globalRunState
+  const recheckIds = new Set(
+    words
+      .filter((w) => {
+        const ws = globalRunState.value.get(w.id);
+        return ws != null && isMastered(ws, CONFIG.masteryThreshold);
+      })
+      .map((w) => w.id),
+  );
+
+  // Initialize adaptive session
+  sessionState.value = initAdaptiveSession(
     words,
-    CONFIG.questionLimit,
-    runState.value,
-    CONFIG.masteryThreshold,
+    CONFIG,
+    recheckIds,
+    globalRunState.value,
   );
-  activeItems.value = pool.active;
-  queue.value = pool.queue;
-  recheckPending.value = new Set();
-  recheckReentered.value = new Set();
-  // Persist immediately so deck switch survives reload before first batch
-  saveSession(
-    id,
-    pool.active,
-    pool.queue,
-    runState.value,
-    recheckPending.value,
-    recheckReentered.value,
-  );
+
+  // Persist session immediately
+  saveSession(id, sessionState.value);
   hasSavedSession.value = true;
   startBatch();
 }
@@ -156,11 +194,8 @@ function onResume() {
   const saved = loadSession();
   if (!saved) return;
   deckId.value = saved.deckId;
-  activeItems.value = saved.activeItems;
-  queue.value = saved.queue;
-  runState.value = saved.runState;
-  recheckPending.value = saved.recheckPending;
-  recheckReentered.value = saved.recheckReentered;
+  sessionState.value = saved.sessionState;
+  globalRunState.value = saved.sessionState.runState;
   startBatch();
 }
 
@@ -168,65 +203,41 @@ function onClear() {
   clearSession();
   hasSavedSession.value = false;
   deckId.value = null;
-  activeItems.value = [];
-  queue.value = [];
-  runState.value = new Map();
-  recheckPending.value = new Set();
-  recheckReentered.value = new Set();
+  sessionState.value = null;
+  globalRunState.value = new Map();
+  batchState.value = null;
+  currentQuestion.value = null;
   screen.value = 'select';
 }
 
-function finishBatch() {
-  const prevState = new Map(runState.value);
+function finishBatchAndTransition() {
+  if (!sessionState.value || !batchState.value) return;
 
-  // The engine has evolved: QuizResult is now a union of WordQuizResult | SentenceQuizResult.
-  // We must filter to wordResults before updating mastery, as sentences feed a different track.
-  const wordResults = answers.value.filter(
+  const output = finishBatch(batchState.value);
+  const prevState = sessionState.value.runState;
+
+  // Advance adaptive session state via the orchestrator
+  sessionState.value = advanceAdaptiveSession(sessionState.value, output, CONFIG);
+  globalRunState.value = sessionState.value.runState;
+
+  // Determine newly mastered words in this specific batch
+  const wordResults = output.results.filter(
     (r): r is WordQuizResult => 'wordId' in r,
   );
-
-  const masteryResult = updateMasteryState(
-    wordResults,
-    runState.value,
+  const uniqueWordIds = [...new Set(wordResults.map((r) => r.wordId))];
+  const newlyMasteredIds = getNewlyMasteredIds(
     prevState,
-    recheckPending.value,
-    recheckReentered.value,
+    sessionState.value.runState,
+    uniqueWordIds,
     CONFIG.masteryThreshold,
-    CONFIG.streakThresholds,
   );
 
-  runState.value = masteryResult.runState;
-  recheckPending.value = masteryResult.recheckPending;
-  recheckReentered.value = masteryResult.recheckReentered;
+  const correct = output.results.filter((a) => a.correct).length;
+  batchScore.value = { correct, total: output.results.length };
 
-  const nextPool = nextActivePool(
-    activeItems.value,
-    queue.value,
-    CONFIG.questionLimit,
-    runState.value,
-    CONFIG.masteryThreshold,
-    masteryResult.recheckReentered,
-  );
-  activeItems.value = nextPool.active;
-  queue.value = nextPool.queue;
-
-  saveSession(
-    deckId.value ?? '',
-    activeItems.value,
-    queue.value,
-    runState.value,
-    recheckPending.value,
-    recheckReentered.value,
-  );
-  hasSavedSession.value = true;
-
-  const correct = answers.value.filter((a) => a.correct).length;
-  batchScore.value = { correct, total: answers.value.length };
-
-  // Update summary only for words; sentences don't have a UI state track in the demo yet
-  summary.value = [...new Set(wordResults.map((r) => r.wordId))].map((wid) => ({
+  summary.value = uniqueWordIds.map((wid) => ({
     wordId: wid,
-    state: runState.value.get(wid) ?? {
+    state: sessionState.value!.runState.get(wid) ?? {
       wordId: wid,
       seen: 0,
       correct: 0,
@@ -234,24 +245,37 @@ function finishBatch() {
       correctStreak: 0,
       wrongStreak: 0,
     },
-    newlyMastered: masteryResult.newlyMasteredIds.includes(wid),
+    newlyMastered: newlyMasteredIds.includes(wid),
   }));
+
+  saveSession(deckId.value ?? '', sessionState.value);
+  hasSavedSession.value = true;
 
   screen.value = 'results';
 }
 
 function onAnswered(result: QuizResult) {
-  answers.value.push(result);
-  currentIndex.value++;
-  if (currentIndex.value === questions.value.length) finishBatch();
+  if (!batchState.value) return;
+
+  // Submit result to serializable batch state
+  batchState.value = submitBatchResult(batchState.value, result);
+
+  if (isBatchDone(batchState.value)) {
+    finishBatchAndTransition();
+  } else {
+    // Pull the next question
+    const { question, state: nextState } = nextQuestion(batchState.value);
+    batchState.value = nextState;
+    currentQuestion.value = question;
+  }
 }
 
 function onExitBatch() {
-  if (answers.value.length === 0) {
+  if (!batchState.value || batchState.value.results.length === 0) {
     screen.value = 'select';
     return;
   }
-  finishBatch();
+  finishBatchAndTransition();
 }
 
 function onNext() {
@@ -271,6 +295,7 @@ onMounted(() => {
   if (saved) {
     hasSavedSession.value = true;
     deckId.value = saved.deckId;
+    globalRunState.value = saved.sessionState.runState;
     screen.value = 'select';
   }
 });
@@ -288,10 +313,10 @@ onMounted(() => {
   />
 
   <QuizCard
-    v-else-if="screen === 'quiz' && questions.length > 0"
-    :question="questions[currentIndex]"
-    :index="currentIndex"
-    :total="questions.length"
+    v-else-if="screen === 'quiz' && currentQuestion && batchState"
+    :question="currentQuestion"
+    :index="batchState.results.length"
+    :total="batchState.initialCount"
     :active-items="activeItems"
     :queue="queue"
     :mastered-deck="masteredDeck"
