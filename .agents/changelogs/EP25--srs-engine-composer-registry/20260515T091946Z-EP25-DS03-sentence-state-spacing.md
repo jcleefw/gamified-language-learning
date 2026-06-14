@@ -1,7 +1,7 @@
 # EP25-DS03: Sentence State & Spacing Rules
 
 **Date**: 20260515T091946Z
-**Status**: Draft
+**Status**: Completed ✅ — ST08 · ST09 · ST10 all done; 191/191 tests green
 **Epic**: [EP25 - SRS Engine v2: Composer Registry & Batch Execution](.agents/plans/epics/EP25-srs-engine-composer-registry.md)
 
 ---
@@ -173,16 +173,16 @@ src/__tests__/unit/sentence-spacing.test.ts  ← NEW (ST09+ST10): gate and state
 - `packages/srs-engine-v2/src/types/word-state.ts` — structural reference
 
 **Tasks**:
-- [ ] Create `src/types/sentence-state.ts` — `SentenceState`, `SentenceRunState`, `defaultSentenceState`
-- [ ] Export from `src/index.ts`
-- [ ] Unit tests (`sentence-state.test.ts`):
-  - [ ] `defaultSentenceState` returns correct zero-values
-  - [ ] `lastBatchSeen` is `-1` (never seen sentinel)
-  - [ ] `active` is `true` by default
+- [x] Create `src/types/sentence-state.ts` — `SentenceState`, `SentenceRunState`, `defaultSentenceState`
+- [x] Export from `src/index.ts`
+- [x] Unit tests (`sentence-state.test.ts`):
+  - [x] `defaultSentenceState` returns correct zero-values
+  - [x] `lastBatchSeen` is `-1` (never seen sentinel)
+  - [x] `active` is `true` by default
 
 **Acceptance Criteria**:
-- [ ] `SentenceState`, `SentenceRunState`, `defaultSentenceState` importable from `@gll/srs-engine-v2`
-- [ ] `pnpm typecheck` clean
+- [x] `SentenceState`, `SentenceRunState`, `defaultSentenceState` importable from `@gll/srs-engine-v2`
+- [x] `pnpm typecheck` clean
 
 ---
 
@@ -196,19 +196,21 @@ src/__tests__/unit/sentence-spacing.test.ts  ← NEW (ST09+ST10): gate and state
 - `packages/srs-engine-v2/src/types/sentence-state.ts` (from ST08)
 
 **Tasks**:
-- [ ] Add `sentenceBatchGap: 1` to `LEARNING_CONFIG`
-- [ ] `runAdaptiveLoop`: initialise `sentenceRunState: SentenceRunState = new Map()`; thread `batchNum` into `resolveEligibleContexts`; update `lastBatchSeen` for each sentence that appeared after each batch
-- [ ] `resolveEligibleContexts`: add `sentenceRunState` + `batchNum` params; apply `active` gate + batch-gap gate after existing word-seen gate
-- [ ] Unit tests (`sentence-spacing.test.ts`):
-  - [ ] Sentence never seen (`lastBatchSeen: -1`) passes batch-gap gate
-  - [ ] Sentence seen last batch (`lastBatchSeen = batchNum - 1`) fails batch-gap gate
-  - [ ] Sentence seen 2 batches ago (`lastBatchSeen = batchNum - 2`) passes (gap = 1)
-  - [ ] Sentence with `active: false` excluded regardless of batch gap
+- [x] Add `sentenceBatchGap: 1` to `LEARNING_CONFIG`
+- [x] `runAdaptiveLoop`: initialise `sentenceRunState: SentenceRunState = new Map()`; thread `batchNum` into `resolveEligibleContexts`; update `lastBatchSeen` for each sentence that appeared after each batch
+- [x] `resolveEligibleContexts`: add `sentenceRunState` + `batchNum` params; apply `active` gate + batch-gap gate after existing word-seen gate
+- [x] Unit tests (`sentence-spacing.test.ts`):
+  - [x] Sentence never seen (`lastBatchSeen: -1`) passes batch-gap gate
+  - [x] Sentence seen last batch (`lastBatchSeen = batchNum - 1`) fails batch-gap gate
+  - [x] Sentence seen 2 batches ago (`lastBatchSeen = batchNum - 2`) passes (gap = 1)
+  - [x] Sentence with `active: false` excluded regardless of batch gap
 
 **Acceptance Criteria**:
-- [ ] All 4 gate unit tests pass
-- [ ] `pnpm --filter @gll/srs-engine-v2 test` green (all existing tests pass)
-- [ ] `pnpm typecheck` clean
+- [x] All 4 gate unit tests pass
+- [x] `pnpm --filter @gll/srs-engine-v2 test` green
+- [x] `pnpm typecheck` clean
+
+**Root cause of prior failures (RV01 BUG-4 corrected)**: `debugSentenceEligibility: true` in `config.ts` bypassed the entire filter block, making all gate tests no-ops. Fixed by setting flag to `false`.
 
 ---
 
@@ -222,21 +224,22 @@ src/__tests__/unit/sentence-spacing.test.ts  ← NEW (ST09+ST10): gate and state
 - `packages/srs-engine-v2/src/types/sentence-state.ts`
 
 **Tasks**:
-- [ ] Add `sentenceCorrectStreakThreshold: 3` + `sentenceWrongStreakThreshold: 3` to `LEARNING_CONFIG`
-- [ ] Implement `updateSentenceRunState` per gate logic in §4
-- [ ] `runAdaptiveLoop`: call `updateSentenceRunState` after word results processed, before `nextActivePool`
-- [ ] Unit tests (`sentence-spacing.test.ts` additions):
-  - [ ] Correct answer increments `sentenceStreak`, resets `sessionWrongStreak`
-  - [ ] Wrong answer increments `sessionWrongStreak`, resets `sentenceStreak`
-  - [ ] `sentenceStreak >= sentenceCorrectStreakThreshold` sets `active: false` (graduated)
-  - [ ] `sessionWrongStreak >= sentenceWrongStreakThreshold` sets `active: false` (shelved)
-  - [ ] Shelved sentence does not appear in next batch (integration via `resolveEligibleContexts`)
+- [x] Add `sentenceCorrectStreakThreshold: 3` + `sentenceWrongStreakThreshold: 3` to `LEARNING_CONFIG`
+- [x] Implement `updateSentenceRunState` per gate logic in §4
+- [x] `runAdaptiveLoop`: call `updateSentenceRunState` after word results processed, before `nextActivePool`
+- [x] Unit tests (`sentence-spacing.test.ts` additions):
+  - [x] Correct answer increments `sentenceStreak`, resets `sessionWrongStreak`
+  - [x] Wrong answer increments `sessionWrongStreak`, resets `sentenceStreak`
+  - [x] `sentenceStreak >= sentenceCorrectStreakThreshold` sets `active: false` (graduated)
+  - [x] `sessionWrongStreak >= sentenceWrongStreakThreshold` sets `active: false` (shelved)
+  - [x] Shelved sentence does not appear in next batch (integration via `resolveEligibleContexts`)
 
 **Acceptance Criteria**:
-- [ ] All 5 streak unit tests pass
-- [ ] Integration: sentence graduated after 3 correct does not reappear
-- [ ] Integration: sentence shelved after 3 consecutive wrong does not reappear
-- [ ] `pnpm --filter @gll/srs-engine-v2 test` green; `pnpm typecheck` clean
+- [x] All 5 streak unit tests pass
+- [x] Integration: sentence graduated after 3 correct does not reappear
+- [x] Integration: sentence shelved after 3 consecutive wrong does not reappear
+- [x] `pnpm typecheck` clean
+- [x] `pnpm --filter @gll/srs-engine-v2 test` green
 
 ---
 
@@ -251,9 +254,11 @@ src/__tests__/unit/sentence-spacing.test.ts  ← NEW (ST09+ST10): gate and state
 
 ## 8. Success Criteria
 
-1. `SentenceState`, `SentenceRunState`, `defaultSentenceState` importable from `@gll/srs-engine-v2` (ST08)
-2. Sentences with `active: false` never returned by `resolveEligibleContexts` (ST09)
-3. Sentences not served in back-to-back batches (ST09)
-4. Sentence graduating after `sentenceCorrectStreakThreshold` correct answers sets `active: false` (ST10)
-5. Sentence shelving after `sentenceWrongStreakThreshold` consecutive wrong answers sets `active: false` (ST10)
-6. `pnpm --filter @gll/srs-engine-v2 test` green; `pnpm typecheck` clean
+| # | Criterion | Status |
+|---|-----------|--------|
+| 1 | `SentenceState`, `SentenceRunState`, `defaultSentenceState` importable from `@gll/srs-engine-v2` (ST08) | ✅ Done |
+| 2 | Sentences with `active: false` never returned by `resolveEligibleContexts` (ST09) | ✅ Done |
+| 3 | Sentences not served in back-to-back batches (ST09) | ✅ Done |
+| 4 | Sentence graduating after `sentenceCorrectStreakThreshold` correct answers sets `active: false` (ST10) | ✅ Done |
+| 5 | Sentence shelving after `sentenceWrongStreakThreshold` consecutive wrong answers sets `active: false` (ST10) | ✅ Done |
+| 6 | `pnpm --filter @gll/srs-engine-v2 test` green; `pnpm typecheck` clean | ✅ 191/191 |
