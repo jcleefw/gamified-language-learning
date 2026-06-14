@@ -81,7 +81,8 @@ export function advanceAdaptiveSession(
     new Set([...recheckPending, ...recheckReentered]), // both recheck stages exempt from retirement
   );
 
-  // Merge updated session retry counts
+  // finishBatch pre-accumulates prior session totals into batchOutput.sessionRetryCounts,
+  // so .set() is correct here — additive merge would double-count
   const nextSessionRetryCounts = new Map(state.sessionRetryCounts);
   for (const [id, count] of batchOutput.sessionRetryCounts) {
     nextSessionRetryCounts.set(id, count);
