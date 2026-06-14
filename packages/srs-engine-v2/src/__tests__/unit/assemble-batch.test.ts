@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { assembleBatch } from '../../engine/assemble-batch.js';
+import * as composeWordBatchModule from '../../engine/compose-word-batch.js';
 import { type QuizItem } from '../../engine/compose-word-batch.js';
 import { type QuizQuestion } from '../../types/quiz.js';
 
@@ -40,6 +41,19 @@ describe('assembleBatch', () => {
     // and limits are 2 for foundational and 2 for words,
     // it will return 2 questions for each item.
     expect(questions.length).toBe(4);
+  });
+
+  it('passes shuffle: false to inner thunks so the outer sort is the sole shuffle', () => {
+    const spy = vi.spyOn(composeWordBatchModule, 'composeWordBatchItems');
+    const active: QuizItem[] = [mockWord, mockFoundational];
+
+    assembleBatch(active, [mockWord], [mockFoundational], 4);
+
+    for (const call of spy.mock.calls) {
+      expect(call[2]).toMatchObject({ shuffle: false });
+    }
+
+    spy.mockRestore();
   });
 
   it('includes extra thunks', () => {
