@@ -245,7 +245,7 @@ src/__tests__/unit/sentence-spacing.test.ts  ← NEW (ST09+ST10): gate and state
 | # | Question | Severity | Status |
 |---|----------|----------|--------|
 | OQ1 | `dailyCount` / `sentenceDailyMax` — no real clock in demo. Session = day boundary (same as `maxRetryPerSession`). Need to agree on mock fixture approach before implementation. Deferred from this DS. | Medium | Open — separate discussion before implementation |
-| OQ2 | `resolveEligibleContexts` is called inside `runBatch` which runs before results are processed. `lastBatchSeen` is set after the batch. Confirm: a sentence eligible at start of batch N will correctly be excluded from batch N+1 because `lastBatchSeen = N` is written before `nextActivePool` runs. | Low | Open — verify in ST09 |
+| OQ2 | `resolveEligibleContexts` is called inside `runBatch` which runs before results are processed. `lastBatchSeen` is set after the batch. Confirm: a sentence eligible at start of batch N will correctly be excluded from batch N+1 because `lastBatchSeen = N` is written before `nextActivePool` runs. | Low | Resolved — verified in ST09. Updates to `lastBatchSeen` occur immediately after `runBatch` returns. Thus, when batch N+1 calls `resolveEligibleContexts`, the gap check `(N+1) - N = 1 <= sentenceBatchGap` triggers and correctly excludes the sentence. |
 
 ---
 

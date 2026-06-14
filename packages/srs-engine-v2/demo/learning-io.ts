@@ -26,6 +26,9 @@ import {
   type StreakThresholds,
   type MockDeck,
   type SentenceContext,
+  type SentenceRunState,
+  defaultSentenceState,
+  type SentenceQuizResult,
 } from '../src/index.js';
 import { mockSentenceCorpus } from '../data/mock/mock-sentence-corpus.js';
 import { LEARNING_CONFIG } from './config.js';
@@ -226,18 +229,40 @@ function printWordSummary(
   }
 }
 
-function resolveEligibleContexts(
+export function resolveEligibleContexts(
   runState: RunState,
   allPool: QuizItem[],
+  sentenceRunState: SentenceRunState,
+  batchNum: number,
 ): { ctx: SentenceContext; tiles: SentenceTile[] }[] {
   const corpus = LEARNING_CONFIG.debugSentenceEligibility
     ? mockSentenceCorpus
-    : mockSentenceCorpus.filter((ctx) =>
-        ctx.wordOrder.every(
+    : mockSentenceCorpus.filter((ctx) => {
+        // 1. Word-seen gate: all wordIds seen >= minSeenForSentence
+        const wordSeenPass = ctx.wordOrder.every(
           (id) =>
             (runState.get(id)?.seen ?? 0) >= LEARNING_CONFIG.minSeenForSentence,
-        ),
-      );
+        );
+        if (!wordSeenPass) return false;
+
+        // Fetch sentence scheduling state (with defaults for never-seen sentences)
+        const sState =
+          sentenceRunState.get(ctx.sentenceId) ??
+          defaultSentenceState(ctx.sentenceId);
+
+        // 2. Active gate: false = shelved or graduated
+        if (!sState.active) return false;
+
+        // 3. Spacing / Batch-gap gate: must be > sentenceBatchGap
+        if (sState.lastBatchSeen !== -1) {
+          const gap = batchNum - sState.lastBatchSeen;
+          if (gap <= LEARNING_CONFIG.sentenceBatchGap) {
+            return false;
+          }
+        }
+
+        return true;
+      });
 
   return corpus
     .map((ctx) => {
@@ -258,18 +283,52 @@ function resolveEligibleContexts(
     .filter(({ ctx: c, tiles }) => tiles.length === c.wordOrder.length);
 }
 
+export function updateSentenceRunState(
+  sentenceRunState: SentenceRunState,
+  results: SentenceQuizResult[],
+  batchNum: number,
+  config: {
+    sentenceCorrectStreakThreshold: number;
+    sentenceWrongStreakThreshold: number;
+  },
+): SentenceRunState {
+  for (const r of results) {
+    const existing =
+      sentenceRunState.get(r.sentenceId) ??
+      defaultSentenceState(r.sentenceId);
+
+    if (r.correct) {
+      existing.sentenceStreak += 1;
+      existing.sessionWrongStreak = 0;
+      if (existing.sentenceStreak >= config.sentenceCorrectStreakThreshold) {
+        existing.active = false;
+      }
+    } else {
+      existing.sessionWrongStreak += 1;
+      existing.sentenceStreak = 0;
+      if (existing.sessionWrongStreak >= config.sentenceWrongStreakThreshold) {
+        existing.active = false;
+      }
+    }
+    existing.lastBatchSeen = batchNum;
+    sentenceRunState.set(r.sentenceId, existing);
+  }
+  return sentenceRunState;
+}
+
 async function runBatch(
   batchNum: number,
   state: AdaptiveSessionState,
   wordPool: QuizItem[],
   foundationalPool: QuizItem[],
   wordsPerBatch: number,
+  sentenceRunState: SentenceRunState,
   strategy?: AutoAnswerStrategy,
 ): Promise<BatchOutput & { correct: number; total: number }> {
   console.log(`\n=== Batch ${String(batchNum)} ===`);
 
   const allPool = [...wordPool, ...foundationalPool];
-  const extraThunks = resolveEligibleContexts(state.runState, allPool).map(
+  const extraThunks = resolveEligibleContexts(state.runState, allPool, sentenceRunState, batchNum).map(
     ({ ctx, tiles }) =>
       () =>
         composeSentenceBatch(ctx, tiles, 'th', { shuffle: !strategy }),
@@ -327,6 +386,7 @@ export async function runAdaptiveLoop(
   };
 
   let state = initAdaptiveSession(words, config, recheckIds, initialRunState);
+  const sentenceRunState: SentenceRunState = new Map();
   let totalCorrect = 0;
   let totalQuestions = 0;
   let totalMastered = 0;
@@ -334,21 +394,34 @@ export async function runAdaptiveLoop(
   for (;;) {
     if (state.active.length === 0 && state.queue.length === 0) break;
 
+    const currentBatchNum = state.batchNum + 1;
     const {
       correct,
       total,
       results,
       sessionRetryCounts,
     } = await runBatch(
-      state.batchNum + 1,
+      currentBatchNum,
       state,
       wordPool,
       foundationalPool,
       wordsPerBatch,
+      sentenceRunState,
       strategy,
     );
     totalCorrect += correct;
     totalQuestions += total;
+
+    // Update sentence run state with correct/wrong results, streaks, deactivations, and last batch seen
+    const sentenceResults = results.filter(
+      (r): r is SentenceQuizResult => 'sentenceId' in r,
+    );
+    updateSentenceRunState(
+      sentenceRunState,
+      sentenceResults,
+      currentBatchNum,
+      LEARNING_CONFIG,
+    );
 
     const batchOutput: BatchOutput = {
       results,

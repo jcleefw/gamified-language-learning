@@ -8,6 +8,9 @@ export const LEARNING_CONFIG = {
   correctStreakThreshold: 2,
   wrongStreakThreshold: 2,
   minSeenForSentence: 2,
+  sentenceBatchGap: 1, // D7 — min batches between appearances
+  sentenceCorrectStreakThreshold: 3, // D7 — correct streak for graduation
+  sentenceWrongStreakThreshold: 3, // D10 — wrong streak for shelving
   debugSentenceEligibility: false,
   maxRetryPerWord: 2,
   maxRetryPerSession: 5,
