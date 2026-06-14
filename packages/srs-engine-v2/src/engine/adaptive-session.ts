@@ -78,7 +78,7 @@ export function advanceAdaptiveSession(
     config.wordsPerBatch,
     runState,
     config.masteryThreshold,
-    recheckPending, // words still in recheck are exempt from retirement
+    new Set([...recheckPending, ...recheckReentered]), // both recheck stages exempt from retirement
   );
 
   // Merge updated session retry counts
