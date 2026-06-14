@@ -69,11 +69,7 @@ export function nextQuestion(state: BatchState): {
   }
 
   const nextQueue = [...state.queue];
-  const q = nextQueue.shift();
-  if (!q) {
-    return { question: null, state };
-  }
-
+  const q = nextQueue.shift()!;
   const id = getQuestionId(q);
 
   const nextCache = new Map(state.questionCache);
@@ -81,12 +77,8 @@ export function nextQuestion(state: BatchState): {
     nextCache.set(id, q);
   }
 
-  const question = nextCache.get(id);
-  if (!question) {
-    return { question: null, state };
-  }
   return {
-    question,
+    question: nextCache.get(id)!,
     state: {
       ...state,
       queue: nextQueue,
@@ -117,9 +109,9 @@ export function submitBatchResult(
     const canRetryInSession = totalSessionRetries < state.retryPerSessionCap;
 
     if (canRetryInBatch && canRetryInSession) {
-      nextBatchRetryCounts.set(id, batchRetries + 1);
       const cached = state.questionCache.get(id);
       if (cached) {
+        nextBatchRetryCounts.set(id, batchRetries + 1);
         nextQueue.push(cached);
       }
     }

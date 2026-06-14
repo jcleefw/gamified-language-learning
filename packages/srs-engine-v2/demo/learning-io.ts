@@ -209,7 +209,7 @@ export async function runInteractive(
   }
 
   console.log(`\nScore: ${String(score)} / ${String(state.initialCount)}`);
-  return { correct: score, total: count, state };
+  return { correct: score, total: state.initialCount, state };
 }
 
 
@@ -253,7 +253,7 @@ export function resolveEligibleContexts(
         // 2. Active gate: false = shelved or graduated
         if (!sState.active) return false;
 
-        // 3. Spacing / Batch-gap gate: must be > sentenceBatchGap
+        // 3. Spacing / Batch-gap gate: must skip > sentenceBatchGap batches
         if (sState.lastBatchSeen !== -1) {
           const gap = batchNum - sState.lastBatchSeen;
           if (gap <= LEARNING_CONFIG.sentenceBatchGap) {
@@ -264,10 +264,12 @@ export function resolveEligibleContexts(
         return true;
       });
 
+  const poolMap = new Map(allPool.map((w) => [w.id, w]));
+
   return corpus
     .map((ctx) => {
       const tiles: SentenceTile[] = ctx.wordOrder.flatMap((id) => {
-        const item = allPool.find((w) => w.id === id);
+        const item = poolMap.get(id);
         if (!item) return [];
         return [
           {
