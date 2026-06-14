@@ -194,6 +194,13 @@ function onResume() {
   globalRunState.value = saved.sessionState.runState;
 
   if (sessionState.value.active.length === 0 && sessionState.value.queue.length === 0) {
+    const allWordIds = [...sessionState.value.runState.keys()];
+    batchScore.value = { correct: allWordIds.length, total: allWordIds.length };
+    summary.value = allWordIds.map((wid) => ({
+      wordId: wid,
+      state: sessionState.value!.runState.get(wid) ?? { ...defaultWordState, wordId: wid },
+      newlyMastered: false,
+    }));
     screen.value = 'results';
   } else {
     startBatch();
@@ -239,14 +246,7 @@ function finishBatchAndTransition() {
 
   summary.value = uniqueWordIds.map((wid) => ({
     wordId: wid,
-    state: sessionState.value!.runState.get(wid) ?? {
-      wordId: wid,
-      seen: 0,
-      correct: 0,
-      mastery: 0,
-      correctStreak: 0,
-      wrongStreak: 0,
-    },
+    state: sessionState.value!.runState.get(wid) ?? { ...defaultWordState, wordId: wid },
     newlyMastered: newlyMasteredIds.includes(wid),
   }));
 
