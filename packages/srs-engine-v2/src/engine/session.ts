@@ -60,7 +60,7 @@ export function processRecheckResult(
     nextState = updateRunState(runState, wordId, wasCorrect, streakThresholds);
     if (nextReentered.has(wordId)) {
       const wordState = nextState.get(wordId);
-      if (wordState && !isMastered(wordState, masteryThreshold)) {
+      if (wordState && isMastered(wordState, masteryThreshold)) {
         nextReentered.delete(wordId);
       }
     }

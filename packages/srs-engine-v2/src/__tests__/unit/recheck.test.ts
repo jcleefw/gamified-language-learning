@@ -155,30 +155,30 @@ describe('processRecheckResult — wrong on second attempt (recheckReentered)', 
     expect(result.runState.get('w1')?.seen).toBe(6);
   });
 
-  it('removes word from recheckReentered when mastery drops below threshold', () => {
-    // wrongStreak: 1 already, threshold 2 — second wrong will decrement mastery
+  it('keeps word in recheckReentered when it fails (not yet mastered)', () => {
+    // wrongStreak: 1 already, threshold 2 — second wrong decrements mastery below threshold
     const runState: RunState = new Map([['w1', { wordId: 'w1', seen: 5, correct: 3, mastery: 3, correctStreak: 0, wrongStreak: 1 }]]);
     const recheckPending = new Set<string>();
     const recheckReentered = new Set(['w1']);
 
     const result = processRecheckResult('w1', false, runState, recheckPending, recheckReentered, masteryThreshold(), { correctStreakThreshold: 2, wrongStreakThreshold: 2, maxMastery: 5 });
 
-    // mastery decremented to 2 (< threshold 3) → removed from recheckReentered
+    // mastery decremented to 2 (below threshold 3) — word still needs recheck protection
     expect(result.runState.get('w1')?.mastery).toBe(2);
-    expect(result.recheckReentered.has('w1')).toBe(false);
+    expect(result.recheckReentered.has('w1')).toBe(true);
   });
 
-  it('keeps word in recheckReentered when mastery stays at or above threshold', () => {
-    // wrongStreak: 0, threshold 2 — one wrong not enough to decrement
-    const runState: RunState = new Map([['w1', { wordId: 'w1', seen: 5, correct: 3, mastery: 3, correctStreak: 0, wrongStreak: 0 }]]);
+  it('removes word from recheckReentered when it masters on second attempt', () => {
+    // correctStreak: 1, threshold 2 — second correct will increment mastery to threshold
+    const runState: RunState = new Map([['w1', { wordId: 'w1', seen: 5, correct: 3, mastery: 2, correctStreak: 1, wrongStreak: 0 }]]);
     const recheckPending = new Set<string>();
     const recheckReentered = new Set(['w1']);
 
-    const result = processRecheckResult('w1', false, runState, recheckPending, recheckReentered, masteryThreshold(), { correctStreakThreshold: 2, wrongStreakThreshold: 2, maxMastery: 5 });
+    const result = processRecheckResult('w1', true, runState, recheckPending, recheckReentered, masteryThreshold(), { correctStreakThreshold: 2, wrongStreakThreshold: 2, maxMastery: 5 });
 
-    // mastery unchanged (streak not yet at threshold)
+    // mastery incremented to 3 (at threshold) — graduated, clean up from recheckReentered
     expect(result.runState.get('w1')?.mastery).toBe(3);
-    expect(result.recheckReentered.has('w1')).toBe(true);
+    expect(result.recheckReentered.has('w1')).toBe(false);
   });
 });
 
