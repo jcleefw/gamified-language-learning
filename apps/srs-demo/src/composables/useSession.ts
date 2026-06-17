@@ -1,5 +1,6 @@
 import type { QuizItem, AdaptiveSessionState, WordState } from '@gll/srs-engine-v2';
 
+// TODO(DS04/persistence): add sentenceRunState to PersistedSession when DB persistence lands
 interface PersistedSession {
   deckId: string;
   sessionState: {

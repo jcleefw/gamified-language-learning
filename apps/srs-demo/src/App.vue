@@ -11,17 +11,22 @@ import {
   finishBatch,
   isBatchDone,
   isMastered,
+  resolveEligibleContexts,
+  updateSentenceRunState,
+  composeSentenceBatch,
   type QuizItem,
   type QuizQuestion,
   type QuizResult,
   type WordQuizResult,
+  type SentenceQuizResult,
   type RunState,
   type AdaptiveSessionState,
   type SessionConfig,
   type BatchState,
+  type SentenceRunState,
 } from '@gll/srs-engine-v2';
 import { appDecks } from './data/decks';
-import { deckToQuizItems, buildWordPool } from './data/transformer';
+import { deckToQuizItems, buildWordPool, buildSentenceCorpus } from './data/transformer';
 import {
   saveSession,
   loadSession,
@@ -32,6 +37,13 @@ import QuizCard from './components/QuizCard.vue';
 import BatchResults, { type BatchSummary } from './components/BatchResults.vue';
 
 const wordPool = buildWordPool(appDecks) as QuizItem[];
+const sentenceCorpus = buildSentenceCorpus(appDecks);
+const SENTENCE_CONFIG = {
+  minSeenForSentence: 2,
+  sentenceBatchGap: 1,
+  sentenceCorrectStreakThreshold: 3,
+  sentenceWrongStreakThreshold: 3,
+};
 
 const CONFIG: SessionConfig & { maxRetryPerWord: number } = {
   wordsPerBatch: 3,
@@ -54,6 +66,7 @@ const deckId = ref<string | null>(null);
 // Adaptive session state refs
 const sessionState = ref<AdaptiveSessionState | null>(null);
 const globalRunState = ref<RunState>(new Map());
+const sentenceRunState = ref<SentenceRunState>(new Map());
 const batchState = ref<BatchState | null>(null);
 const currentQuestion = ref<QuizQuestion | null>(null);
 
@@ -130,12 +143,21 @@ function getDeckWords(id: string): QuizItem[] {
 function startBatch() {
   if (!sessionState.value) return;
 
-  // Assemble batch questions using the composer registry pattern internally
+  const extraThunks = resolveEligibleContexts(
+    sentenceCorpus,
+    sessionState.value.runState,
+    wordPool,
+    sentenceRunState.value,
+    sessionState.value.batchNum + 1,
+    SENTENCE_CONFIG,
+  ).map(({ ctx, tiles }) => () => composeSentenceBatch(ctx, tiles, 'th', { shuffle: true }));
+
   const questions = assembleBatch(
     sessionState.value.active,
     wordPool,
     [], // foundationalPool is empty in this demo
     CONFIG.wordsPerBatch,
+    { extraThunks },
   );
 
   // Initialize serializable batch state
@@ -176,7 +198,7 @@ function initSession(id: string) {
     globalRunState.value,
   );
 
-  // Persist session immediately
+  sentenceRunState.value = new Map();
   saveSession(id, sessionState.value);
   hasSavedSession.value = true;
   startBatch();
@@ -213,6 +235,7 @@ function onClear() {
   deckId.value = null;
   sessionState.value = null;
   globalRunState.value = new Map();
+  sentenceRunState.value = new Map();
   batchState.value = null;
   currentQuestion.value = null;
   recalculateCompletedDecks();
@@ -239,6 +262,16 @@ function finishBatchAndTransition() {
     sessionState.value.runState,
     uniqueWordIds,
     CONFIG.masteryThreshold,
+  );
+
+  const sentenceResults = output.results.filter(
+    (r): r is SentenceQuizResult => 'sentenceId' in r,
+  );
+  sentenceRunState.value = updateSentenceRunState(
+    sentenceRunState.value,
+    sentenceResults,
+    sessionState.value.batchNum,
+    SENTENCE_CONFIG,
   );
 
   const correct = output.results.filter((a) => a.correct).length;
