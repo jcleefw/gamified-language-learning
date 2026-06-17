@@ -11,6 +11,8 @@ import {
   submitBatchResult,
   finishBatch,
   isBatchDone,
+  resolveEligibleContexts,
+  updateSentenceRunState,
   type AdaptiveSessionState,
   type SessionConfig,
   type BatchOutput,
@@ -27,10 +29,9 @@ import {
   type MockDeck,
   type SentenceContext,
   type SentenceRunState,
-  defaultSentenceState,
   type SentenceQuizResult,
 } from '../src/index.js';
-import { mockSentenceCorpus } from '../data/mock/mock-sentence-corpus.js';
+import { mockDecks } from '../data/mock/mock-decks.js';
 import { LEARNING_CONFIG } from './config.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 import { runAutoInteractive } from './auto-answerer.js';
@@ -229,94 +230,13 @@ function printWordSummary(
   }
 }
 
-export function resolveEligibleContexts(
-  runState: RunState,
-  allPool: QuizItem[],
-  sentenceRunState: SentenceRunState,
-  batchNum: number,
-): { ctx: SentenceContext; tiles: SentenceTile[] }[] {
-  const corpus = LEARNING_CONFIG.debugSentenceEligibility
-    ? mockSentenceCorpus
-    : mockSentenceCorpus.filter((ctx) => {
-        // 1. Word-seen gate: all wordIds seen >= minSeenForSentence
-        const wordSeenPass = ctx.wordOrder.every(
-          (id) =>
-            (runState.get(id)?.seen ?? 0) >= LEARNING_CONFIG.minSeenForSentence,
-        );
-        if (!wordSeenPass) return false;
-
-        // Fetch sentence scheduling state (with defaults for never-seen sentences)
-        const sState =
-          sentenceRunState.get(ctx.sentenceId) ??
-          defaultSentenceState(ctx.sentenceId);
-
-        // 2. Active gate: false = shelved or graduated
-        if (!sState.active) return false;
-
-        // 3. Spacing / Batch-gap gate: must skip > sentenceBatchGap batches
-        if (sState.lastBatchSeen !== -1) {
-          const gap = batchNum - sState.lastBatchSeen;
-          if (gap <= LEARNING_CONFIG.sentenceBatchGap) {
-            return false;
-          }
-        }
-
-        return true;
-      });
-
-  const poolMap = new Map(allPool.map((w) => [w.id, w]));
-
-  return corpus
-    .map((ctx) => {
-      const tiles: SentenceTile[] = ctx.wordOrder.flatMap((id) => {
-        const item = poolMap.get(id);
-        if (!item) return [];
-        return [
-          {
-            wordId: item.id,
-            native: item.native,
-            romanization: item.romanization,
-            english: item.english,
-          },
-        ];
-      });
-      return { ctx, tiles };
-    })
-    .filter(({ ctx: c, tiles }) => tiles.length === c.wordOrder.length);
-}
-
-export function updateSentenceRunState(
-  sentenceRunState: SentenceRunState,
-  results: SentenceQuizResult[],
-  batchNum: number,
-  config: {
-    sentenceCorrectStreakThreshold: number;
-    sentenceWrongStreakThreshold: number;
-  },
-): SentenceRunState {
-  for (const r of results) {
-    const existing =
-      sentenceRunState.get(r.sentenceId) ??
-      defaultSentenceState(r.sentenceId);
-
-    if (r.correct) {
-      existing.sentenceStreak += 1;
-      existing.sessionWrongStreak = 0;
-      if (existing.sentenceStreak >= config.sentenceCorrectStreakThreshold) {
-        existing.active = false;
-      }
-    } else {
-      existing.sessionWrongStreak += 1;
-      existing.sentenceStreak = 0;
-      if (existing.sessionWrongStreak >= config.sentenceWrongStreakThreshold) {
-        existing.active = false;
-      }
-    }
-    existing.lastBatchSeen = batchNum;
-    sentenceRunState.set(r.sentenceId, existing);
-  }
-  return sentenceRunState;
-}
+const mockCorpus: SentenceContext[] = mockDecks.flatMap((deck) =>
+  deck.lines.map((line) => ({
+    sentenceId: line.sentenceId,
+    englishSentence: line.english,
+    wordOrder: line.words.map((w) => w.id),
+  })),
+);
 
 async function runBatch(
   batchNum: number,
@@ -330,7 +250,7 @@ async function runBatch(
   console.log(`\n=== Batch ${String(batchNum)} ===`);
 
   const allPool = [...wordPool, ...foundationalPool];
-  const extraThunks = resolveEligibleContexts(state.runState, allPool, sentenceRunState, batchNum).map(
+  const extraThunks = resolveEligibleContexts(mockCorpus, state.runState, allPool, sentenceRunState, batchNum, LEARNING_CONFIG).map(
     ({ ctx, tiles }) =>
       () =>
         composeSentenceBatch(ctx, tiles, 'th', { shuffle: !strategy }),

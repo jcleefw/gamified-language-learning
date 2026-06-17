@@ -24,6 +24,7 @@ export type { WordState, RunState, StreakThresholds } from './types/word-state.j
 // Sentence state
 export { defaultSentenceState } from './types/sentence-state.js';
 export type { SentenceState, SentenceRunState } from './types/sentence-state.js';
+export { resolveEligibleContexts, updateSentenceRunState } from './engine/sentence-scheduling.js';
 
 // Types
 export type { QuizQuestion, MCQQuestion, SentenceQuestion, SentenceTile, QuizChoice, QuizDirection, QuizResult, WordQuizResult, SentenceQuizResult } from './types/quiz.js';

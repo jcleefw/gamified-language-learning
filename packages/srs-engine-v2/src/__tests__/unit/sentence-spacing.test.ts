@@ -1,11 +1,33 @@
 import { describe, it, expect } from 'vitest';
-import { resolveEligibleContexts, updateSentenceRunState } from '../../../demo/learning-io.js';
 import {
+  resolveEligibleContexts,
+  updateSentenceRunState,
   defaultSentenceState,
   type SentenceRunState,
   type RunState,
   type QuizItem,
+  type SentenceContext,
 } from '../../index.js';
+
+const testConfig = {
+  minSeenForSentence: 2,
+  sentenceBatchGap: 1,
+  sentenceCorrectStreakThreshold: 3,
+  sentenceWrongStreakThreshold: 3,
+};
+
+const testCorpus: SentenceContext[] = [
+  {
+    sentenceId: 'sent::001',
+    englishSentence: "I'm hungry, let's go eat something",
+    wordOrder: ['th::หิว', 'th::แล้ว', 'th::ไป', 'th::กิน', 'th::อะไร', 'th::กัน'],
+  },
+  {
+    sentenceId: 'sent::002',
+    englishSentence: "It's really hot today",
+    wordOrder: ['th::วันนี้', 'th::ร้อน', 'th::มาก', 'th::เลย'],
+  },
+];
 
 describe('Sentence Spacing and Eligibility Gates', () => {
   const wordIds = [
@@ -50,7 +72,7 @@ describe('Sentence Spacing and Eligibility Gates', () => {
     sentenceRunState.set('sent::001', s1);
     sentenceRunState.set('sent::002', s2);
 
-    const eligible = resolveEligibleContexts(runState, allPool, sentenceRunState, 1);
+    const eligible = resolveEligibleContexts(testCorpus, runState, allPool, sentenceRunState, 1, testConfig);
     const eligibleIds = eligible.map((e) => e.ctx.sentenceId);
 
     expect(eligibleIds).toContain('sent::001');
@@ -67,7 +89,7 @@ describe('Sentence Spacing and Eligibility Gates', () => {
     sentenceRunState.set('sent::002', s2);
 
     // Evaluating for batch 2 (gap = 2 - 1 = 1 <= sentenceBatchGap 1)
-    const eligible = resolveEligibleContexts(runState, allPool, sentenceRunState, 2);
+    const eligible = resolveEligibleContexts(testCorpus, runState, allPool, sentenceRunState, 2, testConfig);
     const eligibleIds = eligible.map((e) => e.ctx.sentenceId);
 
     expect(eligibleIds).not.toContain('sent::001');
@@ -84,7 +106,7 @@ describe('Sentence Spacing and Eligibility Gates', () => {
     sentenceRunState.set('sent::002', s2);
 
     // Evaluating for batch 3 (gap = 3 - 1 = 2 > sentenceBatchGap 1)
-    const eligible = resolveEligibleContexts(runState, allPool, sentenceRunState, 3);
+    const eligible = resolveEligibleContexts(testCorpus, runState, allPool, sentenceRunState, 3, testConfig);
     const eligibleIds = eligible.map((e) => e.ctx.sentenceId);
 
     expect(eligibleIds).toContain('sent::001');
@@ -102,7 +124,7 @@ describe('Sentence Spacing and Eligibility Gates', () => {
     sentenceRunState.set('sent::002', s2);
 
     // Evaluating for batch 4
-    const eligible = resolveEligibleContexts(runState, allPool, sentenceRunState, 4);
+    const eligible = resolveEligibleContexts(testCorpus, runState, allPool, sentenceRunState, 4, testConfig);
     const eligibleIds = eligible.map((e) => e.ctx.sentenceId);
 
     expect(eligibleIds).not.toContain('sent::001');
@@ -110,10 +132,6 @@ describe('Sentence Spacing and Eligibility Gates', () => {
   });
 
   describe('Streak tracking, graduation, and shelving (ST10)', () => {
-    const mockConfig = {
-      sentenceCorrectStreakThreshold: 3,
-      sentenceWrongStreakThreshold: 3,
-    };
 
     it('increments correct streak and resets wrong streak on correct answer', () => {
       const sentenceRunState: SentenceRunState = new Map();
@@ -122,7 +140,7 @@ describe('Sentence Spacing and Eligibility Gates', () => {
       sentenceRunState.set('sent::001', s);
 
       const results = [{ sentenceId: 'sent::001', correct: true }];
-      updateSentenceRunState(sentenceRunState, results, 1, mockConfig);
+      updateSentenceRunState(sentenceRunState, results, 1, testConfig);
 
       const updated = sentenceRunState.get('sent::001')!;
       expect(updated.sentenceStreak).toBe(1);
@@ -138,7 +156,7 @@ describe('Sentence Spacing and Eligibility Gates', () => {
       sentenceRunState.set('sent::001', s);
 
       const results = [{ sentenceId: 'sent::001', correct: false }];
-      updateSentenceRunState(sentenceRunState, results, 1, mockConfig);
+      updateSentenceRunState(sentenceRunState, results, 1, testConfig);
 
       const updated = sentenceRunState.get('sent::001')!;
       expect(updated.sessionWrongStreak).toBe(1);
@@ -155,7 +173,7 @@ describe('Sentence Spacing and Eligibility Gates', () => {
 
       // 3rd correct answer hits threshold (3)
       const results = [{ sentenceId: 'sent::001', correct: true }];
-      updateSentenceRunState(sentenceRunState, results, 1, mockConfig);
+      updateSentenceRunState(sentenceRunState, results, 1, testConfig);
 
       const updated = sentenceRunState.get('sent::001')!;
       expect(updated.sentenceStreak).toBe(3);
@@ -170,7 +188,7 @@ describe('Sentence Spacing and Eligibility Gates', () => {
 
       // 3rd wrong answer hits threshold (3)
       const results = [{ sentenceId: 'sent::001', correct: false }];
-      updateSentenceRunState(sentenceRunState, results, 1, mockConfig);
+      updateSentenceRunState(sentenceRunState, results, 1, testConfig);
 
       const updated = sentenceRunState.get('sent::001')!;
       expect(updated.sessionWrongStreak).toBe(3);
@@ -192,14 +210,14 @@ describe('Sentence Spacing and Eligibility Gates', () => {
         { sentenceId: 'sent::001', correct: true },
         { sentenceId: 'sent::002', correct: false },
       ];
-      updateSentenceRunState(sentenceRunState, results, 1, mockConfig);
+      updateSentenceRunState(sentenceRunState, results, 1, testConfig);
 
       // Both should now be active = false
       expect(sentenceRunState.get('sent::001')!.active).toBe(false);
       expect(sentenceRunState.get('sent::002')!.active).toBe(false);
 
       // Subsequent resolveEligibleContexts call on batch 2 should exclude both
-      const eligible = resolveEligibleContexts(runState, allPool, sentenceRunState, 2);
+      const eligible = resolveEligibleContexts(testCorpus, runState, allPool, sentenceRunState, 2, testConfig);
       const eligibleIds = eligible.map((e) => e.ctx.sentenceId);
 
       expect(eligibleIds).not.toContain('sent::001');
