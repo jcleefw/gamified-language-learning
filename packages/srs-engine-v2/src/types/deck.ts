@@ -1,6 +1,7 @@
 import type { MockWord } from '../../data/mock/mock-words.js';
 
 export interface MockLine {
+  sentenceId: string;
   speaker: 'A' | 'B';
   native: string;
   romanization: string;

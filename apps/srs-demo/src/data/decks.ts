@@ -2,6 +2,7 @@ import type { AppDeck, AppLine } from './types'
 
 const eatLines: AppLine[] = [
   {
+    sentenceId: 'sent::eat-001',
     speaker: 'A',
     native: 'หิวแล้ว ไปกินอะไรกัน?',
     romanization: 'hǐw lɛ́ɛo bpai gin a-rai gan?',
@@ -16,6 +17,7 @@ const eatLines: AppLine[] = [
     ],
   },
   {
+    sentenceId: 'sent::eat-002',
     speaker: 'B',
     native: 'ดีเลย อยากกินอะไร?',
     romanization: 'dii ləəi yàak gin a-rai?',
@@ -29,6 +31,7 @@ const eatLines: AppLine[] = [
     ],
   },
   {
+    sentenceId: 'sent::eat-003',
     speaker: 'A',
     native: 'กินก๋วยเตี๋ยวไหม?',
     romanization: 'gin gǔai-dtǐao mǎi?',
@@ -40,6 +43,7 @@ const eatLines: AppLine[] = [
     ],
   },
   {
+    sentenceId: 'sent::eat-004',
     speaker: 'B',
     native: 'โอเค ไปกันเลย!',
     romanization: 'oo-kêe bpai gan ləəi!',
@@ -55,6 +59,7 @@ const eatLines: AppLine[] = [
 
 const weatherLines: AppLine[] = [
   {
+    sentenceId: 'sent::weather-001',
     speaker: 'A',
     native: 'วันนี้ร้อนมากเลย!',
     romanization: 'wan-née ráwn mâak ləəi!',
@@ -67,6 +72,7 @@ const weatherLines: AppLine[] = [
     ],
   },
   {
+    sentenceId: 'sent::weather-002',
     speaker: 'B',
     native: 'ใช่ ร้อนจริงๆ ดื่มน้ำไหม?',
     romanization: 'châi ráwn jing-jing deùm nám mái?',
@@ -81,6 +87,7 @@ const weatherLines: AppLine[] = [
     ],
   },
   {
+    sentenceId: 'sent::weather-003',
     speaker: 'A',
     native: 'ดีเลย อยากดื่มน้ำเย็น',
     romanization: 'dee ləəi yàak deùm nám yen',
@@ -95,6 +102,7 @@ const weatherLines: AppLine[] = [
     ],
   },
   {
+    sentenceId: 'sent::weather-004',
     speaker: 'B',
     native: 'ไปซื้อที่ร้านกัน',
     romanization: 'bpai seú têe ráan gan',
