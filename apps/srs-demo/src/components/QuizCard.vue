@@ -3,9 +3,11 @@ import { ref, watch } from 'vue';
 import type {
   QuizQuestion,
   MCQQuestion,
+  SentenceQuestion,
   QuizResult,
   QuizItem,
 } from '@gll/srs-engine-v2';
+import WordBlock from './WordBlock.vue';
 
 const props = defineProps<{
   question: QuizQuestion;
@@ -77,10 +79,13 @@ watch(
       </ul>
     </template>
 
-    <div v-else-if="question.kind === 'word-block'" class="sentence-placeholder">
-      <p>Sentence questions coming soon...</p>
-      <pre>{{ question.prompt }}</pre>
-    </div>
+    <WordBlock
+      v-else-if="question.kind === 'word-block'"
+      :question="(question as SentenceQuestion)"
+      :index="index"
+      :total="total"
+      @answered="emit('answered', $event)"
+    />
 
     <template v-if="cheatMode">
       <div class="pool-panel">
