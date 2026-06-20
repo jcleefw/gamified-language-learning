@@ -17,17 +17,31 @@ interface layer — terminal (via `demo/`) or web (future server + frontend).
 | File | Role |
 | --- | --- |
 | `src/index.ts` | Public library API — single import surface for all consumers |
-| `demo/learning-runner.ts` | CLI demo — wires mock data → `runAdaptiveLoop` → `runInteractive` (interactive) or `runAutoInteractive` (auto mode) |
+| `docs/` | **Start here** — humanized explanations at three levels (stakeholder, developer, walkthrough) |
+| `demo/learning-runner.ts` | CLI demo — wires mock data → `initAdaptiveSession` → question loop → `advanceAdaptiveSession` |
 | `dist/index.js` | Built library output (generated from `src/`) |
+
+---
+
+## `docs/` — Start Here
+
+Three humanized explanations at different levels:
+
+| File | Audience | Time | Content |
+| --- | --- | --- | --- |
+| `docs/01-stakeholder.md` | Product owners, non-technical | 5 min | What the engine does and why |
+| `docs/02-concepts.md` | Developers, architects | 10 min | Architecture, core concepts, design decisions |
+| `docs/03-walkthrough.md` | Builders, debuggers | 15 min | Step-by-step algorithm trace with worked example |
 
 ---
 
 ## `src/` — Library
 
-| Folder | Purpose | CODEMAP |
-| --- | --- | --- |
-| `src/engine/` | Quiz generation and session state — pure functions, no I/O | [CODEMAP](src/engine/CODEMAP.md) |
-| `src/types/` | Shared TypeScript type definitions | [CODEMAP](src/types/CODEMAP.md) |
+| Folder | Purpose |
+| --- | --- |
+| `src/engine/` | Session orchestration, batch composition, answer processing — pure functions, no I/O |
+| `src/types/` | TypeScript definitions — `WordState`, `RunState`, `SentenceState`, `QuizQuestion`, etc. |
+| `src/config/` | Language config — `wordJoin` for space-less scripts (Thai, Japanese, etc.) |
 
 ---
 
@@ -58,15 +72,11 @@ import from `../src/index.js` — same as a web server would.
 
 | File | Purpose |
 | --- | --- |
-| `src/__tests__/unit/compose-batch.test.ts` | `composeBatch`, `composeBatchMulti` |
-| `src/__tests__/unit/word-state.test.ts` | `updateRunState`, `isMastered` |
-| `src/__tests__/unit/recheck.test.ts` | `processRecheckResult`, `nextActivePool` |
-| `src/__tests__/unit/adaptive-loop.test.ts` | `nextActivePool` pool rotation |
-| `src/__tests__/unit/update-mastery-state.test.ts` | `updateMasteryState` |
-| `src/__tests__/unit/answer-strategy.test.ts` | Auto-answer strategies (demo layer) |
-| `src/__tests__/unit/auto-answerer.test.ts` | `runAutoInteractive` (demo layer) |
-| `src/__tests__/integration/auto-scenarios.test.ts` | Full loop — perfect, 80/20, random, determinism |
-| `__tests__/integration/smoke.test.ts` | Verifies mock data loads with correct shape |
+| `unit/word-state.test.ts` | `updateRunState`, streak & mastery logic, `isMastered` |
+| `unit/recheck.test.ts` | `processRecheckResult`, `recheckPending`/`recheckReentered`, `nextActivePool` |
+| `unit/compose-batch.test.ts` | `composeWordBatch`, `composeWordBatchMulti` (word MCQ generation) |
+| `unit/update-mastery-state.test.ts` | Full batch result processing, streak tracking |
+| `integration/auto-scenarios.test.ts` | End-to-end scenarios — perfect answers, 80/20, random, determinism |
 
 ---
 
@@ -81,50 +91,33 @@ import from `../src/index.js` — same as a web server would.
 
 ---
 
-## Data Flow
+## Session Lifecycle
 
-### Library usage (web server example)
 ```
-POST /batch
+initAdaptiveSession(words, config)
         ↓
-composeBatchMulti(activeItems, pool, { questionLimit })
+   AdaptiveSessionState {active, queue, runState, ...}
         ↓
-   QuizQuestion[]  →  sent to client
+per batch:
+  assembleBatch(active, pool, config) → QuizQuestion[]
+  initBatchState(questions) → BatchState
+  
+  per question:
+    nextQuestion(batchState) → question + state
+    submitBatchResult(batchState, answer) → state (re-enqueue if wrong)
+  
+  finishBatch(batchState) → BatchOutput
         ↓
-POST /answers
+advanceAdaptiveSession(sessionState, batchOutput, config)
+  → updateMasteryState (streak/mastery rules)
+  → updateSentenceRunState (sentence streak & shelving)
+  → nextActivePool (retire mastered, fill from queue)
+  → next AdaptiveSessionState
         ↓
-updateMasteryState(results, runState, prevState, ...)
-        ↓
-   MasteryUpdateResult  →  persisted by server
-```
-
-### Terminal demo — interactive mode
-```
-demo/learning-runner.ts  (selectDeck)
-        ↓
-src/engine/compose-batch.ts  (composeBatchMulti, shuffle=true)
-        ↓
-   QuizQuestion[]
-        ↓
-src/engine/session.ts  (nextActivePool, updateMasteryState)
-        ↓
-demo/learning-io.ts  (runInteractive — console I/O)
+repeat until active.length === 0 && queue.length === 0
 ```
 
-### Terminal demo — auto mode (AUTO_MODE=true)
-```
-demo/learning-runner.ts  (selectStrategy)
-        ↓
-src/engine/compose-batch.ts  (composeBatchMulti, shuffle=false)
-        ↓
-   QuizQuestion[]
-        ↓
-demo/auto-answer-strategy.ts  (AutoAnswerStrategy.selectAnswer)
-        ↓
-demo/auto-answerer.ts  (runAutoInteractive)
-        ↓
-src/engine/session.ts  (nextActivePool, updateMasteryState)
-```
+See `docs/02-concepts.md` for architecture diagram and `docs/03-walkthrough.md` for annotated example.
 
 ---
 
