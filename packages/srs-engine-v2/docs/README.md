@@ -40,6 +40,15 @@ Read this when you're debugging a state transition, writing a test, or just need
 
 ---
 
+## 📋 [04-deferred-features.md](04-deferred-features.md) — What's NOT (Yet) Implemented
+
+**Audience:** Implementers, product managers  
+**When to read**: You're looking at the PRD and wondering why a feature isn't in the engine
+
+This document clarifies the gap between the product specification and current implementation: stuck-word shelving, batch composition priority, ANKI/FSRS scheduling, audio questions, and more. Useful for planning future work or understanding what to expect when consuming the engine.
+
+---
+
 ## 🔗 Related files
 
 - `src/index.ts` — Public API exports
