@@ -61,19 +61,19 @@ EP21 (Review Phase / FSRS) is blocked on this: scheduling decisions require hist
 
 **DELETED**: Serialization was speculative (unused in production code). Apps decide their own serialization format. If needed later, it belongs in `@gll/db`, not the library.
 
-### EP30-ST03: `LearningStore` Interface Implementation
+### EP30-ST04: `LearningStore` Interface + `SqliteLearningStore`
 
-**Scope**: Define `LearningStore` interface + `SqliteLearningStore` implementation using Drizzle ORM. Test with integration tests using temp DB.
+**Scope**: Define `LearningStore` interface in `srs-engine-v2` (domain abstraction only). Implement `SqliteLearningStore` in `@gll/db` (application layer — owns Drizzle, schema, better-sqlite3). Integration tests live in `@gll/db`.
 
-### EP30-ST04: `srs-demo` App Package
+### EP30-ST05: `cli-demo-db` App Package
 
-**Scope**: Create separate `srs-demo` package (application layer) with `learning-runner-db.ts` runner and DB management scripts (clear, reset, seed). Keep original `learning-runner.ts` mock runner unchanged for unit testing.
+**Scope**: Create `apps/cli-demo-db/` (application layer) with `learning-runner-db.ts` runner and DB management scripts (clear, reset, seed). Keep original `learning-runner.ts` mock runner unchanged for unit testing.
 
-### EP30-ST05: `LearningStore` + Write-on-Answer Callbacks
+### EP30-ST06: `LearningStore` + Write-on-Answer Callbacks
 
-**Scope**: Add `onWordAnswer` / `onSentenceAnswer` callbacks to `runAdaptiveLoop`. Wire them in `srs-demo/learning-runner-db.ts` to call `store.upsertWordState` / `store.upsertSentenceState` after each answer.
+**Scope**: Add `onWordAnswer` / `onSentenceAnswer` callbacks to `runAdaptiveLoop`. Wire them in `cli-demo-db/learning-runner-db.ts` to call `store.upsertWordState` / `store.upsertSentenceState` after each answer.
 
-### EP30-ST06: Graduation Hook Stub
+### EP30-ST07: Graduation Hook Stub
 
 **Scope**: Add `onGraduation` callback to `runAdaptiveLoop` that identifies newly mastered words each session. Seam for EP21 to attach FSRS logic.
 
@@ -84,7 +84,7 @@ EP21 (Review Phase / FSRS) is blocked on this: scheduling decisions require hist
 - [ ] `pnpm engine:real-db` persists and restores `RunState` + `SentenceRunState` between sessions
 - [ ] Mid-session quit does not lose answered progress (write-on-answer)
 - [ ] DB and migrations owned by `@gll/db`; engine is DB-agnostic
-- [ ] `LearningStore`, `SqliteLearningStore`, `GraduationHook` exported from `@gll/srs-engine-v2`
+- [ ] `LearningStore`, `GraduationHook` exported from `@gll/srs-engine-v2`; `SqliteLearningStore` exported from `@gll/db`
 - [ ] Schema is D1-compatible (no `AUTOINCREMENT`, standard SQL only)
 - [ ] All existing tests pass
 

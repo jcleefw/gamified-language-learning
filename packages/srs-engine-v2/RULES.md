@@ -1,24 +1,27 @@
 # @gll/srs-engine-v2 Rules
 
-**@gll/srs-engine-v2 is a library package, not an application. Do NOT add application-layer code.**
+**@gll/srs-engine-v2 is a pure engine library. It has no knowledge of persistence, I/O, or deployment.**
 
-## Do NOT Add
+## What this library IS
 
-- ❌ Serialization helpers (`serialiseRunState`, `deserialiseRunState`, etc.) — app decides serialization format (JSON, MessagePack, etc.)
-- ❌ Database implementations (`SqliteLearningStore` impl, `initDb`, migrations, Drizzle config) — belongs in `@gll/db`
-- ❌ Application runners and CLI tools (`learning-runner-db.ts`, `db-tools.ts`, `db-fixtures.ts`) — belongs in `@gll/db`
-- ❌ File I/O operations beyond test infrastructure — reading/writing DB files, state persistence
-- ❌ External dependencies for application concerns — `better-sqlite3` belongs in `@gll/db`, not here
+- Engine logic and functions (`runAdaptiveLoop`, `initAdaptiveSession`, etc.)
+- Engine domain types (`RunState`, `SentenceRunState`, `WordState`, `SentenceState`, `GraduationHook`)
+- Plain-function callbacks as extension points — typed against engine types only, no imported interfaces
+- Test infrastructure (auto-answer strategies, scenario fixtures)
 
-## Library-Owned Code
+## What does NOT belong here
 
-✅ Engine logic, types, and functions (`RunState`, `runAdaptiveLoop`, etc.)
-✅ Domain abstractions (`LearningStore` interface only — no implementation)
-✅ Callbacks as extension points (`onWordAnswer`, `onSentenceAnswer`, `onGraduation`)
-✅ Test infrastructure and mocks
+- Persistence interfaces or abstractions (`LearningStore` belongs in `@gll/db` — it implies a DB exists)
+- Any import from `@gll/db` — dependency must never flow engine → db
+- Serialization helpers — apps decide their own format
+- File I/O, DB clients, migration logic
+- CLI runners or application glue code
+- Runtime dependencies beyond the engine itself (`dependencies` in package.json must stay empty)
 
-## Decision Test
+## Exception: `demo/`
 
-**"Would another application using this library need this code?"**
-- YES → library-level, keep it
-- NO → application-level, move to `@gll/db`
+`demo/` contains a mock CLI runner (`learning-runner.ts`) used for manual testing and unit test scenarios. It reads/writes a local JSON file as a lightweight state shim — this is the only permitted I/O in this package. Do not extend it with real DB access; that belongs in `apps/cli-demo-db`.
+
+## Decision rule
+
+Callbacks are plain functions: `(state: WordState) => void`. The engine calls them; it does not define or import the interface that implements them. If you find yourself importing a type from outside the engine to describe a callback, the abstraction belongs outside.

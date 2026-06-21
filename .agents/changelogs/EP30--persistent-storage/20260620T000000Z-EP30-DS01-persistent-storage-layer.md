@@ -15,7 +15,7 @@ The call chain after EP30:
 
 ```
 pnpm engine:real-db
-  └── tsx demo/learning-runner-db.ts
+  └── tsx apps/cli-demo-db/src/learning-runner-db.ts
         ├── getDb("data/learning-state.db")       ← from @gll/db; runs initDb
         ├── store.getAllWordStates('cli-user')     → RunState (Map)
         ├── store.getAllSentenceStates('cli-user') → SentenceRunState (Map)
@@ -31,7 +31,7 @@ pnpm engine:real-db
 
 **Architecture**:
 - **`@gll/db`** (application layer): DB setup, migrations, schema definition, Drizzle config, serialization helpers, implementations
-- **`@gll/srs-engine-v2`** (library layer): DB-agnostic; owns `LearningStore` interface only. No serialization, no DB-specific code.
+- **`@gll/srs-engine-v2`** (library layer): DB-agnostic; no persistence concepts. Exposes plain-function callbacks as extension points only.
 
 `better-sqlite3` writes directly to a local `.db` file — no network, no server. The schema is D1-compatible, making it a config swap (not a migration) when the app moves to Cloudflare.
 
@@ -80,10 +80,10 @@ EP30-ST01 fixes this before any persistence story touches it.
 ### `LearningStore` interface
 
 ```ts
-// packages/srs-engine-v2/src/persistence/learning-store.ts
+// packages/db/src/learning-store.ts
 
-import type { WordState } from '../types/word-state.js';
-import type { SentenceState } from '../types/sentence-state.js';
+import type { WordState } from '@gll/srs-engine-v2';
+import type { SentenceState } from '@gll/srs-engine-v2';
 
 export interface LearningStore {
   getAllWordStates(userId: string): Map<string, WordState>;
@@ -95,6 +95,8 @@ export interface LearningStore {
   close(): void;
 }
 ```
+
+`LearningStore` lives in `@gll/db` alongside `SqliteLearningStore`. The engine imports nothing from `@gll/db` — callbacks are typed as plain functions using engine-owned types (`WordState`, `SentenceState`).
 
 ### SQLite schema (learner state tables — full DDL in `schema.sql`)
 
@@ -127,25 +129,6 @@ CREATE TABLE IF NOT EXISTS user_sentence_states (
 
 `schema.sql` also includes all other tables from the schema ADR (`users`, `decks`, `words`, `foundational_words`, `sentences`, `sentence_components`, `deck_words`, `review_cards`) as `CREATE TABLE IF NOT EXISTS`. EP30 only writes to the two learner state tables — the rest are created but unpopulated.
 
-### Serialisation helpers (Application Layer)
-
-**MOVED to @gll/db** — serialization is an app-layer concern, not a library concern.
-
-```ts
-// packages/db/src/serialise.ts
-
-export function serialiseRunState(state: RunState): string;
-export function deserialiseRunState(json: string): RunState;
-
-export function serialiseSentenceRunState(state: SentenceRunState): string;
-export function deserialiseSentenceRunState(json: string): SentenceRunState;
-
-export function serialiseSet(set: Set<string>): string;
-export function deserialiseSet(json: string): Set<string>;
-```
-
-The library exports `Map` and `Set` types. The application decides how to serialize them.
-
 ### `runAdaptiveLoop` signature after EP30
 
 ```ts
@@ -162,9 +145,9 @@ export async function runAdaptiveLoop(
   initialSentenceRunState?: SentenceRunState,    // ← ST01: was local variable, now a parameter
   recheckIds?: Set<string>,
   strategy?: AutoAnswerStrategy,
-  onWordAnswer?: (state: WordState) => void,     // ← ST05: write-on-answer callback
-  onSentenceAnswer?: (state: SentenceState) => void, // ← ST05
-  onGraduation?: GraduationHook,                 // ← ST06
+  onWordAnswer?: (state: WordState) => void,     // ← ST06: write-on-answer callback
+  onSentenceAnswer?: (state: SentenceState) => void, // ← ST06
+  onGraduation?: GraduationHook,                 // ← ST07
 ): Promise<{ runState: RunState; sentenceRunState: SentenceRunState }>  // ← ST01: was Promise<RunState>
 ```
 
@@ -199,6 +182,8 @@ No DB, no schema, no serialisation — purely engine plumbing.
 
 **Acceptance criteria**:
 - [x] `runAdaptiveLoop` return type is `Promise<{ runState: RunState; sentenceRunState: SentenceRunState }>`
+- [x] `sentenceRunState` no longer discarded at function exit — properly returned to caller
+- [x] Call site in `learning-runner.ts` destructures both `runState` and `sentenceRunState`; passes `sentenceRunState` into next loop iteration
 - [x] `pnpm learnv2` runs without error
 - [x] All existing tests pass: `pnpm --filter @gll/srs-engine-v2 test`
 - [x] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
@@ -220,6 +205,7 @@ No DB, no schema, no serialisation — purely engine plumbing.
 **Acceptance criteria**:
 - [x] `schema.ts` matches schema ADR exactly for all 11 tables
 - [x] All columns, types, and constraints present
+- [x] `@gll/db` package created with proper structure (package.json, tsconfig, drizzle.config.ts)
 - [x] Drizzle schema compiles with `pnpm --filter @gll/db typecheck`
 
 ---
@@ -239,7 +225,10 @@ No DB, no schema, no serialisation — purely engine plumbing.
 - [x] Migration files in `packages/db/drizzle/migrations/*.sql` are D1-compatible (no `AUTOINCREMENT`, standard SQL)
 - [x] `initDb` is idempotent — calling twice on the same DB does not error
 - [x] `pnpm --filter @gll/db db:generate` creates `.sql` files without error
+- [x] Migration tested end-to-end — creates all 10 tables successfully
+- [x] Engine package has zero DB dependencies (drizzle-orm, drizzle-kit, better-sqlite3, @types/better-sqlite3 removed)
 - [x] `pnpm --filter @gll/db typecheck` clean
+- [x] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
 
 ---
 
@@ -249,9 +238,9 @@ No DB, no schema, no serialisation — purely engine plumbing.
 
 ---
 
-### EP30-ST03: `LearningStore` Interface + `SqliteLearningStore`
+### EP30-ST04: `LearningStore` Interface + `SqliteLearningStore`
 
-**Scope**: Define `LearningStore` interface and implement it with better-sqlite3 + Drizzle. Constructor takes a Database connection (DB init is application responsibility, not library responsibility).
+**Scope**: Define `LearningStore` interface and implement `SqliteLearningStore` — both in `@gll/db`. The engine has no persistence concepts; it exposes plain-function callbacks typed against its own domain types (`WordState`, `SentenceState`).
 
 **Read list**:
 - `packages/db/src/schema.ts` (ST02 output)
@@ -259,8 +248,8 @@ No DB, no schema, no serialisation — purely engine plumbing.
 - `packages/srs-engine-v2/src/types/sentence-state.ts`
 
 **Tasks**:
-- [ ] Create `packages/srs-engine-v2/src/persistence/learning-store.ts` — `LearningStore` interface
-- [ ] Create `packages/srs-engine-v2/src/persistence/sqlite-learning-store.ts` — `SqliteLearningStore`:
+- [ ] Create `packages/db/src/learning-store.ts` — `LearningStore` interface (imports `WordState`, `SentenceState` from `@gll/srs-engine-v2`)
+- [ ] Create `packages/db/src/sqlite-learning-store.ts` — `SqliteLearningStore` implementation:
   - [ ] Constructor: accepts `Database` connection (not file path)
   - [ ] Uses Drizzle queries (type-safe)
   - [ ] `getAllWordStates(userId)`: `SELECT * FROM user_word_states WHERE user_id = ?` → `Map<string, WordState>`
@@ -268,103 +257,105 @@ No DB, no schema, no serialisation — purely engine plumbing.
   - [ ] `getAllSentenceStates(userId)`: `SELECT * FROM user_sentence_states WHERE user_id = ?` → `Map<string, SentenceState>`
   - [ ] `upsertSentenceState(userId, state)`: `INSERT OR REPLACE INTO user_sentence_states`
   - [ ] `close()`: close the connection
-- [ ] Create `packages/srs-engine-v2/src/__tests__/integration/sqlite-learning-store.test.ts`:
+- [ ] Create `packages/db/src/__tests__/sqlite-learning-store.test.ts`:
   - [ ] Pass a test Database connection (caller responsibility)
   - [ ] Upsert then getAll returns same `WordState` (all fields including `lapses`)
   - [ ] Upsert then getAll returns same `SentenceState` (`active: false`, `lastBatchSeen: -1` preserved)
   - [ ] Second upsert with same `(userId, wordId)` overwrites — no duplicate rows
-- [ ] Export `LearningStore`, `SqliteLearningStore` from `packages/srs-engine-v2/src/index.ts`
-- [ ] Add `@types/better-sqlite3` as devDep (types only, not runtime)
+- [ ] Export `LearningStore`, `SqliteLearningStore` from `packages/db/src/index.ts`
 
 **Acceptance criteria**:
-- [ ] All integration tests pass: `pnpm --filter @gll/srs-engine-v2 test`
+- [ ] All integration tests pass: `pnpm --filter @gll/db test`
+- [ ] `pnpm --filter @gll/db typecheck` clean
 - [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
 - [ ] Constructor signature is `SqliteLearningStore(db: Database)` — no file path
+- [ ] `LearningStore` and `SqliteLearningStore` importable from `@gll/db`
+- [ ] `srs-engine-v2` has zero imports from `@gll/db`
 
 ---
 
-### EP30-ST04: `srs-demo` App Package
+### EP30-ST05: `cli-demo-db` App Package
 
-**Scope**: Create separate `srs-demo` application package with `learning-runner-db.ts` runner and DB management scripts. Keep original mock runner (`learning-runner.ts`) in srs-engine-v2 demo for unit testing.
+**Scope**: Create separate `cli-demo-db` application package with `learning-runner-db.ts` runner and DB management scripts. Keep original mock runner (`learning-runner.ts`) in srs-engine-v2 demo for unit testing.
 
 **Read list**:
 - `packages/db/src/db.ts` (ST02b output)
 - `packages/srs-engine-v2/demo/learning-io.ts` (ST01 output)
-- `packages/srs-engine-v2/src/persistence/sqlite-learning-store.ts` (ST03 output)
+- `packages/db/src/sqlite-learning-store.ts` (ST04 output)
 
 **Tasks**:
-- [ ] Create `packages/srs-demo/` package (new app, not part of library)
-- [ ] Create `packages/srs-demo/src/learning-runner-db.ts`:
-  - [ ] Import `getDb, closeDb` from `@gll/db`
-  - [ ] Import `SqliteLearningStore` from `@gll/srs-engine-v2`
+- [ ] Create `apps/cli-demo-db/` package (new app, not part of library)
+- [ ] Create `apps/cli-demo-db/src/learning-runner-db.ts`:
+  - [ ] Import `getDb, closeDb, SqliteLearningStore` from `@gll/db`
   - [ ] Call `getDb()` at startup
   - [ ] Load `RunState` via `store.getAllWordStates('cli-user')`
   - [ ] Load `SentenceRunState` via `store.getAllSentenceStates('cli-user')`
-  - [ ] Call `runAdaptiveLoop` (callbacks wired in ST05)
+  - [ ] Call `runAdaptiveLoop` (callbacks wired in ST06)
   - [ ] Call `closeDb()` on exit
-- [ ] Create `packages/srs-demo/src/db-tools.ts`:
+- [ ] Create `apps/cli-demo-db/src/db-tools.ts`:
   - [ ] `clearUserState(userId)` — DELETE from learner tables
   - [ ] `resetDb()` — drop DB file, reinitialize
   - [ ] `seedDb(fixtureName)` — insert fixture data
-- [ ] Create `packages/srs-demo/src/db-fixtures.ts`:
+- [ ] Create `apps/cli-demo-db/src/db-fixtures.ts`:
   - [ ] Named fixtures: baseline (empty), mid-session (words at mastery 0-2)
-- [ ] Create `packages/srs-demo/package.json` with scripts:
+- [ ] Create `apps/cli-demo-db/package.json` with scripts:
   - [ ] `engine:real-db` → `learning-runner-db.ts`
   - [ ] `engine:real-db:clear`, `engine:real-db:reset`, `engine:real-db:seed`
 - [ ] Keep `packages/srs-engine-v2/demo/learning-runner.ts` unchanged for mock testing
 - [ ] Rename `learnv2` to `engine:mock-db` in `packages/srs-engine-v2/package.json`
 
 **Acceptance criteria**:
-- [ ] `pnpm --filter srs-demo engine:real-db` runs (will not persist — ST05 adds callbacks)
-- [ ] `pnpm --filter srs-demo engine:real-db:clear` exits cleanly
-- [ ] `pnpm --filter srs-demo engine:real-db:reset` deletes DB file cleanly
-- [ ] `pnpm --filter srs-demo engine:real-db:seed:baseline` loads fixture
+- [ ] `pnpm --filter cli-demo-db engine:real-db` runs (will not persist — ST06 adds callbacks)
+- [ ] `pnpm --filter cli-demo-db engine:real-db:clear` exits cleanly
+- [ ] `pnpm --filter cli-demo-db engine:real-db:reset` deletes DB file cleanly
+- [ ] `pnpm --filter cli-demo-db engine:real-db:seed:baseline` loads fixture
 - [ ] `pnpm --filter @gll/srs-engine-v2 engine:mock-db` still works unchanged
-- [ ] `pnpm --filter srs-demo typecheck` clean
+- [ ] `pnpm --filter cli-demo-db typecheck` clean
 
 ---
 
-### EP30-ST05: Write-on-Answer Callbacks
+### EP30-ST06: Write-on-Answer Callbacks
 
-**Scope**: Add `onWordAnswer` / `onSentenceAnswer` callbacks to `runAdaptiveLoop`. Wire them in `srs-demo/learning-runner-db.ts` to call `store.upsertWordState` / `store.upsertSentenceState` after each answer.
+**Scope**: Add `onWordAnswer` / `onSentenceAnswer` callbacks to `runAdaptiveLoop`. Wire them in `cli-demo-db/learning-runner-db.ts` to call `store.upsertWordState` / `store.upsertSentenceState` after each answer.
 
 **Read list**:
 - `packages/srs-engine-v2/demo/learning-io.ts` (ST01 output)
-- `packages/srs-demo/src/learning-runner-db.ts` (ST04 output)
-- `packages/srs-engine-v2/src/persistence/sqlite-learning-store.ts` (ST03 output)
+- `apps/cli-demo-db/src/learning-runner-db.ts` (ST05 output)
+- `packages/db/src/sqlite-learning-store.ts` (ST04 output)
 
 **Tasks**:
 - [ ] Add `onWordAnswer?: (answer: Answer, wordState: WordState) => void` callback to `runAdaptiveLoop`
 - [ ] Add `onSentenceAnswer?: (answer: Answer, sentenceState: SentenceState) => void` callback to `runAdaptiveLoop`
 - [ ] Call callbacks in `learning-io.ts` after each answer is processed
-- [ ] Wire callbacks in `srs-demo/learning-runner-db.ts` to persist state after each answer
+- [ ] Wire callbacks in `apps/cli-demo-db/src/learning-runner-db.ts` to persist state after each answer
 - [ ] Export callback types from `packages/srs-engine-v2/src/index.ts`
 
 **Acceptance criteria**:
-- [ ] `pnpm --filter srs-demo engine:real-db` persists after each answer (mid-session quit does not lose progress)
+- [ ] `pnpm --filter cli-demo-db engine:real-db` persists after each answer (mid-session quit does not lose progress)
 - [ ] Callbacks are optional (omitting them does not throw)
 - [ ] `pnpm --filter @gll/srs-engine-v2 test` passes
 - [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
 
 ---
 
-### EP30-ST06: Graduation Hook Stub
+### EP30-ST07: Graduation Hook Stub
 
-**Scope**: Add `onGraduation?: GraduationHook` to `runAdaptiveLoop`. At loop exit, compare initial `RunState` with final `RunState` to identify words that crossed `masteryThreshold` this session. Call the hook with those IDs. Pass a console-log hook in `srs-demo/learning-runner-db.ts`.
+**Scope**: Add `onGraduation?: GraduationHook` to `runAdaptiveLoop`. At loop exit, compare initial `RunState` with final `RunState` to identify words that crossed `masteryThreshold` this session. Call the hook with those IDs. Pass a console-log hook in `cli-demo-db/learning-runner-db.ts`.
 
 **Read list**:
-- `packages/srs-engine-v2/demo/learning-io.ts` (ST05 output)
+- `packages/srs-engine-v2/demo/learning-io.ts` (ST06 output)
 - `packages/srs-engine-v2/src/index.ts`
 
 **Tasks**:
 - [ ] Add `GraduationHook` type to `packages/srs-engine-v2/src/types/` (or co-locate)
 - [ ] Add `onGraduation?: GraduationHook` to `runAdaptiveLoop` signature
 - [ ] `demo/learning-io.ts`: after loop exits, derive `graduatedWordIds` by comparing initial vs final `RunState` against `masteryThreshold`; call `onGraduation(graduatedWordIds, finalRunState)` if provided
-- [ ] `srs-demo/learning-runner-db.ts`: pass graduation hook that logs newly mastered words
+- [ ] `apps/cli-demo-db/src/learning-runner-db.ts`: pass graduation hook that logs newly mastered words
 - [ ] Export `GraduationHook` type from `packages/srs-engine-v2/src/index.ts`
 
 **Acceptance criteria**:
-- [ ] Running `pnpm --filter srs-demo engine:real-db` in auto mode logs graduated word IDs at session end
+- [ ] Running `pnpm --filter cli-demo-db engine:real-db` in auto mode logs graduated word IDs at session end
+
 - [ ] Omitting `onGraduation` does not throw
 - [ ] `GraduationHook` importable from `@gll/srs-engine-v2`
 - [ ] All existing tests pass: `pnpm --filter @gll/srs-engine-v2 test`
@@ -379,31 +370,30 @@ packages/db/
 ├── src/
 │   ├── schema.ts                             ← NEW (ST02): Drizzle schema, all 11 tables
 │   ├── init-db.ts                            ← NEW (ST02b): migration runner
-│   └── db.ts                                 ← NEW (ST02b): getDb/closeDb helpers
+│   ├── db.ts                                 ← NEW (ST02b): getDb/closeDb helpers
+│   ├── learning-store.ts                     ← NEW (ST04): LearningStore interface
+│   ├── sqlite-learning-store.ts              ← NEW (ST04): SqliteLearningStore impl
+│   ├── __tests__/
+│   │   └── sqlite-learning-store.test.ts     ← NEW (ST04): integration tests
+│   └── index.ts                              ← MODIFIED (ST04): export LearningStore, SqliteLearningStore
 ├── drizzle.config.ts                         ← NEW (ST02b)
 └── drizzle/migrations/
     └── 0001_initial_schema.sql               ← NEW (ST02b): initial DDL
 
 packages/srs-engine-v2/
 ├── src/
-│   ├── persistence/
-│   │   ├── learning-store.ts                 ← NEW (ST03): LearningStore interface
-│   │   └── sqlite-learning-store.ts          ← NEW (ST03): SqliteLearningStore impl
-│   ├── __tests__/
-│   │   └── integration/
-│   │       └── sqlite-learning-store.test.ts ← NEW (ST03)
-│   └── index.ts                              ← MODIFIED (ST03, ST05, ST06): new exports
+│   └── index.ts                              ← MODIFIED (ST06, ST07): new exports
 ├── demo/
-│   ├── learning-io.ts                        ← MODIFIED (ST01, ST05, ST06): return type, callbacks, hook
+│   ├── learning-io.ts                        ← MODIFIED (ST01, ST06, ST07): return type, callbacks, hook
 │   ├── learning-runner.ts                    ← MODIFIED (ST01): accept SentenceRunState
 │   └── config.ts                             ← (no changes, keep as-is)
 └── RULES.md                                  ← NEW: library boundary enforcement
 
-packages/srs-demo/                            ← NEW (ST04): app package, not library
+apps/cli-demo-db/                             ← NEW (ST05): app package, not library
 ├── src/
-│   ├── learning-runner-db.ts                 ← NEW (ST04): DB runner
-│   ├── db-tools.ts                           ← NEW (ST04): clear/reset/seed utilities
-│   └── db-fixtures.ts                        ← NEW (ST04): test fixtures
+│   ├── learning-runner-db.ts                 ← NEW (ST05): DB runner
+│   ├── db-tools.ts                           ← NEW (ST05): clear/reset/seed utilities
+│   └── db-fixtures.ts                        ← NEW (ST05): test fixtures
 └── package.json
 
 data/
@@ -412,53 +402,15 @@ data/
 
 ---
 
-## 7. Completed Work (ST01, ST02 + ST02b ✅)
-
-**Status**: Engine plumbing (ST01), schema definition, and migration infrastructure complete and tested.
-
-**Delivered (ST01)**:
-
-- [x] `runAdaptiveLoop` signature updated to accept `initialSentenceRunState?: SentenceRunState`
-- [x] `runAdaptiveLoop` return type changed from `Promise<RunState>` to `Promise<{ runState: RunState; sentenceRunState: SentenceRunState }>`
-- [x] `sentenceRunState` no longer discarded at function exit — properly returned to caller
-- [x] Call site in `learning-runner.ts` updated to destructure both `runState` and `sentenceRunState`
-- [x] `learning-runner.ts` passes `sentenceRunState` to next loop iteration
-- [x] Auto scenarios tests pass with new return type
-- [x] `pnpm --filter @gll/srs-engine-v2 test` passes
-
-**Delivered (ST02 + ST02b)**:
-
-- [x] `@gll/db` package created with proper structure (package.json, tsconfig, drizzle.config.ts)
-- [x] Drizzle schema in TypeScript (`packages/db/src/schema.ts`) — all 11 tables with correct types and constraints
-- [x] Migration runner (`packages/db/src/init-db.ts`) — applies `.sql` files idempotently, tracks in `__drizzle_migrations__` table
-- [x] Database client (`packages/db/src/db.ts`) — `getDb()` and `closeDb()` functions for connection management
-- [x] Initial migration generated (`packages/db/drizzle/migrations/0001_initial_schema.sql`) — D1-compatible SQL
-- [x] Migration tested end-to-end — creates all 10 tables successfully
-- [x] Both `@gll/db` and `@gll/srs-engine-v2` typecheck clean
-- [x] Engine package cleaned: removed drizzle-orm, drizzle-kit, better-sqlite3 runtime deps; kept @types/better-sqlite3 as devDep
-- [x] `SqliteLearningStore` refactored to accept Database connection (not file path) — DB init is application responsibility
-- [x] Epic plan condensed to template format; technical details moved to DS01 task lists
-
-**Test Results**:
-```
-$ pnpm node test-init-db.mjs
-Found 1 migration files
-Applying 0001_initial_schema...
-✓ Created 10 tables: users, words, foundational_words, decks, sentences, sentence_components, deck_words, user_word_states, user_sentence_states, review_cards
-```
-
----
-
-## 8. Next Steps
+## 7. Next Steps
 
 | Step | Story | Status |
 |---|---|---|
 | ✅ Return `SentenceRunState` from loop | ST01 | COMPLETE |
 | ✅ Schema definition & migrations | ST02 + ST02b | COMPLETE |
-| Serialisation helpers | ST03 | Ready — independent, no dependencies |
-| Create `LearningStore` impl | ST04 | Ready — depends on ST03 |
+| `LearningStore` + `SqliteLearningStore` in `@gll/db` | ST04 | Ready — no dependencies |
 | New DB runner + tools | ST05 | Ready — depends on ST04 |
 | Wire write-on-answer callbacks | ST06 | Ready — depends on ST05 |
 | Add graduation hook | ST07 | Ready — depends on ST06 |
 
-**Recommended order**: ST03 (independent) → ST04 → ST05 → ST06 → ST07
+**Recommended order**: ST04 → ST05 → ST06 → ST07
