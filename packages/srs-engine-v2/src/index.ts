@@ -30,6 +30,11 @@ export { resolveEligibleContexts, updateSentenceRunState } from './engine/senten
 export type { QuizQuestion, MCQQuestion, SentenceQuestion, SentenceTile, QuizChoice, QuizDirection, QuizResult, WordQuizResult, SentenceQuizResult } from './types/quiz.js';
 export type { SentenceContext } from './types/sentence.js';
 
+// Persistence
+export type { LearningStore } from './persistence/learning-store.js';
+export { SqliteLearningStore } from './persistence/sqlite-learning-store.js';
+export { initDb } from './persistence/init-db.js';
+
 // Config
 export { LANGUAGE_CONFIG } from './config/language.js';
 export type { LanguageConfig, WordJoin } from './config/language.js';

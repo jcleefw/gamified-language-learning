@@ -35,9 +35,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "better-sqlite3": "^12.11.1",
     "ts-fsrs": "^5"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "typescript": "^5.7",
     "vitest": "^3"
   }
