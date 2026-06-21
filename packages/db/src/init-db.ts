@@ -32,7 +32,7 @@ export function initDb(db: DatabaseConnection): void {
   `);
 
   // Get list of migration files
-  const migrationsDir = path.join(__dirname, '../..', 'drizzle', 'migrations');
+  const migrationsDir = path.join(__dirname, '..', 'drizzle', 'migrations');
 
   if (!existsSync(migrationsDir)) {
     console.log('[INFO] No migrations directory found, skipping DB initialization');

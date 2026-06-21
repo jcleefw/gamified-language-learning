@@ -1,5 +1,4 @@
-import Database from 'better-sqlite3';
-import { initDb } from './init-db.js';
+import type Database from 'better-sqlite3';
 import type { LearningStore } from './learning-store.js';
 import type { WordState, RunState } from '../types/word-state.js';
 import type { SentenceState, SentenceRunState } from '../types/sentence-state.js';
@@ -33,9 +32,8 @@ export class SqliteLearningStore implements LearningStore {
     upsertSentenceState: Database.Statement;
   };
 
-  constructor(dbPath: string) {
-    this.db = new Database(dbPath);
-    initDb(this.db);
+  constructor(db: Database.Database) {
+    this.db = db;
 
     this.stmts = {
       getAllWordStates: this.db.prepare(

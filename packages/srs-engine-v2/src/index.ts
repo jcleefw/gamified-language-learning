@@ -33,7 +33,6 @@ export type { SentenceContext } from './types/sentence.js';
 // Persistence
 export type { LearningStore } from './persistence/learning-store.js';
 export { SqliteLearningStore } from './persistence/sqlite-learning-store.js';
-export { initDb } from './persistence/init-db.js';
 
 // Config
 export { LANGUAGE_CONFIG } from './config/language.js';

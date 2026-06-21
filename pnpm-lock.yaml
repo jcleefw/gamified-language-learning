@@ -92,6 +92,28 @@ importers:
         specifier: ^5.7
         version: 5.9.3
 
+  packages/db:
+    dependencies:
+      '@gll/srs-engine-v2':
+        specifier: workspace:*
+        version: link:../srs-engine-v2
+      better-sqlite3:
+        specifier: ^12.11.1
+        version: 12.11.1
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@12.11.1)
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      drizzle-kit:
+        specifier: ^0.31.10
+        version: 0.31.10
+      typescript:
+        specifier: ^5.7
+        version: 5.9.3
+
   packages/srs-engine:
     dependencies:
       ts-fsrs:
@@ -107,15 +129,6 @@ importers:
 
   packages/srs-engine-v2:
     dependencies:
-      better-sqlite3:
-        specifier: ^12.11.1
-        version: 12.11.1
-      drizzle-kit:
-        specifier: ^0.31.10
-        version: 0.31.10
-      drizzle-orm:
-        specifier: ^0.45.2
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@12.11.1)
       ts-fsrs:
         specifier: ^5
         version: 5.2.3
