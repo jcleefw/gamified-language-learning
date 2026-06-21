@@ -384,23 +384,40 @@ data/
 
 ---
 
-## 7. Open Questions
+## 7. Completed Work (ST02 + ST02b ✅)
 
-| # | Question | Severity | Status |
-|---|---|---|---|
-| OQ1 | Where exactly in the batch loop does `onWordAnswer` fire — after `finishBatch` or per-answer inside `runInteractive`/`runAuto`? Needs reading into `runBatch` internals to identify the right hook point. | Medium | Open — resolve in ST05 |
-| OQ2 | `lapses` field: does `WordState` already have it (per Review Phase ADR §7) or does ST04 need to add it? | Low | Open — check `word-state.ts` in ST03/ST04 read list |
-| OQ3 | `data/learning-state.db` path — relative to repo root or `packages/srs-engine-v2/`? Decide in ST05 and add to `.gitignore` accordingly. | Low | Open — resolve in ST05 |
+**Status**: Schema definition and migration infrastructure complete and tested.
+
+**Delivered**:
+
+- [x] `@gll/db` package created with proper structure (package.json, tsconfig, drizzle.config.ts)
+- [x] Drizzle schema in TypeScript (`packages/db/src/schema.ts`) — all 11 tables with correct types and constraints
+- [x] Migration runner (`packages/db/src/init-db.ts`) — applies `.sql` files idempotently, tracks in `__drizzle_migrations__` table
+- [x] Database client (`packages/db/src/db.ts`) — `getDb()` and `closeDb()` functions for connection management
+- [x] Initial migration generated (`packages/db/drizzle/migrations/0001_initial_schema.sql`) — D1-compatible SQL
+- [x] Migration tested end-to-end — creates all 10 tables successfully
+- [x] Both `@gll/db` and `@gll/srs-engine-v2` typecheck clean
+- [x] Engine package cleaned: removed drizzle-orm, drizzle-kit, better-sqlite3 runtime deps; kept @types/better-sqlite3 as devDep
+- [x] `SqliteLearningStore` refactored to accept Database connection (not file path) — DB init is application responsibility
+- [x] Epic plan condensed to template format; technical details moved to DS01 task lists
+
+**Test Results**:
+```
+$ pnpm node test-init-db.mjs
+Found 1 migration files
+Applying 0001_initial_schema...
+✓ Created 10 tables: users, words, foundational_words, decks, sentences, sentence_components, deck_words, user_word_states, user_sentence_states, review_cards
+```
 
 ---
 
-## 8. Success Criteria
+## 8. Next Steps
 
-1. `pnpm learnv2` persists `RunState` and `SentenceRunState` to `data/learning-state.db` between sessions
-2. Re-launching restores prior mastery and sentence history — no data lost on clean exit
-3. Mid-session quit does not lose answered progress
-4. `ENABLE_MOCK_DB` and JSON flat-file helpers deleted
-5. `LearningStore`, `SqliteLearningStore`, `GraduationHook` exported from `@gll/srs-engine-v2`
-6. Full 10-table schema in `schema.sql`, D1-compatible
-7. All existing EP25 / EP20 unit tests pass unchanged
-8. `better-sqlite3` is the only new runtime dependency
+| Step | Story | Status |
+|---|---|---|
+| Return `SentenceRunState` from loop | ST01 | Ready — pure engine change, no dependencies |
+| Serialisation helpers | ST03 | Ready — independent of ST02b |
+| Create `LearningStore` impl | ST04 | Blocked on ST03, ready after |
+| New DB runner + tools | ST05 | Ready — depends on ST04 |
+| Wire write-on-answer callbacks | ST06 | Ready — depends on ST05 |
+| Add graduation hook | ST07 | Ready — depends on ST06 |
