@@ -274,53 +274,95 @@ No DB, no schema, no serialisation — purely engine plumbing.
 
 ---
 
-### EP30-ST05: `cli-demo-db` App Package
+### EP30-ST05: Curriculum Import (JSON → DB)
 
-**Scope**: Create separate `cli-demo-db` application package with `learning-runner-db.ts` runner and DB management scripts. Keep original mock runner (`learning-runner.ts`) in srs-engine-v2 demo for unit testing.
+**Scope**: Create a one-time import script in `apps/cli-demo-db` that reads `packages/srs-engine-v2/data/samples/conversations-2026-03-08.json` and `packages/srs-engine-v2/data/seed-data/thai-full-foundations.ts`, transforms them, and inserts into the DB content tables (`decks`, `words`, `foundational_words`, `sentences`, `sentence_components`, `deck_words`). This is a prerequisite for ST06 — the runner must query curriculum from the DB, not from TypeScript mock files.
+
+**Read list**:
+- `packages/db/src/schema.ts` (ST02 output)
+- `packages/db/src/db.ts` (ST02b output)
+- `packages/srs-engine-v2/data/samples/conversations-2026-03-08.json` — source curriculum
+- `packages/srs-engine-v2/data/seed-data/thai-full-foundations.ts` — source foundations
+
+**Tasks**:
+- [ ] Create `apps/cli-demo-db/` package scaffold (package.json, tsconfig.json)
+- [ ] Create `apps/cli-demo-db/src/import-curriculum.ts`:
+  - [ ] Parse conversations JSON → insert one `decks` row per conversation (use existing UUID from JSON `id` field)
+  - [ ] Deduplicate words by `(language, text)` across all conversations → insert into `words` (generate UUID per unique word; handle sense merging per schema ADR Q10)
+  - [ ] Insert `sentences` rows (one per `breakdown` entry; generate UUID)
+  - [ ] Insert `sentence_components` rows (one per component in breakdown; FK to sentence UUID + word UUID)
+  - [ ] Derive and insert `deck_words` from `sentence_components` (no drift)
+  - [ ] Insert `foundational_words` from `thai-full-foundations.ts` (use existing string IDs e.g. `th:consonant:ก`)
+  - [ ] Import is idempotent — safe to run twice (use `INSERT OR IGNORE` / `onConflictDoNothing`)
+- [ ] Add `engine:import-curriculum` script to `apps/cli-demo-db/package.json` → `tsx src/import-curriculum.ts`
+
+**Acceptance criteria**:
+- [ ] `pnpm --filter cli-demo-db engine:import-curriculum` exits cleanly
+- [ ] `decks`, `words`, `sentences`, `sentence_components`, `deck_words`, `foundational_words` tables are populated
+- [ ] Running twice does not error (idempotent)
+- [ ] Word dedup works — same Thai text appearing in multiple conversations resolves to one `words` row
+- [ ] `pnpm --filter cli-demo-db typecheck` clean
+
+---
+
+### EP30-ST06: `cli-demo-db` Runner (DB-backed)
+
+**Scope**: Create the DB-backed runner in `apps/cli-demo-db`. Queries curriculum from DB (not from TypeScript mock files), loads learner state from DB, and passes both into `runAdaptiveLoop`. Also includes DB management utilities (clear, reset, seed). Keep original mock runner (`learning-runner.ts`) in srs-engine-v2 demo untouched.
 
 **Read list**:
 - `packages/db/src/db.ts` (ST02b output)
-- `packages/srs-engine-v2/demo/learning-io.ts` (ST01 output)
 - `packages/db/src/sqlite-learning-store.ts` (ST04 output)
+- `packages/db/src/schema.ts` (ST02 output)
+- `packages/srs-engine-v2/demo/learning-io.ts` (ST01 output)
+- `apps/cli-demo-db/src/import-curriculum.ts` (ST05 output)
 
 **Tasks**:
-- [ ] Create `apps/cli-demo-db/` package (new app, not part of library)
 - [ ] Create `apps/cli-demo-db/src/learning-runner-db.ts`:
-  - [ ] Import `getDb, closeDb, SqliteLearningStore` from `@gll/db`
-  - [ ] Call `getDb()` at startup
-  - [ ] Load `RunState` via `store.getAllWordStates('cli-user')`
+  - [ ] `DB_PATH = process.env.GLL_DB_PATH ?? './data/learning-state.db'`
+  - [ ] `getDb(DB_PATH)` at startup; log `[INFO] DB ready`
+  - [ ] Query `words` + `deck_words` + `decks` from DB → build `QuizItem[]` (word UUID as `id`)
+  - [ ] Query `sentences` + `sentence_components` from DB → build `SentenceContext[]`
+  - [ ] Query `foundational_words` from DB → build foundational `QuizItem[]`
+  - [ ] Load `RunState` via `store.getAllWordStates('cli-user')` (keyed by word UUID)
   - [ ] Load `SentenceRunState` via `store.getAllSentenceStates('cli-user')`
-  - [ ] Call `runAdaptiveLoop` (callbacks wired in ST06)
-  - [ ] Call `closeDb()` on exit
+  - [ ] Call `runAdaptiveLoop` (callbacks wired in ST07)
+  - [ ] `closeDb()` on exit
+- [ ] Duplicate interactive helpers from `srs-engine-v2/demo/learning-io.ts` into app (no cross-package demo import):
+  - [ ] `selectDeck`, `runInteractive`, `runInteractiveMCQ`, `runInteractiveWordBlock`, `runBatch`, `runAdaptiveLoop`
+  - [ ] `AutoAnswerStrategy`, `CorrectAutoAnswerStrategy`, `runAutoInteractive`
+- [ ] Create `apps/cli-demo-db/src/config.ts` — duplicate `LEARNING_CONFIG`, `STREAK_THRESHOLDS`, `AUTO_MODE` (no `ENABLE_MOCK_DB`)
 - [ ] Create `apps/cli-demo-db/src/db-tools.ts`:
-  - [ ] `clearUserState(userId)` — DELETE from learner tables
-  - [ ] `resetDb()` — drop DB file, reinitialize
-  - [ ] `seedDb(fixtureName)` — insert fixture data
+  - [ ] `clearUserState(userId)` — DELETE from learner state tables
+  - [ ] `resetDb()` — `closeDb()` first, delete DB file, `getDb()` to reinitialize
+  - [ ] `seedDb(fixtureName)` — throws `Error` if fixture unknown; clears then upserts fixture rows
 - [ ] Create `apps/cli-demo-db/src/db-fixtures.ts`:
-  - [ ] Named fixtures: baseline (empty), mid-session (words at mastery 0-2)
-- [ ] Create `apps/cli-demo-db/package.json` with scripts:
-  - [ ] `engine:real-db` → `learning-runner-db.ts`
-  - [ ] `engine:real-db:clear`, `engine:real-db:reset`, `engine:real-db:seed`
-- [ ] Keep `packages/srs-engine-v2/demo/learning-runner.ts` unchanged for mock testing
-- [ ] Rename `learnv2` to `engine:mock-db` in `packages/srs-engine-v2/package.json`
+  - [ ] `baseline` — empty state
+  - [ ] `mid-session` — 4 words at mastery 0–2 (word UUIDs resolved from DB after ST05 import)
+  - [ ] `sentence-ready` — all 6 words from `sent::eat-001` equivalent with `seen >= 2`
+- [ ] Add scripts to `apps/cli-demo-db/package.json`:
+  - [ ] `engine:real-db`, `engine:real-db:clear`, `engine:real-db:reset`
+  - [ ] `engine:real-db:seed:baseline`, `engine:real-db:seed:mid-session`, `engine:real-db:seed:sentence-ready`
+- [ ] Rename `learnv2` → `engine:mock-db` in `packages/srs-engine-v2/package.json`
+- [ ] Rename `learnv2` → `engine:mock-db` in root `package.json`
 
 **Acceptance criteria**:
-- [ ] `pnpm --filter cli-demo-db engine:real-db` runs (will not persist — ST06 adds callbacks)
+- [ ] `pnpm --filter cli-demo-db engine:real-db` runs — queries curriculum from DB, loads zero learner state on fresh DB, enters session (will not persist — ST07 adds callbacks)
+- [ ] `pnpm --filter cli-demo-db engine:real-db:seed:mid-session` then `engine:real-db` — loaded word states passed into `runAdaptiveLoop` as `initialRunState`; session reflects partial progress
+- [ ] `pnpm --filter cli-demo-db engine:real-db:seed:sentence-ready` then `engine:real-db` — sentence question appears in session
 - [ ] `pnpm --filter cli-demo-db engine:real-db:clear` exits cleanly
 - [ ] `pnpm --filter cli-demo-db engine:real-db:reset` deletes DB file cleanly
-- [ ] `pnpm --filter cli-demo-db engine:real-db:seed:baseline` loads fixture
 - [ ] `pnpm --filter @gll/srs-engine-v2 engine:mock-db` still works unchanged
 - [ ] `pnpm --filter cli-demo-db typecheck` clean
 
 ---
 
-### EP30-ST06: Write-on-Answer Callbacks
+### EP30-ST07: Write-on-Answer Callbacks
 
 **Scope**: Add `onWordAnswer` / `onSentenceAnswer` callbacks to `runAdaptiveLoop`. Wire them in `cli-demo-db/learning-runner-db.ts` to call `store.upsertWordState` / `store.upsertSentenceState` after each answer.
 
 **Read list**:
 - `packages/srs-engine-v2/demo/learning-io.ts` (ST01 output)
-- `apps/cli-demo-db/src/learning-runner-db.ts` (ST05 output)
+- `apps/cli-demo-db/src/learning-runner-db.ts` (ST06 output)
 - `packages/db/src/sqlite-learning-store.ts` (ST04 output)
 
 **Tasks**:
@@ -338,12 +380,12 @@ No DB, no schema, no serialisation — purely engine plumbing.
 
 ---
 
-### EP30-ST07: Graduation Hook Stub
+### EP30-ST08: Graduation Hook Stub
 
 **Scope**: Add `onGraduation?: GraduationHook` to `runAdaptiveLoop`. At loop exit, compare initial `RunState` with final `RunState` to identify words that crossed `masteryThreshold` this session. Call the hook with those IDs. Pass a console-log hook in `cli-demo-db/learning-runner-db.ts`.
 
 **Read list**:
-- `packages/srs-engine-v2/demo/learning-io.ts` (ST06 output)
+- `packages/srs-engine-v2/demo/learning-io.ts` (ST07 output)
 - `packages/srs-engine-v2/src/index.ts`
 
 **Tasks**:
@@ -355,7 +397,6 @@ No DB, no schema, no serialisation — purely engine plumbing.
 
 **Acceptance criteria**:
 - [ ] Running `pnpm --filter cli-demo-db engine:real-db` in auto mode logs graduated word IDs at session end
-
 - [ ] Omitting `onGraduation` does not throw
 - [ ] `GraduationHook` importable from `@gll/srs-engine-v2`
 - [ ] All existing tests pass: `pnpm --filter @gll/srs-engine-v2 test`
@@ -382,18 +423,20 @@ packages/db/
 
 packages/srs-engine-v2/
 ├── src/
-│   └── index.ts                              ← MODIFIED (ST06, ST07): new exports
+│   └── index.ts                              ← MODIFIED (ST07, ST08): new exports
 ├── demo/
-│   ├── learning-io.ts                        ← MODIFIED (ST01, ST06, ST07): return type, callbacks, hook
+│   ├── learning-io.ts                        ← MODIFIED (ST01, ST07, ST08): return type, callbacks, hook
 │   ├── learning-runner.ts                    ← MODIFIED (ST01): accept SentenceRunState
 │   └── config.ts                             ← (no changes, keep as-is)
 └── RULES.md                                  ← NEW: library boundary enforcement
 
-apps/cli-demo-db/                             ← NEW (ST05): app package, not library
+apps/cli-demo-db/                             ← NEW (ST05+ST06): app package, not library
 ├── src/
-│   ├── learning-runner-db.ts                 ← NEW (ST05): DB runner
-│   ├── db-tools.ts                           ← NEW (ST05): clear/reset/seed utilities
-│   └── db-fixtures.ts                        ← NEW (ST05): test fixtures
+│   ├── import-curriculum.ts                  ← NEW (ST05): JSON → DB import
+│   ├── learning-runner-db.ts                 ← NEW (ST06): DB-backed runner
+│   ├── config.ts                             ← NEW (ST06): app config (no ENABLE_MOCK_DB)
+│   ├── db-tools.ts                           ← NEW (ST06): clear/reset/seed utilities
+│   └── db-fixtures.ts                        ← NEW (ST06): learner state fixtures
 └── package.json
 
 data/
@@ -409,8 +452,9 @@ data/
 | ✅ Return `SentenceRunState` from loop | ST01 | COMPLETE |
 | ✅ Schema definition & migrations | ST02 + ST02b | COMPLETE |
 | ✅ `LearningStore` + `SqliteLearningStore` in `@gll/db` | ST04 | COMPLETE |
-| New DB runner + tools | ST05 | Ready — depends on ST04 |
-| Wire write-on-answer callbacks | ST06 | Ready — depends on ST05 |
-| Add graduation hook | ST07 | Ready — depends on ST06 |
+| Curriculum import (JSON → DB) | ST05 | Ready — depends on ST04 |
+| DB-backed runner + tools | ST06 | Ready — depends on ST05 |
+| Wire write-on-answer callbacks | ST07 | Ready — depends on ST06 |
+| Add graduation hook | ST08 | Ready — depends on ST07 |
 
-**Recommended order**: ST04 → ST05 → ST06 → ST07
+**Recommended order**: ST04 → ST05 → ST06 → ST07 → ST08
