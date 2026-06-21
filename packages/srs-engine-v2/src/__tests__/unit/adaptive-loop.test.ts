@@ -10,7 +10,7 @@ function makeItem(id: string): QuizItem {
 function makeState(entries: Record<string, { seen: number; correct: number; mastery?: number }>): RunState {
   const m: RunState = new Map();
   for (const [wordId, { seen, correct, mastery = 0 }] of Object.entries(entries)) {
-    m.set(wordId, { wordId, seen, correct, mastery, correctStreak: 0, wrongStreak: 0 });
+    m.set(wordId, { wordId, seen, correct, mastery, correctStreak: 0, wrongStreak: 0, lapses: 0 });
   }
   return m;
 }

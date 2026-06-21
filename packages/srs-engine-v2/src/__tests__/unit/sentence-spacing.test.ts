@@ -52,6 +52,7 @@ describe('Sentence Spacing and Eligibility Gates', () => {
       mastery: 0,
       correctStreak: 0,
       wrongStreak: 0,
+      lapses: 0,
     });
   }
 

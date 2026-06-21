@@ -73,6 +73,7 @@ describe('initAdaptiveSession', () => {
           mastery: 1,
           correctStreak: 1,
           wrongStreak: 0,
+          lapses: 0,
         },
       ],
     ]);

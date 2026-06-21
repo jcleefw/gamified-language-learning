@@ -8,7 +8,7 @@ const streakThresholds = { correctStreakThreshold: 2, wrongStreakThreshold: 2, m
 function makeState(entries: Record<string, { mastery: number; seen?: number; correct?: number; correctStreak?: number; wrongStreak?: number }>): RunState {
   const m: RunState = new Map();
   for (const [wordId, { mastery, seen = 0, correct = 0, correctStreak = 0, wrongStreak = 0 }] of Object.entries(entries)) {
-    m.set(wordId, { wordId, seen, correct, mastery, correctStreak, wrongStreak });
+    m.set(wordId, { wordId, seen, correct, mastery, correctStreak, wrongStreak, lapses: 0 });
   }
   return m;
 }

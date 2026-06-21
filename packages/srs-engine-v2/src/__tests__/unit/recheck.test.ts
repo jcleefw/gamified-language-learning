@@ -12,7 +12,7 @@ function makeState(
 ): RunState {
   const m: RunState = new Map();
   for (const [wordId, { mastery, seen = 1, correct = 1 }] of Object.entries(entries)) {
-    m.set(wordId, { wordId, seen, correct, mastery, correctStreak: 0, wrongStreak: 0 });
+    m.set(wordId, { wordId, seen, correct, mastery, correctStreak: 0, wrongStreak: 0, lapses: 0 });
   }
   return m;
 }
@@ -157,7 +157,7 @@ describe('processRecheckResult — wrong on second attempt (recheckReentered)', 
 
   it('keeps word in recheckReentered when it fails (not yet mastered)', () => {
     // wrongStreak: 1 already, threshold 2 — second wrong decrements mastery below threshold
-    const runState: RunState = new Map([['w1', { wordId: 'w1', seen: 5, correct: 3, mastery: 3, correctStreak: 0, wrongStreak: 1 }]]);
+    const runState: RunState = new Map([['w1', { wordId: 'w1', seen: 5, correct: 3, mastery: 3, correctStreak: 0, wrongStreak: 1, lapses: 0 }]]);
     const recheckPending = new Set<string>();
     const recheckReentered = new Set(['w1']);
 
@@ -170,7 +170,7 @@ describe('processRecheckResult — wrong on second attempt (recheckReentered)', 
 
   it('removes word from recheckReentered when it masters on second attempt', () => {
     // correctStreak: 1, threshold 2 — second correct will increment mastery to threshold
-    const runState: RunState = new Map([['w1', { wordId: 'w1', seen: 5, correct: 3, mastery: 2, correctStreak: 1, wrongStreak: 0 }]]);
+    const runState: RunState = new Map([['w1', { wordId: 'w1', seen: 5, correct: 3, mastery: 2, correctStreak: 1, wrongStreak: 0, lapses: 0 }]]);
     const recheckPending = new Set<string>();
     const recheckReentered = new Set(['w1']);
 

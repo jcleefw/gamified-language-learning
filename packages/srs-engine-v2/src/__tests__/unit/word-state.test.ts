@@ -179,18 +179,18 @@ describe('updateRunState — mastery decrement', () => {
 // ---------------------------------------------------------------------------
 describe('isMastered', () => {
   it('returns false when mastery < threshold', () => {
-    expect(isMastered({ wordId: 'th::w', seen: 5, correct: 5, mastery: 4, correctStreak: 5, wrongStreak: 0 }, 5)).toBe(false);
+    expect(isMastered({ wordId: 'th::w', seen: 5, correct: 5, mastery: 4, correctStreak: 5, wrongStreak: 0, lapses: 0 }, 5)).toBe(false);
   });
 
   it('returns true when mastery === threshold', () => {
-    expect(isMastered({ wordId: 'th::w', seen: 5, correct: 5, mastery: 5, correctStreak: 7, wrongStreak: 0 }, 5)).toBe(true);
+    expect(isMastered({ wordId: 'th::w', seen: 5, correct: 5, mastery: 5, correctStreak: 7, wrongStreak: 0, lapses: 0 }, 5)).toBe(true);
   });
 
   it('returns true when mastery > threshold', () => {
-    expect(isMastered({ wordId: 'th::w', seen: 6, correct: 6, mastery: 5, correctStreak: 8, wrongStreak: 0 }, 5)).toBe(true);
+    expect(isMastered({ wordId: 'th::w', seen: 6, correct: 6, mastery: 5, correctStreak: 8, wrongStreak: 0, lapses: 0 }, 5)).toBe(true);
   });
 
   it('returns false on a fresh WordState', () => {
-    expect(isMastered({ wordId: 'th::w', seen: 0, correct: 0, mastery: 0, correctStreak: 0, wrongStreak: 0 }, 5)).toBe(false);
+    expect(isMastered({ wordId: 'th::w', seen: 0, correct: 0, mastery: 0, correctStreak: 0, wrongStreak: 0, lapses: 0 }, 5)).toBe(false);
   });
 });
