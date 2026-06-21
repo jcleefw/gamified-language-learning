@@ -14,9 +14,9 @@ EP30 replaces the `ENABLE_MOCK_DB` JSON flat-file shim in `demo/learning-runner.
 The call chain after EP30:
 
 ```
-pnpm learnv2
-  └── tsx demo/learning-runner.ts
-        ├── SqliteLearningStore.open("data/learning-state.db")  ← initDb runs schema.sql
+pnpm engine:real-db
+  └── tsx demo/learning-runner-db.ts
+        ├── getDb("data/learning-state.db")       ← from @gll/db; runs initDb
         ├── store.getAllWordStates('cli-user')     → RunState (Map)
         ├── store.getAllSentenceStates('cli-user') → SentenceRunState (Map)
         ├── initAdaptiveSession(words, config, recheckIds, runState)
@@ -29,9 +29,13 @@ pnpm learnv2
         └── store.close()
 ```
 
+**Architecture**:
+- **`@gll/db`** (application layer): DB setup, migrations, schema definition, Drizzle config
+- **`@gll/srs-engine-v2`** (library layer): DB-agnostic; owns `LearningStore` interface + serialization helpers
+
 `better-sqlite3` writes directly to a local `.db` file — no network, no server. The schema is D1-compatible, making it a config swap (not a migration) when the app moves to Cloudflare.
 
-No Knex. 5 SQL statements in EP30 do not justify a query builder. Knex deferred to the Hono wiring epic.
+Drizzle chosen over Knex for lightweight schema-first migrations. The schema lives in TypeScript; migrations are generated `.sql` files. This approach scales to Hono wiring without lifting.
 
 ---
 
@@ -198,21 +202,41 @@ No DB, no schema, no serialisation — purely engine plumbing.
 
 ---
 
-### EP30-ST02: DB Initialisation Helper + Full Schema DDL
+### EP30-ST02: Drizzle Schema Definition
 
-**Scope**: Create `schema.sql` covering all 10 tables from the schema ADR and an `initDb` helper that applies it idempotently. No persistence wiring — this story only defines the schema and the initialisation entry point.
+**Scope**: Define all 11 tables from the schema ADR using Drizzle ORM TypeScript. Schema lives in `@gll/db` (application layer, not library layer).
 
 **Read list**:
 - `product-documentation/architecture/20260620T000000Z-engineering-database-schema.md` — canonical DDL
 
 **Tasks**:
-- [ ] Create `packages/srs-engine-v2/src/persistence/schema.sql` — all 10 tables, `CREATE TABLE IF NOT EXISTS`, D1-compatible (no `AUTOINCREMENT`, no `PRAGMA`)
-- [ ] Create `packages/srs-engine-v2/src/persistence/init-db.ts` — `initDb(db: Database): void`; reads and executes `schema.sql` as a single statement batch
+- [ ] Create `packages/db/src/schema.ts` — Drizzle schema for all 11 tables (users, words, foundational_words, decks, sentences, sentence_components, deck_words, user_word_states, user_sentence_states, review_cards)
+- [ ] Use `sqliteTable` (SQLite dialect)
+- [ ] Add `drizzle-orm` to `@gll/db/package.json`
 
 **Acceptance criteria**:
-- [ ] `schema.sql` matches schema ADR exactly for all 10 tables
+- [ ] `schema.ts` matches schema ADR exactly for all 11 tables
+- [ ] All columns, types, and constraints present
+- [ ] Drizzle schema compiles with `pnpm --filter @gll/db typecheck`
+
+---
+
+### EP30-ST02b: Migration Infrastructure + Init DB Helper
+
+**Scope**: Set up Drizzle migrations and `initDb` helper in `@gll/db`. Generates and tracks `.sql` migration files.
+
+**Tasks**:
+- [ ] Create `packages/db/drizzle.config.ts` — Drizzle config pointing to schema and migrations directory
+- [ ] Create `packages/db/src/init-db.ts` — `initDb(db: DatabaseConnection)` reads `.sql` files from `drizzle/migrations/`, tracks applied migrations in `__drizzle_migrations__` table, applies pending migrations idempotently
+- [ ] Create `packages/db/src/db.ts` — `getDb(path)` initializes better-sqlite3 + Drizzle + runs `initDb`
+- [ ] Run `pnpm --filter @gll/db db:generate` to create initial `0001_initial_schema.sql`
+- [ ] Add `drizzle-kit` as devDep; add `db:generate` and `db:push` scripts to `package.json`
+
+**Acceptance criteria**:
+- [ ] Migration files in `packages/db/drizzle/migrations/*.sql` are D1-compatible (no `AUTOINCREMENT`, standard SQL)
 - [ ] `initDb` is idempotent — calling twice on the same DB does not error
-- [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
+- [ ] `pnpm --filter @gll/db db:generate` creates `.sql` files without error
+- [ ] `pnpm --filter @gll/db typecheck` clean
 
 ---
 
@@ -240,70 +264,72 @@ No DB, no schema, no serialisation — purely engine plumbing.
 
 ### EP30-ST04: `LearningStore` Interface + `SqliteLearningStore`
 
-**Scope**: Define `LearningStore` interface and implement it with `better-sqlite3`. All methods use prepared statements. Integration-tested with a temp DB.
+**Scope**: Define `LearningStore` interface and implement it with better-sqlite3 + Drizzle. Constructor takes a Database connection (DB init is application responsibility, not library responsibility).
 
 **Read list**:
-- `packages/srs-engine-v2/src/persistence/schema.sql` (ST02 output)
-- `packages/srs-engine-v2/src/persistence/init-db.ts` (ST02 output)
+- `packages/db/src/schema.ts` (ST02 output)
 - `packages/srs-engine-v2/src/types/word-state.ts`
 - `packages/srs-engine-v2/src/types/sentence-state.ts`
-- `packages/srs-engine-v2/package.json`
 
 **Tasks**:
-- [ ] Add `better-sqlite3` + `@types/better-sqlite3` to `package.json`
 - [ ] Create `packages/srs-engine-v2/src/persistence/learning-store.ts` — `LearningStore` interface
 - [ ] Create `packages/srs-engine-v2/src/persistence/sqlite-learning-store.ts` — `SqliteLearningStore`:
-  - [ ] Constructor: accepts DB path; calls `initDb`; prepares all statements
+  - [ ] Constructor: accepts `Database` connection (not file path)
+  - [ ] Uses Drizzle queries (type-safe)
   - [ ] `getAllWordStates(userId)`: `SELECT * FROM user_word_states WHERE user_id = ?` → `Map<string, WordState>`
   - [ ] `upsertWordState(userId, state)`: `INSERT OR REPLACE INTO user_word_states`
   - [ ] `getAllSentenceStates(userId)`: `SELECT * FROM user_sentence_states WHERE user_id = ?` → `Map<string, SentenceState>`
   - [ ] `upsertSentenceState(userId, state)`: `INSERT OR REPLACE INTO user_sentence_states`
-  - [ ] `close()`: `db.close()`
+  - [ ] `close()`: close the connection
 - [ ] Create `packages/srs-engine-v2/src/__tests__/integration/sqlite-learning-store.test.ts`:
+  - [ ] Pass a test Database connection (caller responsibility)
   - [ ] Upsert then getAll returns same `WordState` (all fields including `lapses`)
   - [ ] Upsert then getAll returns same `SentenceState` (`active: false`, `lastBatchSeen: -1` preserved)
   - [ ] Second upsert with same `(userId, wordId)` overwrites — no duplicate rows
-  - [ ] `getAll*` returns all rows after multiple upserts
-  - [ ] `user_id` column populated correctly
-  - [ ] Temp DB file deleted in `afterAll`
 - [ ] Export `LearningStore`, `SqliteLearningStore` from `packages/srs-engine-v2/src/index.ts`
+- [ ] Add `@types/better-sqlite3` as devDep (types only, not runtime)
 
 **Acceptance criteria**:
 - [ ] All integration tests pass: `pnpm --filter @gll/srs-engine-v2 test`
 - [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
+- [ ] Constructor signature is `SqliteLearningStore(db: Database)` — no file path
 
 ---
 
-### EP30-ST05: Wire `learning-runner.ts` — Load, Write-on-Answer, Close
+### EP30-ST05: New `learning-runner-db.ts` and DB Management Scripts
 
-**Scope**: Replace the `ENABLE_MOCK_DB` JSON shim with `SqliteLearningStore`. Load state on startup. Pass `onWordAnswer` / `onSentenceAnswer` callbacks for write-on-answer. Delete the shim entirely.
+**Scope**: Create second CLI runner (`learning-runner-db.ts`) that uses real DB. Keep original `learning-runner.ts` unchanged for mock testing. Add clear/reset/seed utilities.
 
 **Read list**:
-- `packages/srs-engine-v2/demo/learning-runner.ts`
+- `packages/db/src/db.ts` (ST02b output)
 - `packages/srs-engine-v2/demo/learning-io.ts` (ST01 output)
-- `packages/srs-engine-v2/demo/config.ts`
 - `packages/srs-engine-v2/src/persistence/sqlite-learning-store.ts` (ST04 output)
 
 **Tasks**:
-- [ ] `demo/learning-io.ts`: add `onWordAnswer?: (state: WordState) => void` and `onSentenceAnswer?: (state: SentenceState) => void` to `runAdaptiveLoop` signature; call `onWordAnswer` after each word answer is processed inside the batch loop; call `onSentenceAnswer` after each sentence answer
-- [ ] `demo/learning-runner.ts`:
-  - [ ] Remove `ENABLE_MOCK_DB`, `STATE_FILE`, `loadRunState()`, `saveRunState()`
-  - [ ] Open `SqliteLearningStore('data/learning-state.db')` at startup
+- [ ] Create `packages/srs-engine-v2/demo/learning-runner-db.ts` (new):
+  - [ ] Import `getDb, closeDb` from `@gll/db`
+  - [ ] Call `getDb()` at startup
   - [ ] Load `RunState` via `store.getAllWordStates('cli-user')`
   - [ ] Load `SentenceRunState` via `store.getAllSentenceStates('cli-user')`
-  - [ ] Pass `onWordAnswer: (ws) => store.upsertWordState('cli-user', ws)` to `runAdaptiveLoop`
-  - [ ] Pass `onSentenceAnswer: (ss) => store.upsertSentenceState('cli-user', ss)` to `runAdaptiveLoop`
-  - [ ] Call `store.close()` after loop exits
-  - [ ] Add `data/learning-state.db` to `.gitignore`
-- [ ] `demo/config.ts`: remove `ENABLE_MOCK_DB`
+  - [ ] Call `runAdaptiveLoop` (callbacks wired in ST06)
+  - [ ] Call `closeDb()` on exit
+- [ ] Create `packages/srs-engine-v2/demo/db-tools.ts` (new):
+  - [ ] `clearUserState(userId)` — DELETE from learner tables
+  - [ ] `resetDb()` — drop DB file, reinitialize
+  - [ ] `seedDb(fixtureName)` — insert fixture data
+- [ ] Create `packages/srs-engine-v2/demo/db-fixtures.ts` (new):
+  - [ ] Named fixtures: baseline (empty), mid-session (words at mastery 0-2)
+- [ ] Update `packages/srs-engine-v2/package.json`:
+  - [ ] Rename `learnv2` to `engine:mock-db` (unchanged runner)
+  - [ ] Add `engine:real-db` pointing to `learning-runner-db.ts`
+  - [ ] Add `engine:real-db:clear`, `engine:real-db:reset`, `engine:real-db:seed` scripts
 
 **Acceptance criteria**:
-- [ ] `pnpm learnv2` runs; exit and re-run — prior word mastery levels restored
-- [ ] Re-run — `SentenceRunState` (streak, `lastBatchSeen`) also restored
-- [ ] Mid-session quit after answering some words — those words are in DB on next launch (write-on-answer)
-- [ ] `sqlite3 data/learning-state.db "SELECT * FROM user_word_states"` shows rows with `user_id = 'cli-user'`
-- [ ] `ENABLE_MOCK_DB` does not appear anywhere in the codebase
-- [ ] All existing tests pass: `pnpm --filter @gll/srs-engine-v2 test`
+- [ ] `pnpm engine:real-db` runs (will not persist — ST06 adds callbacks)
+- [ ] `pnpm engine:real-db:clear` exits cleanly
+- [ ] `pnpm engine:real-db:reset` deletes DB file cleanly
+- [ ] `pnpm engine:real-db:seed:baseline` loads fixture
+- [ ] `pnpm engine:mock-db` still works unchanged
 - [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
 
 ---
