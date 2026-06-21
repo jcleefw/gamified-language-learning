@@ -55,23 +55,25 @@ EP21 (Review Phase / FSRS) is blocked on this: scheduling decisions require hist
 
 **Scope**: Set up Drizzle migrations and `initDb` helper in `@gll/db` that applies pending migrations idempotently.
 
-### EP30-ST03: Serialisation Helpers for `Map` and `Set`
+### ~~EP30-ST03: Serialisation Helpers for `Map` and `Set`~~
 
-**Scope**: Pure serialisation/deserialisation for `RunState`, `SentenceRunState`, `Set<string>`. Lives in srs-engine-v2 (engine concern, not DB concern).
+~~**Scope**: Pure serialisation/deserialisation for `RunState`, `SentenceRunState`, `Set<string>`. Lives in srs-engine-v2 (engine concern, not DB concern).~~
 
-### EP30-ST04: `LearningStore` Interface Implementation
+**DELETED**: Serialization was speculative (unused in production code). Apps decide their own serialization format. If needed later, it belongs in `@gll/db`, not the library.
+
+### EP30-ST03: `LearningStore` Interface Implementation
 
 **Scope**: Define `LearningStore` interface + `SqliteLearningStore` implementation using Drizzle ORM. Test with integration tests using temp DB.
 
-### EP30-ST05: New `learning-runner-db.ts` and DB Management Scripts
+### EP30-ST04: `srs-demo` App Package
 
-**Scope**: Create second CLI runner that uses real DB. Add utilities (clear, reset, seed) for test isolation. Keep original `learning-runner.ts` unchanged with `ENABLE_MOCK_DB` for pure unit testing.
+**Scope**: Create separate `srs-demo` package (application layer) with `learning-runner-db.ts` runner and DB management scripts (clear, reset, seed). Keep original `learning-runner.ts` mock runner unchanged for unit testing.
 
-### EP30-ST06: `LearningStore` + Write-on-Answer Callbacks
+### EP30-ST05: `LearningStore` + Write-on-Answer Callbacks
 
-**Scope**: Add `onWordAnswer` / `onSentenceAnswer` callbacks to `runAdaptiveLoop`. Wire them in `learning-runner-db.ts` to call `store.upsertWordState` / `store.upsertSentenceState` after each answer.
+**Scope**: Add `onWordAnswer` / `onSentenceAnswer` callbacks to `runAdaptiveLoop`. Wire them in `srs-demo/learning-runner-db.ts` to call `store.upsertWordState` / `store.upsertSentenceState` after each answer.
 
-### EP30-ST07: Graduation Hook Stub
+### EP30-ST06: Graduation Hook Stub
 
 **Scope**: Add `onGraduation` callback to `runAdaptiveLoop` that identifies newly mastered words each session. Seam for EP21 to attach FSRS logic.
 
