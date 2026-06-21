@@ -297,9 +297,10 @@ export async function runAdaptiveLoop(
   masteryThreshold: number,
   streakThresholds: StreakThresholds,
   initialRunState: RunState = new Map(),
+  initialSentenceRunState: SentenceRunState = new Map(),
   recheckIds: Set<string> = new Set(),
   strategy?: AutoAnswerStrategy,
-): Promise<RunState> {
+): Promise<{ runState: RunState; sentenceRunState: SentenceRunState }> {
   const config: SessionConfig = {
     wordsPerBatch,
     masteryThreshold,
@@ -308,7 +309,7 @@ export async function runAdaptiveLoop(
   };
 
   let state = initAdaptiveSession(words, config, recheckIds, initialRunState);
-  const sentenceRunState: SentenceRunState = new Map();
+  const sentenceRunState: SentenceRunState = new Map(initialSentenceRunState);
   let totalCorrect = 0;
   let totalQuestions = 0;
   let totalMastered = 0;
@@ -387,5 +388,5 @@ export async function runAdaptiveLoop(
   console.log(`Score:   ${String(totalCorrect)} / ${String(totalQuestions)}`);
   console.log(`Mastered: ${String(totalMastered)}`);
 
-  return state.runState;
+  return { runState: state.runState, sentenceRunState };
 }

@@ -8,7 +8,7 @@ import { wordPool } from '../data/mock/mock-word-pool.js';
 import { mockDecks } from '../data/mock/mock-decks.js';
 import { selectDeck, runAdaptiveLoop } from './learning-io.js';
 import { isMastered } from '../src/index.js';
-import type { RunState } from '../src/index.js';
+import type { RunState, SentenceRunState } from '../src/index.js';
 import {
   CorrectAutoAnswerStrategy,
 } from './auto-answer-strategy.js';
@@ -76,6 +76,7 @@ const mockFoundational = [
 ];
 
 let runState: RunState = loadRunState();
+let sentenceRunState: SentenceRunState = new Map();
 
 for (; ;) {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -103,7 +104,7 @@ for (; ;) {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const strategy = AUTO_MODE ? selectStrategy() : undefined;
 
-  runState = await runAdaptiveLoop(
+  ({ runState, sentenceRunState } = await runAdaptiveLoop(
     words,
     wordPool,
     mockFoundational,
@@ -111,9 +112,10 @@ for (; ;) {
     LEARNING_CONFIG.masteryThreshold,
     STREAK_THRESHOLDS,
     runState,
+    sentenceRunState,
     recheckIds,
     strategy,
-  );
+  ));
 
   saveRunState(runState);
 
