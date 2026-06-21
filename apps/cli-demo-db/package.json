@@ -7,7 +7,13 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "engine:import-curriculum": "tsx src/import-curriculum.ts"
+    "engine:import-curriculum": "tsx src/import-curriculum.ts",
+    "engine:real-db": "tsx src/learning-runner-db.ts",
+    "engine:real-db:clear": "tsx src/db-tools-cli.ts clear",
+    "engine:real-db:reset": "tsx src/db-tools-cli.ts reset",
+    "engine:real-db:seed:baseline": "tsx src/db-tools-cli.ts seed baseline",
+    "engine:real-db:seed:mid-session": "tsx src/db-tools-cli.ts seed mid-session",
+    "engine:real-db:seed:sentence-ready": "tsx src/db-tools-cli.ts seed sentence-ready"
   },
   "dependencies": {
     "@gll/db": "workspace:*",
