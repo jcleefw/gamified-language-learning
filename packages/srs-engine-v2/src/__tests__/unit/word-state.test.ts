@@ -175,6 +175,72 @@ describe('updateRunState — mastery decrement', () => {
 });
 
 // ---------------------------------------------------------------------------
+// updateRunState — lapses
+// ---------------------------------------------------------------------------
+describe('updateRunState — lapses', () => {
+  it('does not increment lapses below wrongStreakThreshold', () => {
+    let state: RunState = new Map();
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=1
+    expect(state.get('th::ก')!.lapses).toBe(0);
+  });
+
+  it('increments lapses exactly once when wrongStreak first crosses threshold', () => {
+    let state: RunState = new Map();
+    // Build mastery to 1 first so lapse can fire
+    for (let i = 0; i < 3; i++) state = updateRunState(state, 'th::ก', true, THRESHOLDS);
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=1
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=2 → threshold crossed → lapses=1
+    expect(state.get('th::ก')!.lapses).toBe(1);
+  });
+
+  it('does not increment lapses again on subsequent wrong answers in the same streak', () => {
+    let state: RunState = new Map();
+    // Build mastery to 2 so mastery floor doesn't block subsequent decrements
+    for (let i = 0; i < 4; i++) state = updateRunState(state, 'th::ก', true, THRESHOLDS);
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=1
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=2 → lapses=1
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=3 → no new lapse
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=4 → no new lapse
+    expect(state.get('th::ก')!.lapses).toBe(1);
+  });
+
+  it('increments lapses again after streak resets and crosses threshold a second time', () => {
+    let state: RunState = new Map();
+    // Build mastery to 2 so two lapses are possible
+    for (let i = 0; i < 4; i++) state = updateRunState(state, 'th::ก', true, THRESHOLDS);
+    // First lapse
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=1
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=2 → lapses=1
+    // Reset streak with a correct answer
+    state = updateRunState(state, 'th::ก', true, THRESHOLDS);
+    // Second lapse
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=1
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=2 → lapses=2
+    expect(state.get('th::ก')!.lapses).toBe(2);
+  });
+
+  it('does not increment lapses when mastery is already at floor (0)', () => {
+    let state: RunState = new Map();
+    // Drive mastery to 0 (starts at 0, so it's already there)
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=1
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=2, mastery=0 (floor) → no lapse
+    expect(state.get('th::ก')!.lapses).toBe(0);
+  });
+
+  it('increments lapses when mastery is above floor', () => {
+    let state: RunState = new Map();
+    // Build mastery to 1 first (needs 3 correct at threshold=3)
+    for (let i = 0; i < 3; i++) state = updateRunState(state, 'th::ก', true, THRESHOLDS);
+    expect(state.get('th::ก')!.mastery).toBe(1);
+    // Now lapse
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=1
+    state = updateRunState(state, 'th::ก', false, THRESHOLDS); // streak=2 → lapses=1
+    expect(state.get('th::ก')!.lapses).toBe(1);
+    expect(state.get('th::ก')!.mastery).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // isMastered
 // ---------------------------------------------------------------------------
 describe('isMastered', () => {

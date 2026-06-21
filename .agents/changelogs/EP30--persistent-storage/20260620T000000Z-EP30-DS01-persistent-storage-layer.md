@@ -248,29 +248,29 @@ No DB, no schema, no serialisation — purely engine plumbing.
 - `packages/srs-engine-v2/src/types/sentence-state.ts`
 
 **Tasks**:
-- [ ] Create `packages/db/src/learning-store.ts` — `LearningStore` interface (imports `WordState`, `SentenceState` from `@gll/srs-engine-v2`)
-- [ ] Create `packages/db/src/sqlite-learning-store.ts` — `SqliteLearningStore` implementation:
-  - [ ] Constructor: accepts `Database` connection (not file path)
-  - [ ] Uses Drizzle queries (type-safe)
-  - [ ] `getAllWordStates(userId)`: `SELECT * FROM user_word_states WHERE user_id = ?` → `Map<string, WordState>`
-  - [ ] `upsertWordState(userId, state)`: `INSERT OR REPLACE INTO user_word_states`
-  - [ ] `getAllSentenceStates(userId)`: `SELECT * FROM user_sentence_states WHERE user_id = ?` → `Map<string, SentenceState>`
-  - [ ] `upsertSentenceState(userId, state)`: `INSERT OR REPLACE INTO user_sentence_states`
-  - [ ] `close()`: close the connection
-- [ ] Create `packages/db/src/__tests__/sqlite-learning-store.test.ts`:
-  - [ ] Pass a test Database connection (caller responsibility)
-  - [ ] Upsert then getAll returns same `WordState` (all fields including `lapses`)
-  - [ ] Upsert then getAll returns same `SentenceState` (`active: false`, `lastBatchSeen: -1` preserved)
-  - [ ] Second upsert with same `(userId, wordId)` overwrites — no duplicate rows
-- [ ] Export `LearningStore`, `SqliteLearningStore` from `packages/db/src/index.ts`
+- [x] Create `packages/db/src/learning-store.ts` — `LearningStore` interface (imports `WordState`, `SentenceState` from `@gll/srs-engine-v2`)
+- [x] Create `packages/db/src/sqlite-learning-store.ts` — `SqliteLearningStore` implementation:
+  - [x] Constructor: accepts `Database` connection (not file path)
+  - [x] Uses Drizzle queries (type-safe)
+  - [x] `getAllWordStates(userId)`: `SELECT * FROM user_word_states WHERE user_id = ?` → `Map<string, WordState>`
+  - [x] `upsertWordState(userId, state)`: `INSERT OR REPLACE INTO user_word_states`
+  - [x] `getAllSentenceStates(userId)`: `SELECT * FROM user_sentence_states WHERE user_id = ?` → `Map<string, SentenceState>`
+  - [x] `upsertSentenceState(userId, state)`: `INSERT OR REPLACE INTO user_sentence_states`
+  - [x] `close()`: close the connection
+- [x] Create `packages/db/src/__tests__/sqlite-learning-store.test.ts`:
+  - [x] Pass a test Database connection (caller responsibility)
+  - [x] Upsert then getAll returns same `WordState` (all fields including `lapses`)
+  - [x] Upsert then getAll returns same `SentenceState` (`active: false`, `lastBatchSeen: -1` preserved)
+  - [x] Second upsert with same `(userId, wordId)` overwrites — no duplicate rows
+- [x] Export `LearningStore`, `SqliteLearningStore` from `packages/db/src/index.ts`
 
 **Acceptance criteria**:
-- [ ] All integration tests pass: `pnpm --filter @gll/db test`
-- [ ] `pnpm --filter @gll/db typecheck` clean
-- [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
-- [ ] Constructor signature is `SqliteLearningStore(db: Database)` — no file path
-- [ ] `LearningStore` and `SqliteLearningStore` importable from `@gll/db`
-- [ ] `srs-engine-v2` has zero imports from `@gll/db`
+- [x] All integration tests pass: `pnpm --filter @gll/db test`
+- [x] `pnpm --filter @gll/db typecheck` clean
+- [x] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
+- [x] Constructor signature is `SqliteLearningStore(db: Database)` — no file path
+- [x] `LearningStore` and `SqliteLearningStore` importable from `@gll/db`
+- [x] `srs-engine-v2` has zero imports from `@gll/db`
 
 ---
 
@@ -408,7 +408,7 @@ data/
 |---|---|---|
 | ✅ Return `SentenceRunState` from loop | ST01 | COMPLETE |
 | ✅ Schema definition & migrations | ST02 + ST02b | COMPLETE |
-| `LearningStore` + `SqliteLearningStore` in `@gll/db` | ST04 | Ready — no dependencies |
+| ✅ `LearningStore` + `SqliteLearningStore` in `@gll/db` | ST04 | COMPLETE |
 | New DB runner + tools | ST05 | Ready — depends on ST04 |
 | Wire write-on-answer callbacks | ST06 | Ready — depends on ST05 |
 | Add graduation hook | ST07 | Ready — depends on ST06 |

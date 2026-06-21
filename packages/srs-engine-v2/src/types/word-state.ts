@@ -49,8 +49,10 @@ export function updateRunState(
     wrongStreak += 1;
     correctStreak = 0;
     if (wrongStreak >= thresholds.wrongStreakThreshold) {
+      if (wrongStreak === thresholds.wrongStreakThreshold && mastery > 0) {
+        lapses += 1;
+      }
       mastery = Math.max(0, mastery - 1);
-      lapses += 1;
     }
   }
 

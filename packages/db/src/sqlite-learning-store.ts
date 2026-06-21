@@ -1,10 +1,11 @@
 import { eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import type BetterSqlite3 from 'better-sqlite3';
 import type { WordState, RunState, SentenceState, SentenceRunState } from '@gll/srs-engine-v2';
 import type { LearningStore } from './learning-store';
 import * as schema from './schema';
 
-type DbClient = BetterSQLite3Database<typeof schema>;
+type DbClient = BetterSQLite3Database<typeof schema> & { $client: BetterSqlite3.Database };
 
 export class SqliteLearningStore implements LearningStore {
   constructor(private readonly db: DbClient) {}
@@ -107,7 +108,6 @@ export class SqliteLearningStore implements LearningStore {
   }
 
   close(): void {
-    // @ts-ignore — accessing internal connection
-    this.db?._.client?.close();
+    this.db.$client.close();
   }
 }
