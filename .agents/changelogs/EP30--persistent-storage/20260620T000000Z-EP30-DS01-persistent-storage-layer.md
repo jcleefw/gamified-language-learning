@@ -384,11 +384,21 @@ data/
 
 ---
 
-## 7. Completed Work (ST02 + ST02b ✅)
+## 7. Completed Work (ST01, ST02 + ST02b ✅)
 
-**Status**: Schema definition and migration infrastructure complete and tested.
+**Status**: Engine plumbing (ST01), schema definition, and migration infrastructure complete and tested.
 
-**Delivered**:
+**Delivered (ST01)**:
+
+- [x] `runAdaptiveLoop` signature updated to accept `initialSentenceRunState?: SentenceRunState`
+- [x] `runAdaptiveLoop` return type changed from `Promise<RunState>` to `Promise<{ runState: RunState; sentenceRunState: SentenceRunState }>`
+- [x] `sentenceRunState` no longer discarded at function exit — properly returned to caller
+- [x] Call site in `learning-runner.ts` updated to destructure both `runState` and `sentenceRunState`
+- [x] `learning-runner.ts` passes `sentenceRunState` to next loop iteration
+- [x] Auto scenarios tests pass with new return type
+- [x] `pnpm --filter @gll/srs-engine-v2 test` passes
+
+**Delivered (ST02 + ST02b)**:
 
 - [x] `@gll/db` package created with proper structure (package.json, tsconfig, drizzle.config.ts)
 - [x] Drizzle schema in TypeScript (`packages/db/src/schema.ts`) — all 11 tables with correct types and constraints
@@ -415,9 +425,12 @@ Applying 0001_initial_schema...
 
 | Step | Story | Status |
 |---|---|---|
-| Return `SentenceRunState` from loop | ST01 | Ready — pure engine change, no dependencies |
-| Serialisation helpers | ST03 | Ready — independent of ST02b |
-| Create `LearningStore` impl | ST04 | Blocked on ST03, ready after |
+| ✅ Return `SentenceRunState` from loop | ST01 | COMPLETE |
+| ✅ Schema definition & migrations | ST02 + ST02b | COMPLETE |
+| Serialisation helpers | ST03 | Ready — independent, no dependencies |
+| Create `LearningStore` impl | ST04 | Ready — depends on ST03 |
 | New DB runner + tools | ST05 | Ready — depends on ST04 |
 | Wire write-on-answer callbacks | ST06 | Ready — depends on ST05 |
 | Add graduation hook | ST07 | Ready — depends on ST06 |
+
+**Recommended order**: ST03 (independent) → ST04 → ST05 → ST06 → ST07
