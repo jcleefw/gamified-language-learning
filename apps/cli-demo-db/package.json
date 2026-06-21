@@ -1,32 +1,23 @@
 {
-  "name": "@gll/db",
+  "name": "cli-demo-db",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push"
+    "engine:import-curriculum": "tsx src/import-curriculum.ts"
   },
   "dependencies": {
+    "@gll/db": "workspace:*",
     "@gll/srs-engine-v2": "workspace:*",
     "better-sqlite3": "^12.11.1",
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
-    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.19.2",
     "typescript": "^5.7",
     "vitest": "^3"
   }

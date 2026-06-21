@@ -285,23 +285,23 @@ No DB, no schema, no serialisation — purely engine plumbing.
 - `packages/srs-engine-v2/data/seed-data/thai-full-foundations.ts` — source foundations
 
 **Tasks**:
-- [ ] Create `apps/cli-demo-db/` package scaffold (package.json, tsconfig.json)
-- [ ] Create `apps/cli-demo-db/src/import-curriculum.ts`:
-  - [ ] Parse conversations JSON → insert one `decks` row per conversation (use existing UUID from JSON `id` field)
-  - [ ] Deduplicate words by `(language, text)` across all conversations → insert into `words` (generate UUID per unique word; handle sense merging per schema ADR Q10)
-  - [ ] Insert `sentences` rows (one per `breakdown` entry; generate UUID)
-  - [ ] Insert `sentence_components` rows (one per component in breakdown; FK to sentence UUID + word UUID)
-  - [ ] Derive and insert `deck_words` from `sentence_components` (no drift)
-  - [ ] Insert `foundational_words` from `thai-full-foundations.ts` (use existing string IDs e.g. `th:consonant:ก`)
-  - [ ] Import is idempotent — safe to run twice (use `INSERT OR IGNORE` / `onConflictDoNothing`)
-- [ ] Add `engine:import-curriculum` script to `apps/cli-demo-db/package.json` → `tsx src/import-curriculum.ts`
+- [x] Create `apps/cli-demo-db/` package scaffold (package.json, tsconfig.json)
+- [x] Create `apps/cli-demo-db/src/import-curriculum.ts`:
+  - [x] Parse conversations JSON → insert one `decks` row per conversation (use existing UUID from JSON `id` field)
+  - [x] Deduplicate words by `(language, text)` across all conversations → insert into `words` (generate UUID per unique word; handle sense merging per schema ADR Q10)
+  - [x] Insert `sentences` rows (one per `breakdown` entry; generate UUID)
+  - [x] Insert `sentence_components` rows (one per component in breakdown; FK to sentence UUID + word UUID)
+  - [x] Derive and insert `deck_words` from `sentence_components` (no drift)
+  - [x] Insert `foundational_words` from `thai-full-foundations.ts` (use existing string IDs e.g. `th:consonant:ก`)
+  - [x] Import is idempotent — safe to run twice (use `INSERT OR IGNORE` / `onConflictDoNothing`)
+- [x] Add `engine:import-curriculum` script to `apps/cli-demo-db/package.json` → `tsx src/import-curriculum.ts`
 
 **Acceptance criteria**:
-- [ ] `pnpm --filter cli-demo-db engine:import-curriculum` exits cleanly
-- [ ] `decks`, `words`, `sentences`, `sentence_components`, `deck_words`, `foundational_words` tables are populated
-- [ ] Running twice does not error (idempotent)
-- [ ] Word dedup works — same Thai text appearing in multiple conversations resolves to one `words` row
-- [ ] `pnpm --filter cli-demo-db typecheck` clean
+- [x] `pnpm --filter cli-demo-db engine:import-curriculum` exits cleanly
+- [x] `decks`, `words`, `sentences`, `sentence_components`, `deck_words`, `foundational_words` tables are populated
+- [x] Running twice does not error (idempotent)
+- [x] Word dedup works — same Thai text appearing in multiple conversations resolves to one `words` row
+- [x] `pnpm --filter cli-demo-db typecheck` clean
 
 ---
 
@@ -452,7 +452,7 @@ data/
 | ✅ Return `SentenceRunState` from loop | ST01 | COMPLETE |
 | ✅ Schema definition & migrations | ST02 + ST02b | COMPLETE |
 | ✅ `LearningStore` + `SqliteLearningStore` in `@gll/db` | ST04 | COMPLETE |
-| Curriculum import (JSON → DB) | ST05 | Ready — depends on ST04 |
+| ✅ Curriculum import (JSON → DB) | ST05 | COMPLETE |
 | DB-backed runner + tools | ST06 | Ready — depends on ST05 |
 | Wire write-on-answer callbacks | ST07 | Ready — depends on ST06 |
 | Add graduation hook | ST08 | Ready — depends on ST07 |
