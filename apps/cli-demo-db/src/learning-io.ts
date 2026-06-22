@@ -27,6 +27,8 @@ import {
   type SentenceContext,
   type SentenceRunState,
   type SentenceQuizResult,
+  type WordState,
+  type SentenceState,
 } from '@gll/srs-engine-v2';
 import { LEARNING_CONFIG } from './config.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
@@ -288,6 +290,8 @@ export async function runAdaptiveLoop(
   recheckIds: Set<string> = new Set(),
   strategy: AutoAnswerStrategy | undefined,
   corpus: SentenceContext[],
+  onWordAnswer?: (state: WordState) => void,
+  onSentenceAnswer?: (state: SentenceState) => void,
 ): Promise<{ runState: RunState; sentenceRunState: SentenceRunState }> {
   const config: SessionConfig = {
     wordsPerBatch,
@@ -333,6 +337,12 @@ export async function runAdaptiveLoop(
       currentBatchNum,
       LEARNING_CONFIG,
     );
+    if (onSentenceAnswer) {
+      for (const r of sentenceResults) {
+        const ss = sentenceRunState.get(r.sentenceId);
+        if (ss) onSentenceAnswer(ss);
+      }
+    }
 
     const batchOutput: BatchOutput = {
       results,
@@ -346,6 +356,13 @@ export async function runAdaptiveLoop(
       (r): r is WordQuizResult => 'wordId' in r,
     );
     const batchWordIds = [...new Set(wordResults.map((r) => r.wordId))];
+    if (onWordAnswer) {
+      for (const wordId of batchWordIds) {
+        const ws = state.runState.get(wordId);
+        if (!ws) throw new Error(`runState missing entry for answered word: ${wordId}`);
+        onWordAnswer(ws);
+      }
+    }
     const newlyMasteredIds = getNewlyMasteredIds(
       prevState,
       state.runState,

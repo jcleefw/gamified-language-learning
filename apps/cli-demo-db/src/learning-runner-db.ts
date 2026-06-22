@@ -8,6 +8,7 @@ import type { DbClient } from './db-tools.js';
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const DB_PATH = process.env.GLL_DB_PATH ?? './data/learning-state.db';
+  const CLI_USER_ID = 'cli-user';
 
   const db = getDb(DB_PATH) as DbClient;
   const store = new SqliteLearningStore(db);
@@ -17,8 +18,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const foundationalPool = await buildFoundationalPool();
   const corpus = buildSentenceCorpus(db);
 
-  const initialRunState = store.getAllWordStates('cli-user');
-  const initialSentenceRunState = store.getAllSentenceStates('cli-user');
+  const initialRunState = store.getAllWordStates(CLI_USER_ID);
+  const initialSentenceRunState = store.getAllSentenceStates(CLI_USER_ID);
 
   const recheckIds = new Set(
     [...initialRunState.entries()]
@@ -40,6 +41,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     recheckIds,
     strategy,
     corpus,
+    (ws) => store.upsertWordState(CLI_USER_ID, ws),
+    (ss) => store.upsertSentenceState(CLI_USER_ID, ss),
   );
 
   closeDb();
