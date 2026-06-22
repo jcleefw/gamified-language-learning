@@ -29,6 +29,8 @@ import {
   type SentenceQuizResult,
   type WordState,
   type SentenceState,
+  type GraduationHook,
+  isMastered,
 } from '@gll/srs-engine-v2';
 import { LEARNING_CONFIG } from './config.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
@@ -292,6 +294,7 @@ export async function runAdaptiveLoop(
   corpus: SentenceContext[],
   onWordAnswer?: (state: WordState) => void,
   onSentenceAnswer?: (state: SentenceState) => void,
+  onGraduation?: GraduationHook,
 ): Promise<{ runState: RunState; sentenceRunState: SentenceRunState }> {
   const config: SessionConfig = {
     wordsPerBatch,
@@ -300,6 +303,7 @@ export async function runAdaptiveLoop(
     maxRetryPerSession: 5,
   };
 
+  const snapshotRunState = new Map(initialRunState);
   let state = initAdaptiveSession(words, config, recheckIds, initialRunState);
   const sentenceRunState: SentenceRunState = new Map(initialSentenceRunState);
   let totalCorrect = 0;
@@ -386,6 +390,19 @@ export async function runAdaptiveLoop(
         if (answer !== 'y') break;
       }
     }
+  }
+
+  if (onGraduation) {
+    const graduatedWordIds: string[] = [];
+    for (const [wordId, ws] of state.runState) {
+      if (isMastered(ws, masteryThreshold)) {
+        const prev = snapshotRunState.get(wordId);
+        if (!prev || !isMastered(prev, masteryThreshold)) {
+          graduatedWordIds.push(wordId);
+        }
+      }
+    }
+    onGraduation(graduatedWordIds, state.runState);
   }
 
   console.log('\n=== Run Complete ===');

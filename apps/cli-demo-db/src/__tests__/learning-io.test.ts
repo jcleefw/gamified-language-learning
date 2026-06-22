@@ -5,7 +5,7 @@ import { initDb, schema, SqliteLearningStore } from '@gll/db';
 import { runAdaptiveLoop } from '../learning-io.js';
 import { CorrectAutoAnswerStrategy } from '../auto-answer-strategy.js';
 import { LEARNING_CONFIG, STREAK_THRESHOLDS } from '../config.js';
-import type { WordState, SentenceState, SentenceContext, RunState } from '@gll/srs-engine-v2';
+import type { WordState, SentenceState, SentenceContext, RunState, GraduationHook } from '@gll/srs-engine-v2';
 
 // Suppress and clear console.log per test — runAdaptiveLoop prints batch/score lines
 beforeEach(() => { vi.spyOn(console, 'log').mockImplementation(() => {}); });
@@ -240,5 +240,147 @@ describe('write-on-answer integration', () => {
     for (const [, ws] of persisted) {
       expect(ws.seen).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('onGraduation callback', () => {
+  it('is called once at session end with graduated word IDs', async () => {
+    const words = makeMinimalWords(3);
+    const spy = vi.fn<GraduationHook>();
+    const strategy = new CorrectAutoAnswerStrategy();
+
+    await runAdaptiveLoop(
+      words,
+      words,
+      [],
+      LEARNING_CONFIG.wordsPerBatch,
+      LEARNING_CONFIG.masteryThreshold,
+      STREAK_THRESHOLDS,
+      new Map(),
+      new Map(),
+      new Set(),
+      strategy,
+      [],
+      undefined,
+      undefined,
+      spy,
+    );
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    const [ids] = spy.mock.calls[0];
+    expect(ids.length).toBeGreaterThan(0);
+  });
+
+  it('receives final RunState as second argument, each graduated id is mastered', async () => {
+    const words = makeMinimalWords(3);
+    const capturedArgs: Parameters<GraduationHook>[] = [];
+    const strategy = new CorrectAutoAnswerStrategy();
+
+    await runAdaptiveLoop(
+      words,
+      words,
+      [],
+      LEARNING_CONFIG.wordsPerBatch,
+      LEARNING_CONFIG.masteryThreshold,
+      STREAK_THRESHOLDS,
+      new Map(),
+      new Map(),
+      new Set(),
+      strategy,
+      [],
+      undefined,
+      undefined,
+      (ids, rs) => capturedArgs.push([ids, rs]),
+    );
+
+    expect(capturedArgs.length).toBe(1);
+    const [ids, rs] = capturedArgs[0];
+    expect(rs instanceof Map).toBe(true);
+    expect(rs.size).toBeGreaterThan(0);
+    for (const id of ids) {
+      const ws = rs.get(id);
+      expect(ws).toBeDefined();
+      expect(ws!.mastery).toBeGreaterThanOrEqual(LEARNING_CONFIG.masteryThreshold);
+    }
+  });
+
+  it('is called with an empty array when no words graduate', async () => {
+    const words = makeMinimalWords(3);
+    // Pre-master all words so they go into recheckIds and do not cross the threshold again
+    const premastered: RunState = new Map(
+      words.map((w) => [w.id, { wordId: w.id, seen: 5, correct: 5, mastery: LEARNING_CONFIG.masteryThreshold, correctStreak: 3, wrongStreak: 0, lapses: 0 }]),
+    );
+    const recheckIds = new Set(words.map((w) => w.id));
+    const spy = vi.fn<GraduationHook>();
+    const strategy = new CorrectAutoAnswerStrategy();
+
+    await runAdaptiveLoop(
+      words,
+      words,
+      [],
+      LEARNING_CONFIG.wordsPerBatch,
+      LEARNING_CONFIG.masteryThreshold,
+      STREAK_THRESHOLDS,
+      premastered,
+      new Map(),
+      recheckIds,
+      strategy,
+      [],
+      undefined,
+      undefined,
+      spy,
+    );
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    const [ids] = spy.mock.calls[0];
+    expect(ids).toEqual([]);
+  });
+
+  it('does not throw when omitted', async () => {
+    const words = makeMinimalWords(2);
+    const strategy = new CorrectAutoAnswerStrategy();
+
+    await expect(
+      runAdaptiveLoop(
+        words,
+        words,
+        [],
+        LEARNING_CONFIG.wordsPerBatch,
+        LEARNING_CONFIG.masteryThreshold,
+        STREAK_THRESHOLDS,
+        new Map(),
+        new Map(),
+        new Set(),
+        strategy,
+        [],
+      ),
+    ).resolves.not.toThrow();
+  });
+
+  it('fires after all onWordAnswer calls', async () => {
+    const words = makeMinimalWords(3);
+    const order: string[] = [];
+    const strategy = new CorrectAutoAnswerStrategy();
+
+    await runAdaptiveLoop(
+      words,
+      words,
+      [],
+      LEARNING_CONFIG.wordsPerBatch,
+      LEARNING_CONFIG.masteryThreshold,
+      STREAK_THRESHOLDS,
+      new Map(),
+      new Map(),
+      new Set(),
+      strategy,
+      [],
+      () => order.push('word'),
+      undefined,
+      () => order.push('graduation'),
+    );
+
+    const graduationIdx = order.lastIndexOf('graduation');
+    const lastWordIdx = order.lastIndexOf('word');
+    expect(graduationIdx).toBeGreaterThan(lastWordIdx);
   });
 });

@@ -19,7 +19,7 @@ export type { AssembleBatchOptions } from './engine/assemble-batch.js';
 
 // Word state
 export { updateRunState, isMastered } from './types/word-state.js';
-export type { WordState, RunState, StreakThresholds } from './types/word-state.js';
+export type { WordState, RunState, StreakThresholds, GraduationHook } from './types/word-state.js';
 
 // Sentence state
 export { defaultSentenceState } from './types/sentence-state.js';

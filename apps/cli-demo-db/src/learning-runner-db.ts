@@ -43,6 +43,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     corpus,
     (ws) => store.upsertWordState(CLI_USER_ID, ws),
     (ss) => store.upsertSentenceState(CLI_USER_ID, ss),
+    (ids) => { if (ids.length > 0) console.log('[INFO] Graduated:', ids); },
   );
 
   closeDb();

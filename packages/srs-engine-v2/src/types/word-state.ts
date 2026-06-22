@@ -73,3 +73,8 @@ export function updateRunState(
 export function isMastered(ws: WordState, threshold: number): boolean {
   return ws.mastery >= threshold;
 }
+
+export type GraduationHook = (
+  graduatedWordIds: string[],
+  runState: RunState,
+) => void;
