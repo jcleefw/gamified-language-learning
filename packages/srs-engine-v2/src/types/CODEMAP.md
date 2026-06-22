@@ -12,6 +12,7 @@ Shared TypeScript type definitions. No logic except in `word-state.ts`.
 | `word-state.ts` | Word mastery/streak state types and pure update functions |
 | `deck.ts` | Deck and line types |
 | `foundational.ts` | Foundational item types (Thai/Japanese consonants, vowels, tones) |
+| `sentence-state.ts` | Sentence scheduling state types and default initializer |
 
 ---
 
@@ -57,3 +58,13 @@ Shared TypeScript type definitions. No logic except in `word-state.ts`.
 | `MockTone` | Interface | Thai tone mark |
 | `MockFoundational` | Union | `MockConsonant \| MockVowel \| MockTone` |
 | `ThaiFoundational` | Union | `ThaiConsonant \| ThaiVowel \| ThaiTone` |
+
+---
+
+## Exports — `sentence-state.ts`
+
+| Export | Kind | Detail |
+| --- | --- | --- |
+| `SentenceState` | Interface | `{ sentenceId, sentenceStreak, lastBatchSeen, dailyCount, sessionWrongStreak, active }` |
+| `SentenceRunState` | Type | `Map<string, SentenceState>` |
+| `defaultSentenceState` | Function | Returns initial default state for a sentence |

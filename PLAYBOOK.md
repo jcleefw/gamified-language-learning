@@ -54,6 +54,7 @@ Quick reference:
 - **BUG##** — Bug (defect)
 - **RFC##** — Proposal (seeking feedback)
 - **ADR##** — Decision (after decision made)
+- **RV##** — Review (code review, design review, etc.)
 
 ---
 

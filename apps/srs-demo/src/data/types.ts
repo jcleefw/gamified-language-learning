@@ -8,6 +8,7 @@ export interface AppWord {
 }
 
 export interface AppLine {
+  sentenceId: string
   speaker: 'A' | 'B'
   native: string
   romanization: string

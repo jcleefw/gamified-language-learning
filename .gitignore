@@ -5,3 +5,5 @@ build/
 .turbo
 
 *.env.local
+.demo-state.json
+.claude
