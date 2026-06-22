@@ -317,66 +317,73 @@ No DB, no schema, no serialisation — purely engine plumbing.
 - `apps/cli-demo-db/src/import-curriculum.ts` (ST05 output)
 
 **Tasks**:
-- [ ] Create `apps/cli-demo-db/src/learning-runner-db.ts`:
-  - [ ] `DB_PATH = process.env.GLL_DB_PATH ?? './data/learning-state.db'`
-  - [ ] `getDb(DB_PATH)` at startup; log `[INFO] DB ready`
-  - [ ] Query `words` + `deck_words` + `decks` from DB → build `QuizItem[]` (word UUID as `id`)
-  - [ ] Query `sentences` + `sentence_components` from DB → build `SentenceContext[]`
-  - [ ] Query `foundational_words` from DB → build foundational `QuizItem[]`
-  - [ ] Load `RunState` via `store.getAllWordStates('cli-user')` (keyed by word UUID)
-  - [ ] Load `SentenceRunState` via `store.getAllSentenceStates('cli-user')`
-  - [ ] Call `runAdaptiveLoop` (callbacks wired in ST07)
-  - [ ] `closeDb()` on exit
-- [ ] Duplicate interactive helpers from `srs-engine-v2/demo/learning-io.ts` into app (no cross-package demo import):
-  - [ ] `selectDeck`, `runInteractive`, `runInteractiveMCQ`, `runInteractiveWordBlock`, `runBatch`, `runAdaptiveLoop`
-  - [ ] `AutoAnswerStrategy`, `CorrectAutoAnswerStrategy`, `runAutoInteractive`
-- [ ] Create `apps/cli-demo-db/src/config.ts` — duplicate `LEARNING_CONFIG`, `STREAK_THRESHOLDS`, `AUTO_MODE` (no `ENABLE_MOCK_DB`)
-- [ ] Create `apps/cli-demo-db/src/db-tools.ts`:
-  - [ ] `clearUserState(userId)` — DELETE from learner state tables
-  - [ ] `resetDb()` — `closeDb()` first, delete DB file, `getDb()` to reinitialize
-  - [ ] `seedDb(fixtureName)` — throws `Error` if fixture unknown; clears then upserts fixture rows
-- [ ] Create `apps/cli-demo-db/src/db-fixtures.ts`:
-  - [ ] `baseline` — empty state
-  - [ ] `mid-session` — 4 words at mastery 0–2 (word UUIDs resolved from DB after ST05 import)
-  - [ ] `sentence-ready` — all 6 words from `sent::eat-001` equivalent with `seen >= 2`
-- [ ] Add scripts to `apps/cli-demo-db/package.json`:
-  - [ ] `engine:real-db`, `engine:real-db:clear`, `engine:real-db:reset`
-  - [ ] `engine:real-db:seed:baseline`, `engine:real-db:seed:mid-session`, `engine:real-db:seed:sentence-ready`
-- [ ] Rename `learnv2` → `engine:mock-db` in `packages/srs-engine-v2/package.json`
-- [ ] Rename `learnv2` → `engine:mock-db` in root `package.json`
+- [x] Create `apps/cli-demo-db/src/learning-runner-db.ts`:
+  - [x] `DB_PATH = process.env.GLL_DB_PATH ?? './data/learning-state.db'`
+  - [x] `getDb(DB_PATH)` at startup; log `[INFO] DB ready`
+  - [x] Query `words` + `deck_words` + `decks` from DB → build `QuizItem[]` (word UUID as `id`)
+  - [x] Query `sentences` + `sentence_components` from DB → build `SentenceContext[]`
+  - [x] Query `foundational_words` from DB → build foundational `QuizItem[]`
+  - [x] Load `RunState` via `store.getAllWordStates('cli-user')` (keyed by word UUID)
+  - [x] Load `SentenceRunState` via `store.getAllSentenceStates('cli-user')`
+  - [x] Call `runAdaptiveLoop` (callbacks wired in ST07)
+  - [x] `closeDb()` on exit
+- [x] Duplicate interactive helpers from `srs-engine-v2/demo/learning-io.ts` into app (no cross-package demo import):
+  - [x] `selectDeck`, `runInteractive`, `runInteractiveMCQ`, `runInteractiveWordBlock`, `runBatch`, `runAdaptiveLoop`
+  - [x] `AutoAnswerStrategy`, `CorrectAutoAnswerStrategy`, `runAutoInteractive`
+- [x] Create `apps/cli-demo-db/src/config.ts` — duplicate `LEARNING_CONFIG`, `STREAK_THRESHOLDS`, `AUTO_MODE` (no `ENABLE_MOCK_DB`)
+- [x] Create `apps/cli-demo-db/src/db-tools.ts`:
+  - [x] `clearUserState(userId)` — DELETE from learner state tables
+  - [x] `resetDb()` — `closeDb()` first, delete DB file, `getDb()` to reinitialize
+  - [x] `seedDb(fixtureName)` — throws `Error` if fixture unknown; clears then upserts fixture rows
+- [x] Create `apps/cli-demo-db/src/db-fixtures.ts`:
+  - [x] `baseline` — empty state
+  - [x] `mid-session` — 4 words at mastery 0–2 (word UUIDs resolved from DB after ST05 import)
+  - [x] `sentence-ready` — all 6 words from `sent::eat-001` equivalent with `seen >= 2`
+- [x] Add scripts to `apps/cli-demo-db/package.json`:
+  - [x] `engine:real-db`, `engine:real-db:clear`, `engine:real-db:reset`
+  - [x] `engine:real-db:seed:baseline`, `engine:real-db:seed:mid-session`, `engine:real-db:seed:sentence-ready`
+- [x] Rename `learnv2` → `engine:mock-db` in `packages/srs-engine-v2/package.json`
+- [x] Rename `learnv2` → `engine:mock-db` in root `package.json`
 
 **Acceptance criteria**:
-- [ ] `pnpm --filter cli-demo-db engine:real-db` runs — queries curriculum from DB, loads zero learner state on fresh DB, enters session (will not persist — ST07 adds callbacks)
-- [ ] `pnpm --filter cli-demo-db engine:real-db:seed:mid-session` then `engine:real-db` — loaded word states passed into `runAdaptiveLoop` as `initialRunState`; session reflects partial progress
-- [ ] `pnpm --filter cli-demo-db engine:real-db:seed:sentence-ready` then `engine:real-db` — sentence question appears in session
-- [ ] `pnpm --filter cli-demo-db engine:real-db:clear` exits cleanly
-- [ ] `pnpm --filter cli-demo-db engine:real-db:reset` deletes DB file cleanly
-- [ ] `pnpm --filter @gll/srs-engine-v2 engine:mock-db` still works unchanged
-- [ ] `pnpm --filter cli-demo-db typecheck` clean
+- [x] `pnpm --filter cli-demo-db engine:real-db` runs — queries curriculum from DB, loads zero learner state on fresh DB, enters session (will not persist — ST07 adds callbacks)
+- [x] `pnpm --filter cli-demo-db engine:real-db:seed:mid-session` then `engine:real-db` — loaded word states passed into `runAdaptiveLoop` as `initialRunState`; session reflects partial progress
+- [x] `pnpm --filter cli-demo-db engine:real-db:seed:sentence-ready` then `engine:real-db` — sentence question appears in session
+- [x] `pnpm --filter cli-demo-db engine:real-db:clear` exits cleanly
+- [x] `pnpm --filter cli-demo-db engine:real-db:reset` deletes DB file cleanly
+- [x] `pnpm --filter @gll/srs-engine-v2 engine:mock-db` still works unchanged
+- [x] `pnpm --filter cli-demo-db typecheck` clean
 
 ---
 
 ### EP30-ST07: Write-on-Answer Callbacks
 
-**Scope**: Add `onWordAnswer` / `onSentenceAnswer` callbacks to `runAdaptiveLoop`. Wire them in `cli-demo-db/learning-runner-db.ts` to call `store.upsertWordState` / `store.upsertSentenceState` after each answer.
+**Scope**: Add `onWordAnswer` / `onSentenceAnswer` callbacks to `runAdaptiveLoop`. Wire them in `cli-demo-db/learning-runner-db.ts` to call `store.upsertWordState` / `store.upsertSentenceState` after each batch.
+
+**Implementation notes**:
+- Callbacks receive the updated `WordState` / `SentenceState` after each batch (post-`advanceAdaptiveSession` for words; post-`updateSentenceRunState` for sentences)
+- `onWordAnswer` fires once per unique word ID answered in the batch; asserts `runState` entry exists (throws on missing entry rather than silently skipping)
+- `onSentenceAnswer` fires once per `SentenceQuizResult` record (sentences may appear more than once per batch if retried)
+- `CLI_USER_ID = 'cli-user'` extracted as named constant in runner — single change point for future multi-user support
+- Tests live in `apps/cli-demo-db/src/__tests__/learning-io.test.ts` (7 tests covering callback invocation, structure, independence, and write-on-answer integration with real in-memory SQLite)
 
 **Read list**:
-- `packages/srs-engine-v2/demo/learning-io.ts` (ST01 output)
+- `apps/cli-demo-db/src/learning-io.ts` (ST06 output)
 - `apps/cli-demo-db/src/learning-runner-db.ts` (ST06 output)
 - `packages/db/src/sqlite-learning-store.ts` (ST04 output)
 
 **Tasks**:
-- [ ] Add `onWordAnswer?: (answer: Answer, wordState: WordState) => void` callback to `runAdaptiveLoop`
-- [ ] Add `onSentenceAnswer?: (answer: Answer, sentenceState: SentenceState) => void` callback to `runAdaptiveLoop`
-- [ ] Call callbacks in `learning-io.ts` after each answer is processed
-- [ ] Wire callbacks in `apps/cli-demo-db/src/learning-runner-db.ts` to persist state after each answer
-- [ ] Export callback types from `packages/srs-engine-v2/src/index.ts`
+- [x] Add `onWordAnswer?: (state: WordState) => void` callback to `runAdaptiveLoop`
+- [x] Add `onSentenceAnswer?: (state: SentenceState) => void` callback to `runAdaptiveLoop`
+- [x] Call callbacks in `learning-io.ts` after each batch is processed; assert `runState` entry exists for `onWordAnswer`
+- [x] Wire callbacks in `apps/cli-demo-db/src/learning-runner-db.ts` to persist state after each batch
+- [x] Extract `CLI_USER_ID` constant in runner
+- [x] Add tests in `apps/cli-demo-db/src/__tests__/learning-io.test.ts`
 
 **Acceptance criteria**:
-- [ ] `pnpm --filter cli-demo-db engine:real-db` persists after each answer (mid-session quit does not lose progress)
-- [ ] Callbacks are optional (omitting them does not throw)
-- [ ] `pnpm --filter @gll/srs-engine-v2 test` passes
-- [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
+- [x] `pnpm --filter cli-demo-db engine:real-db` persists after each batch (mid-session quit does not lose progress)
+- [x] Callbacks are optional (omitting them does not throw)
+- [x] `pnpm --filter cli-demo-db test` passes (27 tests across 4 test files)
 
 ---
 
@@ -423,9 +430,9 @@ packages/db/
 
 packages/srs-engine-v2/
 ├── src/
-│   └── index.ts                              ← MODIFIED (ST07, ST08): new exports
+│   └── index.ts                              ← MODIFIED (ST08): new exports
 ├── demo/
-│   ├── learning-io.ts                        ← MODIFIED (ST01, ST07, ST08): return type, callbacks, hook
+│   ├── learning-io.ts                        ← MODIFIED (ST01, ST08): return type, graduation hook
 │   ├── learning-runner.ts                    ← MODIFIED (ST01): accept SentenceRunState
 │   └── config.ts                             ← (no changes, keep as-is)
 └── RULES.md                                  ← NEW: library boundary enforcement
@@ -433,10 +440,18 @@ packages/srs-engine-v2/
 apps/cli-demo-db/                             ← NEW (ST05+ST06): app package, not library
 ├── src/
 │   ├── import-curriculum.ts                  ← NEW (ST05): JSON → DB import
-│   ├── learning-runner-db.ts                 ← NEW (ST06): DB-backed runner
+│   ├── learning-runner-db.ts                 ← NEW (ST06, ST07): DB-backed runner + callbacks wired
+│   ├── learning-io.ts                        ← NEW (ST06, ST07): app copy of IO helpers + callbacks
 │   ├── config.ts                             ← NEW (ST06): app config (no ENABLE_MOCK_DB)
 │   ├── db-tools.ts                           ← NEW (ST06): clear/reset/seed utilities
-│   └── db-fixtures.ts                        ← NEW (ST06): learner state fixtures
+│   ├── db-fixtures.ts                        ← NEW (ST06): learner state fixtures
+│   ├── auto-answer-strategy.ts               ← NEW (ST06): CorrectAutoAnswerStrategy
+│   ├── db-query.ts                           ← NEW (ST06): buildQuizItems, buildSentenceCorpus
+│   └── __tests__/
+│       ├── db-query.test.ts                  ← NEW (ST06)
+│       ├── db-tools.test.ts                  ← NEW (ST06)
+│       ├── import-curriculum.test.ts         ← NEW (ST06)
+│       └── learning-io.test.ts               ← NEW (ST07): callback + write-on-answer tests
 └── package.json
 
 data/
@@ -453,8 +468,8 @@ data/
 | ✅ Schema definition & migrations | ST02 + ST02b | COMPLETE |
 | ✅ `LearningStore` + `SqliteLearningStore` in `@gll/db` | ST04 | COMPLETE |
 | ✅ Curriculum import (JSON → DB) | ST05 | COMPLETE |
-| DB-backed runner + tools | ST06 | Ready — depends on ST05 |
-| Wire write-on-answer callbacks | ST07 | Ready — depends on ST06 |
+| ✅ DB-backed runner + tools | ST06 | COMPLETE |
+| ✅ Write-on-answer callbacks | ST07 | COMPLETE |
 | Add graduation hook | ST08 | Ready — depends on ST07 |
 
 **Recommended order**: ST04 → ST05 → ST06 → ST07 → ST08
