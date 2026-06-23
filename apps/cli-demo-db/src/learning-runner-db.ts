@@ -13,19 +13,18 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const db = getDb(DB_PATH) as DbClient;
   const store = new SqliteLearningStore(db);
 
-  const words = buildQuizItems(db);
-  const wordPool = words;
+  const allWords = buildQuizItems(db);
+  const wordPool = allWords;
   const foundationalPool = await buildFoundationalPool();
   const corpus = buildSentenceCorpus(db);
 
   const initialRunState = store.getAllWordStates(CLI_USER_ID);
   const initialSentenceRunState = store.getAllSentenceStates(CLI_USER_ID);
 
-  const recheckIds = new Set(
-    [...initialRunState.entries()]
-      .filter(([, ws]) => ws.mastery >= LEARNING_CONFIG.masteryThreshold)
-      .map(([id]) => id),
-  );
+  const words = allWords.filter((w) => {
+    const ws = initialRunState.get(w.id);
+    return !ws || ws.mastery < LEARNING_CONFIG.masteryThreshold;
+  });
 
   const strategy = AUTO_MODE ? new CorrectAutoAnswerStrategy() : undefined;
 
@@ -38,7 +37,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     STREAK_THRESHOLDS,
     initialRunState,
     initialSentenceRunState,
-    recheckIds,
+    new Set(),
     strategy,
     corpus,
     (ws) => store.upsertWordState(CLI_USER_ID, ws),

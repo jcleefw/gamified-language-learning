@@ -54,6 +54,7 @@ async function readFromStdin(
         process.stdin.setRawMode(false);
       }
       process.stdin.pause();
+      if (data === '\x03') process.exit();
       const result = options.trim ? data.trim().toLowerCase() : data;
       resolve(result);
     });
