@@ -17,7 +17,9 @@
   "dependencies": {
     "@gll/api-contract": "workspace:*",
     "@gll/db": "workspace:*",
+    "@gll/srs-engine-v2": "workspace:*",
     "@hono/node-server": "^1",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4"
   },
   "devDependencies": {

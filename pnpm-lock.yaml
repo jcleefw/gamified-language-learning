@@ -72,9 +72,15 @@ importers:
       '@gll/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@gll/srs-engine-v2':
+        specifier: workspace:*
+        version: link:../../packages/srs-engine-v2
       '@hono/node-server':
         specifier: ^1
         version: 1.19.11(hono@4.12.7)
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@12.11.1)
       hono:
         specifier: ^4
         version: 4.12.7
