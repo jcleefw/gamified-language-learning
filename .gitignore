@@ -7,3 +7,4 @@ build/
 *.env.local
 .demo-state.json
 .claude
+.data/

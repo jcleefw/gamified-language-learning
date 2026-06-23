@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@gll/api-contract": "workspace:*",
+    "@gll/db": "workspace:*",
     "@hono/node-server": "^1",
     "hono": "^4"
   },
