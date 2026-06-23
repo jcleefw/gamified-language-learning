@@ -10,7 +10,6 @@ import {
   nextQuestion,
   submitBatchResult,
   finishBatch,
-  isBatchDone,
   resolveEligibleContexts,
   updateSentenceRunState,
   type AdaptiveSessionState,
@@ -18,9 +17,7 @@ import {
   type BatchOutput,
   type BatchState,
   type MCQQuestion,
-  type QuizQuestion,
   type SentenceQuestion,
-  type SentenceTile,
   type QuizResult,
   type WordQuizResult,
   type QuizItem,
@@ -30,16 +27,17 @@ import {
   type SentenceContext,
   type SentenceRunState,
   type SentenceQuizResult,
+  type WordState,
+  type SentenceState,
   type GraduationHook,
   isMastered,
-} from '../src/index.js';
-import { mockDecks } from '../data/mock/mock-decks.js';
+} from '@gll/srs-engine-v2';
 import { LEARNING_CONFIG } from './config.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 import { runAutoInteractive } from './auto-answerer.js';
 
 const WORD_ID_PREFIX = 'th::';
-const KEYBOARD_EXIT = '';
+const KEYBOARD_EXIT = '';
 const BATCH_PROMPT = '\nNext batch? (y/n): ';
 
 async function readFromStdin(
@@ -56,6 +54,7 @@ async function readFromStdin(
         process.stdin.setRawMode(false);
       }
       process.stdin.pause();
+      if (data === '\x03') process.exit();
       const result = options.trim ? data.trim().toLowerCase() : data;
       resolve(result);
     });
@@ -171,7 +170,6 @@ async function runInteractiveWordBlock(
   process.stdout.write('Your order (e.g. 2 1 3): ');
 
   const input = await readLine();
-  // accept "4 3 2 1" or "4321" — split on whitespace, then expand any run-together digits
   const tokens = input
     .trim()
     .split(/\s+/)
@@ -215,7 +213,6 @@ export async function runInteractive(
   return { correct: score, total: state.initialCount, state };
 }
 
-
 function printWordSummary(
   runState: RunState,
   wordIds: string[],
@@ -232,14 +229,6 @@ function printWordSummary(
   }
 }
 
-const mockCorpus: SentenceContext[] = mockDecks.flatMap((deck) =>
-  deck.lines.map((line) => ({
-    sentenceId: line.sentenceId,
-    englishSentence: line.english,
-    wordOrder: line.words.map((w) => w.id),
-  })),
-);
-
 async function runBatch(
   batchNum: number,
   state: AdaptiveSessionState,
@@ -247,12 +236,13 @@ async function runBatch(
   foundationalPool: QuizItem[],
   wordsPerBatch: number,
   sentenceRunState: SentenceRunState,
+  corpus: SentenceContext[],
   strategy?: AutoAnswerStrategy,
 ): Promise<BatchOutput & { correct: number; total: number }> {
   console.log(`\n=== Batch ${String(batchNum)} ===`);
 
   const allPool = [...wordPool, ...foundationalPool];
-  const extraThunks = resolveEligibleContexts(mockCorpus, state.runState, allPool, sentenceRunState, batchNum, LEARNING_CONFIG).map(
+  const extraThunks = resolveEligibleContexts(corpus, state.runState, allPool, sentenceRunState, batchNum, LEARNING_CONFIG).map(
     ({ ctx, tiles }) =>
       () =>
         composeSentenceBatch(ctx, tiles, 'th', { shuffle: !strategy }),
@@ -301,7 +291,10 @@ export async function runAdaptiveLoop(
   initialRunState: RunState = new Map(),
   initialSentenceRunState: SentenceRunState = new Map(),
   recheckIds: Set<string> = new Set(),
-  strategy?: AutoAnswerStrategy,
+  strategy: AutoAnswerStrategy | undefined,
+  corpus: SentenceContext[],
+  onWordAnswer?: (state: WordState) => void,
+  onSentenceAnswer?: (state: SentenceState) => void,
   onGraduation?: GraduationHook,
 ): Promise<{ runState: RunState; sentenceRunState: SentenceRunState }> {
   const config: SessionConfig = {
@@ -334,12 +327,12 @@ export async function runAdaptiveLoop(
       foundationalPool,
       wordsPerBatch,
       sentenceRunState,
+      corpus,
       strategy,
     );
     totalCorrect += correct;
     totalQuestions += total;
 
-    // Update sentence run state with correct/wrong results, streaks, deactivations, and last batch seen
     const sentenceResults = results.filter(
       (r): r is SentenceQuizResult => 'sentenceId' in r,
     );
@@ -349,6 +342,12 @@ export async function runAdaptiveLoop(
       currentBatchNum,
       LEARNING_CONFIG,
     );
+    if (onSentenceAnswer) {
+      for (const r of sentenceResults) {
+        const ss = sentenceRunState.get(r.sentenceId);
+        if (ss) onSentenceAnswer(ss);
+      }
+    }
 
     const batchOutput: BatchOutput = {
       results,
@@ -362,6 +361,13 @@ export async function runAdaptiveLoop(
       (r): r is WordQuizResult => 'wordId' in r,
     );
     const batchWordIds = [...new Set(wordResults.map((r) => r.wordId))];
+    if (onWordAnswer) {
+      for (const wordId of batchWordIds) {
+        const ws = state.runState.get(wordId);
+        if (!ws) throw new Error(`runState missing entry for answered word: ${wordId}`);
+        onWordAnswer(ws);
+      }
+    }
     const newlyMasteredIds = getNewlyMasteredIds(
       prevState,
       state.runState,

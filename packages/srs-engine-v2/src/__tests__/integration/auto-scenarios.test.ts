@@ -38,13 +38,14 @@ describe('Auto Mode Scenarios', () => {
     ];
 
     const strategy = new CorrectAutoAnswerStrategy();
-    const runState = await runAdaptiveLoop(
+    const { runState } = await runAdaptiveLoop(
       words,
       wordPool,
       mockConsonants,
       config.wordsPerBatch,
       config.masteryThreshold,
       streakThresholds,
+      new Map(),
       new Map(),
       new Set(),
       strategy,
@@ -73,13 +74,14 @@ describe('Auto Mode Scenarios', () => {
     ];
 
     const strategy = new WeightedAccuracyAutoAnswerStrategy(0.8);
-    const runState = await runAdaptiveLoop(
+    const { runState } = await runAdaptiveLoop(
       words,
       wordPool,
       mockConsonants,
       config.wordsPerBatch,
       config.masteryThreshold,
       streakThresholds,
+      new Map(),
       new Map(),
       new Set(),
       strategy,
@@ -114,13 +116,14 @@ describe('Auto Mode Scenarios', () => {
     ];
 
     const strategy = new RandomAutoAnswerStrategy();
-    const runState = await runAdaptiveLoop(
+    const { runState } = await runAdaptiveLoop(
       words,
       wordPool,
       mockConsonants,
       config.wordsPerBatch,
       config.masteryThreshold,
       streakThresholds,
+      new Map(),
       new Map(),
       new Set(),
       strategy,
@@ -151,7 +154,7 @@ describe('Auto Mode Scenarios', () => {
     ];
 
     const strategy1 = new CorrectAutoAnswerStrategy();
-    const runState1 = await runAdaptiveLoop(
+    const { runState: runState1 } = await runAdaptiveLoop(
       words,
       wordPool,
       mockConsonants,
@@ -159,18 +162,20 @@ describe('Auto Mode Scenarios', () => {
       config.masteryThreshold,
       streakThresholds,
       new Map(),
+      new Map(),
       new Set(),
       strategy1,
     );
 
     const strategy2 = new CorrectAutoAnswerStrategy();
-    const runState2 = await runAdaptiveLoop(
+    const { runState: runState2 } = await runAdaptiveLoop(
       words,
       wordPool,
       mockConsonants,
       config.wordsPerBatch,
       config.masteryThreshold,
       streakThresholds,
+      new Map(),
       new Map(),
       new Set(),
       strategy2,

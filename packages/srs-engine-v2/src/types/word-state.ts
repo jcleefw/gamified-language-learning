@@ -5,6 +5,7 @@ export interface WordState {
   mastery: number;       // 0–5
   correctStreak: number; // consecutive correct answers
   wrongStreak: number;   // consecutive wrong answers
+  lapses: number;        // times mastery decremented via wrong-streak threshold (FSRS input)
 }
 
 export type RunState = Map<string, WordState>;
@@ -33,9 +34,10 @@ export function updateRunState(
     mastery: 0,
     correctStreak: 0,
     wrongStreak: 0,
+    lapses: 0,
   };
 
-  let { mastery, correctStreak, wrongStreak } = existing;
+  let { mastery, correctStreak, wrongStreak, lapses } = existing;
 
   if (wasCorrect) {
     correctStreak += 1;
@@ -47,6 +49,9 @@ export function updateRunState(
     wrongStreak += 1;
     correctStreak = 0;
     if (wrongStreak >= thresholds.wrongStreakThreshold) {
+      if (wrongStreak === thresholds.wrongStreakThreshold && mastery > 0) {
+        lapses += 1;
+      }
       mastery = Math.max(0, mastery - 1);
     }
   }
@@ -58,6 +63,7 @@ export function updateRunState(
     mastery,
     correctStreak,
     wrongStreak,
+    lapses,
   });
 
   return next;
@@ -67,3 +73,8 @@ export function updateRunState(
 export function isMastered(ws: WordState, threshold: number): boolean {
   return ws.mastery >= threshold;
 }
+
+export type GraduationHook = (
+  graduatedWordIds: string[],
+  runState: RunState,
+) => void;

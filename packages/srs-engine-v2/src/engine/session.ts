@@ -45,6 +45,7 @@ export function processRecheckResult(
       mastery: 0,
       correctStreak: 0,
       wrongStreak: 0,
+      lapses: 0,
     };
     const updated = new Map(runState);
     updated.set(wordId, {
