@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:all": "concurrently \"pnpm --filter @gll/server dev\" \"vite\"",
     "build": "vue-tsc --noEmit && vite build",
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview"
@@ -16,6 +17,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5",
+    "concurrently": "^9",
     "typescript": "^5.7",
     "vite": "^6",
     "vue-tsc": "^2"
