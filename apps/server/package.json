@@ -12,20 +12,15 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint src",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@gll/api-contract": "workspace:*",
-    "@gll/srs-engine": "workspace:*",
     "@hono/node-server": "^1",
     "hono": "^4"
   },
   "devDependencies": {
     "typescript": "^5.7",
-    "tsx": "^4",
-    "vitest": "^3"
+    "tsx": "^4"
   }
 }
