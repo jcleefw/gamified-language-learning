@@ -1,7 +1,7 @@
 # EP31 — SRS Demo: Persistent Storage via DB Layer
 
 **Created**: 20260623T143620Z
-**Status**: In Progress
+**Status**: Impl-Complete
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
