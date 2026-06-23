@@ -94,6 +94,9 @@ importers:
 
   apps/srs-demo:
     dependencies:
+      '@gll/api-contract':
+        specifier: workspace:*
+        version: link:../../packages/api-contract
       '@gll/srs-engine-v2':
         specifier: workspace:*
         version: link:../../packages/srs-engine-v2
