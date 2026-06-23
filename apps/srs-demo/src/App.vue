@@ -64,6 +64,7 @@ const defaultWordState = {
   mastery: 0,
   correctStreak: 0,
   wrongStreak: 0,
+  lapses: 0,
 };
 
 const currentRunState = computed<RunState>(() => {

@@ -1,78 +1,19 @@
-/** Wire-format question types — HTTP-friendly snake_case.
- *  Maps from engine-internal: 'mc' → 'multiple_choice', 'wordBlock' → 'word_block' */
-export type QuestionType = 'multiple_choice' | 'word_block' | 'audio';
-
-/** Direction of a multiple_choice question.
- *  english_to_native: targetText is English name, choices are native characters.
- *  native_to_english: targetText is native character, choices are English names. */
-export type QuestionDirection = 'english_to_native' | 'native_to_english' | 'native_to_romanization';
-
-/** POST /srs/batch — request body */
-export interface GetBatchRequest {
-  deckId: string;
-  size?: number;
-}
-
-/** A single question in the batch payload. */
-export interface QuizQuestion {
+/** HTTP wire representation of a single word's learning state.
+ *  Maps 1:1 with WordState from @gll/srs-engine-v2. */
+export interface WordStatePayload {
   wordId: string;
-  questionType: QuestionType;
-  targetText: string;
-  choices: Record<string, string>;
-  /** Only present on multiple_choice questions. */
-  questionDirection?: QuestionDirection;
+  seen: number;
+  correct: number;
+  mastery: number;
+  correctStreak: number;
+  wrongStreak: number;
+  lapses: number;
 }
 
-/** Response payload for POST /srs/batch */
-export interface BatchPayload {
-  batchId: string;
-  questions: QuizQuestion[];
-  batchSize: number;
+/** Response body for GET /api/state */
+export interface GetStateResponse {
+  words: WordStatePayload[];
 }
 
-/** A single answer submitted by the client. */
-export interface QuizAnswer {
-  wordId: string;
-  selectedKey: string;
-}
-
-/** POST /srs/answers — request body */
-export interface SubmitAnswersRequest {
-  batchId: string;
-  answers: QuizAnswer[];
-}
-
-/** Response payload for POST /srs/answers */
-export interface SubmitAnswersResponse {
-  processed: number;
-  updatedWords: AnswerResultPayload[];
-}
-
-/** Mastery phase visible to clients.
- *  Maps from engine-internal: 'srsM2_review' → 'anki_review' */
-export type MasteryPhase = 'learning' | 'anki_review';
-
-/** Per-word result after answers are processed. */
-export interface AnswerResultPayload {
-  wordId: string;
-  submittedKey: string;
-  correctKey: string;
-  correct: boolean;
-  masteryCount: number;
-  phase: MasteryPhase;
-}
-
-/** Summary of a single word's mastery state — used in batch result responses. */
-export interface WordMasterySummary {
-  wordId: string;
-  masteryCount: number;
-  phase: MasteryPhase;
-}
-
-/** Response payload for POST /srs/seed */
-export interface SeedPayload {
-  deckId: string;
-  seedId?: string;
-  wordCount: number;
-  phase: MasteryPhase;
-}
+/** Request body for POST /api/state/word */
+export type UpsertWordStateRequest = WordStatePayload;
