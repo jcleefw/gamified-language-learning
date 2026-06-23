@@ -22,14 +22,12 @@ import {
 } from '@gll/srs-engine-v2';
 import { appDecks } from './data/decks';
 import { deckToQuizItems, buildWordPool } from './data/transformer';
-import {
-  saveSession,
-  loadSession,
-  clearSession,
-} from './composables/useSession';
+import { loadRunState, saveWordState, clearStore } from './composables/useStore';
 import DeckSelector from './components/DeckSelector.vue';
 import QuizCard from './components/QuizCard.vue';
 import BatchResults, { type BatchSummary } from './components/BatchResults.vue';
+
+const LAST_DECK_KEY = 'srs-demo-last-deck';
 
 const wordPool = buildWordPool(appDecks) as QuizItem[];
 
@@ -157,6 +155,7 @@ function startBatch() {
 
 function initSession(id: string) {
   deckId.value = id;
+  localStorage.setItem(LAST_DECK_KEY, id);
   const words = getDeckWords(id);
 
   // Build recheck IDs based on globalRunState
@@ -177,9 +176,6 @@ function initSession(id: string) {
     globalRunState.value,
   );
 
-  // Persist session immediately
-  saveSession(id, sessionState.value);
-  hasSavedSession.value = true;
   startBatch();
 }
 
@@ -187,29 +183,18 @@ function onSelect(id: string) {
   initSession(id);
 }
 
-function onResume() {
-  const saved = loadSession();
-  if (!saved) return;
-  deckId.value = saved.deckId;
-  sessionState.value = saved.sessionState;
-  globalRunState.value = saved.sessionState.runState;
-
-  if (sessionState.value.active.length === 0 && sessionState.value.queue.length === 0) {
-    const allWordIds = [...sessionState.value.runState.keys()];
-    batchScore.value = { correct: allWordIds.length, total: allWordIds.length };
-    summary.value = allWordIds.map((wid) => ({
-      wordId: wid,
-      state: sessionState.value!.runState.get(wid) ?? { ...defaultWordState, wordId: wid },
-      newlyMastered: false,
-    }));
-    screen.value = 'results';
-  } else {
-    startBatch();
-  }
+async function onResume() {
+  const runState = await loadRunState();
+  globalRunState.value = runState;
+  const savedDeckId = localStorage.getItem(LAST_DECK_KEY);
+  if (!savedDeckId) return;
+  deckId.value = savedDeckId;
+  initSession(savedDeckId);
 }
 
-function onClear() {
-  clearSession();
+async function onClear() {
+  await clearStore();
+  localStorage.removeItem(LAST_DECK_KEY);
   hasSavedSession.value = false;
   deckId.value = null;
   sessionState.value = null;
@@ -230,11 +215,17 @@ function finishBatchAndTransition() {
   sessionState.value = advanceAdaptiveSession(sessionState.value, output, CONFIG);
   globalRunState.value = sessionState.value.runState;
 
-  // Determine newly mastered words in this specific batch
+  // Persist updated word states (write-on-answer)
   const wordResults = output.results.filter(
     (r): r is WordQuizResult => 'wordId' in r,
   );
   const uniqueWordIds = [...new Set(wordResults.map((r) => r.wordId))];
+  for (const wid of uniqueWordIds) {
+    const ws = sessionState.value.runState.get(wid);
+    if (ws) saveWordState(ws).catch(console.error);
+  }
+
+  // Determine newly mastered words in this specific batch
   const newlyMasteredIds = getNewlyMasteredIds(
     prevState,
     sessionState.value.runState,
@@ -250,9 +241,6 @@ function finishBatchAndTransition() {
     state: sessionState.value!.runState.get(wid) ?? { ...defaultWordState, wordId: wid },
     newlyMastered: newlyMasteredIds.includes(wid),
   }));
-
-  saveSession(deckId.value ?? '', sessionState.value);
-  hasSavedSession.value = true;
 
   recalculateCompletedDecks();
 
@@ -295,13 +283,12 @@ function onNextDeck(id: string) {
   initSession(id);
 }
 
-onMounted(() => {
-  const saved = loadSession();
-  if (saved) {
+onMounted(async () => {
+  const runState = await loadRunState();
+  if (runState.size > 0) {
     hasSavedSession.value = true;
-    deckId.value = saved.deckId;
-    globalRunState.value = saved.sessionState.runState;
-    screen.value = 'select';
+    globalRunState.value = runState;
+    deckId.value = localStorage.getItem(LAST_DECK_KEY);
   }
   recalculateCompletedDecks();
 });
