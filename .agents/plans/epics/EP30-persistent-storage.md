@@ -1,7 +1,7 @@
 # EP30 — Persistent Storage Layer
 
 **Created**: 2026-06-20
-**Status**: Draft
+**Status**: Impl-Complete
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
@@ -81,12 +81,12 @@ EP21 (Review Phase / FSRS) is blocked on this: scheduling decisions require hist
 
 ## Overall Acceptance Criteria
 
-- [ ] `pnpm engine:real-db` persists and restores `RunState` + `SentenceRunState` between sessions
-- [ ] Mid-session quit does not lose answered progress (write-on-answer)
-- [ ] DB and migrations owned by `@gll/db`; engine is DB-agnostic
-- [ ] `LearningStore`, `GraduationHook` exported from `@gll/srs-engine-v2`; `SqliteLearningStore` exported from `@gll/db`
-- [ ] Schema is D1-compatible (no `AUTOINCREMENT`, standard SQL only)
-- [ ] All existing tests pass
+- [x] `pnpm engine:real-db` persists and restores `RunState` + `SentenceRunState` between sessions
+- [x] Mid-session quit does not lose answered progress (write-on-answer)
+- [x] DB and migrations owned by `@gll/db`; engine is DB-agnostic
+- [x] `LearningStore`, `GraduationHook` exported from `@gll/srs-engine-v2`; `SqliteLearningStore` exported from `@gll/db`
+- [x] Schema is D1-compatible (no `AUTOINCREMENT`, standard SQL only)
+- [x] All existing tests pass
 
 ---
 

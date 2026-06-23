@@ -19,13 +19,14 @@ pnpm engine:real-db
         ├── getDb("data/learning-state.db")       ← from @gll/db; runs initDb
         ├── store.getAllWordStates('cli-user')     → RunState (Map)
         ├── store.getAllSentenceStates('cli-user') → SentenceRunState (Map)
-        ├── initAdaptiveSession(words, config, recheckIds, runState)
-        ├── runAdaptiveLoop(words, ..., initialRunState, initialSentenceRunState,
+        ├── words = allWords.filter(w => !mastered(w, initialRunState))  ← mastered words excluded from session
+        ├── runAdaptiveLoop(words, wordPool, ..., initialRunState, initialSentenceRunState,
+        │     recheckIds:       new Set(),         ← no recheck on launch
         │     onWordAnswer:     (ws) => store.upsertWordState('cli-user', ws),
         │     onSentenceAnswer: (ss) => store.upsertSentenceState('cli-user', ss),
         │     onGraduation:     (ids) => console.log('[INFO] Graduated:', ids),
         │   )
-        │     └── returns { runState, sentenceRunState }   ← ST01 fixes this gap
+        │     └── returns { runState, sentenceRunState }
         └── store.close()
 ```
 
@@ -396,18 +397,18 @@ No DB, no schema, no serialisation — purely engine plumbing.
 - `packages/srs-engine-v2/src/index.ts`
 
 **Tasks**:
-- [ ] Add `GraduationHook` type to `packages/srs-engine-v2/src/types/` (or co-locate)
-- [ ] Add `onGraduation?: GraduationHook` to `runAdaptiveLoop` signature
-- [ ] `demo/learning-io.ts`: after loop exits, derive `graduatedWordIds` by comparing initial vs final `RunState` against `masteryThreshold`; call `onGraduation(graduatedWordIds, finalRunState)` if provided
-- [ ] `apps/cli-demo-db/src/learning-runner-db.ts`: pass graduation hook that logs newly mastered words
-- [ ] Export `GraduationHook` type from `packages/srs-engine-v2/src/index.ts`
+- [x] Add `GraduationHook` type to `packages/srs-engine-v2/src/types/word-state.ts`
+- [x] Add `onGraduation?: GraduationHook` to `runAdaptiveLoop` signature
+- [x] `apps/cli-demo-db/src/learning-io.ts`: after loop exits, derive `graduatedWordIds` by comparing initial vs final `RunState` against `masteryThreshold`; call `onGraduation(graduatedWordIds, finalRunState)` if provided
+- [x] `apps/cli-demo-db/src/learning-runner-db.ts`: pass graduation hook that logs newly mastered words
+- [x] Export `GraduationHook` type from `packages/srs-engine-v2/src/index.ts`
 
 **Acceptance criteria**:
-- [ ] Running `pnpm --filter cli-demo-db engine:real-db` in auto mode logs graduated word IDs at session end
-- [ ] Omitting `onGraduation` does not throw
-- [ ] `GraduationHook` importable from `@gll/srs-engine-v2`
-- [ ] All existing tests pass: `pnpm --filter @gll/srs-engine-v2 test`
-- [ ] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
+- [x] Running `pnpm --filter cli-demo-db engine:real-db` logs graduated word IDs at session end
+- [x] Omitting `onGraduation` does not throw
+- [x] `GraduationHook` importable from `@gll/srs-engine-v2`
+- [x] All existing tests pass: `pnpm --filter cli-demo-db test`
+- [x] `pnpm --filter @gll/srs-engine-v2 typecheck` clean
 
 ---
 
@@ -470,6 +471,16 @@ data/
 | ✅ Curriculum import (JSON → DB) | ST05 | COMPLETE |
 | ✅ DB-backed runner + tools | ST06 | COMPLETE |
 | ✅ Write-on-answer callbacks | ST07 | COMPLETE |
-| Add graduation hook | ST08 | Ready — depends on ST07 |
+| ✅ Graduation hook | ST08 | COMPLETE |
+| ✅ Runner resume fix — skip mastered words on session start | post-ST08 | COMPLETE |
 
-**Recommended order**: ST04 → ST05 → ST06 → ST07 → ST08
+### Post-ST08 fix: runner resume (2026-06-23)
+
+During manual verification of ST08, mastered words were reappearing at the start of every new session, forcing users through a recheck batch before reaching unmastered words.
+
+**Root cause**: `initAdaptiveSession` takes the first `wordsPerBatch` words from the full word list. Mastered words (the first 3 in DB insertion order) always occupied all active slots, leaving no room for unmastered words in batch 1. Users had to complete the recheck batch and answer `y` before seeing any new vocabulary.
+
+**Fix** (`commit 321c1e7`):
+- `learning-runner-db.ts`: filter mastered words out of the session word list before passing to `runAdaptiveLoop`; `wordPool` (for distractors) still includes all words
+- `learning-runner-db.ts`: remove unused `recheckIds` construction (mastered words no longer need recheck on every launch)
+- `learning-io.ts`: add Ctrl+C (`\x03`) exit handling in raw-mode stdin
