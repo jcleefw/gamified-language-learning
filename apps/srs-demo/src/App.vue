@@ -156,23 +156,19 @@ function startBatch() {
 function initSession(id: string) {
   deckId.value = id;
   localStorage.setItem(LAST_DECK_KEY, id);
-  const words = getDeckWords(id);
+  const allWords = getDeckWords(id);
 
-  // Build recheck IDs based on globalRunState
-  const recheckIds = new Set(
-    words
-      .filter((w) => {
-        const ws = globalRunState.value.get(w.id);
-        return ws != null && isMastered(ws, CONFIG.masteryThreshold);
-      })
-      .map((w) => w.id),
-  );
+  // Exclude already-mastered words so they don't fill the active pool on re-entry
+  const words = allWords.filter((w) => {
+    const ws = globalRunState.value.get(w.id);
+    return ws == null || !isMastered(ws, CONFIG.masteryThreshold);
+  });
 
   // Initialize adaptive session
   sessionState.value = initAdaptiveSession(
     words,
     CONFIG,
-    recheckIds,
+    new Set(),
     globalRunState.value,
   );
 
