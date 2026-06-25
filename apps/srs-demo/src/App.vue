@@ -11,17 +11,23 @@ import {
   finishBatch,
   isBatchDone,
   isMastered,
+  resolveEligibleContexts,
+  updateSentenceRunState,
+  composeSentenceBatch,
   type QuizItem,
   type QuizQuestion,
   type QuizResult,
   type WordQuizResult,
+  type SentenceQuizResult,
   type RunState,
+  type SentenceRunState,
   type AdaptiveSessionState,
   type SessionConfig,
   type BatchState,
+  type SentenceQuestion,
 } from '@gll/srs-engine-v2';
 import { appDecks } from './data/decks';
-import { deckToQuizItems, buildWordPool } from './data/transformer';
+import { deckToQuizItems, buildWordPool, linesToSentenceCorpus } from './data/transformer';
 import { loadRunState, saveWordState, clearStore } from './composables/useStore';
 import DeckSelector from './components/DeckSelector.vue';
 import QuizCard from './components/QuizCard.vue';
@@ -31,7 +37,12 @@ const LAST_DECK_KEY = 'srs-demo-last-deck';
 
 const wordPool = buildWordPool(appDecks) as QuizItem[];
 
-const CONFIG: SessionConfig & { maxRetryPerWord: number } = {
+const CONFIG: SessionConfig & {
+  maxRetryPerWord: number;
+  sentenceScheduling: { minSeenForSentence: number; sentenceBatchGap: number };
+  sentenceGraduation: { sentenceCorrectStreakThreshold: number; sentenceWrongStreakThreshold: number };
+  sentenceDirections: SentenceQuestion['direction'][];
+} = {
   wordsPerBatch: 3,
   masteryThreshold: 2,
   streakThresholds: {
@@ -41,6 +52,19 @@ const CONFIG: SessionConfig & { maxRetryPerWord: number } = {
   },
   maxRetryPerSession: 5,
   maxRetryPerWord: 2,
+  sentenceScheduling: {
+    minSeenForSentence: 1,
+    sentenceBatchGap: 2,
+  },
+  sentenceGraduation: {
+    sentenceCorrectStreakThreshold: 2,
+    sentenceWrongStreakThreshold: 3,
+  },
+  sentenceDirections: [
+    'english-to-native',
+    'romanization-to-native',
+    'native-to-romanization',
+  ],
 };
 
 type Screen = 'select' | 'quiz' | 'results';
@@ -54,6 +78,14 @@ const sessionState = ref<AdaptiveSessionState | null>(null);
 const globalRunState = ref<RunState>(new Map());
 const batchState = ref<BatchState | null>(null);
 const currentQuestion = ref<QuizQuestion | null>(null);
+
+// Sentence state (in-memory only; not persisted in EP31)
+const sentenceRunState = ref<SentenceRunState>(new Map());
+const batchNum = ref(0);
+const sentenceCorpus = computed(() => {
+  const deck = appDecks.find((d) => d.id === deckId.value);
+  return deck ? linesToSentenceCorpus(deck) : [];
+});
 
 const defaultWordState = {
   wordId: '',
@@ -119,6 +151,7 @@ const nextDeckId = computed<string | null>(() => {
 
 const batchScore = ref({ correct: 0, total: 0 });
 const summary = ref<BatchSummary[]>([]);
+const questionKey = ref(0);
 
 function getDeckWords(id: string): QuizItem[] {
   const deck = appDecks.find((d) => d.id === id);
@@ -129,13 +162,34 @@ function getDeckWords(id: string): QuizItem[] {
 function startBatch() {
   if (!sessionState.value) return;
 
+  // Resolve eligible sentence contexts based on word seen counts and batch spacing
+  const eligibleSentences = resolveEligibleContexts(
+    sentenceCorpus.value,
+    sessionState.value.runState,
+    wordPool,
+    sentenceRunState.value,
+    batchNum.value,
+    CONFIG.sentenceScheduling,
+  );
+
+  // One thunk per eligible sentence × configured direction
+  const sentenceThunks = eligibleSentences.flatMap(({ ctx, tiles }) =>
+    CONFIG.sentenceDirections.map(
+      (dir) => () =>
+        composeSentenceBatch(ctx, tiles, 'th').filter((q) => q.direction === dir),
+    ),
+  );
+
   // Assemble batch questions using the composer registry pattern internally
   const questions = assembleBatch(
     sessionState.value.active,
     wordPool,
     [], // foundationalPool is empty in this demo
     CONFIG.wordsPerBatch,
+    { extraThunks: sentenceThunks },
   );
+
+  batchNum.value++;
 
   // Initialize serializable batch state
   batchState.value = initBatchState(
@@ -149,6 +203,7 @@ function startBatch() {
   const { question, state: nextState } = nextQuestion(batchState.value);
   batchState.value = nextState;
   currentQuestion.value = question;
+  questionKey.value++;
 
   screen.value = 'quiz';
 }
@@ -195,6 +250,8 @@ async function onClear() {
   deckId.value = null;
   sessionState.value = null;
   globalRunState.value = new Map();
+  sentenceRunState.value = new Map();
+  batchNum.value = 0;
   batchState.value = null;
   currentQuestion.value = null;
   recalculateCompletedDecks();
@@ -246,6 +303,16 @@ function finishBatchAndTransition() {
 function onAnswered(result: QuizResult) {
   if (!batchState.value) return;
 
+  // Update sentence run state immediately on answer
+  if ('sentenceId' in result) {
+    updateSentenceRunState(
+      sentenceRunState.value,
+      [result as SentenceQuizResult],
+      batchNum.value,
+      CONFIG.sentenceGraduation,
+    );
+  }
+
   // Submit result to serializable batch state
   batchState.value = submitBatchResult(batchState.value, result);
 
@@ -256,6 +323,7 @@ function onAnswered(result: QuizResult) {
     const { question, state: nextState } = nextQuestion(batchState.value);
     batchState.value = nextState;
     currentQuestion.value = question;
+    questionKey.value++;
   }
 }
 
@@ -303,6 +371,7 @@ onMounted(async () => {
 
   <QuizCard
     v-else-if="screen === 'quiz' && currentQuestion && batchState"
+    :key="questionKey"
     :question="currentQuestion"
     :index="batchState.results.length"
     :total="batchState.initialCount"
