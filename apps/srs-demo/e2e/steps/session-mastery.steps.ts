@@ -29,8 +29,8 @@ async function answerBatchCorrectly(page: import('@playwright/test').Page) {
 
 Given('the app is open with a clean session', async ({ page }) => {
   masteredWordIds = [];
-  // Wipe the server-side DB state
-  await page.request.delete('http://localhost:6060/api/state');
+  // Wipe the server-side DB state (via Vite proxy → port 6060)
+  await page.request.delete('/api/state');
   // Navigate and clear localStorage
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());

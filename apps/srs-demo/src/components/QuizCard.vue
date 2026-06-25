@@ -298,7 +298,7 @@ watch(
         </div>
       </div>
 
-      <!-- Sentence debug: show mastered sentences in batch results -->
+      <!-- Test data carrier: hidden from UI; e2e reads .pool-id here to get full IDs including namespace prefix -->
       <div class="pool-debug" style="display:none">
         <div class="pool-section">
           <p class="pool-label">Mastered — this deck</p>

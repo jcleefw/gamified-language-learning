@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
-import { getDb, SqliteLearningStore, schema } from '@gll/db';
+import { getDb, SqliteLearningStore } from '@gll/db';
 import { ErrorCode, type ApiResponse, type GetStateResponse, type UpsertWordStateRequest, type WordStatePayload } from '@gll/api-contract';
 import type { WordState } from '@gll/srs-engine-v2';
 
@@ -69,7 +68,7 @@ router.post('/state/word', async (c) => {
 });
 
 router.delete('/state', (c) => {
-  getDb().delete(schema.user_word_states).where(eq(schema.user_word_states.user_id, USER_ID)).run();
+  getStore().clearUserState(USER_ID);
   return c.body(null, 204);
 });
 

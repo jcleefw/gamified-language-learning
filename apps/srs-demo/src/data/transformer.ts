@@ -21,7 +21,7 @@ export function linesToSentenceCorpus(deck: AppDeck): SentenceContext[] {
     sentenceId: line.sentenceId,
     englishSentence: line.english,
     wordOrder: line.words.map((w) => w.id),
-  }))
+  }));
 }
 
 export function buildWordPool(decks: AppDeck[]): AppWord[] {

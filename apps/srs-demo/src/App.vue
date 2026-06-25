@@ -35,6 +35,8 @@ import BatchResults, { type BatchSummary } from './components/BatchResults.vue';
 
 const LAST_DECK_KEY = 'srs-demo-last-deck';
 
+const apiError = ref<string | null>(null);
+
 const wordPool = buildWordPool(appDecks) as QuizItem[];
 
 const CONFIG: SessionConfig & {
@@ -235,7 +237,14 @@ function onSelect(id: string) {
 }
 
 async function onResume() {
-  const runState = await loadRunState();
+  apiError.value = null;
+  let runState: RunState;
+  try {
+    runState = await loadRunState();
+  } catch {
+    apiError.value = 'Could not reach the server. Please check that it is running and try again.';
+    return;
+  }
   globalRunState.value = runState;
   const savedDeckId = localStorage.getItem(LAST_DECK_KEY);
   if (!savedDeckId) return;
@@ -348,7 +357,14 @@ function onNextDeck(id: string) {
 }
 
 onMounted(async () => {
-  const runState = await loadRunState();
+  let runState: RunState;
+  try {
+    runState = await loadRunState();
+  } catch {
+    apiError.value = 'Could not reach the server. Please check that it is running and try again.';
+    recalculateCompletedDecks();
+    return;
+  }
   if (runState.size > 0) {
     hasSavedSession.value = true;
     globalRunState.value = runState;
@@ -359,6 +375,10 @@ onMounted(async () => {
 </script>
 
 <template>
+  <div v-if="apiError" class="api-error" role="alert">
+    {{ apiError }}
+  </div>
+
   <DeckSelector
     v-if="screen === 'select'"
     :has-saved-session="hasSavedSession"
@@ -397,3 +417,17 @@ onMounted(async () => {
     @next-deck="onNextDeck"
   />
 </template>
+
+<style scoped>
+.api-error {
+  max-width: 480px;
+  margin: 24px auto;
+  padding: 12px 16px;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  text-align: center;
+}
+</style>
