@@ -19,16 +19,21 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const STATE_FILE = path.join(__dirname, '.demo-state.json');
 
 function loadRunState(): RunState {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!ENABLE_MOCK_DB) {
     return new Map();
   }
   if (existsSync(STATE_FILE)) {
     try {
       const data = readFileSync(STATE_FILE, 'utf-8');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const parsed = JSON.parse(data) as [string, any][];
+      // eslint-disable-next-line no-console
       console.log(`\n[INFO] Loaded learning history from ${STATE_FILE}`);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return new Map(parsed);
     } catch (e) {
+      // eslint-disable-next-line no-console
       console.warn(`\n[WARN] Failed to parse learning state file. Starting fresh.`, e);
     }
   }
@@ -36,14 +41,17 @@ function loadRunState(): RunState {
 }
 
 function saveRunState(state: RunState): void {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!ENABLE_MOCK_DB) {
     return;
   }
   try {
     const serialized = JSON.stringify(Array.from(state.entries()), null, 2);
     writeFileSync(STATE_FILE, serialized, 'utf-8');
+    // eslint-disable-next-line no-console
     console.log(`[INFO] Saved learning history to ${STATE_FILE}`);
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.error(`\n[ERROR] Failed to save learning history.`, e);
   }
 }

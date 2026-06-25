@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import {
   composeSentenceBatch,
   assembleBatch,
@@ -259,7 +257,7 @@ async function runBatch(
     },
   );
 
-  let batchState = initBatchState(
+  const batchState = initBatchState(
     questions,
     LEARNING_CONFIG.maxRetryPerWord,
     state.sessionRetryCounts,
