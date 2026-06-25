@@ -8,5 +8,8 @@ export interface LearningStore {
   getAllSentenceStates(userId: string): SentenceRunState;
   upsertSentenceState(userId: string, state: SentenceState): void;
 
+  /** Delete all word and sentence states for the given user. */
+  clearUserState(userId: string): void;
+
   close(): void;
 }

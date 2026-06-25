@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { ErrorCode, type ApiResponse } from '@gll/api-contract';
 import type { Context } from 'hono';
+import stateRouter from './routes/state.js';
 
 export function errorHandler(err: Error, c: Context): Response {
   const body: ApiResponse<never> = {
@@ -20,5 +21,6 @@ app.use('*', cors());
 app.onError(errorHandler);
 
 app.get('/health', (c) => c.json({ status: 'ok' }));
+app.route('/api', stateRouter);
 
 export default app;

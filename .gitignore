@@ -7,3 +7,8 @@ build/
 *.env.local
 .demo-state.json
 .claude
+.data/
+
+# Playwright
+test-results/
+playwright-report/

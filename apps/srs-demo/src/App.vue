@@ -11,29 +11,40 @@ import {
   finishBatch,
   isBatchDone,
   isMastered,
+  resolveEligibleContexts,
+  updateSentenceRunState,
+  composeSentenceBatch,
   type QuizItem,
   type QuizQuestion,
   type QuizResult,
   type WordQuizResult,
+  type SentenceQuizResult,
   type RunState,
+  type SentenceRunState,
   type AdaptiveSessionState,
   type SessionConfig,
   type BatchState,
+  type SentenceQuestion,
 } from '@gll/srs-engine-v2';
 import { appDecks } from './data/decks';
-import { deckToQuizItems, buildWordPool } from './data/transformer';
-import {
-  saveSession,
-  loadSession,
-  clearSession,
-} from './composables/useSession';
+import { deckToQuizItems, buildWordPool, linesToSentenceCorpus } from './data/transformer';
+import { loadRunState, saveWordState, clearStore } from './composables/useStore';
 import DeckSelector from './components/DeckSelector.vue';
 import QuizCard from './components/QuizCard.vue';
 import BatchResults, { type BatchSummary } from './components/BatchResults.vue';
 
+const LAST_DECK_KEY = 'srs-demo-last-deck';
+
+const apiError = ref<string | null>(null);
+
 const wordPool = buildWordPool(appDecks) as QuizItem[];
 
-const CONFIG: SessionConfig & { maxRetryPerWord: number } = {
+const CONFIG: SessionConfig & {
+  maxRetryPerWord: number;
+  sentenceScheduling: { minSeenForSentence: number; sentenceBatchGap: number };
+  sentenceGraduation: { sentenceCorrectStreakThreshold: number; sentenceWrongStreakThreshold: number };
+  sentenceDirections: SentenceQuestion['direction'][];
+} = {
   wordsPerBatch: 3,
   masteryThreshold: 2,
   streakThresholds: {
@@ -43,6 +54,19 @@ const CONFIG: SessionConfig & { maxRetryPerWord: number } = {
   },
   maxRetryPerSession: 5,
   maxRetryPerWord: 2,
+  sentenceScheduling: {
+    minSeenForSentence: 1,
+    sentenceBatchGap: 2,
+  },
+  sentenceGraduation: {
+    sentenceCorrectStreakThreshold: 2,
+    sentenceWrongStreakThreshold: 3,
+  },
+  sentenceDirections: [
+    'english-to-native',
+    'romanization-to-native',
+    'native-to-romanization',
+  ],
 };
 
 type Screen = 'select' | 'quiz' | 'results';
@@ -56,6 +80,14 @@ const sessionState = ref<AdaptiveSessionState | null>(null);
 const globalRunState = ref<RunState>(new Map());
 const batchState = ref<BatchState | null>(null);
 const currentQuestion = ref<QuizQuestion | null>(null);
+
+// Sentence state (in-memory only; not persisted in EP31)
+const sentenceRunState = ref<SentenceRunState>(new Map());
+const batchNum = ref(0);
+const sentenceCorpus = computed(() => {
+  const deck = appDecks.find((d) => d.id === deckId.value);
+  return deck ? linesToSentenceCorpus(deck) : [];
+});
 
 const defaultWordState = {
   wordId: '',
@@ -121,6 +153,7 @@ const nextDeckId = computed<string | null>(() => {
 
 const batchScore = ref({ correct: 0, total: 0 });
 const summary = ref<BatchSummary[]>([]);
+const questionKey = ref(0);
 
 function getDeckWords(id: string): QuizItem[] {
   const deck = appDecks.find((d) => d.id === id);
@@ -131,13 +164,34 @@ function getDeckWords(id: string): QuizItem[] {
 function startBatch() {
   if (!sessionState.value) return;
 
+  // Resolve eligible sentence contexts based on word seen counts and batch spacing
+  const eligibleSentences = resolveEligibleContexts(
+    sentenceCorpus.value,
+    sessionState.value.runState,
+    wordPool,
+    sentenceRunState.value,
+    batchNum.value,
+    CONFIG.sentenceScheduling,
+  );
+
+  // One thunk per eligible sentence × configured direction
+  const sentenceThunks = eligibleSentences.flatMap(({ ctx, tiles }) =>
+    CONFIG.sentenceDirections.map(
+      (dir) => () =>
+        composeSentenceBatch(ctx, tiles, 'th').filter((q) => q.direction === dir),
+    ),
+  );
+
   // Assemble batch questions using the composer registry pattern internally
   const questions = assembleBatch(
     sessionState.value.active,
     wordPool,
     [], // foundationalPool is empty in this demo
     CONFIG.wordsPerBatch,
+    { extraThunks: sentenceThunks },
   );
+
+  batchNum.value++;
 
   // Initialize serializable batch state
   batchState.value = initBatchState(
@@ -151,35 +205,30 @@ function startBatch() {
   const { question, state: nextState } = nextQuestion(batchState.value);
   batchState.value = nextState;
   currentQuestion.value = question;
+  questionKey.value++;
 
   screen.value = 'quiz';
 }
 
 function initSession(id: string) {
   deckId.value = id;
-  const words = getDeckWords(id);
+  localStorage.setItem(LAST_DECK_KEY, id);
+  const allWords = getDeckWords(id);
 
-  // Build recheck IDs based on globalRunState
-  const recheckIds = new Set(
-    words
-      .filter((w) => {
-        const ws = globalRunState.value.get(w.id);
-        return ws != null && isMastered(ws, CONFIG.masteryThreshold);
-      })
-      .map((w) => w.id),
-  );
+  // Exclude already-mastered words so they don't fill the active pool on re-entry
+  const words = allWords.filter((w) => {
+    const ws = globalRunState.value.get(w.id);
+    return ws == null || !isMastered(ws, CONFIG.masteryThreshold);
+  });
 
   // Initialize adaptive session
   sessionState.value = initAdaptiveSession(
     words,
     CONFIG,
-    recheckIds,
+    new Set(),
     globalRunState.value,
   );
 
-  // Persist session immediately
-  saveSession(id, sessionState.value);
-  hasSavedSession.value = true;
   startBatch();
 }
 
@@ -187,33 +236,31 @@ function onSelect(id: string) {
   initSession(id);
 }
 
-function onResume() {
-  const saved = loadSession();
-  if (!saved) return;
-  deckId.value = saved.deckId;
-  sessionState.value = saved.sessionState;
-  globalRunState.value = saved.sessionState.runState;
-
-  if (sessionState.value.active.length === 0 && sessionState.value.queue.length === 0) {
-    const allWordIds = [...sessionState.value.runState.keys()];
-    batchScore.value = { correct: allWordIds.length, total: allWordIds.length };
-    summary.value = allWordIds.map((wid) => ({
-      wordId: wid,
-      state: sessionState.value!.runState.get(wid) ?? { ...defaultWordState, wordId: wid },
-      newlyMastered: false,
-    }));
-    screen.value = 'results';
-  } else {
-    startBatch();
+async function onResume() {
+  apiError.value = null;
+  let runState: RunState;
+  try {
+    runState = await loadRunState();
+  } catch {
+    apiError.value = 'Could not reach the server. Please check that it is running and try again.';
+    return;
   }
+  globalRunState.value = runState;
+  const savedDeckId = localStorage.getItem(LAST_DECK_KEY);
+  if (!savedDeckId) return;
+  deckId.value = savedDeckId;
+  initSession(savedDeckId);
 }
 
-function onClear() {
-  clearSession();
+async function onClear() {
+  await clearStore();
+  localStorage.removeItem(LAST_DECK_KEY);
   hasSavedSession.value = false;
   deckId.value = null;
   sessionState.value = null;
   globalRunState.value = new Map();
+  sentenceRunState.value = new Map();
+  batchNum.value = 0;
   batchState.value = null;
   currentQuestion.value = null;
   recalculateCompletedDecks();
@@ -230,11 +277,17 @@ function finishBatchAndTransition() {
   sessionState.value = advanceAdaptiveSession(sessionState.value, output, CONFIG);
   globalRunState.value = sessionState.value.runState;
 
-  // Determine newly mastered words in this specific batch
+  // Persist updated word states (write-on-answer)
   const wordResults = output.results.filter(
     (r): r is WordQuizResult => 'wordId' in r,
   );
   const uniqueWordIds = [...new Set(wordResults.map((r) => r.wordId))];
+  for (const wid of uniqueWordIds) {
+    const ws = sessionState.value.runState.get(wid);
+    if (ws) saveWordState(ws).catch(console.error);
+  }
+
+  // Determine newly mastered words in this specific batch
   const newlyMasteredIds = getNewlyMasteredIds(
     prevState,
     sessionState.value.runState,
@@ -251,9 +304,6 @@ function finishBatchAndTransition() {
     newlyMastered: newlyMasteredIds.includes(wid),
   }));
 
-  saveSession(deckId.value ?? '', sessionState.value);
-  hasSavedSession.value = true;
-
   recalculateCompletedDecks();
 
   screen.value = 'results';
@@ -261,6 +311,16 @@ function finishBatchAndTransition() {
 
 function onAnswered(result: QuizResult) {
   if (!batchState.value) return;
+
+  // Update sentence run state immediately on answer
+  if ('sentenceId' in result) {
+    updateSentenceRunState(
+      sentenceRunState.value,
+      [result as SentenceQuizResult],
+      batchNum.value,
+      CONFIG.sentenceGraduation,
+    );
+  }
 
   // Submit result to serializable batch state
   batchState.value = submitBatchResult(batchState.value, result);
@@ -272,6 +332,7 @@ function onAnswered(result: QuizResult) {
     const { question, state: nextState } = nextQuestion(batchState.value);
     batchState.value = nextState;
     currentQuestion.value = question;
+    questionKey.value++;
   }
 }
 
@@ -295,19 +356,29 @@ function onNextDeck(id: string) {
   initSession(id);
 }
 
-onMounted(() => {
-  const saved = loadSession();
-  if (saved) {
+onMounted(async () => {
+  let runState: RunState;
+  try {
+    runState = await loadRunState();
+  } catch {
+    apiError.value = 'Could not reach the server. Please check that it is running and try again.';
+    recalculateCompletedDecks();
+    return;
+  }
+  if (runState.size > 0) {
     hasSavedSession.value = true;
-    deckId.value = saved.deckId;
-    globalRunState.value = saved.sessionState.runState;
-    screen.value = 'select';
+    globalRunState.value = runState;
+    deckId.value = localStorage.getItem(LAST_DECK_KEY);
   }
   recalculateCompletedDecks();
 });
 </script>
 
 <template>
+  <div v-if="apiError" class="api-error" role="alert">
+    {{ apiError }}
+  </div>
+
   <DeckSelector
     v-if="screen === 'select'"
     :has-saved-session="hasSavedSession"
@@ -320,6 +391,7 @@ onMounted(() => {
 
   <QuizCard
     v-else-if="screen === 'quiz' && currentQuestion && batchState"
+    :key="questionKey"
     :question="currentQuestion"
     :index="batchState.results.length"
     :total="batchState.initialCount"
@@ -345,3 +417,17 @@ onMounted(() => {
     @next-deck="onNextDeck"
   />
 </template>
+
+<style scoped>
+.api-error {
+  max-width: 480px;
+  margin: 24px auto;
+  padding: 12px 16px;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  text-align: center;
+}
+</style>

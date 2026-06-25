@@ -107,6 +107,11 @@ export class SqliteLearningStore implements LearningStore {
       .run();
   }
 
+  clearUserState(userId: string): void {
+    this.db.delete(schema.user_word_states).where(eq(schema.user_word_states.user_id, userId)).run();
+    this.db.delete(schema.user_sentence_states).where(eq(schema.user_sentence_states.user_id, userId)).run();
+  }
+
   close(): void {
     this.db.$client.close();
   }
