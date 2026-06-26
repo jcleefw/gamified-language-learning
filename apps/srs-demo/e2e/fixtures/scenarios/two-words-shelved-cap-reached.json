@@ -1,0 +1,22 @@
+{
+  "name": "two-words-shelved-cap-reached",
+  "description": "All deck-eat words at mastery 0. Config sets stagnationBatchWindow=1 and maxShelved=2. After one batch of wrong answers, 3 active words all stagnate but only 2 can be shelved (cap enforced).",
+  "deckId": "deck-eat",
+  "wordStates": [
+    { "wordId": "th::หิว",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::แล้ว",          "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ไป",            "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::กิน",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::อะไร",          "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::กัน",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ดี",            "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::เลย",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::อยาก",          "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ก๋วยเตี๋ยว",   "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ไหม",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::โอเค",          "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 }
+  ],
+  "stagnationCounters": [],
+  "shelvedWords": [],
+  "config": { "stagnationBatchWindow": 1, "maxShelved": 2 }
+}

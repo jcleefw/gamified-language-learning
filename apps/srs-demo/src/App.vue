@@ -26,10 +26,7 @@ import {
   type BatchState,
   type SentenceQuestion,
 } from '@gll/srs-engine-v2';
-import {
-  evaluateShelving,
-  DEFAULT_SHELVING_CONFIG,
-} from '@gll/srs-shelving';
+import { evaluateShelving } from '@gll/srs-shelving';
 import { appDecks } from './data/decks';
 import { deckToQuizItems, buildWordPool, linesToSentenceCorpus } from './data/transformer';
 import { loadRunState, saveWordState, clearStore } from './composables/useStore';
@@ -40,6 +37,7 @@ import {
   updateStagnationCounters,
   getStagnantWords,
   resetStagnationCounters,
+  getShelvingConfig,
 } from './composables/useShelving';
 import DeckSelector from './components/DeckSelector.vue';
 import QuizCard from './components/QuizCard.vue';
@@ -225,17 +223,20 @@ function startBatch() {
   screen.value = 'quiz';
 }
 
-async function initSession(id: string) {
+async function initSession(id: string, isNewSession = true) {
   deckId.value = id;
   localStorage.setItem(LAST_DECK_KEY, id);
   const allWords = getDeckWords(id);
 
-  // Reset shelving state, unshelve all and reset stagnation counters on session start
-  shelvedSet.value = new Set();
-  await Promise.all([
-    unshelveAll({ deckId: id }).catch(console.error),
-    resetStagnationCounters({ deckId: id }).catch(console.error),
-  ]);
+  if (isNewSession) {
+    // New session: clear shelving + stagnation state
+    shelvedSet.value = new Set();
+    await Promise.all([
+      unshelveAll({ deckId: id }).catch(console.error),
+      resetStagnationCounters({ deckId: id }).catch(console.error),
+    ]);
+  }
+  // On resume (isNewSession=false), shelvedSet is already populated by onMounted or onResume
 
   // Exclude already-mastered words so they don't fill the active pool on re-entry
   const words = allWords.filter((w) => {
@@ -271,7 +272,12 @@ async function onResume() {
   const savedDeckId = localStorage.getItem(LAST_DECK_KEY);
   if (!savedDeckId) return;
   deckId.value = savedDeckId;
-  await initSession(savedDeckId);
+  // Load shelved words before initSession so shelvedSet is correct for the resumed session
+  try {
+    const shelvedWords = await loadShelvedWords(savedDeckId);
+    shelvedSet.value = new Set(shelvedWords.map((sw) => sw.wordId));
+  } catch { /* non-fatal */ }
+  await initSession(savedDeckId, false);
 }
 
 async function onClear() {
@@ -314,8 +320,9 @@ async function finishBatchAndTransition() {
   if (deckId.value) {
     const activeIds = sessionState.value.active.map((w) => w.id);
     await updateStagnationCounters({ deckId: deckId.value, activeWordIds: activeIds }).catch(console.error);
-    const stagnantIds = await getStagnantWords(deckId.value, DEFAULT_SHELVING_CONFIG.stagnationBatchWindow).catch(() => [] as string[]);
-    const decision = evaluateShelving(stagnantIds, shelvedSet.value, DEFAULT_SHELVING_CONFIG);
+    const shelvingConfig = await getShelvingConfig();
+    const stagnantIds = await getStagnantWords(deckId.value, shelvingConfig.stagnationBatchWindow).catch(() => [] as string[]);
+    const decision = evaluateShelving(stagnantIds, shelvedSet.value, shelvingConfig);
     if (decision.toShelve.length > 0) {
       await applyShelving({ deckId: deckId.value, toShelve: decision.toShelve.map((id: string) => ({ wordId: id, batchNum: batchNum.value })) }).catch(console.error);
       decision.toShelve.forEach((id: string) => shelvedSet.value.add(id));

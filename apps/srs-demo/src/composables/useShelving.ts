@@ -8,6 +8,7 @@ import type {
   UpdateStagnationCountersRequest,
   ResetStagnationCountersRequest,
 } from '@gll/api-contract';
+import { DEFAULT_SHELVING_CONFIG, type ShelvingConfig } from '@gll/srs-shelving';
 
 export async function loadShelvedWords(deckId: string): Promise<ShelvedWordPayload[]> {
   const res = await fetch(`/api/shelving?deckId=${encodeURIComponent(deckId)}`);
@@ -61,4 +62,16 @@ export async function resetStagnationCounters(request: ResetStagnationCountersRe
     body: JSON.stringify(request),
   });
   if (!res.ok) throw new Error(`POST /api/stagnation/reset failed: ${res.status}`);
+}
+
+export async function getShelvingConfig(): Promise<ShelvingConfig> {
+  try {
+    const res = await fetch('/api/test/config/shelving');
+    if (!res.ok) return DEFAULT_SHELVING_CONFIG;
+    const body = (await res.json()) as ApiResponse<ShelvingConfig>;
+    if (!body.success) return DEFAULT_SHELVING_CONFIG;
+    return body.data;
+  } catch {
+    return DEFAULT_SHELVING_CONFIG;
+  }
 }
