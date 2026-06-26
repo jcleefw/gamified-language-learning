@@ -4,6 +4,7 @@ import { logger } from 'hono/logger';
 import { ErrorCode, type ApiResponse } from '@gll/api-contract';
 import type { Context } from 'hono';
 import stateRouter from './routes/state.js';
+import shelvingRouter from './routes/shelving.js';
 
 export function errorHandler(err: Error, c: Context): Response {
   const body: ApiResponse<never> = {
@@ -22,5 +23,6 @@ app.onError(errorHandler);
 
 app.get('/health', (c) => c.json({ status: 'ok' }));
 app.route('/api', stateRouter);
+app.route('/api', shelvingRouter);
 
 export default app;
