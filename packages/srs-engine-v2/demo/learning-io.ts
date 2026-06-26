@@ -10,7 +10,6 @@ import {
   nextQuestion,
   submitBatchResult,
   finishBatch,
-  isBatchDone,
   resolveEligibleContexts,
   updateSentenceRunState,
   type AdaptiveSessionState,
@@ -18,9 +17,7 @@ import {
   type BatchOutput,
   type BatchState,
   type MCQQuestion,
-  type QuizQuestion,
   type SentenceQuestion,
-  type SentenceTile,
   type QuizResult,
   type WordQuizResult,
   type QuizItem,
@@ -269,7 +266,7 @@ async function runBatch(
     },
   );
 
-  let batchState = initBatchState(
+  const batchState = initBatchState(
     questions,
     LEARNING_CONFIG.maxRetryPerWord,
     state.sessionRetryCounts,
@@ -278,7 +275,7 @@ async function runBatch(
 
   let runStats;
   if (strategy) {
-    runStats = await runAutoInteractive(batchState, strategy);
+    runStats = runAutoInteractive(batchState, strategy);
   } else {
     runStats = await runInteractive(batchState);
   }

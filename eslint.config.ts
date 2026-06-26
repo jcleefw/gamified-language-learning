@@ -9,6 +9,8 @@ export default tseslint.config(
       '.worktrees/**',
       '**/data/**',
       'packages/srs-engine-v2/src/runner/interactive.ts',
+      '**/drizzle.config.ts',
+      '**/vitest.config.ts',
     ],
   },
   {
