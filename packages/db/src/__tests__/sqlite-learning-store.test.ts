@@ -83,3 +83,172 @@ describe('SqliteLearningStore', () => {
     expect(result.get('word-1')).toEqual(ws2);
   });
 });
+
+describe('shelving (deck-scoped)', () => {
+  let store: SqliteLearningStore;
+
+  beforeEach(() => {
+    const { db } = makeTestDb();
+    store = new SqliteLearningStore(db);
+  });
+
+  it('shelveWord + getShelvedWords round-trips', () => {
+    store.shelveWord('user-a', 'deck-1', 'w1', 3);
+    const result = store.getShelvedWords('user-a', 'deck-1');
+    expect(result).toEqual([{ wordId: 'w1', shelvedAtBatch: 3 }]);
+  });
+
+  it('getShelvedWords returns [] when nothing shelved', () => {
+    const result = store.getShelvedWords('user-a', 'deck-1');
+    expect(result).toEqual([]);
+  });
+
+  it('shelving same word twice upserts — single entry with latest batch', () => {
+    store.shelveWord('user-a', 'deck-1', 'w1', 3);
+    store.shelveWord('user-a', 'deck-1', 'w1', 5);
+    const result = store.getShelvedWords('user-a', 'deck-1');
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({ wordId: 'w1', shelvedAtBatch: 5 });
+  });
+
+  it('unshelveWord removes one word, leaves others', () => {
+    store.shelveWord('user-a', 'deck-1', 'w1', 1);
+    store.shelveWord('user-a', 'deck-1', 'w2', 2);
+    store.unshelveWord('user-a', 'deck-1', 'w1');
+    const result = store.getShelvedWords('user-a', 'deck-1');
+    expect(result).toEqual([{ wordId: 'w2', shelvedAtBatch: 2 }]);
+  });
+
+  it('unshelveWord on non-shelved word is a no-op — no error thrown', () => {
+    expect(() => store.unshelveWord('user-a', 'deck-1', 'w-nonexistent')).not.toThrow();
+  });
+
+  it('unshelveAllWords clears all for a user+deck', () => {
+    store.shelveWord('user-a', 'deck-1', 'w1', 1);
+    store.shelveWord('user-a', 'deck-1', 'w2', 2);
+    store.shelveWord('user-a', 'deck-1', 'w3', 3);
+    store.unshelveAllWords('user-a', 'deck-1');
+    expect(store.getShelvedWords('user-a', 'deck-1')).toEqual([]);
+  });
+
+  it('unshelveAllWords does not affect other users', () => {
+    store.shelveWord('user-a', 'deck-1', 'w1', 1);
+    store.shelveWord('user-b', 'deck-1', 'w2', 2);
+    store.unshelveAllWords('user-a', 'deck-1');
+    expect(store.getShelvedWords('user-a', 'deck-1')).toEqual([]);
+    expect(store.getShelvedWords('user-b', 'deck-1')).toEqual([{ wordId: 'w2', shelvedAtBatch: 2 }]);
+  });
+
+  it('unshelveAllWords does not affect other decks for same user', () => {
+    store.shelveWord('user-a', 'deck-1', 'w1', 1);
+    store.shelveWord('user-a', 'deck-2', 'w2', 2);
+    store.unshelveAllWords('user-a', 'deck-1');
+    expect(store.getShelvedWords('user-a', 'deck-1')).toEqual([]);
+    expect(store.getShelvedWords('user-a', 'deck-2')).toEqual([{ wordId: 'w2', shelvedAtBatch: 2 }]);
+  });
+
+  it('clearUserState also clears shelved words', () => {
+    store.shelveWord('user-a', 'deck-1', 'w1', 1);
+    store.clearUserState('user-a');
+    expect(store.getShelvedWords('user-a', 'deck-1')).toEqual([]);
+  });
+
+  it('getShelvedWords returns multiple words with correct data', () => {
+    store.shelveWord('user-a', 'deck-1', 'w1', 1);
+    store.shelveWord('user-a', 'deck-1', 'w2', 2);
+    store.shelveWord('user-a', 'deck-1', 'w3', 3);
+    const result = store.getShelvedWords('user-a', 'deck-1');
+    expect(result).toHaveLength(3);
+    expect(result).toContainEqual({ wordId: 'w1', shelvedAtBatch: 1 });
+    expect(result).toContainEqual({ wordId: 'w2', shelvedAtBatch: 2 });
+    expect(result).toContainEqual({ wordId: 'w3', shelvedAtBatch: 3 });
+  });
+});
+
+describe('stagnation counters', () => {
+  let store: SqliteLearningStore;
+
+  beforeEach(() => {
+    const { db } = makeTestDb();
+    store = new SqliteLearningStore(db);
+  });
+
+  function seedWordState(store: SqliteLearningStore, userId: string, wordId: string, mastery: number): void {
+    store.upsertWordState(userId, {
+      wordId,
+      seen: 1,
+      correct: 1,
+      mastery,
+      correctStreak: 1,
+      wrongStreak: 0,
+      lapses: 0,
+    });
+  }
+
+  it('counter increments when mastery is unchanged at batch boundary', () => {
+    seedWordState(store, 'user-a', 'w1', 2);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    const stagnant = store.getStagnantWords('user-a', 'deck-1', 2);
+    expect(stagnant).toContain('w1');
+  });
+
+  it('counter resets to 0 when mastery changes', () => {
+    seedWordState(store, 'user-a', 'w1', 1);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+
+    // Mastery advances
+    seedWordState(store, 'user-a', 'w1', 2);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+
+    // Only 1 batch at new mastery — should not be stagnant at threshold 2
+    const stagnant = store.getStagnantWords('user-a', 'deck-1', 2);
+    expect(stagnant).not.toContain('w1');
+  });
+
+  it('getStagnantWords returns word IDs with stagnation_count >= threshold', () => {
+    seedWordState(store, 'user-a', 'w1', 0);
+    seedWordState(store, 'user-a', 'w2', 0);
+    // w1: 3 boundaries with same mastery
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    // w1 count=3, w2 count=2
+    expect(store.getStagnantWords('user-a', 'deck-1', 3)).toContain('w1');
+    expect(store.getStagnantWords('user-a', 'deck-1', 3)).not.toContain('w2');
+  });
+
+  it('getStagnantWords returns [] when no words meet threshold', () => {
+    seedWordState(store, 'user-a', 'w1', 0);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    expect(store.getStagnantWords('user-a', 'deck-1', 3)).toEqual([]);
+  });
+
+  it('resetStagnationCounters zeroes all counters for user+deck', () => {
+    seedWordState(store, 'user-a', 'w1', 0);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    store.resetStagnationCounters('user-a', 'deck-1');
+    expect(store.getStagnantWords('user-a', 'deck-1', 1)).toEqual([]);
+  });
+
+  it('stagnation is deck-scoped — deck-2 is unaffected by deck-1 counters', () => {
+    seedWordState(store, 'user-a', 'w1', 0);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    expect(store.getStagnantWords('user-a', 'deck-1', 3)).toContain('w1');
+    expect(store.getStagnantWords('user-a', 'deck-2', 3)).not.toContain('w1');
+  });
+
+  it('clearUserState clears stagnation counters', () => {
+    seedWordState(store, 'user-a', 'w1', 0);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    store.clearUserState('user-a');
+    expect(store.getStagnantWords('user-a', 'deck-1', 1)).toEqual([]);
+  });
+});
