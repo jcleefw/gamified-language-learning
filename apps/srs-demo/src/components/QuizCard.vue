@@ -144,7 +144,7 @@ watch(
 </script>
 
 <template>
-  <div class="quiz-card">
+  <div class="quiz-card" :data-question-word-id="question.kind === 'mcq' ? question.wordId : ''">
     <div class="quiz-header">
       <div class="progress">{{ index + 1 }} / {{ total }}</div>
       <button class="btn-exit" @click="emit('exit')">Exit</button>

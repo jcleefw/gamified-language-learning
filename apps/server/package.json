@@ -12,7 +12,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@gll/api-contract": "workspace:*",
@@ -24,7 +26,10 @@
     "hono": "^4"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.11.1",
     "typescript": "^5.7",
-    "tsx": "^4"
+    "tsx": "^4",
+    "vitest": "^3"
   }
 }
