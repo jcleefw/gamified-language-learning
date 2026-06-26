@@ -1,0 +1,24 @@
+{
+  "name": "fresh-session-with-shelved-words",
+  "description": "th::หิว and th::กิน are shelved in deck-eat from a prior session. Starting a new session calls unshelveAllWords, making both words active again.",
+  "deckId": "deck-eat",
+  "wordStates": [
+    { "wordId": "th::หิว",           "seen": 6, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 6, "lapses": 3 },
+    { "wordId": "th::แล้ว",          "seen": 2, "correct": 1, "mastery": 0, "correctStreak": 0, "wrongStreak": 1, "lapses": 0 },
+    { "wordId": "th::ไป",            "seen": 2, "correct": 1, "mastery": 0, "correctStreak": 0, "wrongStreak": 1, "lapses": 0 },
+    { "wordId": "th::กิน",           "seen": 6, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 6, "lapses": 3 },
+    { "wordId": "th::อะไร",          "seen": 2, "correct": 1, "mastery": 0, "correctStreak": 0, "wrongStreak": 1, "lapses": 0 },
+    { "wordId": "th::กัน",           "seen": 2, "correct": 1, "mastery": 0, "correctStreak": 0, "wrongStreak": 1, "lapses": 0 },
+    { "wordId": "th::ดี",            "seen": 2, "correct": 1, "mastery": 0, "correctStreak": 0, "wrongStreak": 1, "lapses": 0 },
+    { "wordId": "th::เลย",           "seen": 2, "correct": 1, "mastery": 0, "correctStreak": 0, "wrongStreak": 1, "lapses": 0 },
+    { "wordId": "th::อยาก",          "seen": 2, "correct": 1, "mastery": 0, "correctStreak": 0, "wrongStreak": 1, "lapses": 0 },
+    { "wordId": "th::ก๋วยเตี๋ยว",   "seen": 2, "correct": 1, "mastery": 0, "correctStreak": 0, "wrongStreak": 1, "lapses": 0 },
+    { "wordId": "th::ไหม",           "seen": 2, "correct": 1, "mastery": 0, "correctStreak": 0, "wrongStreak": 1, "lapses": 0 },
+    { "wordId": "th::โอเค",          "seen": 2, "correct": 1, "mastery": 0, "correctStreak": 0, "wrongStreak": 1, "lapses": 0 }
+  ],
+  "stagnationCounters": [],
+  "shelvedWords": [
+    { "wordId": "th::หิว",  "shelvedAtBatch": 3 },
+    { "wordId": "th::กิน",  "shelvedAtBatch": 4 }
+  ]
+}

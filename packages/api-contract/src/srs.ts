@@ -17,3 +17,32 @@ export interface GetStateResponse {
 
 /** Request body for POST /api/state/word */
 export type UpsertWordStateRequest = WordStatePayload;
+
+export interface ShelvedWordPayload {
+  wordId: string;
+  shelvedAtBatch: number;
+}
+
+export type GetShelvedWordsResponse = ShelvedWordPayload[];
+
+export interface ApplyShelvingRequest {
+  deckId: string;
+  toShelve: Array<{ wordId: string; batchNum: number }>;
+}
+
+export interface UnshelveAllRequest {
+  deckId: string;
+}
+
+export interface UpdateStagnationCountersRequest {
+  deckId: string;
+  activeWordIds: string[];
+}
+
+export interface GetStagnantWordsResponse {
+  stagnantWordIds: string[];
+}
+
+export interface ResetStagnationCountersRequest {
+  deckId: string;
+}

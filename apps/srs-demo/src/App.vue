@@ -26,9 +26,19 @@ import {
   type BatchState,
   type SentenceQuestion,
 } from '@gll/srs-engine-v2';
+import { evaluateShelving } from '@gll/srs-shelving';
 import { appDecks } from './data/decks';
 import { deckToQuizItems, buildWordPool, linesToSentenceCorpus } from './data/transformer';
 import { loadRunState, saveWordState, clearStore } from './composables/useStore';
+import {
+  loadShelvedWords,
+  applyShelving,
+  unshelveAll,
+  updateStagnationCounters,
+  getStagnantWords,
+  resetStagnationCounters,
+  getShelvingConfig,
+} from './composables/useShelving';
 import DeckSelector from './components/DeckSelector.vue';
 import QuizCard from './components/QuizCard.vue';
 import BatchResults, { type BatchSummary } from './components/BatchResults.vue';
@@ -129,6 +139,9 @@ const masteredGlobal = computed<QuizItem[]>(() =>
 
 const completedDeckIds = ref<Set<string>>(new Set());
 
+// Shelving state
+const shelvedSet = ref<Set<string>>(new Set());
+
 function recalculateCompletedDecks() {
   const completed = new Set<string>();
   for (const deck of appDecks) {
@@ -188,7 +201,7 @@ function startBatch() {
     wordPool,
     [], // foundationalPool is empty in this demo
     CONFIG.wordsPerBatch,
-    { extraThunks: sentenceThunks },
+    { extraThunks: sentenceThunks, excludeIds: shelvedSet.value },
   );
 
   batchNum.value++;
@@ -210,10 +223,20 @@ function startBatch() {
   screen.value = 'quiz';
 }
 
-function initSession(id: string) {
+async function initSession(id: string, isNewSession = true) {
   deckId.value = id;
   localStorage.setItem(LAST_DECK_KEY, id);
   const allWords = getDeckWords(id);
+
+  if (isNewSession) {
+    // New session: clear shelving + stagnation state
+    shelvedSet.value = new Set();
+    await Promise.all([
+      unshelveAll({ deckId: id }).catch(console.error),
+      resetStagnationCounters({ deckId: id }).catch(console.error),
+    ]);
+  }
+  // On resume (isNewSession=false), shelvedSet is already populated by onMounted or onResume
 
   // Exclude already-mastered words so they don't fill the active pool on re-entry
   const words = allWords.filter((w) => {
@@ -233,7 +256,7 @@ function initSession(id: string) {
 }
 
 function onSelect(id: string) {
-  initSession(id);
+  void initSession(id);
 }
 
 async function onResume() {
@@ -249,7 +272,12 @@ async function onResume() {
   const savedDeckId = localStorage.getItem(LAST_DECK_KEY);
   if (!savedDeckId) return;
   deckId.value = savedDeckId;
-  initSession(savedDeckId);
+  // Load shelved words before initSession so shelvedSet is correct for the resumed session
+  try {
+    const shelvedWords = await loadShelvedWords(savedDeckId);
+    shelvedSet.value = new Set(shelvedWords.map((sw) => sw.wordId));
+  } catch { /* non-fatal */ }
+  await initSession(savedDeckId, false);
 }
 
 async function onClear() {
@@ -260,6 +288,7 @@ async function onClear() {
   sessionState.value = null;
   globalRunState.value = new Map();
   sentenceRunState.value = new Map();
+  shelvedSet.value = new Set();
   batchNum.value = 0;
   batchState.value = null;
   currentQuestion.value = null;
@@ -267,7 +296,7 @@ async function onClear() {
   screen.value = 'select';
 }
 
-function finishBatchAndTransition() {
+async function finishBatchAndTransition() {
   if (!sessionState.value || !batchState.value) return;
 
   const output = finishBatch(batchState.value);
@@ -285,6 +314,19 @@ function finishBatchAndTransition() {
   for (const wid of uniqueWordIds) {
     const ws = sessionState.value.runState.get(wid);
     if (ws) saveWordState(ws).catch(console.error);
+  }
+
+  // DS02 shelving pipeline: stagnation detection via persistent DB counters.
+  if (deckId.value) {
+    const activeIds = sessionState.value.active.map((w) => w.id);
+    await updateStagnationCounters({ deckId: deckId.value, activeWordIds: activeIds }).catch(console.error);
+    const shelvingConfig = await getShelvingConfig();
+    const stagnantIds = await getStagnantWords(deckId.value, shelvingConfig.stagnationBatchWindow).catch(() => [] as string[]);
+    const decision = evaluateShelving(stagnantIds, shelvedSet.value, shelvingConfig);
+    if (decision.toShelve.length > 0) {
+      await applyShelving({ deckId: deckId.value, toShelve: decision.toShelve.map((id: string) => ({ wordId: id, batchNum: batchNum.value })) }).catch(console.error);
+      decision.toShelve.forEach((id: string) => shelvedSet.value.add(id));
+    }
   }
 
   // Determine newly mastered words in this specific batch
@@ -326,7 +368,7 @@ function onAnswered(result: QuizResult) {
   batchState.value = submitBatchResult(batchState.value, result);
 
   if (isBatchDone(batchState.value)) {
-    finishBatchAndTransition();
+    void finishBatchAndTransition();
   } else {
     // Pull the next question
     const { question, state: nextState } = nextQuestion(batchState.value);
@@ -341,7 +383,7 @@ function onExitBatch() {
     screen.value = 'select';
     return;
   }
-  finishBatchAndTransition();
+  void finishBatchAndTransition();
 }
 
 function onNext() {
@@ -353,7 +395,7 @@ function onSelectDeck() {
 }
 
 function onNextDeck(id: string) {
-  initSession(id);
+  void initSession(id);
 }
 
 onMounted(async () => {
@@ -370,6 +412,18 @@ onMounted(async () => {
     globalRunState.value = runState;
     deckId.value = localStorage.getItem(LAST_DECK_KEY);
   }
+
+  // Load persisted shelved words for the last active deck on mount
+  const savedDeckId = localStorage.getItem(LAST_DECK_KEY);
+  if (savedDeckId) {
+    try {
+      const shelvedWords = await loadShelvedWords(savedDeckId);
+      shelvedSet.value = new Set(shelvedWords.map((sw) => sw.wordId));
+    } catch {
+      // Non-fatal: shelving state will be empty
+    }
+  }
+
   recalculateCompletedDecks();
 });
 </script>
