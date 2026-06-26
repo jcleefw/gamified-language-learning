@@ -137,3 +137,30 @@ export const review_cards = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.user_id, table.word_id] })],
 );
+
+// ---------------------------------------------------------------------------
+// SRS shelving
+// ---------------------------------------------------------------------------
+
+export const user_shelved_words = sqliteTable(
+  'user_shelved_words',
+  {
+    user_id: text('user_id').notNull(),
+    deck_id: text('deck_id').notNull(),
+    word_id: text('word_id').notNull(),
+    shelved_at_batch: integer('shelved_at_batch').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.user_id, table.deck_id, table.word_id] })],
+);
+
+export const user_deck_word_tracking = sqliteTable(
+  'user_deck_word_tracking',
+  {
+    user_id: text('user_id').notNull(),
+    deck_id: text('deck_id').notNull(),
+    word_id: text('word_id').notNull(),
+    stagnation_count: integer('stagnation_count').notNull().default(0),
+    last_boundary_mastery: integer('last_boundary_mastery'),
+  },
+  (table) => [primaryKey({ columns: [table.user_id, table.deck_id, table.word_id] })],
+);
