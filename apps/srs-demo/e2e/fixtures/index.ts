@@ -37,7 +37,9 @@ export type ScenarioName =
   | 'stagnant-word-ready-to-shelve'
   | 'two-words-shelved-cap-reached'
   | 'cross-deck-isolation'
-  | 'fresh-session-with-shelved-words';
+  | 'fresh-session-with-shelved-words'
+  | 'sentence-context-ready'
+  | 'minimal-sentence-ready';
 
 export function loadScenario(name: ScenarioName): ScenarioFixture {
   const filePath = join(__dirname, 'scenarios', `${name}.json`);

@@ -1,0 +1,15 @@
+{
+  "name": "minimal-sentence-ready",
+  "description": "Minimal fixture: only the 6 words from sentence 1 with seen=1. Tests if sentence scheduling works when all words in a sentence are marked as seen.",
+  "deckId": "deck-eat",
+  "wordStates": [
+    { "wordId": "th::หิว",   "seen": 1, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 0, "lapses": 0 },
+    { "wordId": "th::แล้ว",  "seen": 1, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 0, "lapses": 0 },
+    { "wordId": "th::ไป",    "seen": 1, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 0, "lapses": 0 },
+    { "wordId": "th::กิน",   "seen": 1, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 0, "lapses": 0 },
+    { "wordId": "th::อะไร",  "seen": 1, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 0, "lapses": 0 },
+    { "wordId": "th::กัน",   "seen": 1, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 0, "lapses": 0 }
+  ],
+  "stagnationCounters": [],
+  "shelvedWords": []
+}
