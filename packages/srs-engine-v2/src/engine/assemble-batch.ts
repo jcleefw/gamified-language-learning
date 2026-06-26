@@ -10,6 +10,8 @@ export interface AssembleBatchOptions {
   shuffle?: boolean;
   /** Optional array of additional thunks (e.g. for sentences) to include in the batch. */
   extraThunks?: (() => QuizQuestion[])[];
+  /** Optional set of item IDs to exclude from question generation. */
+  excludeIds?: Set<string>;
 }
 
 /**
@@ -23,17 +25,21 @@ export function assembleBatch(
   wordsPerBatch: number,
   options: AssembleBatchOptions = {},
 ): QuizQuestion[] {
-  const { shuffle = true, extraThunks = [] } = options;
+  const { shuffle = true, extraThunks = [], excludeIds } = options;
 
-  const activeFoundational = active.filter(
+  const eligible = excludeIds?.size
+    ? active.filter((item) => !excludeIds.has(item.id))
+    : active;
+
+  const activeFoundational = eligible.filter(
     (item) => 'foundationalType' in item,
   );
-  const activeWords = active.filter((item) => !('foundationalType' in item));
+  const activeWords = eligible.filter((item) => !('foundationalType' in item));
 
   // Partition the questionLimit proportionally between foundational and vocabulary
   const foundationalLimit =
-    active.length > 0
-      ? Math.round((wordsPerBatch * activeFoundational.length) / active.length)
+    eligible.length > 0
+      ? Math.round((wordsPerBatch * activeFoundational.length) / eligible.length)
       : 0;
   const wordLimit = wordsPerBatch - foundationalLimit;
 
