@@ -30,7 +30,17 @@ async function answerBatchCorrectly(page: import('@playwright/test').Page) {
 Given('the app is open with a clean session', async ({ page }) => {
   masteredWordIds = [];
   // Wipe the server-side DB state (via Vite proxy → port 6060)
-  await page.request.delete('/api/state');
+  const deleteRes = await page.request.delete('/api/state');
+  if (!deleteRes.ok()) {
+    console.warn(`DELETE /api/state returned ${deleteRes.status()} (non-critical)`);
+  }
+  // Verify DB is cleared by fetching state
+  const stateRes = await page.request.get('/api/state');
+  const stateBody = (await stateRes.json()) as { success: boolean; data: { words: unknown[] } };
+  if (stateBody.data?.words?.length > 0) {
+    console.warn(`DB still has ${stateBody.data.words.length} word states after clear; retrying DELETE`);
+    await page.request.delete('/api/state');
+  }
   // Navigate and clear localStorage
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());

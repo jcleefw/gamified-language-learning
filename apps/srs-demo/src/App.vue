@@ -49,12 +49,14 @@ const apiError = ref<string | null>(null);
 
 const wordPool = buildWordPool(appDecks) as QuizItem[];
 
-const CONFIG: SessionConfig & {
+type ConfigType = SessionConfig & {
   maxRetryPerWord: number;
   sentenceScheduling: { minSeenForSentence: number; sentenceBatchGap: number };
   sentenceGraduation: { sentenceCorrectStreakThreshold: number; sentenceWrongStreakThreshold: number };
   sentenceDirections: SentenceQuestion['direction'][];
-} = {
+};
+
+const CONFIG = ref<ConfigType>({
   wordsPerBatch: 3,
   masteryThreshold: 2,
   streakThresholds: {
@@ -77,7 +79,7 @@ const CONFIG: SessionConfig & {
     'romanization-to-native',
     'native-to-romanization',
   ],
-};
+});
 
 type Screen = 'select' | 'quiz' | 'results';
 
@@ -126,14 +128,14 @@ const masteredDeck = computed<QuizItem[]>(() => {
   if (!deck) return [];
   return deckToQuizItems(deck).filter((w) => {
     const ws = currentRunState.value.get(w.id);
-    return ws != null && isMastered(ws, CONFIG.masteryThreshold);
+    return ws != null && isMastered(ws, CONFIG.value.masteryThreshold);
   }) as QuizItem[];
 });
 
 const masteredGlobal = computed<QuizItem[]>(() =>
   wordPool.filter((w) => {
     const ws = currentRunState.value.get(w.id);
-    return ws != null && isMastered(ws, CONFIG.masteryThreshold);
+    return ws != null && isMastered(ws, CONFIG.value.masteryThreshold);
   }),
 );
 
@@ -150,7 +152,7 @@ function recalculateCompletedDecks() {
       words.length > 0 &&
       words.every((w) => {
         const ws = currentRunState.value.get(w.id);
-        return ws != null && isMastered(ws, CONFIG.masteryThreshold);
+        return ws != null && isMastered(ws, CONFIG.value.masteryThreshold);
       })
     ) {
       completed.add(deck.id);
@@ -184,12 +186,12 @@ function startBatch() {
     wordPool,
     sentenceRunState.value,
     batchNum.value,
-    CONFIG.sentenceScheduling,
+    CONFIG.value.sentenceScheduling,
   );
 
   // One thunk per eligible sentence × configured direction
   const sentenceThunks = eligibleSentences.flatMap(({ ctx, tiles }) =>
-    CONFIG.sentenceDirections.map(
+    CONFIG.value.sentenceDirections.map(
       (dir) => () =>
         composeSentenceBatch(ctx, tiles, 'th').filter((q) => q.direction === dir),
     ),
@@ -200,7 +202,7 @@ function startBatch() {
     sessionState.value.active,
     wordPool,
     [], // foundationalPool is empty in this demo
-    CONFIG.wordsPerBatch,
+    CONFIG.value.wordsPerBatch,
     { extraThunks: sentenceThunks, excludeIds: shelvedSet.value },
   );
 
@@ -209,9 +211,9 @@ function startBatch() {
   // Initialize serializable batch state
   batchState.value = initBatchState(
     questions,
-    CONFIG.maxRetryPerWord,
+    CONFIG.value.maxRetryPerWord,
     sessionState.value.sessionRetryCounts,
-    CONFIG.maxRetryPerSession,
+    CONFIG.value.maxRetryPerSession,
   );
 
   // Fetch the first question from the queue
@@ -241,13 +243,13 @@ async function initSession(id: string, isNewSession = true) {
   // Exclude already-mastered words so they don't fill the active pool on re-entry
   const words = allWords.filter((w) => {
     const ws = globalRunState.value.get(w.id);
-    return ws == null || !isMastered(ws, CONFIG.masteryThreshold);
+    return ws == null || !isMastered(ws, CONFIG.value.masteryThreshold);
   });
 
   // Initialize adaptive session
   sessionState.value = initAdaptiveSession(
     words,
-    CONFIG,
+    CONFIG.value,
     new Set(),
     globalRunState.value,
   );
@@ -303,7 +305,7 @@ async function finishBatchAndTransition() {
   const prevState = sessionState.value.runState;
 
   // Advance adaptive session state via the orchestrator
-  sessionState.value = advanceAdaptiveSession(sessionState.value, output, CONFIG);
+  sessionState.value = advanceAdaptiveSession(sessionState.value, output, CONFIG.value);
   globalRunState.value = sessionState.value.runState;
 
   // Persist updated word states (write-on-answer)
@@ -334,7 +336,7 @@ async function finishBatchAndTransition() {
     prevState,
     sessionState.value.runState,
     uniqueWordIds,
-    CONFIG.masteryThreshold,
+    CONFIG.value.masteryThreshold,
   );
 
   const correct = output.results.filter((a) => a.correct).length;
@@ -360,7 +362,7 @@ function onAnswered(result: QuizResult) {
       sentenceRunState.value,
       [result as SentenceQuizResult],
       batchNum.value,
-      CONFIG.sentenceGraduation,
+      CONFIG.value.sentenceGraduation,
     );
   }
 
@@ -422,6 +424,25 @@ onMounted(async () => {
     } catch {
       // Non-fatal: shelving state will be empty
     }
+  }
+
+  // Load sentence config override for tests
+  try {
+    const res = await fetch('/api/test/config/sentence');
+    if (res.ok) {
+      const body = (await res.json()) as { success: boolean; data: object | null };
+      if (body.success && body.data) {
+        const override = body.data as Partial<typeof CONFIG.value>;
+        CONFIG.value = {
+          ...CONFIG.value,
+          ...override,
+          sentenceScheduling: { ...CONFIG.value.sentenceScheduling, ...override.sentenceScheduling },
+          sentenceGraduation: { ...CONFIG.value.sentenceGraduation, ...override.sentenceGraduation },
+        };
+      }
+    }
+  } catch {
+    // Non-fatal: use default config
   }
 
   recalculateCompletedDecks();
