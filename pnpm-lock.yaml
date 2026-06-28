@@ -152,6 +152,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@gll/api-contract':
+        specifier: workspace:*
+        version: link:../api-contract
       '@gll/srs-engine-v2':
         specifier: workspace:*
         version: link:../srs-engine-v2
