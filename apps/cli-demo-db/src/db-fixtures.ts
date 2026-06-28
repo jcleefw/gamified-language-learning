@@ -15,7 +15,7 @@ function resolveWordId(db: DbClient, thaiText: string): string {
   return row.id;
 }
 
-function baseline(_db: DbClient): WordState[] {
+function baseline(): WordState[] {
   return [];
 }
 

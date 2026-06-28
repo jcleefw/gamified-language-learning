@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import {
   composeSentenceBatch,
   assembleBatch,
@@ -266,7 +264,7 @@ async function runBatch(
     },
   );
 
-  let batchState = initBatchState(
+  const batchState = initBatchState(
     questions,
     LEARNING_CONFIG.maxRetryPerWord,
     state.sessionRetryCounts,
@@ -325,7 +323,7 @@ export async function runAdaptiveLoop(
   let totalCorrect = 0;
   let totalQuestions = 0;
   let totalMastered = 0;
-  let shelvedSet: Set<string> = new Set(initialShelvedIds ?? []);
+  const shelvedSet: Set<string> = new Set(initialShelvedIds ?? []);
 
   onUnshelveAll?.();
 
