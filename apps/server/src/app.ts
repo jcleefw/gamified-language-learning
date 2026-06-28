@@ -6,6 +6,7 @@ import type { Context } from 'hono';
 import stateRouter from './routes/state.js';
 import shelvingRouter from './routes/shelving.js';
 import testSeedRouter from './routes/test-seed.js';
+import decksRouter from './routes/decks.js';
 
 export function errorHandler(err: Error, c: Context): Response {
   const body: ApiResponse<never> = {
@@ -26,5 +27,6 @@ app.get('/health', (c) => c.json({ status: 'ok' }));
 app.route('/api', stateRouter);
 app.route('/api', shelvingRouter);
 app.route('/api', testSeedRouter);
+app.route('/api', decksRouter);
 
 export default app;
