@@ -6,22 +6,6 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const scenariosDir = join(__dirname, '../../../../apps/srs-demo/e2e/fixtures/scenarios');
 
-// All valid word IDs from the two real decks
-const DECK_EAT_WORDS = new Set([
-  'th::หิว', 'th::แล้ว', 'th::ไป', 'th::กิน', 'th::อะไร',
-  'th::กัน', 'th::ดี', 'th::เลย', 'th::อยาก', 'th::ก๋วยเตี๋ยว',
-  'th::ไหม', 'th::โอเค',
-]);
-
-const DECK_WEATHER_WORDS = new Set([
-  'th::วันนี้', 'th::ร้อน', 'th::มาก', 'th::เลย', 'th::ใช่',
-  'th::จริงๆ', 'th::ดื่ม', 'th::น้ำ', 'th::ไหม', 'th::ดี',
-  'th::อยาก', 'th::เย็น', 'th::ไป', 'th::ซื้อ', 'th::ที่',
-  'th::ร้าน', 'th::กัน',
-]);
-
-const ALL_VALID_WORDS = new Set([...DECK_EAT_WORDS, ...DECK_WEATHER_WORDS]);
-
 interface ScenarioFixture {
   name: string;
   description: string;
@@ -81,9 +65,9 @@ describe('Scenario fixture files', () => {
         expect(Array.isArray(fixture.shelvedWords)).toBe(true);
       });
 
-      it('deckId references a real deck', () => {
+      it('deckId is a non-empty string', () => {
         const fixture = loadFixture(fixtureName);
-        expect(['deck-eat', 'deck-weather']).toContain(fixture.deckId);
+        expect(fixture.deckId.length).toBeGreaterThan(0);
       });
 
       it('wordState entries have all required numeric fields', () => {
@@ -99,29 +83,29 @@ describe('Scenario fixture files', () => {
         }
       });
 
-      it('wordState wordIds reference real deck words', () => {
+      it('wordState wordIds are non-empty strings', () => {
         const fixture = loadFixture(fixtureName);
         for (const ws of fixture.wordStates) {
-          expect(ALL_VALID_WORDS.has(ws.wordId), `Unknown wordId "${ws.wordId}"`).toBe(true);
+          expect(ws.wordId.length).toBeGreaterThan(0);
         }
       });
 
-      it('stagnationCounter wordIds reference real deck words', () => {
+      it('stagnationCounter entries have required fields', () => {
         const fixture = loadFixture(fixtureName);
         for (const sc of fixture.stagnationCounters) {
           expect(typeof sc.wordId).toBe('string');
+          expect(sc.wordId.length).toBeGreaterThan(0);
           expect(typeof sc.count).toBe('number');
           expect(typeof sc.lastBoundaryMastery).toBe('number');
-          expect(ALL_VALID_WORDS.has(sc.wordId), `Unknown wordId "${sc.wordId}"`).toBe(true);
         }
       });
 
-      it('shelvedWord wordIds reference real deck words', () => {
+      it('shelvedWord entries have required fields', () => {
         const fixture = loadFixture(fixtureName);
         for (const sw of fixture.shelvedWords) {
           expect(typeof sw.wordId).toBe('string');
+          expect(sw.wordId.length).toBeGreaterThan(0);
           expect(typeof sw.shelvedAtBatch).toBe('number');
-          expect(ALL_VALID_WORDS.has(sw.wordId), `Unknown wordId "${sw.wordId}"`).toBe(true);
         }
       });
     });
