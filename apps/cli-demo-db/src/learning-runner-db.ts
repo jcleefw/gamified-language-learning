@@ -1,14 +1,21 @@
 import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'node:path';
+import { mkdirSync } from 'node:fs';
 import { getDb, closeDb, SqliteLearningStore } from '@gll/db';
 import { CorrectAutoAnswerStrategy } from './auto-answer-strategy.js';
-import { buildQuizItems, buildFoundationalPool, buildSentenceCorpus } from './db-query.js';
+import {
+  buildQuizItems,
+  buildFoundationalPool,
+  buildSentenceCorpus,
+} from './db-query.js';
 import { runAdaptiveLoop } from './learning-io.js';
 import { AUTO_MODE, LEARNING_CONFIG, STREAK_THRESHOLDS } from './config.js';
 import { DEFAULT_SHELVING_CONFIG } from '@gll/srs-shelving';
 import type { DbClient } from './db-tools.js';
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const DB_PATH = process.env.GLL_DB_PATH ?? './data/learning-state.db';
+  const DB_PATH = process.env.GLL_DB_PATH ?? resolve(dirname(fileURLToPath(import.meta.url)), '../../../.data/learning-state.db');
+  mkdirSync(dirname(DB_PATH), { recursive: true });
   const CLI_USER_ID = 'cli-user';
   // Stagnation and shelving are deck-scoped; use a fixed ID for the CLI session.
   const DECK_ID = 'cli-deck';
@@ -45,9 +52,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     corpus,
     (ws) => store.upsertWordState(CLI_USER_ID, ws),
     (ss) => store.upsertSentenceState(CLI_USER_ID, ss),
-    (ids) => { if (ids.length > 0) console.log('[INFO] Graduated:', ids); },
+    (ids) => {
+      if (ids.length > 0) console.log('[INFO] Graduated:', ids);
+    },
     DEFAULT_SHELVING_CONFIG,
-    (wordId, batchNum) => store.shelveWord(CLI_USER_ID, DECK_ID, wordId, batchNum),
+    (wordId, batchNum) =>
+      store.shelveWord(CLI_USER_ID, DECK_ID, wordId, batchNum),
     () => {
       store.unshelveAllWords(CLI_USER_ID, DECK_ID);
       store.resetStagnationCounters(CLI_USER_ID, DECK_ID);
@@ -55,7 +65,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     new Set(), // always start with empty shelved set — unshelve-all runs on session start
     (activeWordIds) => {
       store.updateStagnationCounters(CLI_USER_ID, DECK_ID, activeWordIds);
-      return store.getStagnantWords(CLI_USER_ID, DECK_ID, DEFAULT_SHELVING_CONFIG.stagnationBatchWindow);
+      return store.getStagnantWords(
+        CLI_USER_ID,
+        DECK_ID,
+        DEFAULT_SHELVING_CONFIG.stagnationBatchWindow,
+      );
     },
   );
 
