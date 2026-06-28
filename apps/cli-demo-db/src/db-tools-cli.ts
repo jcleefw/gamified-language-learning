@@ -1,10 +1,13 @@
 import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'node:path';
+import { mkdirSync } from 'node:fs';
 import { getDb, closeDb } from '@gll/db';
 import { clearUserState, resetDb, seedDb, type DbClient } from './db-tools.js';
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const command = process.argv[2];
-  const DB_PATH = process.env.GLL_DB_PATH ?? './data/learning-state.db';
+  const DB_PATH = process.env.GLL_DB_PATH ?? resolve(dirname(fileURLToPath(import.meta.url)), '../../../.data/learning-state.db');
+  mkdirSync(dirname(DB_PATH), { recursive: true });
 
   if (command === 'clear') {
     const db = getDb(DB_PATH) as DbClient;
