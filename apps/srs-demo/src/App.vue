@@ -347,8 +347,10 @@ async function finishBatchAndTransition() {
   const correct = output.results.filter((a) => a.correct).length;
   batchScore.value = { correct, total: output.results.length };
 
+  const deckWordMap = new Map(getDeckWords(deckId.value ?? '').map((w) => [w.id, w]));
   summary.value = uniqueWordIds.map((wid) => ({
     wordId: wid,
+    native: deckWordMap.get(wid)?.native ?? wid,
     state: sessionState.value!.runState.get(wid) ?? { ...defaultWordState, wordId: wid },
     newlyMastered: newlyMasteredIds.includes(wid),
   }));
