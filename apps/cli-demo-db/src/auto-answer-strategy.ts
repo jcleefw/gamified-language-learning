@@ -47,3 +47,19 @@ export class WeightedAccuracyAutoAnswerStrategy implements AutoAnswerStrategy {
     }
   }
 }
+
+/** Always selects a wrong answer, keeping mastery at 0. Used to trigger shelving policy. */
+export class StagnationAutoAnswerStrategy implements AutoAnswerStrategy {
+  selectAnswer(question: MCQQuestion): number {
+    const wrongChoices = question.choices
+      .map((c, i) => (!c.isCorrect ? i : null))
+      .filter((i): i is number => i !== null);
+
+    if (wrongChoices.length === 0) {
+      // All choices are marked correct — fall back to index 0
+      return 0;
+    }
+
+    return wrongChoices[0];
+  }
+}

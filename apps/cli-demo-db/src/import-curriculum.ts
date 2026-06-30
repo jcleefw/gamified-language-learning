@@ -206,8 +206,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { getDb, closeDb } = await import('@gll/db');
   const { mkdirSync } = await import('fs');
 
-  const DB_PATH = process.env.GLL_DB_PATH ?? './data/learning-state.db';
-  mkdirSync(path.dirname(path.resolve(DB_PATH)), { recursive: true });
+  const DB_PATH = process.env.GLL_DB_PATH ?? path.resolve(__dirname, '../../../.data/learning-state.db');
+  mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
   const db = getDb(DB_PATH);
   console.log('[INFO] Starting curriculum import...');

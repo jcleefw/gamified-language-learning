@@ -8,6 +8,7 @@ build/
 .demo-state.json
 .claude
 .data/
+.DS_Store
 
 # Playwright
 test-results/

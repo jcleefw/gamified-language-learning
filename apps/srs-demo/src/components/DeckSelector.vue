@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { appDecks } from '../data/decks'
-import { deckToQuizItems } from '../data/transformer'
+import type { AppDeckPayload } from '@gll/api-contract'
 
-defineProps<{ hasSavedSession: boolean; savedDeckId: string | null; completedDeckIds: Set<string> }>()
+const props = defineProps<{
+  decks: AppDeckPayload[]
+  hasSavedSession: boolean
+  savedDeckId: string | null
+  completedDeckIds: Set<string>
+}>()
 
 const emit = defineEmits<{
   select: [deckId: string]
@@ -12,9 +16,9 @@ const emit = defineEmits<{
 }>()
 
 const decksWithCounts = computed(() =>
-  appDecks.map((deck) => ({
+  props.decks.map((deck) => ({
     ...deck,
-    wordCount: deckToQuizItems(deck).length,
+    wordCount: deck.words.length,
   }))
 )
 </script>

@@ -1,10 +1,29 @@
 import { createBdd } from 'playwright-bdd';
 import { expect, type Page } from '@playwright/test';
 
-const { When, Then } = createBdd();
+const { Given, When, Then } = createBdd();
 
 // Shared state across steps within a scenario
 let storedSentencePrompt = '';
+
+Given('the sentence scheduling is configured for tests', async ({ page }) => {
+  // Set sentenceBatchGap to 0 so sentences appear immediately after words are seen
+  const res = await page.request.post('/api/test/config/sentence', {
+    data: {
+      sentenceScheduling: {
+        minSeenForSentence: 1,
+        sentenceBatchGap: 0,
+      },
+    },
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok()) {
+    throw new Error(`Failed to set sentence config: ${res.status()}`);
+  }
+  // Hard refresh the page to ensure new config is loaded
+  await page.goto(page.url(), { waitUntil: 'networkidle', referer: 'about:client' });
+  await page.waitForSelector('.deck-selector');
+});
 
 // Parse the sentence cheat hint into an ordered array of wordIds.
 // Cheat hint text: "✓ th::หิว → th::แล้ว → th::ไป"

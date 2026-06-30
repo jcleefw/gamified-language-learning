@@ -30,6 +30,11 @@ import {
   type GraduationHook,
   isMastered,
 } from '@gll/srs-engine-v2';
+import {
+  evaluateShelving,
+  DEFAULT_SHELVING_CONFIG,
+  type ShelvingConfig,
+} from '@gll/srs-shelving';
 import { LEARNING_CONFIG } from './config.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 import { runAutoInteractive } from './auto-answerer.js';
@@ -236,6 +241,7 @@ async function runBatch(
   sentenceRunState: SentenceRunState,
   corpus: SentenceContext[],
   strategy?: AutoAnswerStrategy,
+  excludeIds?: Set<string>,
 ): Promise<BatchOutput & { correct: number; total: number }> {
   console.log(`\n=== Batch ${String(batchNum)} ===`);
 
@@ -254,6 +260,7 @@ async function runBatch(
     {
       shuffle: !strategy,
       extraThunks,
+      excludeIds,
     },
   );
 
@@ -294,6 +301,12 @@ export async function runAdaptiveLoop(
   onWordAnswer?: (state: WordState) => void,
   onSentenceAnswer?: (state: SentenceState) => void,
   onGraduation?: GraduationHook,
+  shelvingConfig?: ShelvingConfig,
+  onShelve?: (wordId: string, batchNum: number) => void,
+  onUnshelveAll?: () => void,
+  initialShelvedIds?: Set<string>,
+  /** DS02: called after each batch boundary to detect stagnant word IDs via DB counters. */
+  onGetStagnantIds?: (activeWordIds: string[]) => string[],
 ): Promise<{ runState: RunState; sentenceRunState: SentenceRunState }> {
   const config: SessionConfig = {
     wordsPerBatch,
@@ -302,15 +315,24 @@ export async function runAdaptiveLoop(
     maxRetryPerSession: 5,
   };
 
+  const shelving = shelvingConfig ?? DEFAULT_SHELVING_CONFIG;
+
   const snapshotRunState = new Map(initialRunState);
   let state = initAdaptiveSession(words, config, recheckIds, initialRunState);
   const sentenceRunState: SentenceRunState = new Map(initialSentenceRunState);
   let totalCorrect = 0;
   let totalQuestions = 0;
   let totalMastered = 0;
+  const shelvedSet: Set<string> = new Set(initialShelvedIds ?? []);
+
+  onUnshelveAll?.();
 
   for (;;) {
     if (state.active.length === 0 && state.queue.length === 0) break;
+
+    // If all remaining words (active + queued) are shelved, no more batches can be run.
+    const allRemaining = [...state.active, ...state.queue];
+    if (allRemaining.length > 0 && allRemaining.every((w) => shelvedSet.has(w.id))) break;
 
     const currentBatchNum = state.batchNum + 1;
     const {
@@ -327,6 +349,7 @@ export async function runAdaptiveLoop(
       sentenceRunState,
       corpus,
       strategy,
+      shelvedSet,
     );
     totalCorrect += correct;
     totalQuestions += total;
@@ -355,6 +378,7 @@ export async function runAdaptiveLoop(
     const prevState = state.runState;
     state = advanceAdaptiveSession(state, batchOutput, config);
 
+    // Persist word states before stagnation check so DB is up-to-date.
     const wordResults = results.filter(
       (r): r is WordQuizResult => 'wordId' in r,
     );
@@ -366,6 +390,18 @@ export async function runAdaptiveLoop(
         onWordAnswer(ws);
       }
     }
+
+    // DS02 shelving pipeline: stagnation detection via DB counters (onGetStagnantIds callback).
+    if (onShelve) {
+      const activeIds = state.active.map((w) => w.id);
+      const stagnant = onGetStagnantIds?.(activeIds) ?? [];
+      const decision = evaluateShelving(stagnant, shelvedSet, shelving);
+      for (const id of decision.toShelve) {
+        shelvedSet.add(id);
+        onShelve(id, currentBatchNum);
+      }
+    }
+
     const newlyMasteredIds = getNewlyMasteredIds(
       prevState,
       state.runState,

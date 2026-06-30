@@ -26,9 +26,18 @@ import {
   type BatchState,
   type SentenceQuestion,
 } from '@gll/srs-engine-v2';
-import { appDecks } from './data/decks';
-import { deckToQuizItems, buildWordPool, linesToSentenceCorpus } from './data/transformer';
+import { evaluateShelving } from '@gll/srs-shelving';
+import type { AppDeckPayload, GetDecksResponse } from '@gll/api-contract';
 import { loadRunState, saveWordState, clearStore } from './composables/useStore';
+import {
+  loadShelvedWords,
+  applyShelving,
+  unshelveAll,
+  updateStagnationCounters,
+  getStagnantWords,
+  resetStagnationCounters,
+  getShelvingConfig,
+} from './composables/useShelving';
 import DeckSelector from './components/DeckSelector.vue';
 import QuizCard from './components/QuizCard.vue';
 import BatchResults, { type BatchSummary } from './components/BatchResults.vue';
@@ -37,14 +46,17 @@ const LAST_DECK_KEY = 'srs-demo-last-deck';
 
 const apiError = ref<string | null>(null);
 
-const wordPool = buildWordPool(appDecks) as QuizItem[];
+const appDecks = ref<AppDeckPayload[]>([]);
+const wordPool = ref<QuizItem[]>([]);
 
-const CONFIG: SessionConfig & {
+type ConfigType = SessionConfig & {
   maxRetryPerWord: number;
   sentenceScheduling: { minSeenForSentence: number; sentenceBatchGap: number };
   sentenceGraduation: { sentenceCorrectStreakThreshold: number; sentenceWrongStreakThreshold: number };
   sentenceDirections: SentenceQuestion['direction'][];
-} = {
+};
+
+const CONFIG = ref<ConfigType>({
   wordsPerBatch: 3,
   masteryThreshold: 2,
   streakThresholds: {
@@ -67,7 +79,7 @@ const CONFIG: SessionConfig & {
     'romanization-to-native',
     'native-to-romanization',
   ],
-};
+});
 
 type Screen = 'select' | 'quiz' | 'results';
 
@@ -84,9 +96,15 @@ const currentQuestion = ref<QuizQuestion | null>(null);
 // Sentence state (in-memory only; not persisted in EP31)
 const sentenceRunState = ref<SentenceRunState>(new Map());
 const batchNum = ref(0);
+
 const sentenceCorpus = computed(() => {
-  const deck = appDecks.find((d) => d.id === deckId.value);
-  return deck ? linesToSentenceCorpus(deck) : [];
+  const deck = appDecks.value.find((d) => d.id === deckId.value);
+  if (!deck) return [];
+  return deck.lines.map((line) => ({
+    sentenceId: line.sentenceId,
+    englishSentence: line.english,
+    wordOrder: line.wordIds,
+  }));
 });
 
 const defaultWordState = {
@@ -112,32 +130,35 @@ const queue = computed<QuizItem[]>(() => {
 });
 
 const masteredDeck = computed<QuizItem[]>(() => {
-  const deck = appDecks.find((d) => d.id === deckId.value);
+  const deck = appDecks.value.find((d) => d.id === deckId.value);
   if (!deck) return [];
-  return deckToQuizItems(deck).filter((w) => {
+  return (deck.words as QuizItem[]).filter((w) => {
     const ws = currentRunState.value.get(w.id);
-    return ws != null && isMastered(ws, CONFIG.masteryThreshold);
-  }) as QuizItem[];
+    return ws != null && isMastered(ws, CONFIG.value.masteryThreshold);
+  });
 });
 
 const masteredGlobal = computed<QuizItem[]>(() =>
-  wordPool.filter((w) => {
+  wordPool.value.filter((w) => {
     const ws = currentRunState.value.get(w.id);
-    return ws != null && isMastered(ws, CONFIG.masteryThreshold);
+    return ws != null && isMastered(ws, CONFIG.value.masteryThreshold);
   }),
 );
 
 const completedDeckIds = ref<Set<string>>(new Set());
 
+// Shelving state
+const shelvedSet = ref<Set<string>>(new Set());
+
 function recalculateCompletedDecks() {
   const completed = new Set<string>();
-  for (const deck of appDecks) {
-    const words = deckToQuizItems(deck);
+  for (const deck of appDecks.value) {
+    const words = deck.words as QuizItem[];
     if (
       words.length > 0 &&
       words.every((w) => {
         const ws = currentRunState.value.get(w.id);
-        return ws != null && isMastered(ws, CONFIG.masteryThreshold);
+        return ws != null && isMastered(ws, CONFIG.value.masteryThreshold);
       })
     ) {
       completed.add(deck.id);
@@ -147,8 +168,8 @@ function recalculateCompletedDecks() {
 }
 
 const nextDeckId = computed<string | null>(() => {
-  const idx = appDecks.findIndex((d) => d.id === deckId.value);
-  return idx !== -1 && idx + 1 < appDecks.length ? appDecks[idx + 1].id : null;
+  const idx = appDecks.value.findIndex((d) => d.id === deckId.value);
+  return idx !== -1 && idx + 1 < appDecks.value.length ? appDecks.value[idx + 1].id : null;
 });
 
 const batchScore = ref({ correct: 0, total: 0 });
@@ -156,9 +177,8 @@ const summary = ref<BatchSummary[]>([]);
 const questionKey = ref(0);
 
 function getDeckWords(id: string): QuizItem[] {
-  const deck = appDecks.find((d) => d.id === id);
-  if (!deck) return [];
-  return deckToQuizItems(deck) as QuizItem[];
+  const deck = appDecks.value.find((d) => d.id === id);
+  return deck ? (deck.words as QuizItem[]) : [];
 }
 
 function startBatch() {
@@ -168,15 +188,15 @@ function startBatch() {
   const eligibleSentences = resolveEligibleContexts(
     sentenceCorpus.value,
     sessionState.value.runState,
-    wordPool,
+    wordPool.value,
     sentenceRunState.value,
     batchNum.value,
-    CONFIG.sentenceScheduling,
+    CONFIG.value.sentenceScheduling,
   );
 
   // One thunk per eligible sentence × configured direction
   const sentenceThunks = eligibleSentences.flatMap(({ ctx, tiles }) =>
-    CONFIG.sentenceDirections.map(
+    CONFIG.value.sentenceDirections.map(
       (dir) => () =>
         composeSentenceBatch(ctx, tiles, 'th').filter((q) => q.direction === dir),
     ),
@@ -185,10 +205,10 @@ function startBatch() {
   // Assemble batch questions using the composer registry pattern internally
   const questions = assembleBatch(
     sessionState.value.active,
-    wordPool,
+    wordPool.value,
     [], // foundationalPool is empty in this demo
-    CONFIG.wordsPerBatch,
-    { extraThunks: sentenceThunks },
+    CONFIG.value.wordsPerBatch,
+    { extraThunks: sentenceThunks, excludeIds: shelvedSet.value },
   );
 
   batchNum.value++;
@@ -196,9 +216,9 @@ function startBatch() {
   // Initialize serializable batch state
   batchState.value = initBatchState(
     questions,
-    CONFIG.maxRetryPerWord,
+    CONFIG.value.maxRetryPerWord,
     sessionState.value.sessionRetryCounts,
-    CONFIG.maxRetryPerSession,
+    CONFIG.value.maxRetryPerSession,
   );
 
   // Fetch the first question from the queue
@@ -210,21 +230,31 @@ function startBatch() {
   screen.value = 'quiz';
 }
 
-function initSession(id: string) {
+async function initSession(id: string, isNewSession = true) {
   deckId.value = id;
   localStorage.setItem(LAST_DECK_KEY, id);
   const allWords = getDeckWords(id);
 
+  if (isNewSession) {
+    // New session: clear shelving + stagnation state
+    shelvedSet.value = new Set();
+    await Promise.all([
+      unshelveAll({ deckId: id }).catch(console.error),
+      resetStagnationCounters({ deckId: id }).catch(console.error),
+    ]);
+  }
+  // On resume (isNewSession=false), shelvedSet is already populated by onMounted or onResume
+
   // Exclude already-mastered words so they don't fill the active pool on re-entry
   const words = allWords.filter((w) => {
     const ws = globalRunState.value.get(w.id);
-    return ws == null || !isMastered(ws, CONFIG.masteryThreshold);
+    return ws == null || !isMastered(ws, CONFIG.value.masteryThreshold);
   });
 
   // Initialize adaptive session
   sessionState.value = initAdaptiveSession(
     words,
-    CONFIG,
+    CONFIG.value,
     new Set(),
     globalRunState.value,
   );
@@ -233,7 +263,7 @@ function initSession(id: string) {
 }
 
 function onSelect(id: string) {
-  initSession(id);
+  void initSession(id);
 }
 
 async function onResume() {
@@ -249,7 +279,12 @@ async function onResume() {
   const savedDeckId = localStorage.getItem(LAST_DECK_KEY);
   if (!savedDeckId) return;
   deckId.value = savedDeckId;
-  initSession(savedDeckId);
+  // Load shelved words before initSession so shelvedSet is correct for the resumed session
+  try {
+    const shelvedWords = await loadShelvedWords(savedDeckId);
+    shelvedSet.value = new Set(shelvedWords.map((sw) => sw.wordId));
+  } catch { /* non-fatal */ }
+  await initSession(savedDeckId, false);
 }
 
 async function onClear() {
@@ -260,6 +295,7 @@ async function onClear() {
   sessionState.value = null;
   globalRunState.value = new Map();
   sentenceRunState.value = new Map();
+  shelvedSet.value = new Set();
   batchNum.value = 0;
   batchState.value = null;
   currentQuestion.value = null;
@@ -267,14 +303,14 @@ async function onClear() {
   screen.value = 'select';
 }
 
-function finishBatchAndTransition() {
+async function finishBatchAndTransition() {
   if (!sessionState.value || !batchState.value) return;
 
   const output = finishBatch(batchState.value);
   const prevState = sessionState.value.runState;
 
   // Advance adaptive session state via the orchestrator
-  sessionState.value = advanceAdaptiveSession(sessionState.value, output, CONFIG);
+  sessionState.value = advanceAdaptiveSession(sessionState.value, output, CONFIG.value);
   globalRunState.value = sessionState.value.runState;
 
   // Persist updated word states (write-on-answer)
@@ -287,19 +323,34 @@ function finishBatchAndTransition() {
     if (ws) saveWordState(ws).catch(console.error);
   }
 
+  // DS02 shelving pipeline: stagnation detection via persistent DB counters.
+  if (deckId.value) {
+    const activeIds = sessionState.value.active.map((w) => w.id);
+    await updateStagnationCounters({ deckId: deckId.value, activeWordIds: activeIds }).catch(console.error);
+    const shelvingConfig = await getShelvingConfig();
+    const stagnantIds = await getStagnantWords(deckId.value, shelvingConfig.stagnationBatchWindow).catch(() => [] as string[]);
+    const decision = evaluateShelving(stagnantIds, shelvedSet.value, shelvingConfig);
+    if (decision.toShelve.length > 0) {
+      await applyShelving({ deckId: deckId.value, toShelve: decision.toShelve.map((id: string) => ({ wordId: id, batchNum: batchNum.value })) }).catch(console.error);
+      decision.toShelve.forEach((id: string) => shelvedSet.value.add(id));
+    }
+  }
+
   // Determine newly mastered words in this specific batch
   const newlyMasteredIds = getNewlyMasteredIds(
     prevState,
     sessionState.value.runState,
     uniqueWordIds,
-    CONFIG.masteryThreshold,
+    CONFIG.value.masteryThreshold,
   );
 
   const correct = output.results.filter((a) => a.correct).length;
   batchScore.value = { correct, total: output.results.length };
 
+  const deckWordMap = new Map(getDeckWords(deckId.value ?? '').map((w) => [w.id, w]));
   summary.value = uniqueWordIds.map((wid) => ({
     wordId: wid,
+    native: deckWordMap.get(wid)?.native ?? wid,
     state: sessionState.value!.runState.get(wid) ?? { ...defaultWordState, wordId: wid },
     newlyMastered: newlyMasteredIds.includes(wid),
   }));
@@ -318,7 +369,7 @@ function onAnswered(result: QuizResult) {
       sentenceRunState.value,
       [result as SentenceQuizResult],
       batchNum.value,
-      CONFIG.sentenceGraduation,
+      CONFIG.value.sentenceGraduation,
     );
   }
 
@@ -326,7 +377,7 @@ function onAnswered(result: QuizResult) {
   batchState.value = submitBatchResult(batchState.value, result);
 
   if (isBatchDone(batchState.value)) {
-    finishBatchAndTransition();
+    void finishBatchAndTransition();
   } else {
     // Pull the next question
     const { question, state: nextState } = nextQuestion(batchState.value);
@@ -341,7 +392,7 @@ function onExitBatch() {
     screen.value = 'select';
     return;
   }
-  finishBatchAndTransition();
+  void finishBatchAndTransition();
 }
 
 function onNext() {
@@ -353,10 +404,34 @@ function onSelectDeck() {
 }
 
 function onNextDeck(id: string) {
-  initSession(id);
+  void initSession(id);
 }
 
 onMounted(async () => {
+  // Fetch decks from API first — required before any other initialisation
+  try {
+    const decksRes = await fetch('/api/decks');
+    if (!decksRes.ok) throw new Error(`GET /api/decks failed: ${decksRes.status}`);
+    const decksBody = (await decksRes.json()) as { success: true; data: GetDecksResponse };
+    appDecks.value = decksBody.data;
+
+    // Build flat, deduplicated word pool across all decks
+    const seen = new Set<string>();
+    const pool: QuizItem[] = [];
+    for (const deck of appDecks.value) {
+      for (const word of deck.words) {
+        if (!seen.has(word.id)) {
+          seen.add(word.id);
+          pool.push(word as QuizItem);
+        }
+      }
+    }
+    wordPool.value = pool;
+  } catch {
+    apiError.value = 'Could not reach the server. Please check that it is running and try again.';
+    return;
+  }
+
   let runState: RunState;
   try {
     runState = await loadRunState();
@@ -370,6 +445,37 @@ onMounted(async () => {
     globalRunState.value = runState;
     deckId.value = localStorage.getItem(LAST_DECK_KEY);
   }
+
+  // Load persisted shelved words for the last active deck on mount
+  const savedDeckId = localStorage.getItem(LAST_DECK_KEY);
+  if (savedDeckId) {
+    try {
+      const shelvedWords = await loadShelvedWords(savedDeckId);
+      shelvedSet.value = new Set(shelvedWords.map((sw) => sw.wordId));
+    } catch {
+      // Non-fatal: shelving state will be empty
+    }
+  }
+
+  // Load sentence config override for tests
+  try {
+    const res = await fetch('/api/test/config/sentence');
+    if (res.ok) {
+      const body = (await res.json()) as { success: boolean; data: object | null };
+      if (body.success && body.data) {
+        const override = body.data as Partial<typeof CONFIG.value>;
+        CONFIG.value = {
+          ...CONFIG.value,
+          ...override,
+          sentenceScheduling: { ...CONFIG.value.sentenceScheduling, ...override.sentenceScheduling },
+          sentenceGraduation: { ...CONFIG.value.sentenceGraduation, ...override.sentenceGraduation },
+        };
+      }
+    }
+  } catch {
+    // Non-fatal: use default config
+  }
+
   recalculateCompletedDecks();
 });
 </script>
@@ -381,6 +487,7 @@ onMounted(async () => {
 
   <DeckSelector
     v-if="screen === 'select'"
+    :decks="appDecks"
     :has-saved-session="hasSavedSession"
     :saved-deck-id="deckId"
     :completed-deck-ids="completedDeckIds"

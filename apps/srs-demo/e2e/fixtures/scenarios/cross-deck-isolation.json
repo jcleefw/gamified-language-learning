@@ -1,0 +1,33 @@
+{
+  "name": "cross-deck-isolation",
+  "description": "Words from both deck-eat and deck-weather seeded. Config sets stagnationBatchWindow=1 so one batch in deck-eat triggers shelving for deck-eat only. deck-weather remains unaffected (no shelved words).",
+  "deckId": "deck-eat",
+  "wordStates": [
+    { "wordId": "th::หิว",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::แล้ว",          "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ไป",            "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::กิน",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::อะไร",          "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::กัน",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ดี",            "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::เลย",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::อยาก",          "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ก๋วยเตี๋ยว",   "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ไหม",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::โอเค",          "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::วันนี้",        "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ร้อน",          "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::มาก",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ใช่",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::จริงๆ",         "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ดื่ม",          "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::น้ำ",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::เย็น",          "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ซื้อ",          "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ที่",           "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 },
+    { "wordId": "th::ร้าน",          "seen": 4, "correct": 0, "mastery": 0, "correctStreak": 0, "wrongStreak": 4, "lapses": 2 }
+  ],
+  "stagnationCounters": [],
+  "shelvedWords": [],
+  "config": { "stagnationBatchWindow": 1 }
+}

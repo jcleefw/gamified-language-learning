@@ -4,6 +4,7 @@ import type { WordState, QuizItem } from '@gll/srs-engine-v2'
 
 export interface BatchSummary {
   wordId: string
+  native: string
   state: WordState
   newlyMastered: boolean
 }
@@ -43,7 +44,7 @@ const emit = defineEmits<{ next: []; selectDeck: []; nextDeck: [deckId: string] 
       <tbody>
         <tr v-for="row in summary" :key="row.wordId" :class="{ 'mastered-row': row.newlyMastered }">
           <td class="word-id">
-            {{ row.wordId.replace('th::', '') }}
+            {{ row.native }}
             <span v-if="row.newlyMastered" class="mastered-badge">Mastered ★</span>
           </td>
           <td>{{ row.state.seen }}</td>
