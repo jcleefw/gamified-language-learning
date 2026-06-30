@@ -27,8 +27,7 @@ import {
   type SentenceQuestion,
 } from '@gll/srs-engine-v2';
 import { evaluateShelving } from '@gll/srs-shelving';
-import { appDecks } from './data/decks';
-import { deckToQuizItems, buildWordPool, linesToSentenceCorpus } from './data/transformer';
+import type { AppDeckPayload, GetDecksResponse } from '@gll/api-contract';
 import { loadRunState, saveWordState, clearStore } from './composables/useStore';
 import {
   loadShelvedWords,
@@ -47,7 +46,8 @@ const LAST_DECK_KEY = 'srs-demo-last-deck';
 
 const apiError = ref<string | null>(null);
 
-const wordPool = buildWordPool(appDecks) as QuizItem[];
+const appDecks = ref<AppDeckPayload[]>([]);
+const wordPool = ref<QuizItem[]>([]);
 
 type ConfigType = SessionConfig & {
   maxRetryPerWord: number;
@@ -96,9 +96,15 @@ const currentQuestion = ref<QuizQuestion | null>(null);
 // Sentence state (in-memory only; not persisted in EP31)
 const sentenceRunState = ref<SentenceRunState>(new Map());
 const batchNum = ref(0);
+
 const sentenceCorpus = computed(() => {
-  const deck = appDecks.find((d) => d.id === deckId.value);
-  return deck ? linesToSentenceCorpus(deck) : [];
+  const deck = appDecks.value.find((d) => d.id === deckId.value);
+  if (!deck) return [];
+  return deck.lines.map((line) => ({
+    sentenceId: line.sentenceId,
+    englishSentence: line.english,
+    wordOrder: line.wordIds,
+  }));
 });
 
 const defaultWordState = {
@@ -124,16 +130,16 @@ const queue = computed<QuizItem[]>(() => {
 });
 
 const masteredDeck = computed<QuizItem[]>(() => {
-  const deck = appDecks.find((d) => d.id === deckId.value);
+  const deck = appDecks.value.find((d) => d.id === deckId.value);
   if (!deck) return [];
-  return deckToQuizItems(deck).filter((w) => {
+  return (deck.words as QuizItem[]).filter((w) => {
     const ws = currentRunState.value.get(w.id);
     return ws != null && isMastered(ws, CONFIG.value.masteryThreshold);
-  }) as QuizItem[];
+  });
 });
 
 const masteredGlobal = computed<QuizItem[]>(() =>
-  wordPool.filter((w) => {
+  wordPool.value.filter((w) => {
     const ws = currentRunState.value.get(w.id);
     return ws != null && isMastered(ws, CONFIG.value.masteryThreshold);
   }),
@@ -146,8 +152,8 @@ const shelvedSet = ref<Set<string>>(new Set());
 
 function recalculateCompletedDecks() {
   const completed = new Set<string>();
-  for (const deck of appDecks) {
-    const words = deckToQuizItems(deck);
+  for (const deck of appDecks.value) {
+    const words = deck.words as QuizItem[];
     if (
       words.length > 0 &&
       words.every((w) => {
@@ -162,8 +168,8 @@ function recalculateCompletedDecks() {
 }
 
 const nextDeckId = computed<string | null>(() => {
-  const idx = appDecks.findIndex((d) => d.id === deckId.value);
-  return idx !== -1 && idx + 1 < appDecks.length ? appDecks[idx + 1].id : null;
+  const idx = appDecks.value.findIndex((d) => d.id === deckId.value);
+  return idx !== -1 && idx + 1 < appDecks.value.length ? appDecks.value[idx + 1].id : null;
 });
 
 const batchScore = ref({ correct: 0, total: 0 });
@@ -171,9 +177,8 @@ const summary = ref<BatchSummary[]>([]);
 const questionKey = ref(0);
 
 function getDeckWords(id: string): QuizItem[] {
-  const deck = appDecks.find((d) => d.id === id);
-  if (!deck) return [];
-  return deckToQuizItems(deck) as QuizItem[];
+  const deck = appDecks.value.find((d) => d.id === id);
+  return deck ? (deck.words as QuizItem[]) : [];
 }
 
 function startBatch() {
@@ -183,7 +188,7 @@ function startBatch() {
   const eligibleSentences = resolveEligibleContexts(
     sentenceCorpus.value,
     sessionState.value.runState,
-    wordPool,
+    wordPool.value,
     sentenceRunState.value,
     batchNum.value,
     CONFIG.value.sentenceScheduling,
@@ -200,7 +205,7 @@ function startBatch() {
   // Assemble batch questions using the composer registry pattern internally
   const questions = assembleBatch(
     sessionState.value.active,
-    wordPool,
+    wordPool.value,
     [], // foundationalPool is empty in this demo
     CONFIG.value.wordsPerBatch,
     { extraThunks: sentenceThunks, excludeIds: shelvedSet.value },
@@ -342,8 +347,10 @@ async function finishBatchAndTransition() {
   const correct = output.results.filter((a) => a.correct).length;
   batchScore.value = { correct, total: output.results.length };
 
+  const deckWordMap = new Map(getDeckWords(deckId.value ?? '').map((w) => [w.id, w]));
   summary.value = uniqueWordIds.map((wid) => ({
     wordId: wid,
+    native: deckWordMap.get(wid)?.native ?? wid,
     state: sessionState.value!.runState.get(wid) ?? { ...defaultWordState, wordId: wid },
     newlyMastered: newlyMasteredIds.includes(wid),
   }));
@@ -401,6 +408,30 @@ function onNextDeck(id: string) {
 }
 
 onMounted(async () => {
+  // Fetch decks from API first — required before any other initialisation
+  try {
+    const decksRes = await fetch('/api/decks');
+    if (!decksRes.ok) throw new Error(`GET /api/decks failed: ${decksRes.status}`);
+    const decksBody = (await decksRes.json()) as { success: true; data: GetDecksResponse };
+    appDecks.value = decksBody.data;
+
+    // Build flat, deduplicated word pool across all decks
+    const seen = new Set<string>();
+    const pool: QuizItem[] = [];
+    for (const deck of appDecks.value) {
+      for (const word of deck.words) {
+        if (!seen.has(word.id)) {
+          seen.add(word.id);
+          pool.push(word as QuizItem);
+        }
+      }
+    }
+    wordPool.value = pool;
+  } catch {
+    apiError.value = 'Could not reach the server. Please check that it is running and try again.';
+    return;
+  }
+
   let runState: RunState;
   try {
     runState = await loadRunState();
@@ -456,6 +487,7 @@ onMounted(async () => {
 
   <DeckSelector
     v-if="screen === 'select'"
+    :decks="appDecks"
     :has-saved-session="hasSavedSession"
     :saved-deck-id="deckId"
     :completed-deck-ids="completedDeckIds"
