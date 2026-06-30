@@ -9,7 +9,7 @@ import { wordPool } from '../data/mock/mock-word-pool.js';
 import { mockDecks } from '../data/mock/mock-decks.js';
 import { selectDeck, runAdaptiveLoop } from './learning-io.js';
 import { isMastered } from '../src/index.js';
-import type { RunState, SentenceRunState } from '../src/index.js';
+import type { RunState, SentenceRunState, WordState } from '../src/index.js';
 import {
   CorrectAutoAnswerStrategy,
 } from './auto-answer-strategy.js';
@@ -27,7 +27,7 @@ function loadRunState(): RunState {
   if (existsSync(STATE_FILE)) {
     try {
       const data = readFileSync(STATE_FILE, 'utf-8');
-      const parsed = JSON.parse(data) as Array<[string, unknown]>;
+      const parsed = JSON.parse(data) as Array<[string, WordState]>;
       console.log(`\n[INFO] Loaded learning history from ${STATE_FILE}`);
       return new Map(parsed);
     } catch (e) {
