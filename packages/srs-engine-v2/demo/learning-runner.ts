@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -19,13 +20,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const STATE_FILE = path.join(__dirname, '.demo-state.json');
 
 function loadRunState(): RunState {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!ENABLE_MOCK_DB) {
     return new Map();
   }
   if (existsSync(STATE_FILE)) {
     try {
       const data = readFileSync(STATE_FILE, 'utf-8');
-      const parsed = JSON.parse(data) as [string, any][];
+      const parsed = JSON.parse(data) as Array<[string, unknown]>;
       console.log(`\n[INFO] Loaded learning history from ${STATE_FILE}`);
       return new Map(parsed);
     } catch (e) {
@@ -36,6 +38,7 @@ function loadRunState(): RunState {
 }
 
 function saveRunState(state: RunState): void {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!ENABLE_MOCK_DB) {
     return;
   }

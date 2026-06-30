@@ -6,8 +6,9 @@ import * as schema from '../schema';
 import { initDb } from '../init-db';
 import { importCurriculum } from '../import-curriculum';
 import type { AppDeck } from '@gll/api-contract';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
-function makeTestDb() {
+function makeTestDb(): BetterSQLite3Database<typeof schema> {
   const sqlite = new Database(':memory:');
   initDb(sqlite);
   return drizzle(sqlite, { schema });

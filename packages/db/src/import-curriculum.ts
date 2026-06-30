@@ -50,8 +50,10 @@ export function importCurriculum(db: DbClient, decks: AppDeck[]): void {
           .select()
           .from(schema.words)
           .where(and(eq(schema.words.language, 'th'), eq(schema.words.text, word.native)))
-          .get()!;
-        wordIdMap.set(word.native, stored.id);
+          .get();
+        if (stored) {
+          wordIdMap.set(word.native, stored.id);
+        }
       }
     }
 
@@ -73,17 +75,18 @@ export function importCurriculum(db: DbClient, decks: AppDeck[]): void {
         .onConflictDoNothing()
         .run();
 
-      const sentenceId = db
+      const sentence = db
         .select()
         .from(schema.sentences)
         .where(and(eq(schema.sentences.deck_id, deckId), eq(schema.sentences.text, line.native)))
-        .get()!.id;
+        .get();
+      if (!sentence) continue;
 
       // Skip components if already populated (idempotency guard)
       const existingComponents = db
         .select()
         .from(schema.sentence_components)
-        .where(eq(schema.sentence_components.sentence_id, sentenceId))
+        .where(eq(schema.sentence_components.sentence_id, sentence.id))
         .all();
       if (existingComponents.length > 0) continue;
 
@@ -94,7 +97,7 @@ export function importCurriculum(db: DbClient, decks: AppDeck[]): void {
         db.insert(schema.sentence_components)
           .values({
             id: randomUUID(),
-            sentence_id: sentenceId,
+            sentence_id: sentence.id,
             word_id: wordId,
             position: ci,
             romanization: word.romanization,

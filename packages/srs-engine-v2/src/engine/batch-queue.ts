@@ -69,7 +69,10 @@ export function nextQuestion(state: BatchState): {
   }
 
   const nextQueue = [...state.queue];
-  const q = nextQueue.shift()!;
+  const q = nextQueue.shift();
+  if (!q) {
+    return { question: null, state };
+  }
   const id = getQuestionId(q);
 
   const nextCache = new Map(state.questionCache);
@@ -77,8 +80,9 @@ export function nextQuestion(state: BatchState): {
     nextCache.set(id, q);
   }
 
+  const cachedQuestion = nextCache.get(id);
   return {
-    question: nextCache.get(id)!,
+    question: cachedQuestion ?? q,
     state: {
       ...state,
       queue: nextQueue,

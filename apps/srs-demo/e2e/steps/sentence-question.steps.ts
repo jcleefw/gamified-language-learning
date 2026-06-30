@@ -1,6 +1,5 @@
 import { createBdd } from 'playwright-bdd';
 import { expect, type Page } from '@playwright/test';
-import { loadScenario, type ScenarioName } from '../fixtures/index.js';
 
 const { Given, When, Then } = createBdd();
 

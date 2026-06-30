@@ -6,11 +6,15 @@ import { initDb } from '../init-db';
 import { SqliteLearningStore } from '../sqlite-learning-store';
 import type { WordState } from '@gll/srs-engine-v2';
 import type { SentenceState } from '@gll/srs-engine-v2';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import type BetterSqlite3 from 'better-sqlite3';
 
-function makeTestDb() {
+type DbClient = BetterSQLite3Database<typeof schema> & { $client: BetterSqlite3.Database };
+
+function makeTestDb(): { db: DbClient; sqlite: Database.Database } {
   const sqlite = new Database(':memory:');
   initDb(sqlite);
-  const db = drizzle(sqlite, { schema });
+  const db = drizzle(sqlite, { schema }) as DbClient;
   return { db, sqlite };
 }
 
@@ -120,7 +124,7 @@ describe('shelving (deck-scoped)', () => {
   });
 
   it('unshelveWord on non-shelved word is a no-op — no error thrown', () => {
-    expect(() => store.unshelveWord('user-a', 'deck-1', 'w-nonexistent')).not.toThrow();
+    expect(() => { store.unshelveWord('user-a', 'deck-1', 'w-nonexistent'); }).not.toThrow();
   });
 
   it('unshelveAllWords clears all for a user+deck', () => {

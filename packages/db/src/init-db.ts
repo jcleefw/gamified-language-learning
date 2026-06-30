@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -79,7 +80,7 @@ export function initDb(db: DatabaseConnection): void {
     const now = Date.now();
     try {
       db.exec(
-        `INSERT INTO ${tableName} (id, hash, created_at) VALUES ('${migrationId}', '${migrationId}', ${now});`
+        `INSERT INTO ${tableName} (id, hash, created_at) VALUES ('${migrationId}', '${migrationId}', ${String(now)});`
       );
     } catch (e) {
       console.warn(`[WARN] Failed to record migration ${migrationId}:`, e);
