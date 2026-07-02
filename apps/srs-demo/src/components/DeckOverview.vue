@@ -13,6 +13,7 @@ import {
   type QuizResult,
   type BatchState,
   type WordQuizResult,
+  type WordState,
 } from '@gll/srs-engine-v2';
 import type { AppDeckPayload, AppWordPayload } from '@gll/api-contract';
 import {
@@ -34,12 +35,6 @@ const props = defineProps<{
   shelvedSet: Set<string>;
   maxMastery: number;
   wordPool: QuizItem[];
-  applyShelveingDecisions: (
-    deckId: string,
-    activeIds: string[],
-    batchNum: number,
-    shelvedSet: Set<string>,
-  ) => Promise<{ newShelvedSet: Set<string> }>;
 }>();
 
 const emit = defineEmits<{
@@ -47,6 +42,7 @@ const emit = defineEmits<{
   startQuiz: [deckId: string];
   unshelveWord: [deckId: string, wordId: string];
   updateShelvedSet: [shelvedSet: Set<string>];
+  updateWordStates: [wordStates: Map<string, WordState>];
 }>();
 
 // Index of highlighted sentence (from word click); null = none
@@ -110,7 +106,7 @@ const miniQuizActiveItems = computed(() => {
     .filter(Boolean) as QuizItem[];
 });
 
-const miniQuizQueue = computed(() => props.wordPool);
+const miniQuizDistractorPool = computed(() => props.wordPool);
 
 const miniQuizMasteredDeck = computed(() => {
   return props.deck.words.filter((w) => {
@@ -170,12 +166,7 @@ function masteryDots(wordId: string): { filled: boolean }[] {
 function startSentenceLearning() {
   sentenceLearningActive.value = true;
   currentSentenceIndex.value = 0;
-  void loadAndStartFirstSentenceQuiz();
-}
-
-async function loadAndStartFirstSentenceQuiz() {
-  currentSentenceIndex.value = 0;
-  await loadAndStartSentenceQuiz();
+  void loadAndStartSentenceQuiz();
 }
 
 async function loadAndStartNextSentenceQuiz() {
@@ -244,14 +235,17 @@ async function finishMiniQuizAndProcessResults() {
 
   const output = finishBatch(miniQuizBatchState.value);
 
-  // Save word states for answered words
+  // Collect updated word states from engine output
   const wordResults = output.results.filter(
     (r): r is WordQuizResult => 'wordId' in r,
   );
   const uniqueWordIds = [...new Set(wordResults.map((r) => r.wordId))];
+  const updatedWordStates = new Map<string, WordState>();
+
   for (const wid of uniqueWordIds) {
     const ws = props.runState.get(wid);
     if (ws) {
+      updatedWordStates.set(wid, ws);
       await saveWordState(ws).catch(console.error);
     }
   }
@@ -287,6 +281,11 @@ async function finishMiniQuizAndProcessResults() {
       }
       decision.toShelve.forEach((id: string) => localShelvedSet.value.add(id));
     }
+  }
+
+  // Emit updated word states so App.vue can sync globalRunState
+  if (updatedWordStates.size > 0) {
+    emit('updateWordStates', updatedWordStates);
   }
 
   // Advance to next sentence
@@ -402,7 +401,7 @@ function finishSentenceLearning() {
               :index="miniQuizIndex"
               :total="miniQuizTotal"
               :active-items="miniQuizActiveItems"
-              :queue="miniQuizQueue"
+              :queue="miniQuizDistractorPool"
               :mastered-deck="miniQuizMasteredDeck"
               :shelved-items="miniQuizShelvedItems"
               @answered="onMiniQuizAnswered"

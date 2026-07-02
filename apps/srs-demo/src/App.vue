@@ -197,7 +197,7 @@ function getDeckWords(id: string): QuizItem[] {
   return deck ? (deck.words as QuizItem[]) : [];
 }
 
-async function applyShelveingDecisions(
+async function applyShelvingDecisions(
   deckIdParam: string,
   activeIds: string[],
   batchNumParam: number,
@@ -523,6 +523,12 @@ function onUpdateShelvedSet(newSet: Set<string>) {
   shelvedSet.value = newSet;
 }
 
+function onUpdateWordStates(wordStates: Map<string, any>) {
+  for (const [wordId, state] of wordStates) {
+    globalRunState.value.set(wordId, state);
+  }
+}
+
 onMounted(async () => {
   // Fetch decks from API first — required before any other initialisation
   try {
@@ -621,11 +627,11 @@ onMounted(async () => {
     :shelved-set="shelvedSet"
     :max-mastery="CONFIG.streakThresholds.maxMastery"
     :word-pool="wordPool"
-    :apply-shelveing-decisions="applyShelveingDecisions"
     @back="screen = 'select'"
     @start-quiz="(id) => { void initSession(id); }"
     @unshelve-word="onUnshelveWord"
     @update-shelved-set="onUpdateShelvedSet"
+    @update-word-states="onUpdateWordStates"
   />
 
   <QuizCard
