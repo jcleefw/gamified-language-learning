@@ -1,7 +1,5 @@
 import type { QuizItem, QuizQuestion, WordState, RunState } from '@gll/srs-engine-v2';
 
-const DEBUG_LOG_DIR = 'manual-test-results';
-
 interface LogEntry {
   timestamp: string;
   event: string;

@@ -29,10 +29,8 @@ function loadRunState(): RunState {
       const data = readFileSync(STATE_FILE, 'utf-8');
       const parsed = JSON.parse(data) as Array<[string, WordState]>;
       console.log(`\n[INFO] Loaded learning history from ${STATE_FILE}`);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return new Map(parsed);
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.warn(`\n[WARN] Failed to parse learning state file. Starting fresh.`, e);
     }
   }
@@ -47,10 +45,8 @@ function saveRunState(state: RunState): void {
   try {
     const serialized = JSON.stringify(Array.from(state.entries()), null, 2);
     writeFileSync(STATE_FILE, serialized, 'utf-8');
-    // eslint-disable-next-line no-console
     console.log(`[INFO] Saved learning history to ${STATE_FILE}`);
   } catch (e) {
-    // eslint-disable-next-line no-console
     console.error(`\n[ERROR] Failed to save learning history.`, e);
   }
 }
