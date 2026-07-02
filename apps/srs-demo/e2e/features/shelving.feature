@@ -60,3 +60,16 @@ Feature: SRS word shelving policy
     When I reload the app
     And I resume the saved session
     Then some words should be shelved for "deck-eat"
+
+  Scenario: Active pool rebalances after shelving (batch window maintains size)
+    Given the scenario "mid-session-stagnation" is loaded
+    When I select the "let's eat something" deck
+    And I answer all word questions in the batch incorrectly
+    And I click "Next Batch →"
+    And I answer all word questions in the batch incorrectly
+    And I click "Next Batch →"
+    Then some words should be shelved for "deck-eat"
+    And the active pool should maintain configured batch size
+    When I click "Next Batch →"
+    Then the batch should contain expected words from replenished pool
+    And shelved words should not appear as quiz questions

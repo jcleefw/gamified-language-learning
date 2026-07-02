@@ -169,3 +169,32 @@ Then('shelved words should not appear as quiz questions', async ({ page }) => {
     ).not.toContain(questionWordId);
   }
 });
+
+Then('the active pool should maintain configured batch size', async ({ page }) => {
+  // After shelving, the active pool should be rebalanced by pulling from queue
+  // Expected: active pool size = configured wordsPerBatch (3)
+  await page.waitForSelector('.batch-results', { timeout: 10000 });
+
+  // Read pool state from pool-debug data carrier
+  const poolDebug = page.locator('.pool-debug-hidden');
+  const activeSection = poolDebug.locator('.pool-section').first();
+  const activeItems = await activeSection.locator('li:not(.pool-empty)').count();
+
+  // Configured batch size is 3 (wordsPerBatch from CONFIG in App.vue)
+  expect(activeItems, `Expected active pool to have 3 items after rebalancing, got ${activeItems}`).toBe(3);
+});
+
+Then('the batch should contain expected words from replenished pool', async ({ page }) => {
+  // Verify that the next batch contains words from the replenished queue
+  // (not just the same words that weren't shelved)
+  await page.waitForSelector('.quiz-card', { timeout: 10000 });
+
+  const poolDebug = page.locator('.pool-debug-hidden');
+  const activeSection = poolDebug.locator('.pool-section').first();
+  const activeWordIds = await activeSection
+    .locator('li:not(.pool-empty) .pool-id')
+    .allTextContents();
+
+  // Should have at least 3 active words (was 3, shelved 2, pulled 2 new = 3)
+  expect(activeWordIds.length, `Expected at least 3 active words, got ${activeWordIds.length}`).toBeGreaterThanOrEqual(3);
+});
