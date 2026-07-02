@@ -23,7 +23,7 @@ export default defineConfig({
       command: 'pnpm --filter @gll/srs-demo dev --port 5174',
       port: 5174,
       env: { VITE_CHEAT_MODE: 'true' },
-      reuseExistingServer: false,
+      reuseExistingServer: !process.env.CI,
     },
   ],
 });
