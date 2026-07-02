@@ -322,8 +322,6 @@ export async function runAdaptiveLoop(
 
   // Filter out shelved words before initializing session state
   const unshelvedWords = words.filter((w) => !shelvedSet.has(w.id));
-  // eslint-disable-next-line no-console
-  console.log(`[SHELVING] Filtering: ${words.length} total words, ${shelvedSet.size} shelved, result: ${unshelvedWords.length} words for active/queue`);
   let state = initAdaptiveSession(unshelvedWords, config, recheckIds, initialRunState);
 
   const sentenceRunState: SentenceRunState = new Map(initialSentenceRunState);
