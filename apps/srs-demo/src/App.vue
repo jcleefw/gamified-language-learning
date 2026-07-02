@@ -14,6 +14,7 @@ import {
   resolveEligibleContexts,
   updateSentenceRunState,
   composeSentenceBatch,
+  nextActivePool,
   type QuizItem,
   type QuizQuestion,
   type QuizResult,
@@ -356,6 +357,23 @@ async function finishBatchAndTransition() {
     if (decision.toShelve.length > 0) {
       await applyShelving({ deckId: deckId.value, toShelve: decision.toShelve.map((id: string) => ({ wordId: id, batchNum: batchNum.value })) }).catch(console.error);
       decision.toShelve.forEach((id: string) => shelvedSet.value.add(id));
+
+      // Rebalance active pool: remove shelved words and pull new ones from queue
+      const shelvingSet = new Set(decision.toShelve);
+      const newActive = sessionState.value.active.filter((w) => !shelvingSet.has(w.id));
+      const newQueue = sessionState.value.queue.filter((w) => !shelvingSet.has(w.id));
+
+      const { active, queue } = nextActivePool(
+        newActive,
+        newQueue,
+        CONFIG.value.wordsPerBatch,
+        sessionState.value.runState,
+        CONFIG.value.masteryThreshold,
+        new Set([...sessionState.value.recheckPending, ...sessionState.value.recheckReentered]),
+      );
+
+      sessionState.value.active = active;
+      sessionState.value.queue = queue;
     }
   }
 
