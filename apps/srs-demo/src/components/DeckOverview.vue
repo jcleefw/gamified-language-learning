@@ -336,44 +336,40 @@ function finishSentenceLearning() {
 
       <section class="overview-section">
         <h3 class="section-label">Words in this deck</h3>
-        <table class="word-table">
-          <thead>
-            <tr>
-              <th>Word</th>
-              <th>English</th>
-              <th>Mastery</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="word in deck.words"
-              :key="word.id"
-              class="word-row"
-              :class="{ 'row-shelved': localShelvedSet.has(word.id) }"
-            >
-              <td class="word-native" @click="onWordClick(word.id)">{{ word.native }}</td>
-              <td>{{ word.english }}</td>
-              <td>
-                <span class="mastery-dots">
-                  <span
-                    v-for="(dot, i) in masteryDots(word.id)"
-                    :key="i"
-                    class="dot"
-                    :class="{ filled: dot.filled }"
-                  />
-                </span>
-              </td>
-              <td class="status-cell">
-                <template v-if="localShelvedSet.has(word.id)">
-                  <span class="status-shelved">Shelved</span>
-                  <button class="btn-try-now" @click="onTryNow(word.id)">Try now</button>
-                </template>
-                <span v-else class="status-active">Active</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="word-table">
+          <div class="table-header">
+            <div class="th">Word</div>
+            <div class="th">English</div>
+            <div class="th">Mastery</div>
+            <div class="th">Status</div>
+          </div>
+          <div
+            v-for="word in deck.words"
+            :key="word.id"
+            class="word-row"
+            :class="{ 'row-shelved': localShelvedSet.has(word.id) }"
+          >
+            <div class="cell word-native" @click="onWordClick(word.id)">{{ word.native }}</div>
+            <div class="cell">{{ word.english }}</div>
+            <div class="cell">
+              <span class="mastery-dots">
+                <span
+                  v-for="(dot, i) in masteryDots(word.id)"
+                  :key="i"
+                  class="dot"
+                  :class="{ filled: dot.filled }"
+                />
+              </span>
+            </div>
+            <div class="cell status-cell">
+              <template v-if="localShelvedSet.has(word.id)">
+                <span class="status-shelved">Shelved</span>
+                <button class="btn-try-now" @click="onTryNow(word.id)">Try now</button>
+              </template>
+              <span v-else class="status-active">Active</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       <div class="overview-actions">
@@ -502,17 +498,23 @@ function finishSentenceLearning() {
   background: #e5e7eb;
 }
 .word-table {
+  display: grid;
+  grid-template-columns: minmax(90px, auto) minmax(140px, 1fr) auto minmax(150px, auto);
   width: 100%;
-  border-collapse: collapse;
   font-size: 0.9rem;
 }
-th,
-td {
-  padding: 10px 12px;
-  text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+.table-header,
+.word-row {
+  display: contents;
 }
-th {
+.th,
+.cell {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+}
+.th {
   color: #6b7280;
   font-weight: 600;
   font-size: 0.75rem;
@@ -525,14 +527,13 @@ th {
 .word-native:hover {
   color: #2563eb;
 }
-.row-shelved {
+.word-row.row-shelved > .cell {
   background: #fafafa;
   color: #9ca3af;
 }
 .mastery-dots {
   display: inline-flex;
   gap: 3px;
-  vertical-align: middle;
 }
 .dot {
   width: 8px;
@@ -556,8 +557,6 @@ th {
   color: #6b7280;
 }
 .status-cell {
-  display: flex;
-  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
