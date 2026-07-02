@@ -1,7 +1,7 @@
 # EP26 - SRS Shelving Policy
 
 **Created**: 20260626T002530Z
-**Updated**: 20260626T
+**Updated**: 20260702T
 **Status**: Impl-Complete
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
@@ -10,7 +10,7 @@
 **Depends on**: EP20 (srs-engine-v2 core), EP30 (persistent storage)
 **Parallel with**: N/A
 **Predecessor**: N/A
-**Design Spec**: [DS02](../../changelogs/EP26--srs-shelving-policy/20260626T-EP26-DS02-shelving-policy-design-v2.md) (DS01 superseded)
+**Design Spec**: [DS02](../../changelogs/EP26--srs-shelving-policy/20260626T-EP26-DS02-shelving-policy-design-v2.md) (DS01 superseded); [DS04](../../changelogs/EP26--srs-shelving-policy/20260702T185556Z-EP26-DS04-deck-overview-sentence-learning.md) (Deck Overview + Manual Unshelving)
 **ADR**: [Shelving & Stagnation Policy](../../../product-documentation/architecture/20260626T000000Z-engineering-shelving-stagnation-policy.md)
 
 ---
@@ -99,8 +99,25 @@ Resolved during DS02 planning. See [ADR](../../../product-documentation/architec
 
 ---
 
+### Phase 5: Deck Overview & Manual Unshelving (EP26-PH05)
+
+### EP26-ST07: Deck overview page — metadata, sentences, words
+
+**Scope**: Build deck overview UI: conversation sentences with translations, word list with mastery progress (visual indicators), shelving status display. Deck overview navigation (add [Overview] button to deck view, preserve [Play Audio] and [Start Quiz]). Word-to-sentence navigation (click word → highlight in conversation).
+
+### EP26-ST08: Manual word unshelving
+
+**Scope**: Add `unshelveWord(userId, deckId, wordId)` method to `LearningStore`. Add `resetStagnationCountersForWords(userId, deckId, wordIds[])` method. HTTP endpoint `POST /api/decks/:deckId/words/:wordId/unshelve`. UI: [Unshelve now] button on shelved words in overview, visual feedback (flash highlight, status update). Word re-enters active pool and stagnation counter resets.
+
+### EP26-ST09: Sentence-by-sentence learning mode
+
+**Scope**: Mini-quiz harness scoped to single sentence's words. Entry point: [Learn Sentence by Sentence] button on overview page. Flow: Sentence display (target + translation + audio) → 3–5 question mini-quiz → mastery update + shelving reevaluation. Reuse batch composition and question generation; filter to sentence words only.
+
+---
+
 ## Overall Acceptance Criteria
 
+**Core Shelving (Phases 1–4)**:
 - [ ] Stagnant words detected via persistent counters and shelved within a session
 - [ ] Shelving respects `maxShelved` cap per deck — excess stagnant words remain active
 - [ ] Shelved words hold their active slot (queue does not fill freed slots)
@@ -111,6 +128,18 @@ Resolved during DS02 planning. See [ADR](../../../product-documentation/architec
 - [ ] Shelving state persists across app restarts
 - [ ] srs-engine-v2 remains pure — no shelving logic in the engine package
 - [ ] BDD scenarios pass for all shelving acceptance criteria
+
+**Deck Overview & Manual Unshelving (Phase 5)**:
+- [ ] Deck overview page accessible via [Overview] button on deck view
+- [ ] Overview displays conversation sentences with native translations
+- [ ] Word list shows mastery progress (visual indicators) and shelving status
+- [ ] Clicking word in word table scrolls to relevant sentence in conversation
+- [ ] [Unshelve now] button appears only on shelved words; clicking it removes shelving, resets counter, provides visual feedback
+- [ ] Unshelved word re-enters active pool and eligible for next batch
+- [ ] Sentence-by-sentence learning mode accessible from overview page
+- [ ] Mini-quiz respects question type distribution (70% MC, 20% word block, 10% audio)
+- [ ] Mini-quiz updates mastery counters and reevaluates shelving policy
+- [ ] All state changes (unshelving, mastery updates) persist across app refresh
 - [ ] `pnpm typecheck` clean across monorepo; all tests green
 
 ---
