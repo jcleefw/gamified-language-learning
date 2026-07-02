@@ -14,11 +14,12 @@ function formatTimestamp(): string {
   return new Date().toISOString();
 }
 
-function serializePool(pool: QuizItem[], runState?: RunState): Array<{ id: string; native: string; state?: WordState }> {
+function serializePool(pool: QuizItem[], runState?: RunState, shelvedIds?: Set<string>): Array<{ id: string; native: string; state?: WordState; shelved?: boolean }> {
   return pool.map(item => ({
     id: item.id,
     native: item.native,
     ...(runState && { state: runState.get(item.id) }),
+    ...(shelvedIds && { shelved: shelvedIds.has(item.id) }),
   }));
 }
 
@@ -31,25 +32,27 @@ function serializeQuestions(questions: QuizQuestion[]): Array<{ wordId?: string;
   }));
 }
 
-export function logDeckStarted(poolSize: number, pool: QuizItem[], runState?: RunState): void {
+export function logDeckStarted(poolSize: number, pool: QuizItem[], runState?: RunState, shelvedIds?: Set<string>): void {
   logs.push({
     timestamp: formatTimestamp(),
     event: 'DECK_STARTED',
     data: {
       poolSize,
-      pool: serializePool(pool, runState),
+      shelvedCount: shelvedIds?.size ?? 0,
+      pool: serializePool(pool, runState, shelvedIds),
     },
   });
 }
 
-export function logBatchStarted(poolSize: number, pool: QuizItem[], batchNum: number, runState?: RunState): void {
+export function logBatchStarted(poolSize: number, pool: QuizItem[], batchNum: number, runState?: RunState, shelvedIds?: Set<string>): void {
   logs.push({
     timestamp: formatTimestamp(),
     event: 'BATCH_STARTED',
     data: {
       batchNum,
       poolSize,
-      pool: serializePool(pool, runState),
+      shelvedCount: shelvedIds?.size ?? 0,
+      pool: serializePool(pool, runState, shelvedIds),
     },
   });
 }
@@ -67,7 +70,7 @@ export function logBatchQuestions(batchNum: number, questions: QuizQuestion[], t
   });
 }
 
-export function logBatchResult(batchNum: number, correct: number, total: number, poolSize: number, pool: QuizItem[], runState?: RunState): void {
+export function logBatchResult(batchNum: number, correct: number, total: number, poolSize: number, pool: QuizItem[], runState?: RunState, shelvedIds?: Set<string>): void {
   logs.push({
     timestamp: formatTimestamp(),
     event: 'BATCH_RESULT',
@@ -77,7 +80,8 @@ export function logBatchResult(batchNum: number, correct: number, total: number,
       total,
       accuracy: total > 0 ? (correct / total * 100).toFixed(1) + '%' : 'N/A',
       poolSizeAfter: poolSize,
-      poolAfter: serializePool(pool, runState),
+      shelvedCountAfter: shelvedIds?.size ?? 0,
+      poolAfter: serializePool(pool, runState, shelvedIds),
     },
   });
 }

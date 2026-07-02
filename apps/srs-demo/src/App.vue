@@ -204,8 +204,8 @@ const shelvedItems = computed<QuizItem[]>(() => {
 function startBatch() {
   if (!sessionState.value) return;
 
-  // Log batch start with pool state and word states
-  logBatchStarted(wordPool.value.length, wordPool.value, batchNum.value + 1, sessionState.value.runState);
+  // Log batch start with pool state, word states, and shelved status
+  logBatchStarted(wordPool.value.length, wordPool.value, batchNum.value + 1, sessionState.value.runState, shelvedSet.value);
 
   // Resolve eligible sentence contexts based on word seen counts and batch spacing
   const eligibleSentences = resolveEligibleContexts(
@@ -286,8 +286,8 @@ async function initSession(id: string, isNewSession = true) {
     globalRunState.value,
   );
 
-  // Log deck start with pool state and word states
-  logDeckStarted(words.length, words, globalRunState.value);
+  // Log deck start with pool state, word states, and shelved status
+  logDeckStarted(words.length, words, globalRunState.value, shelvedSet.value);
 
   startBatch();
 }
@@ -394,8 +394,8 @@ async function finishBatchAndTransition() {
   const correct = output.results.filter((a) => a.correct).length;
   batchScore.value = { correct, total: output.results.length };
 
-  // Log batch result and final pool state with word states
-  logBatchResult(batchNum.value, correct, output.results.length, wordPool.value.length, wordPool.value, sessionState.value.runState);
+  // Log batch result and final pool state with word states and shelved status
+  logBatchResult(batchNum.value, correct, output.results.length, wordPool.value.length, wordPool.value, sessionState.value.runState, shelvedSet.value);
 
   const deckWordMap = new Map(getDeckWords(deckId.value ?? '').map((w) => [w.id, w]));
   summary.value = uniqueWordIds.map((wid) => ({
