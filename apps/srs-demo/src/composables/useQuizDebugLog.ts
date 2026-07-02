@@ -1,4 +1,4 @@
-import type { QuizItem, QuizQuestion } from '@gll/srs-engine-v2';
+import type { QuizItem, QuizQuestion, WordState, RunState } from '@gll/srs-engine-v2';
 
 const DEBUG_LOG_DIR = 'manual-test-results';
 
@@ -14,10 +14,11 @@ function formatTimestamp(): string {
   return new Date().toISOString();
 }
 
-function serializePool(pool: QuizItem[]): Array<{ id: string; native: string }> {
+function serializePool(pool: QuizItem[], runState?: RunState): Array<{ id: string; native: string; state?: WordState }> {
   return pool.map(item => ({
     id: item.id,
     native: item.native,
+    ...(runState && { state: runState.get(item.id) }),
   }));
 }
 
@@ -30,25 +31,25 @@ function serializeQuestions(questions: QuizQuestion[]): Array<{ wordId?: string;
   }));
 }
 
-export function logDeckStarted(poolSize: number, pool: QuizItem[]): void {
+export function logDeckStarted(poolSize: number, pool: QuizItem[], runState?: RunState): void {
   logs.push({
     timestamp: formatTimestamp(),
     event: 'DECK_STARTED',
     data: {
       poolSize,
-      pool: serializePool(pool),
+      pool: serializePool(pool, runState),
     },
   });
 }
 
-export function logBatchStarted(poolSize: number, pool: QuizItem[], batchNum: number): void {
+export function logBatchStarted(poolSize: number, pool: QuizItem[], batchNum: number, runState?: RunState): void {
   logs.push({
     timestamp: formatTimestamp(),
     event: 'BATCH_STARTED',
     data: {
       batchNum,
       poolSize,
-      pool: serializePool(pool),
+      pool: serializePool(pool, runState),
     },
   });
 }
@@ -66,7 +67,7 @@ export function logBatchQuestions(batchNum: number, questions: QuizQuestion[], t
   });
 }
 
-export function logBatchResult(batchNum: number, correct: number, total: number, poolSize: number, pool: QuizItem[]): void {
+export function logBatchResult(batchNum: number, correct: number, total: number, poolSize: number, pool: QuizItem[], runState?: RunState): void {
   logs.push({
     timestamp: formatTimestamp(),
     event: 'BATCH_RESULT',
@@ -76,7 +77,7 @@ export function logBatchResult(batchNum: number, correct: number, total: number,
       total,
       accuracy: total > 0 ? (correct / total * 100).toFixed(1) + '%' : 'N/A',
       poolSizeAfter: poolSize,
-      poolAfter: serializePool(pool),
+      poolAfter: serializePool(pool, runState),
     },
   });
 }
