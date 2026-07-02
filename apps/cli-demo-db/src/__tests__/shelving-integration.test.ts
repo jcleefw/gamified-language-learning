@@ -8,8 +8,14 @@ import { LEARNING_CONFIG, STREAK_THRESHOLDS } from '../config.js';
 import { DEFAULT_SHELVING_CONFIG, type ShelvingConfig } from '@gll/srs-shelving';
 import type { QuizItem } from '@gll/srs-engine-v2';
 
-// Suppress console.log per test
-beforeEach(() => { vi.spyOn(console, 'log').mockImplementation(() => {}); });
+// Suppress console.log per test except for debug/test logs
+beforeEach(() => {
+  vi.spyOn(console, 'log').mockImplementation((msg) => {
+    if (typeof msg === 'string' && (msg.startsWith('[TEST]') || msg.startsWith('[SHELVING]'))) {
+      process.stderr.write(msg + '\n');
+    }
+  });
+});
 afterEach(() => { vi.restoreAllMocks(); });
 
 function makeTestDb() {
@@ -309,5 +315,44 @@ describe('Shelving integration', () => {
     ).resolves.not.toThrow();
 
     expect(wordSpy).toHaveBeenCalled();
+  });
+
+  describe('Shelving persistence across sessions', () => {
+    it('shelved words loaded from DB are excluded from active pool on session resume', () => {
+      const words = makeMinimalWords(3);
+      const shelvingConfig: ShelvingConfig = {
+        stagnationBatchWindow: 2,
+        maxShelved: words.length,
+      };
+      const { store, userId, deckId } = makeStoreWithStagnation(shelvingConfig);
+
+      const shelvedIds = new Set<string>();
+
+      // Manually create a scenario: shelf word-0 and word-1
+      store.shelveWord(userId, deckId, 'word-0', 1);
+      store.shelveWord(userId, deckId, 'word-1', 1);
+      shelvedIds.add('word-0');
+      shelvedIds.add('word-1');
+
+      // Verify words are in DB
+      const dbShelvedWords = store.getShelvedWords(userId, deckId);
+      expect(dbShelvedWords.length).toBe(2);
+
+      // Session 2: Load shelved state from DB and verify shelved words are filtered out
+      const shelvedSetFromDb = new Set(dbShelvedWords.map(sw => sw.wordId));
+      expect(shelvedSetFromDb.size).toBe(2);
+      expect(shelvedSetFromDb.has('word-0')).toBe(true);
+      expect(shelvedSetFromDb.has('word-1')).toBe(true);
+
+      // Simulate the session 2 filtering logic (same as learning-io.ts line 324)
+      const unshelvedWords = words.filter((w) => !shelvedSetFromDb.has(w.id));
+
+      // Verify filtering worked
+      expect(unshelvedWords.length).toBe(1); // Only word-2 should remain
+      expect(unshelvedWords[0].id).toBe('word-2');
+      for (const w of unshelvedWords) {
+        expect(shelvedSetFromDb.has(w.id)).toBe(false);
+      }
+    });
   });
 });

@@ -318,12 +318,18 @@ export async function runAdaptiveLoop(
   const shelving = shelvingConfig ?? DEFAULT_SHELVING_CONFIG;
 
   const snapshotRunState = new Map(initialRunState);
-  let state = initAdaptiveSession(words, config, recheckIds, initialRunState);
+  const shelvedSet: Set<string> = new Set(initialShelvedIds ?? []);
+
+  // Filter out shelved words before initializing session state
+  const unshelvedWords = words.filter((w) => !shelvedSet.has(w.id));
+  // eslint-disable-next-line no-console
+  console.log(`[SHELVING] Filtering: ${words.length} total words, ${shelvedSet.size} shelved, result: ${unshelvedWords.length} words for active/queue`);
+  let state = initAdaptiveSession(unshelvedWords, config, recheckIds, initialRunState);
+
   const sentenceRunState: SentenceRunState = new Map(initialSentenceRunState);
   let totalCorrect = 0;
   let totalQuestions = 0;
   let totalMastered = 0;
-  const shelvedSet: Set<string> = new Set(initialShelvedIds ?? []);
 
   onUnshelveAll?.();
 
