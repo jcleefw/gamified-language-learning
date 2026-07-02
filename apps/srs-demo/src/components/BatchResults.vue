@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import type { WordState, QuizItem } from '@gll/srs-engine-v2';
+import PoolDebugPanel from './PoolDebugPanel.vue';
 
 export interface BatchSummary {
   wordId: string;
@@ -18,6 +19,7 @@ const props = defineProps<{
   masteredGlobal: QuizItem[];
   maxMastery: number;
   nextDeckId: string | null;
+  shelvedItems?: QuizItem[];
 }>();
 
 const showPool = ref(false);
@@ -101,59 +103,13 @@ const emit = defineEmits<{
       <button class="btn-next" @click="emit('next')">Next Batch →</button>
     </div>
 
-    <details
-      class="pool-debug"
-      :open="showPool"
-      @toggle="showPool = ($event.target as HTMLDetailsElement).open"
-    >
-      <summary class="pool-debug-toggle">Pool state</summary>
-      <div class="pool-section">
-        <p class="pool-label">Active ({{ activeItems.length }})</p>
-        <ul>
-          <li v-for="item in activeItems" :key="item.id" class="pool-item">
-            <span class="pool-native">{{ item.native }}</span>
-            <span class="pool-id">{{ item.text }}</span>
-          </li>
-          <li v-if="activeItems.length === 0" class="pool-empty">—</li>
-        </ul>
-      </div>
-      <div class="pool-section">
-        <p class="pool-label">Queue ({{ queue.length }})</p>
-        <ul>
-          <li v-for="item in queue" :key="item.id" class="pool-item">
-            <span class="pool-native">{{ item.native }}</span>
-            <span class="pool-id">{{ item.text }}</span>
-          </li>
-          <li v-if="queue.length === 0" class="pool-empty">empty</li>
-        </ul>
-      </div>
-      <div class="pool-section">
-        <p class="pool-label">
-          Mastered — this deck ({{ masteredDeck.length }})
-        </p>
-        <ul>
-          <li v-for="item in masteredDeck" :key="item.id" class="pool-item">
-            <span class="pool-native">{{ item.native }}</span>
-            <span class="pool-id">{{ item.text }}</span>
-          </li>
-          <li v-if="masteredDeck.length === 0" class="pool-empty">none yet</li>
-        </ul>
-      </div>
-      <div class="pool-section">
-        <p class="pool-label">
-          Mastered — all decks ({{ masteredGlobal.length }})
-        </p>
-        <ul>
-          <li v-for="item in masteredGlobal" :key="item.id" class="pool-item">
-            <span class="pool-native">{{ item.native }}</span>
-            <span class="pool-id">{{ item.text }}</span>
-          </li>
-          <li v-if="masteredGlobal.length === 0" class="pool-empty">
-            none yet
-          </li>
-        </ul>
-      </div>
-    </details>
+    <PoolDebugPanel
+      :active-items="activeItems"
+      :queue="queue"
+      :mastered-deck="masteredDeck"
+      :mastered-global="masteredGlobal"
+      :shelved-items="shelvedItems"
+    />
   </div>
 </template>
 
@@ -276,60 +232,5 @@ th {
 }
 .btn-next:hover {
   background: #1d4ed8;
-}
-.pool-debug {
-  margin-top: 32px;
-  border: 1px dashed #d1d5db;
-  border-radius: 8px;
-  padding: 0 12px;
-  font-size: 0.82rem;
-  color: #6b7280;
-}
-.pool-debug-toggle {
-  padding: 10px 0;
-  cursor: pointer;
-  font-weight: 600;
-  list-style: none;
-  user-select: none;
-}
-.pool-debug-toggle::before {
-  content: '▶ ';
-  font-size: 0.65rem;
-}
-details[open] .pool-debug-toggle::before {
-  content: '▼ ';
-}
-.pool-section {
-  padding: 8px 0 12px;
-  border-top: 1px solid #f3f4f6;
-}
-.pool-label {
-  margin: 0 0 6px;
-  font-weight: 600;
-  color: #374151;
-}
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.pool-item {
-  display: flex;
-  justify-content: space-between;
-}
-.pool-native {
-  font-weight: 500;
-  color: #111827;
-}
-.pool-id {
-  color: #9ca3af;
-  font-size: 0.75rem;
-}
-.pool-empty {
-  color: #9ca3af;
-  font-style: italic;
 }
 </style>

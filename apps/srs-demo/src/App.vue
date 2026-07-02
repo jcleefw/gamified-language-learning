@@ -195,6 +195,12 @@ function getDeckWords(id: string): QuizItem[] {
   return deck ? (deck.words as QuizItem[]) : [];
 }
 
+const shelvedItems = computed<QuizItem[]>(() => {
+  if (!deckId.value) return [];
+  const allWords = getDeckWords(deckId.value);
+  return allWords.filter((w) => shelvedSet.value.has(w.id));
+});
+
 function startBatch() {
   if (!sessionState.value) return;
 
@@ -555,6 +561,7 @@ onMounted(async () => {
     :active-items="activeItems"
     :queue="queue"
     :mastered-deck="masteredDeck"
+    :shelved-items="shelvedItems"
     @answered="onAnswered"
     @exit="onExitBatch"
   />
@@ -569,6 +576,7 @@ onMounted(async () => {
     :mastered-global="masteredGlobal"
     :max-mastery="CONFIG.streakThresholds.maxMastery"
     :next-deck-id="nextDeckId"
+    :shelved-items="shelvedItems"
     @next="onNext"
     @select-deck="onSelectDeck"
     @next-deck="onNextDeck"
