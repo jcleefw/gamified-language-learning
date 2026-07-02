@@ -16,6 +16,7 @@ export default defineConfig({
     {
       command: 'pnpm --filter @gll/server dev',
       port: 6060,
+      env: { GLL_DB_PATH: '.data/srs-demo-e2e.db' },
       reuseExistingServer: !process.env.CI,
     },
     {
