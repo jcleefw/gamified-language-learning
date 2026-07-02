@@ -197,6 +197,40 @@ function getDeckWords(id: string): QuizItem[] {
   return deck ? (deck.words as QuizItem[]) : [];
 }
 
+async function applyShelveingDecisions(
+  deckIdParam: string,
+  activeIds: string[],
+  batchNumParam: number,
+  shelvedSetParam: Set<string>,
+): Promise<{ newShelvedSet: Set<string> }> {
+  const shelvingConfig = await getShelvingConfig();
+  const stagnantIds = await getStagnantWords(
+    deckIdParam,
+    shelvingConfig.stagnationBatchWindow,
+  ).catch(() => [] as string[]);
+  const decision = evaluateShelving(stagnantIds, shelvedSetParam, shelvingConfig);
+
+  if (decision.toShelve.length > 0) {
+    const toShelvePayload = decision.toShelve.map((id: string) => ({
+      wordId: id,
+      batchNum: batchNumParam,
+    }));
+    console.log('[SHELVING] Applying shelving:', {
+      deckId: deckIdParam,
+      toShelve: toShelvePayload,
+    });
+    try {
+      await applyShelving({ deckId: deckIdParam, toShelve: toShelvePayload });
+      console.log('[SHELVING] Successfully persisted to DB');
+    } catch (err) {
+      console.error('[SHELVING] Failed to persist:', err);
+    }
+    decision.toShelve.forEach((id: string) => shelvedSetParam.add(id));
+  }
+
+  return { newShelvedSet: shelvedSetParam };
+}
+
 const shelvedItems = computed<QuizItem[]>(() => {
   if (!deckId.value) return [];
   const allWords = getDeckWords(deckId.value);
@@ -479,6 +513,16 @@ function onNextDeck(id: string) {
   void initSession(id);
 }
 
+function onUnshelveWord(dId: string, wId: string) {
+  const newSet = new Set(shelvedSet.value);
+  newSet.delete(wId);
+  shelvedSet.value = newSet;
+}
+
+function onUpdateShelvedSet(newSet: Set<string>) {
+  shelvedSet.value = newSet;
+}
+
 onMounted(async () => {
   // Fetch decks from API first — required before any other initialisation
   try {
@@ -576,9 +620,12 @@ onMounted(async () => {
     :run-state="globalRunState"
     :shelved-set="shelvedSet"
     :max-mastery="CONFIG.streakThresholds.maxMastery"
+    :word-pool="wordPool"
+    :apply-shelveing-decisions="applyShelveingDecisions"
     @back="screen = 'select'"
     @start-quiz="(id) => { void initSession(id); }"
-    @unshelve-word="(dId, wId) => { shelvedSet.value = new Set([...shelvedSet.value].filter(id => id !== wId)); }"
+    @unshelve-word="onUnshelveWord"
+    @update-shelved-set="onUpdateShelvedSet"
   />
 
   <QuizCard
