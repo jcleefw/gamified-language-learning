@@ -38,6 +38,14 @@ import {
   resetStagnationCounters,
   getShelvingConfig,
 } from './composables/useShelving';
+import {
+  logDeckStarted,
+  logBatchStarted,
+  logBatchQuestions,
+  logBatchResult,
+  flushLogs as flushDebugLogs,
+  clearLogs,
+} from './composables/useQuizDebugLog';
 import DeckSelector from './components/DeckSelector.vue';
 import QuizCard from './components/QuizCard.vue';
 import BatchResults, { type BatchSummary } from './components/BatchResults.vue';
@@ -189,6 +197,9 @@ function getDeckWords(id: string): QuizItem[] {
 function startBatch() {
   if (!sessionState.value) return;
 
+  // Log batch start with pool state
+  logBatchStarted(wordPool.value.length, wordPool.value, batchNum.value + 1);
+
   // Resolve eligible sentence contexts based on word seen counts and batch spacing
   const eligibleSentences = resolveEligibleContexts(
     sentenceCorpus.value,
@@ -218,6 +229,9 @@ function startBatch() {
 
   batchNum.value++;
 
+  // Log questions served in this batch
+  logBatchQuestions(batchNum.value, questions, questions.length);
+
   // Initialize serializable batch state
   batchState.value = initBatchState(
     questions,
@@ -242,6 +256,7 @@ async function initSession(id: string, isNewSession = true) {
 
   if (isNewSession) {
     // New session: clear shelving + stagnation state
+    clearLogs();
     shelvedSet.value = new Set();
     await Promise.all([
       unshelveAll({ deckId: id }).catch(console.error),
@@ -263,6 +278,9 @@ async function initSession(id: string, isNewSession = true) {
     new Set(),
     globalRunState.value,
   );
+
+  // Log deck start with pool state
+  logDeckStarted(words.length, words);
 
   startBatch();
 }
@@ -352,6 +370,9 @@ async function finishBatchAndTransition() {
   const correct = output.results.filter((a) => a.correct).length;
   batchScore.value = { correct, total: output.results.length };
 
+  // Log batch result and final pool state
+  logBatchResult(batchNum.value, correct, output.results.length, wordPool.value.length, wordPool.value);
+
   const deckWordMap = new Map(getDeckWords(deckId.value ?? '').map((w) => [w.id, w]));
   summary.value = uniqueWordIds.map((wid) => ({
     wordId: wid,
@@ -398,6 +419,11 @@ function onExitBatch() {
     return;
   }
   void finishBatchAndTransition();
+}
+
+async function flushLogs() {
+  await flushDebugLogs();
+  alert('Debug logs saved to manual-test-results');
 }
 
 function onNext() {
@@ -529,6 +555,12 @@ onMounted(async () => {
     @select-deck="onSelectDeck"
     @next-deck="onNextDeck"
   />
+
+  <div v-if="screen === 'results'" style="text-align: center; padding: 16px;">
+    <button style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer;" @click="flushLogs">
+      💾 Save Debug Logs
+    </button>
+  </div>
 </template>
 
 <style scoped>

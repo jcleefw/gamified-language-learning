@@ -7,6 +7,7 @@ import stateRouter from './routes/state.js';
 import shelvingRouter from './routes/shelving.js';
 import testSeedRouter from './routes/test-seed.js';
 import decksRouter from './routes/decks.js';
+import debugLogsRouter from './routes/debug-logs.js';
 
 export function errorHandler(err: Error, c: Context): Response {
   const body: ApiResponse<never> = {
@@ -28,5 +29,6 @@ app.route('/api', stateRouter);
 app.route('/api', shelvingRouter);
 app.route('/api', testSeedRouter);
 app.route('/api', decksRouter);
+app.route('/api', debugLogsRouter);
 
 export default app;
