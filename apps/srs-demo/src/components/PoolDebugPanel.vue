@@ -18,7 +18,7 @@ defineProps<{
       <ul>
         <li v-for="item in activeItems" :key="item.id" class="pool-item">
           <span class="pool-native">{{ item.native }}</span>
-          <span class="pool-id">{{ item.text }}</span>
+          <span class="pool-id">{{ item.romanization }}</span>
         </li>
         <li v-if="activeItems.length === 0" class="pool-empty">—</li>
       </ul>
@@ -28,7 +28,7 @@ defineProps<{
       <ul>
         <li v-for="item in queue" :key="item.id" class="pool-item">
           <span class="pool-native">{{ item.native }}</span>
-          <span class="pool-id">{{ item.text }}</span>
+          <span class="pool-id">{{ item.romanization }}</span>
         </li>
         <li v-if="queue.length === 0" class="pool-empty">empty</li>
       </ul>
@@ -42,7 +42,7 @@ defineProps<{
           class="pool-item"
         >
           <span class="pool-native">{{ item.native }}</span>
-          <span class="pool-id">{{ item.text }}</span>
+          <span class="pool-id">{{ item.romanization }}</span>
         </li>
         <li v-if="!shelvedItems || shelvedItems.length === 0" class="pool-empty">none</li>
       </ul>
@@ -52,7 +52,7 @@ defineProps<{
       <ul>
         <li v-for="item in masteredDeck" :key="item.id" class="pool-item">
           <span class="pool-native">{{ item.native }}</span>
-          <span class="pool-id">{{ item.text }}</span>
+          <span class="pool-id">{{ item.romanization }}</span>
         </li>
         <li v-if="masteredDeck.length === 0" class="pool-empty">none yet</li>
       </ul>
@@ -65,7 +65,7 @@ defineProps<{
       <p class="pool-label">Active</p>
       <ul>
         <li v-for="item in activeItems" :key="item.id">
-          <span class="pool-id">{{ item.text }}</span>
+          <span class="pool-id">{{ item.romanization }}</span>
         </li>
       </ul>
     </div>
@@ -73,7 +73,7 @@ defineProps<{
       <p class="pool-label">Queue</p>
       <ul>
         <li v-for="item in queue" :key="item.id">
-          <span class="pool-id">{{ item.text }}</span>
+          <span class="pool-id">{{ item.romanization }}</span>
         </li>
       </ul>
     </div>
@@ -81,7 +81,7 @@ defineProps<{
       <p class="pool-label">Shelved</p>
       <ul>
         <li v-for="item in shelvedItems ?? []" :key="item.id">
-          <span class="pool-id">{{ item.text }}</span>
+          <span class="pool-id">{{ item.romanization }}</span>
         </li>
       </ul>
     </div>
@@ -89,7 +89,7 @@ defineProps<{
       <p class="pool-label">Mastered</p>
       <ul>
         <li v-for="item in masteredDeck" :key="item.id">
-          <span class="pool-id">{{ item.text }}</span>
+          <span class="pool-id">{{ item.romanization }}</span>
         </li>
       </ul>
     </div>

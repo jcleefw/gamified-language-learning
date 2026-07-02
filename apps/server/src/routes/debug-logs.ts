@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import type { ApiResponse } from '@gll/api-contract';
+import { ErrorCode } from '@gll/api-contract';
 
 const router = new Hono();
 const DEBUG_DIR = join(process.cwd(), '..', 'srs-demo', 'manual-test-results');
@@ -24,7 +25,7 @@ router.post('/debug-logs', async (c) => {
     const response: ApiResponse<never> = {
       success: false,
       error: {
-        code: 'INTERNAL_ERROR',
+        code: ErrorCode.INTERNAL_ERROR,
         message: error instanceof Error ? error.message : 'Unknown error',
       },
     };
