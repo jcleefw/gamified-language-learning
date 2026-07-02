@@ -50,6 +50,7 @@ import {
 import DeckSelector from './components/DeckSelector.vue';
 import QuizCard from './components/QuizCard.vue';
 import BatchResults, { type BatchSummary } from './components/BatchResults.vue';
+import DeckOverview from './components/DeckOverview.vue';
 
 const LAST_DECK_KEY = 'srs-demo-last-deck';
 
@@ -90,11 +91,12 @@ const CONFIG = ref<ConfigType>({
   ],
 });
 
-type Screen = 'select' | 'quiz' | 'results';
+type Screen = 'select' | 'quiz' | 'results' | 'overview';
 
 const screen = ref<Screen>('select');
 const hasSavedSession = ref(false);
 const deckId = ref<string | null>(null);
+const overviewDeckId = ref<string | null>(null);
 
 const savedDeckName = computed(() => {
   if (!deckId.value) return null;
@@ -297,6 +299,11 @@ async function initSession(id: string, isNewSession = true) {
 
 function onSelect(id: string) {
   void initSession(id);
+}
+
+function onOverview(id: string) {
+  overviewDeckId.value = id;
+  screen.value = 'overview';
 }
 
 async function onResume() {
@@ -560,6 +567,18 @@ onMounted(async () => {
     @select="onSelect"
     @resume="onResume"
     @clear="onClear"
+    @overview="onOverview"
+  />
+
+  <DeckOverview
+    v-else-if="screen === 'overview' && overviewDeckId"
+    :deck="appDecks.find(d => d.id === overviewDeckId)!"
+    :run-state="globalRunState"
+    :shelved-set="shelvedSet"
+    :max-mastery="CONFIG.streakThresholds.maxMastery"
+    @back="screen = 'select'"
+    @start-quiz="(id) => { void initSession(id); }"
+    @unshelve-word="(dId, wId) => { shelvedSet.value = new Set([...shelvedSet.value].filter(id => id !== wId)); }"
   />
 
   <QuizCard

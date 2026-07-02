@@ -14,6 +14,7 @@ const emit = defineEmits<{
   select: [deckId: string];
   resume: [];
   clear: [];
+  overview: [deckId: string];
 }>();
 
 const decksWithCounts = computed(() =>
@@ -44,13 +45,16 @@ const decksWithCounts = computed(() =>
     <h2>Choose a deck</h2>
     <ul class="deck-list">
       <li v-for="deck in decksWithCounts" :key="deck.id">
-        <button class="deck-btn" @click="emit('select', deck.id)">
-          <span class="deck-topic">{{ deck.topic }}</span>
-          <span v-if="completedDeckIds.has(deck.id)" class="deck-complete-badge"
-            >Complete ★</span
-          >
-          <span v-else class="deck-count">{{ deck.wordCount }} words</span>
-        </button>
+        <div class="deck-row">
+          <button class="deck-btn" @click="emit('select', deck.id)">
+            <span class="deck-topic">{{ deck.topic }}</span>
+            <span v-if="completedDeckIds.has(deck.id)" class="deck-complete-badge"
+              >Complete ★</span
+            >
+            <span v-else class="deck-count">{{ deck.wordCount }} words</span>
+          </button>
+          <button class="btn-overview" @click="emit('overview', deck.id)">Overview</button>
+        </div>
       </li>
     </ul>
   </div>
@@ -112,6 +116,27 @@ h2 {
 }
 .deck-list li {
   margin-bottom: 10px;
+}
+.deck-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.deck-row .deck-btn {
+  flex: 1;
+}
+.btn-overview {
+  padding: 8px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #e5e7eb;
+  color: #374151;
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.btn-overview:hover {
+  background: #d1d5db;
 }
 .deck-btn {
   width: 100%;
