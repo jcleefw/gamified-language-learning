@@ -8,6 +8,7 @@ import type {
   QuizResult,
   QuizItem,
 } from '@gll/srs-engine-v2';
+import PoolDebugPanel from './PoolDebugPanel.vue';
 
 const props = defineProps<{
   question: QuizQuestion;
@@ -16,6 +17,7 @@ const props = defineProps<{
   activeItems: QuizItem[];
   queue: QuizItem[];
   masteredDeck: QuizItem[];
+  shelvedItems?: QuizItem[];
 }>();
 const emit = defineEmits<{ answered: [result: QuizResult]; exit: [] }>();
 
@@ -69,12 +71,19 @@ function submitSentence() {
   if (answered.value || props.question.kind !== 'word-block') return;
   if (remainingTiles.value.length > 0) return;
   const userOrder = selectedTiles.value.map((t) => t.wordId);
-  sentenceCorrect.value = JSON.stringify(userOrder) === JSON.stringify((props.question as SentenceQuestion).answer);
+  sentenceCorrect.value =
+    JSON.stringify(userOrder) ===
+    JSON.stringify((props.question as SentenceQuestion).answer);
   answered.value = true;
 }
 
 function confirmSentence() {
-  if (!answered.value || props.question.kind !== 'word-block' || sentenceCorrect.value === null) return;
+  if (
+    !answered.value ||
+    props.question.kind !== 'word-block' ||
+    sentenceCorrect.value === null
+  )
+    return;
   emit('answered', {
     sentenceId: (props.question as SentenceQuestion).sentenceId,
     correct: sentenceCorrect.value,
@@ -144,7 +153,10 @@ watch(
 </script>
 
 <template>
-  <div class="quiz-card" :data-question-word-id="question.kind === 'mcq' ? question.wordId : ''">
+  <div
+    class="quiz-card"
+    :data-question-word-id="question.kind === 'mcq' ? question.wordId : ''"
+  >
     <div class="quiz-header">
       <div class="progress">{{ index + 1 }} / {{ total }}</div>
       <button class="btn-exit" @click="emit('exit')">Exit</button>
@@ -206,16 +218,16 @@ watch(
           @dragover.prevent
           @drop="onAnswerDrop($event, i)"
         >
-          {{ question.direction === 'native-to-romanization' ? tile.romanization : tile.native }}
+          {{
+            question.direction === 'native-to-romanization'
+              ? tile.romanization
+              : tile.native
+          }}
         </span>
       </div>
 
       <!-- Tile bank -->
-      <div
-        class="tile-bank"
-        @dragover.prevent
-        @drop="onBankDrop"
-      >
+      <div class="tile-bank" @dragover.prevent @drop="onBankDrop">
         <span
           v-for="tile in remainingTiles"
           :key="tile.wordId"
@@ -225,9 +237,16 @@ watch(
           @click="!answered && addTile(tile)"
           @dragstart="onBankDragStart(tile)"
         >
-          {{ question.direction === 'native-to-romanization' ? tile.romanization : tile.native }}
+          {{
+            question.direction === 'native-to-romanization'
+              ? tile.romanization
+              : tile.native
+          }}
         </span>
-        <span v-if="remainingTiles.length === 0 && !answered" class="bank-empty">
+        <span
+          v-if="remainingTiles.length === 0 && !answered"
+          class="bank-empty"
+        >
           All tiles placed
         </span>
       </div>
@@ -242,7 +261,10 @@ watch(
       </button>
 
       <template v-if="answered && sentenceCorrect !== null">
-        <div class="sentence-feedback" :class="{ correct: sentenceCorrect, wrong: !sentenceCorrect }">
+        <div
+          class="sentence-feedback"
+          :class="{ correct: sentenceCorrect, wrong: !sentenceCorrect }"
+        >
           {{ sentenceCorrect ? '✓ Correct!' : '✗ Incorrect' }}
         </div>
         <div v-if="!sentenceCorrect" class="correct-answer">
@@ -252,9 +274,11 @@ watch(
             :key="wordId"
             class="tile-chip tile-chip--correct"
           >
-            {{ question.direction === 'native-to-romanization'
-              ? question.tiles.find(t => t.wordId === wordId)?.romanization
-              : question.tiles.find(t => t.wordId === wordId)?.native }}
+            {{
+              question.direction === 'native-to-romanization'
+                ? question.tiles.find((t) => t.wordId === wordId)?.romanization
+                : question.tiles.find((t) => t.wordId === wordId)?.native
+            }}
           </span>
         </div>
         <button class="btn-submit" @click="confirmSentence">Next</button>
@@ -262,54 +286,13 @@ watch(
     </template>
 
     <!-- Pool debug panel (cheat mode only) -->
-    <template v-if="cheatMode">
-      <div class="pool-panel">
-        <div class="pool-col">
-          <p class="pool-label">Active ({{ activeItems.length }})</p>
-          <ul>
-            <li v-for="item in activeItems" :key="item.id" class="pool-item">
-              <span class="pool-native">{{ item.native }}</span>
-              <span class="pool-id">{{ item.id }}</span>
-            </li>
-            <li v-if="activeItems.length === 0" class="pool-empty">—</li>
-          </ul>
-        </div>
-        <div class="pool-col">
-          <p class="pool-label">Queue ({{ queue.length }})</p>
-          <ul>
-            <li v-for="item in queue" :key="item.id" class="pool-item">
-              <span class="pool-native">{{ item.native }}</span>
-              <span class="pool-id">{{ item.id }}</span>
-            </li>
-            <li v-if="queue.length === 0" class="pool-empty">empty</li>
-          </ul>
-        </div>
-        <div class="pool-col">
-          <p class="pool-label">Mastered ({{ masteredDeck.length }})</p>
-          <ul>
-            <li v-for="item in masteredDeck" :key="item.id" class="pool-item">
-              <span class="pool-native">{{ item.native }}</span>
-              <span class="pool-id">{{ item.id }}</span>
-            </li>
-            <li v-if="masteredDeck.length === 0" class="pool-empty">
-              none yet
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- Test data carrier: hidden from UI; e2e reads .pool-id here to get full IDs including namespace prefix -->
-      <div class="pool-debug" style="display:none">
-        <div class="pool-section">
-          <p class="pool-label">Mastered — this deck</p>
-          <ul>
-            <li v-for="item in masteredDeck" :key="item.id">
-              <span class="pool-id">{{ item.id }}</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </template>
+    <PoolDebugPanel
+      v-if="cheatMode"
+      :active-items="activeItems"
+      :queue="queue"
+      :mastered-deck="masteredDeck"
+      :shelved-items="shelvedItems"
+    />
   </div>
 </template>
 
@@ -424,7 +407,9 @@ watch(
   gap: 8px;
   align-items: center;
   background: #f9fafb;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 .answer-area.drag-over {
   border-color: #2563eb;
@@ -453,7 +438,10 @@ watch(
   font-size: 1rem;
   cursor: pointer;
   user-select: none;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
 }
 .tile-chip:hover {
   border-color: #2563eb;
@@ -535,52 +523,6 @@ watch(
 .tile-chip--correct:hover {
   border-color: #86efac;
   background: #f0fdf4;
-}
-
-/* Pool debug panel */
-.pool-panel {
-  display: flex;
-  gap: 16px;
-  margin-top: 24px;
-  padding: 12px;
-  background: #f9fafb;
-  border: 1px dashed #d1d5db;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  color: #6b7280;
-}
-.pool-col {
-  flex: 1;
-}
-.pool-label {
-  margin: 0 0 6px;
-  font-weight: 600;
-  color: #374151;
-}
-.pool-panel ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.pool-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-.pool-native {
-  font-weight: 500;
-  color: #111827;
-}
-.pool-id {
-  color: #9ca3af;
-  font-size: 0.7rem;
-}
-.pool-empty {
-  color: #9ca3af;
-  font-style: italic;
 }
 .cheat-hint {
   margin: -20px 0 20px;

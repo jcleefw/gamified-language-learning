@@ -239,6 +239,20 @@ export class SqliteLearningStore implements LearningStore {
       .run();
   }
 
+  resetStagnationCountersForWords(userId: string, deckId: string, wordIds: string[]): void {
+    if (wordIds.length === 0) return;
+    this.db
+      .delete(schema.user_deck_word_tracking)
+      .where(
+        and(
+          eq(schema.user_deck_word_tracking.user_id, userId),
+          eq(schema.user_deck_word_tracking.deck_id, deckId),
+          inArray(schema.user_deck_word_tracking.word_id, wordIds),
+        ),
+      )
+      .run();
+  }
+
   // ---------------------------------------------------------------------------
   // Shelving (deck-scoped)
   // ---------------------------------------------------------------------------

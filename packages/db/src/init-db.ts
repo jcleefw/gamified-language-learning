@@ -36,7 +36,6 @@ export function initDb(db: DatabaseConnection): void {
   const migrationsDir = path.join(__dirname, '..', 'drizzle', 'migrations');
 
   if (!existsSync(migrationsDir)) {
-    // eslint-disable-next-line no-console
     console.log('[INFO] No migrations directory found, skipping DB initialization');
     return;
   }
@@ -65,7 +64,6 @@ export function initDb(db: DatabaseConnection): void {
       const result = stmt?.get(migrationId);
 
       if (result) {
-        // eslint-disable-next-line no-console
         console.log(`[INFO] Migration ${migrationId} already applied, skipping`);
         continue;
       }
@@ -75,22 +73,19 @@ export function initDb(db: DatabaseConnection): void {
 
     // Read and apply migration
     const sql = readFileSync(filePath, 'utf-8');
-    // eslint-disable-next-line no-console
     console.log(`[INFO] Applying migration ${migrationId}...`);
     db.exec(sql);
 
     // Record that migration was applied
-    const now = String(Date.now());
+    const now = Date.now().toString();
     try {
       db.exec(
-        `INSERT INTO ${tableName} (id, hash, created_at) VALUES ('${migrationId}', '${migrationId}', ${String(now)});`
+        `INSERT INTO ${tableName} (id, hash, created_at) VALUES ('${migrationId}', '${migrationId}', ${now});`
       );
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.warn(`[WARN] Failed to record migration ${migrationId}:`, e);
     }
   }
 
-  // eslint-disable-next-line no-console
   console.log('[INFO] Database initialization complete');
 }
