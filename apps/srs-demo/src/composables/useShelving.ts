@@ -24,7 +24,12 @@ export async function applyShelving(request: ApplyShelvingRequest): Promise<void
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   });
-  if (!res.ok) throw new Error(`POST /api/shelving/apply failed: ${res.status}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`POST /api/shelving/apply failed: ${res.status} ${text}`);
+  }
+  const body = await res.json() as { success: boolean };
+  if (!body.success) throw new Error('POST /api/shelving/apply returned success:false');
 }
 
 export async function unshelveAll(request: UnshelveAllRequest): Promise<void> {

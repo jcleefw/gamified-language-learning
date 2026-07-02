@@ -273,9 +273,12 @@ async function initSession(id: string, isNewSession = true) {
   // On resume (isNewSession=false), shelvedSet is already populated by onMounted or onResume
 
   // Exclude already-mastered words so they don't fill the active pool on re-entry
+  // Also exclude shelved words on resume
   const words = allWords.filter((w) => {
     const ws = globalRunState.value.get(w.id);
-    return ws == null || !isMastered(ws, CONFIG.value.masteryThreshold);
+    const isMasteredWord = ws != null && isMastered(ws, CONFIG.value.masteryThreshold);
+    const isShelvedWord = shelvedSet.value.has(w.id);
+    return !isMasteredWord && !isShelvedWord;
   });
 
   // Initialize adaptive session
@@ -361,7 +364,14 @@ async function finishBatchAndTransition() {
     const stagnantIds = await getStagnantWords(deckId.value, shelvingConfig.stagnationBatchWindow).catch(() => [] as string[]);
     const decision = evaluateShelving(stagnantIds, shelvedSet.value, shelvingConfig);
     if (decision.toShelve.length > 0) {
-      await applyShelving({ deckId: deckId.value, toShelve: decision.toShelve.map((id: string) => ({ wordId: id, batchNum: batchNum.value })) }).catch(console.error);
+      const toShelvePayload = decision.toShelve.map((id: string) => ({ wordId: id, batchNum: batchNum.value }));
+      console.log('[SHELVING] Applying shelving:', { deckId: deckId.value, toShelve: toShelvePayload });
+      try {
+        await applyShelving({ deckId: deckId.value, toShelve: toShelvePayload });
+        console.log('[SHELVING] Successfully persisted to DB');
+      } catch (err) {
+        console.error('[SHELVING] Failed to persist:', err);
+      }
       decision.toShelve.forEach((id: string) => shelvedSet.value.add(id));
 
       // Rebalance active pool: remove shelved words and pull new ones from queue
