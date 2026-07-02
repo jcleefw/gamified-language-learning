@@ -5,9 +5,10 @@ import { getDb } from '@gll/db';
 import app from './app.js';
 import { seedDemoUser, seedContent } from './seed/seed-db.js';
 
+const PROJECT_ROOT = path.resolve(import.meta.dirname, '../../..');
 const DB_PATH = process.env.GLL_DB_PATH
   ? path.resolve(process.env.GLL_DB_PATH)
-  : path.resolve(import.meta.dirname, '../../../.data/srs-demo.db');
+  : path.resolve(PROJECT_ROOT, '.data/srs-demo.db');
 
 mkdirSync(path.dirname(DB_PATH), { recursive: true });
 getDb(DB_PATH);
