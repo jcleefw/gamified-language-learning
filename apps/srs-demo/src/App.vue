@@ -87,6 +87,11 @@ const screen = ref<Screen>('select');
 const hasSavedSession = ref(false);
 const deckId = ref<string | null>(null);
 
+const savedDeckName = computed(() => {
+  if (!deckId.value) return null;
+  return appDecks.value.find(d => d.id === deckId.value)?.topic ?? null;
+});
+
 // Adaptive session state refs
 const sessionState = ref<AdaptiveSessionState | null>(null);
 const globalRunState = ref<RunState>(new Map());
@@ -490,6 +495,7 @@ onMounted(async () => {
     :decks="appDecks"
     :has-saved-session="hasSavedSession"
     :saved-deck-id="deckId"
+    :saved-deck-name="savedDeckName"
     :completed-deck-ids="completedDeckIds"
     @select="onSelect"
     @resume="onResume"
