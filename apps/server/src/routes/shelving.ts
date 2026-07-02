@@ -8,8 +8,10 @@ import {
   type ShelvedWordPayload,
   type ApplyShelvingRequest,
   type UnshelveAllRequest,
+  type UnshelveWordRequest,
   type UpdateStagnationCountersRequest,
   type ResetStagnationCountersRequest,
+  type ResetStagnationCountersForWordsRequest,
 } from '@gll/api-contract';
 
 const USER_ID = 'demo-user';
@@ -97,6 +99,32 @@ router.post('/shelving/unshelve-all', async (c) => {
   return c.json(body);
 });
 
+router.post('/shelving/unshelve-word', async (c) => {
+  let payload: unknown;
+  try {
+    payload = await c.req.json();
+  } catch {
+    const body: ApiResponse<never> = {
+      success: false,
+      error: { code: ErrorCode.BAD_REQUEST, message: 'Invalid JSON body' },
+    };
+    return c.json(body, 400);
+  }
+
+  const req = payload as UnshelveWordRequest;
+  if (!req?.deckId || !req?.wordId) {
+    const body: ApiResponse<never> = {
+      success: false,
+      error: { code: ErrorCode.BAD_REQUEST, message: 'deckId and wordId are required' },
+    };
+    return c.json(body, 400);
+  }
+
+  getStore().unshelveWord(USER_ID, req.deckId, req.wordId);
+  const body: ApiResponse<null> = { success: true, data: null };
+  return c.json(body);
+});
+
 // ---------------------------------------------------------------------------
 // Stagnation counter routes
 // ---------------------------------------------------------------------------
@@ -151,6 +179,32 @@ router.get('/stagnation/stagnant', (c) => {
   const stagnantWordIds = getStore().getStagnantWords(USER_ID, deckId, threshold);
   const data: GetStagnantWordsResponse = { stagnantWordIds };
   const body: ApiResponse<GetStagnantWordsResponse> = { success: true, data };
+  return c.json(body);
+});
+
+router.post('/stagnation/reset-words', async (c) => {
+  let payload: unknown;
+  try {
+    payload = await c.req.json();
+  } catch {
+    const body: ApiResponse<never> = {
+      success: false,
+      error: { code: ErrorCode.BAD_REQUEST, message: 'Invalid JSON body' },
+    };
+    return c.json(body, 400);
+  }
+
+  const req = payload as ResetStagnationCountersForWordsRequest;
+  if (!req?.deckId || !Array.isArray(req.wordIds)) {
+    const body: ApiResponse<never> = {
+      success: false,
+      error: { code: ErrorCode.BAD_REQUEST, message: 'deckId and wordIds array are required' },
+    };
+    return c.json(body, 400);
+  }
+
+  getStore().resetStagnationCountersForWords(USER_ID, req.deckId, req.wordIds);
+  const body: ApiResponse<null> = { success: true, data: null };
   return c.json(body);
 });
 

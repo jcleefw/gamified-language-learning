@@ -5,8 +5,10 @@ import type {
   ShelvedWordPayload,
   ApplyShelvingRequest,
   UnshelveAllRequest,
+  UnshelveWordRequest,
   UpdateStagnationCountersRequest,
   ResetStagnationCountersRequest,
+  ResetStagnationCountersForWordsRequest,
 } from '@gll/api-contract';
 import { DEFAULT_SHELVING_CONFIG, type ShelvingConfig } from '@gll/srs-shelving';
 
@@ -67,6 +69,24 @@ export async function resetStagnationCounters(request: ResetStagnationCountersRe
     body: JSON.stringify(request),
   });
   if (!res.ok) throw new Error(`POST /api/stagnation/reset failed: ${res.status}`);
+}
+
+export async function unshelveWord(request: UnshelveWordRequest): Promise<void> {
+  const res = await fetch('/api/shelving/unshelve-word', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!res.ok) throw new Error(`POST /api/shelving/unshelve-word failed: ${res.status}`);
+}
+
+export async function resetStagnationCountersForWords(request: ResetStagnationCountersForWordsRequest): Promise<void> {
+  const res = await fetch('/api/stagnation/reset-words', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!res.ok) throw new Error(`POST /api/stagnation/reset-words failed: ${res.status}`);
 }
 
 export async function getShelvingConfig(): Promise<ShelvingConfig> {

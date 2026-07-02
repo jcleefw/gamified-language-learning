@@ -29,6 +29,9 @@ export interface LearningStore {
   /** Resets all stagnation counters for a user+deck (called at session start). */
   resetStagnationCounters(userId: string, deckId: string): void;
 
+  /** Resets stagnation counters for specific word IDs only (called on manual unshelve). */
+  resetStagnationCountersForWords(userId: string, deckId: string, wordIds: string[]): void;
+
   // --- Shelving ---
 
   getShelvedWords(userId: string, deckId: string): ShelvedWord[];

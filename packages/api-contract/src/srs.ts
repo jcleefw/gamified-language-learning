@@ -46,3 +46,13 @@ export interface GetStagnantWordsResponse {
 export interface ResetStagnationCountersRequest {
   deckId: string;
 }
+
+export interface UnshelveWordRequest {
+  deckId: string;
+  wordId: string;
+}
+
+export interface ResetStagnationCountersForWordsRequest {
+  deckId: string;
+  wordIds: string[];
+}

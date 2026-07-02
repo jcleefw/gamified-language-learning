@@ -255,4 +255,24 @@ describe('stagnation counters', () => {
     store.clearUserState('user-a');
     expect(store.getStagnantWords('user-a', 'deck-1', 1)).toEqual([]);
   });
+
+  it('resetStagnationCountersForWords resets only the specified word, leaves others', () => {
+    seedWordState(store, 'user-a', 'w1', 0);
+    seedWordState(store, 'user-a', 'w2', 0);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
+    store.resetStagnationCountersForWords('user-a', 'deck-1', ['w1']);
+    expect(store.getStagnantWords('user-a', 'deck-1', 3)).not.toContain('w1');
+    expect(store.getStagnantWords('user-a', 'deck-1', 3)).toContain('w2');
+  });
+
+  it('resetStagnationCountersForWords with empty array is a no-op', () => {
+    seedWordState(store, 'user-a', 'w1', 0);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    expect(() => { store.resetStagnationCountersForWords('user-a', 'deck-1', []); }).not.toThrow();
+    expect(store.getStagnantWords('user-a', 'deck-1', 3)).toContain('w1');
+  });
 });
