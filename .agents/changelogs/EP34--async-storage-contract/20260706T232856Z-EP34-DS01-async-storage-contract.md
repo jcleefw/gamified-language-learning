@@ -1,7 +1,7 @@
 # EP34-DS01: Async Storage Contract Specification
 
 **Date**: 20260706T232856Z
-**Status**: Draft
+**Status**: Complete ✅ — ST01 · ST02 · ST03 · ST04 all done; full monorepo test suite, typecheck, and lint green
 **Epic**: [EP34 — Async Storage Contract](../../plans/epics/EP34-async-storage-contract.md)
 **ADR authority**: [Async Storage Contract ADR](../../../product-documentation/architecture/20260706T125834Z-engineering-async-storage-contract.md)
 
@@ -149,16 +149,16 @@ onGetStagnantIds?: (activeWordIds: string[]) => string[] | Promise<string[]>;
 - `packages/db/src/__tests__/sqlite-learning-store.test.ts`
 
 **Tasks**:
-- [ ] `learning-store.ts`: change all 14 method return types to `Promise<...>` (incl. `close()`)
-- [ ] `sqlite-learning-store.ts`: add `async` to every method; bodies unchanged
-- [ ] `sqlite-learning-store.test.ts`: `await` every store call
+- [x] `learning-store.ts`: change all 14 method return types to `Promise<...>` (incl. `close()`)
+- [x] `sqlite-learning-store.ts`: add `async` to every method; bodies unchanged
+- [x] `sqlite-learning-store.test.ts`: `await` every store call
 
 **Acceptance criteria**:
-- [ ] No `LearningStore` method returns a bare (non-Promise) value
-- [ ] `SqliteLearningStore` bodies are byte-for-byte identical apart from `async` + `Promise<...>` types
-- [ ] `pnpm --filter @gll/db test` passes unchanged (green)
-- [ ] `pnpm --filter @gll/db typecheck` clean
-- [ ] `strictTypeChecked` (already active on `packages/**`) reports **no** floating promises in `@gll/db`
+- [x] No `LearningStore` method returns a bare (non-Promise) value
+- [x] `SqliteLearningStore` bodies are byte-for-byte identical apart from `async` + `Promise<...>` types
+- [x] `pnpm --filter @gll/db test` passes unchanged (green)
+- [x] `pnpm --filter @gll/db typecheck` clean
+- [x] `strictTypeChecked` (already active on `packages/**`) reports **no** floating promises in `@gll/db` — though it did surface a pre-existing `require-await` conflict, resolved in ST04 (the async wrappers intentionally have no internal `await`)
 
 ---
 
@@ -175,17 +175,17 @@ onGetStagnantIds?: (activeWordIds: string[]) => string[] | Promise<string[]>;
 - `apps/server/src/__tests__/` (route + seed tests)
 
 **Tasks**:
-- [ ] `state.ts`: make `GET /state` and `DELETE /state` handlers `async`; `await` `getAllWordStates`, `upsertWordState`, `clearUserState`
-- [ ] `shelving.ts`: make `GET /shelving` and `GET /stagnation/stagnant` handlers `async`; `await` all store calls (incl. the `for` loop over `shelveWord` in `/shelving/apply`)
-- [ ] `test-seed.ts`: `await` `clearUserState`, `upsertWordState`, `shelveWord`
-- [ ] Update any server tests that assert on store state to `await`
+- [x] `state.ts`: make `GET /state` and `DELETE /state` handlers `async`; `await` `getAllWordStates`, `upsertWordState`, `clearUserState`
+- [x] `shelving.ts`: make `GET /shelving` and `GET /stagnation/stagnant` handlers `async`; `await` all store calls (incl. the `for` loop over `shelveWord` in `/shelving/apply`)
+- [x] `test-seed.ts`: `await` `clearUserState`, `upsertWordState`, `shelveWord`
+- [x] Update any server tests that assert on store state to `await` — also required fixing 4 un-awaited direct `store.*` calls inside `test-seed.test.ts` itself, not just the routes (discovered by rebuilding `@gll/db` and rerunning the suite — the stale `dist` had been masking this)
 
 **Acceptance criteria**:
-- [ ] Every store call in the three route files is `await`ed
-- [ ] All four previously-sync handlers are `async`
-- [ ] `pnpm --filter server test` passes unchanged (green)
-- [ ] `pnpm --filter server typecheck` clean
-- [ ] **Edge case**: a rejected store write surfaces as a `500`/error response, not a silently-swallowed floating promise — covered by a test
+- [x] Every store call in the three route files is `await`ed
+- [x] All four previously-sync handlers are `async`
+- [x] `pnpm --filter server test` passes unchanged (green)
+- [x] `pnpm --filter server typecheck` clean
+- [x] **Edge case**: a rejected store write surfaces as a `500`/error response, not a silently-swallowed floating promise — covered by a test (`test-seed.test.ts > rejected store write propagation`), verified red-without-fix / green-with-fix
 
 ### EP34-ST03: CLI runner callbacks + engine hook type
 
@@ -199,19 +199,19 @@ onGetStagnantIds?: (activeWordIds: string[]) => string[] | Promise<string[]>;
 - `apps/cli-demo-db/src/__tests__/learning-io.test.ts`, `db-tools.test.ts`, `shelving-integration.test.ts`
 
 **Tasks**:
-- [ ] `word-state.ts`: widen `GraduationHook` return to `void | Promise<void>`
-- [ ] `learning-io.ts`: widen `onWordAnswer`/`onSentenceAnswer`/`onShelve`/`onUnshelveAll` to `void | Promise<void>`; widen `onGetStagnantIds` to `string[] | Promise<string[]>`
-- [ ] `learning-io.ts`: `await` each callback invocation — `onWordAnswer(ws)`, `onSentenceAnswer(ss)`, `onShelve(...)`, `onUnshelveAll()`, `onGraduation(...)`, and `await onGetStagnantIds?.(activeIds) ?? []`
-- [ ] `db-tools.ts`: `await` `store.upsertWordState` (and any other store calls)
-- [ ] `learning-runner-db.ts`: verify the inline callbacks (returning store promises) type-check under the widened types; no change to `await runAdaptiveLoop(...)`
-- [ ] Update CLI tests to `await` store calls / async callbacks
+- [x] `word-state.ts`: widen `GraduationHook` return to `void | Promise<void>`
+- [x] `learning-io.ts`: widen `onWordAnswer`/`onSentenceAnswer`/`onShelve`/`onUnshelveAll` to `void | Promise<void>`; widen `onGetStagnantIds` to `string[] | Promise<string[]>`
+- [x] `learning-io.ts`: `await` each callback invocation — `onWordAnswer(ws)`, `onSentenceAnswer(ss)`, `onShelve(...)`, `onUnshelveAll()`, `onGraduation(...)`, and `await onGetStagnantIds?.(activeIds) ?? []`
+- [x] `db-tools.ts`: `await` `store.upsertWordState` (and any other store calls) — `seedDb` itself became `async`, requiring its one caller (`db-tools-cli.ts`) to `await` it too
+- [x] `learning-runner-db.ts`: **this needed a real change, not just verification** — `initialRunState`/`initialSentenceRunState` (from `getAllWordStates`/`getAllSentenceStates`) were un-awaited and used directly as `RunState`/`SentenceRunState`, a typecheck failure once ST01's async contract actually took effect
+- [x] Update CLI tests to `await` store calls / async callbacks — also required converting several `.push()`-returning test callbacks to block bodies, since `void | Promise<void>` doesn't get TS's usual "any return is fine for void" leniency the way plain `void` does
 
 **Acceptance criteria**:
-- [ ] The **only** file changed under `packages/srs-engine-v2/` is `types/word-state.ts` (type widening) — no scoring-logic file touched
-- [ ] Every callback call site inside the batch loop and at loop exit is `await`ed
-- [ ] `onGetStagnantIds` result is awaited before `evaluateShelving`
-- [ ] `pnpm --filter cli-demo-db test` passes unchanged (green)
-- [ ] `pnpm --filter cli-demo-db typecheck` and `pnpm --filter @gll/srs-engine-v2 typecheck` clean
+- [x] The **only** file changed under `packages/srs-engine-v2/` is `types/word-state.ts` (type widening) — no scoring-logic file touched. (The engine's own **demo** file, `packages/srs-engine-v2/demo/learning-io.ts`, needed a 1-line `await` fix in ST04 after this widening broke its un-awaited `onGraduation` call — not scoring logic, but worth noting.)
+- [x] Every callback call site inside the batch loop and at loop exit is `await`ed
+- [x] `onGetStagnantIds` result is awaited before `evaluateShelving`
+- [x] `pnpm --filter cli-demo-db test` passes unchanged (green)
+- [x] `pnpm --filter cli-demo-db typecheck` and `pnpm --filter @gll/srs-engine-v2 typecheck` clean
 
 ---
 
@@ -225,15 +225,19 @@ onGetStagnantIds?: (activeWordIds: string[]) => string[] | Promise<string[]>;
 - `eslint.config.ts`
 
 **Tasks**:
-- [ ] Add an `apps/**/*.ts` config block extending a type-checked preset (or `recommendedTypeChecked`) with `languageOptions.parserOptions.project: true`, enabling `@typescript-eslint/no-floating-promises`
-- [ ] Evaluate enabling `@typescript-eslint/require-await` (flag or defer with a note)
-- [ ] Fix any violations the rule surfaces (should be zero if ST02/ST03 are complete — the rule acts as verification)
-- [ ] Confirm `packages/**` retains the rule via `strictTypeChecked` (no change needed)
+- [x] Add an `apps/**/*.ts` config block extending a type-checked preset (or `recommendedTypeChecked`) with `languageOptions.parserOptions.project: true`, enabling `@typescript-eslint/no-floating-promises` — **decision**: extends `recommended` (not `recommendedTypeChecked`) plus this one explicit rule; the full type-checked bundle surfaced ~35 unrelated pre-existing issues (`no-unsafe-assignment`, `no-unnecessary-type-assertion`, parsing errors on Playwright e2e files outside any `tsconfig.json`'s `include`) that are out of scope for this migration
+- [x] Evaluate enabling `@typescript-eslint/require-await` — **decision: defer**, scoped-disabled for `sqlite-learning-store.ts` only (14 pre-existing violations there, by design — ST01's async-over-sync wrappers intentionally have zero internal `await`)
+- [x] Fix any violations the rule surfaces (should be zero if ST02/ST03 are complete — the rule acts as verification) — it wasn't quite zero: caught 2 real gaps (see below)
+- [x] Confirm `packages/**` retains the rule via `strictTypeChecked` (no change needed)
 
 **Acceptance criteria**:
-- [ ] `no-floating-promises` is active for both `apps/**` and `packages/**`
-- [ ] `pnpm lint` passes with zero violations across the repo
-- [ ] Introducing a deliberate un-awaited store call fails lint (manual spot-check, then revert)
+- [x] `no-floating-promises` is active for both `apps/**` and `packages/**`
+- [x] `pnpm lint` passes with zero violations across the repo
+- [x] Introducing a deliberate un-awaited store call fails lint (manual spot-check on `state.ts`'s `clearUserState`, then reverted)
+
+**What the rule actually caught** (proof ST02/ST03 weren't fully clean):
+- `learning-runner-db.ts`'s `onUnshelveAll`/`onGetStagnantIds` inline callbacks had fire-and-forget store calls flagged in ST03 as a risk, not fixed — now `async` with sequential `await`s.
+- `packages/srs-engine-v2/demo/learning-io.ts` — un-awaited `onGraduation(...)`, broken by ST03's `GraduationHook` widening and missed because it's a demo file with no test coverage exercising the lint-relevant path.
 
 ---
 
@@ -245,12 +249,14 @@ onGetStagnantIds?: (activeWordIds: string[]) => string[] | Promise<string[]>;
 
 ---
 
-## 7. Success Criteria
+## 7. Success Criteria — all met ✅
 
-1. `LearningStore` and `SqliteLearningStore` are fully async; no method returns a bare value.
-2. No behavioural change — `@gll/db`, `server`, and `cli-demo-db` test suites pass unchanged (green).
-3. Server routes and CLI callbacks `await` every store call; no floating promises remain.
-4. Engine scoring core is unmodified — the only engine edit is the `GraduationHook` type widening.
-5. `no-floating-promises` is active in CI (`apps/**` + `packages/**`) and passes with zero violations.
-6. A rejected store write propagates through the awaiting route/callback rather than being silently swallowed (tested).
-7. No type errors: `pnpm typecheck` clean across all packages.
+1. [x] `LearningStore` and `SqliteLearningStore` are fully async; no method returns a bare value.
+2. [x] No behavioural change — `@gll/db`, `server`, and `cli-demo-db` test suites pass unchanged (green): 31/31, 62/62, 40/40.
+3. [x] Server routes and CLI callbacks `await` every store call; no floating promises remain.
+4. [x] Engine scoring core is unmodified — the only engine edit is the `GraduationHook` type widening.
+5. [x] `no-floating-promises` is active in CI (`apps/**` + `packages/**`) and passes with zero violations.
+6. [x] A rejected store write propagates through the awaiting route/callback rather than being silently swallowed (tested).
+7. [x] No type errors: `pnpm typecheck` clean across all packages.
+
+**Delivered across 3 commits** on `EP-34--async-storage-contract`: `795fd6a` (ST02), `26425c7` (ST03), `e2bc94d` (ST04). ST01 landed earlier (`a4613c0`).
