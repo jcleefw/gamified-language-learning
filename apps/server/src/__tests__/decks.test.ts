@@ -163,4 +163,29 @@ describe('POST /api/curriculum/import', () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it('returns 400 for a structurally malformed ConversationJSON body (Zod guard)', async () => {
+    const malformed = { ...sampleConvJSON, breakdown: [{ ...sampleConvJSON.breakdown[0], components: 'not-an-array' }] };
+    const res = await app.request('/api/curriculum/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(malformed),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { success: false; error: { code: string; message: string } };
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe('BAD_REQUEST');
+  });
+
+  it('does not import a deck when the body fails Zod validation', async () => {
+    const malformed = { ...sampleConvJSON, topic: '' };
+    await app.request('/api/curriculum/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(malformed),
+    });
+    const res = await app.request('/api/decks');
+    const body = (await res.json()) as { success: true; data: GetDecksResponse };
+    expect(body.data).toHaveLength(0);
+  });
 });

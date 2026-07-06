@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getDb, SqliteContentStore } from '@gll/db';
-import { ErrorCode, type ApiResponse, type GetDecksResponse, type ConversationJSON } from '@gll/api-contract';
+import { ErrorCode, ConversationJSONSchema, type ApiResponse, type GetDecksResponse } from '@gll/api-contract';
 import { transformConversation } from '../transform-conversation.js';
 
 const router = new Hono();
@@ -27,16 +27,16 @@ router.post('/curriculum/import', async (c) => {
     return c.json(body, 400);
   }
 
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+  const parsed = ConversationJSONSchema.safeParse(payload);
+  if (!parsed.success) {
     const body: ApiResponse<never> = {
       success: false,
-      error: { code: ErrorCode.BAD_REQUEST, message: 'Body must be a single ConversationJSON object' },
+      error: { code: ErrorCode.BAD_REQUEST, message: parsed.error.message },
     };
     return c.json(body, 400);
   }
 
-  const conv = payload as ConversationJSON;
-  const appDeck = transformConversation(conv);
+  const appDeck = transformConversation(parsed.data);
   await getStore().importCurriculum([appDeck]);
 
   return c.body(null, 201);

@@ -1,33 +1,40 @@
 // ── Raw curator upload format ─────────────────────────────────────────────────
 
-export interface ConversationComponent {
-  thai: string;
-  romanization: string;
-  english: string;
-  type: string;
-}
+import { z } from 'zod';
 
-export interface ConversationBreakdown {
-  thai: string;
-  romanization: string;
-  english: string;
-  components: ConversationComponent[];
-}
+// Guard 1 — untrusted curator upload (mirrors the ConversationJSON interface)
+export const ConversationComponentSchema = z.object({
+  thai: z.string().min(1),
+  romanization: z.string(),
+  english: z.string(),
+  type: z.string(),
+});
+export type ConversationComponent = z.infer<typeof ConversationComponentSchema>;
 
-export interface ConversationLine {
-  speaker: string;
-  thai: string;
-  english: string;
-  romanization: string;
-}
+export const ConversationBreakdownSchema = z.object({
+  thai: z.string().min(1),
+  romanization: z.string(),
+  english: z.string(),
+  components: z.array(ConversationComponentSchema),
+});
+export type ConversationBreakdown = z.infer<typeof ConversationBreakdownSchema>;
 
-export interface ConversationJSON {
-  topic: string;
-  difficulty?: string;
-  register?: string;
-  lines: ConversationLine[];
-  breakdown: ConversationBreakdown[];
-}
+export const ConversationLineSchema = z.object({
+  speaker: z.string(),
+  thai: z.string().min(1),
+  english: z.string(),
+  romanization: z.string(),
+});
+export type ConversationLine = z.infer<typeof ConversationLineSchema>;
+
+export const ConversationJSONSchema = z.object({
+  topic: z.string().min(1),
+  difficulty: z.string().optional(),
+  register: z.string().optional(),
+  lines: z.array(ConversationLineSchema),
+  breakdown: z.array(ConversationBreakdownSchema),
+});
+export type ConversationJSON = z.infer<typeof ConversationJSONSchema>;
 
 // ── importCurriculum input (AppDeck[]) ────────────────────────────────────────
 
@@ -84,3 +91,32 @@ export interface AppDeckPayload {
 }
 
 export type GetDecksResponse = AppDeckPayload[];
+
+// ── Persisted document (source of truth for the DeckDoc type) ────────────────
+// wordId references are validated for *shape* here (non-empty string); resolution
+// to a real words.id is a DB concern enforced in importCurriculum (Zod cannot see
+// the words table).
+
+export const DeckComponentSchema = z.object({
+  wordId: z.string().min(1),
+  position: z.number().int().nonnegative(),
+  romanization: z.string().optional(),
+  english: z.string().optional(),
+});
+export type DeckComponent = z.infer<typeof DeckComponentSchema>;
+
+export const DeckSentenceSchema = z.object({
+  sentenceId: z.string().min(1),
+  speaker: z.string(),
+  native: z.string().min(1),
+  english: z.string(),
+  romanization: z.string(),
+  position: z.number().int().nonnegative(),
+  components: z.array(DeckComponentSchema),
+});
+export type DeckSentence = z.infer<typeof DeckSentenceSchema>;
+
+export const DeckDocSchema = z.object({
+  sentences: z.array(DeckSentenceSchema),
+});
+export type DeckDoc = z.infer<typeof DeckDocSchema>;
