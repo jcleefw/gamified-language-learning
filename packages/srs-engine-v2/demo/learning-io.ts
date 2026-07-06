@@ -394,7 +394,7 @@ export async function runAdaptiveLoop(
         }
       }
     }
-    onGraduation(graduatedWordIds, state.runState);
+    await onGraduation(graduatedWordIds, state.runState);
   }
 
   console.log('\n=== Run Complete ===');
