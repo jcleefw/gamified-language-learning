@@ -58,10 +58,10 @@ export default tseslint.config(
     },
   },
   {
-    // SqliteLearningStore methods are async-over-sync wrappers by design (EP34 ADR):
-    // the body is byte-for-byte identical to the pre-async version, wrapping synchronous
+    // SqliteLearningStore/SqliteContentStore methods are async-over-sync wrappers by design
+    // (EP34 ADR, extended to ContentStore by EP35-ST02): the body wraps synchronous
     // better-sqlite3 calls with zero internal `await`. require-await doesn't apply here.
-    files: ['packages/db/src/sqlite-learning-store.ts'],
+    files: ['packages/db/src/sqlite-learning-store.ts', 'packages/db/src/sqlite-content-store.ts'],
     rules: {
       '@typescript-eslint/require-await': 'off',
     },

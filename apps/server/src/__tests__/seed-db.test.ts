@@ -36,32 +36,32 @@ describe('seedDemoUser', () => {
 });
 
 describe('seedContent', () => {
-  it('populates decks table with 4 rows on cold start', () => {
-    seedContent(testDb);
+  it('populates decks table with 4 rows on cold start', async () => {
+    await seedContent(testDb);
     const decks = testDb.select().from(schema.decks).all();
     expect(decks).toHaveLength(5);
   });
 
-  it('all seeded decks have UUID ids', () => {
-    seedContent(testDb);
+  it('all seeded decks have UUID ids', async () => {
+    await seedContent(testDb);
     const decks = testDb.select().from(schema.decks).all();
     for (const deck of decks) {
       expect(deck.id).toMatch(/^[0-9a-f-]{36}$/);
     }
   });
 
-  it('is idempotent — calling twice keeps 4 decks', () => {
-    seedContent(testDb);
-    seedContent(testDb);
+  it('is idempotent — calling twice keeps 4 decks', async () => {
+    await seedContent(testDb);
+    await seedContent(testDb);
     const decks = testDb.select().from(schema.decks).all();
     expect(decks).toHaveLength(5);
   });
 
-  it('no-ops when decks already exist', () => {
-    seedContent(testDb);
+  it('no-ops when decks already exist', async () => {
+    await seedContent(testDb);
     const wordCountBefore = testDb.select().from(schema.words).all().length;
 
-    seedContent(testDb);
+    await seedContent(testDb);
     const wordCountAfter = testDb.select().from(schema.words).all().length;
     expect(wordCountAfter).toBe(wordCountBefore);
   });

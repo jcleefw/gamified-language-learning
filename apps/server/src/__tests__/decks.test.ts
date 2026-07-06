@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { initDb, schema, importCurriculum } from '@gll/db';
+import { initDb, schema, SqliteContentStore } from '@gll/db';
 import type { AppDeck, AppDeckPayload, ConversationJSON, GetDecksResponse } from '@gll/api-contract';
 
 type TestDb = ReturnType<typeof drizzle<typeof schema>>;
@@ -78,7 +78,7 @@ describe('GET /api/decks', () => {
   });
 
   it('returns deck with UUID id after importCurriculum', async () => {
-    importCurriculum(testDb, [singleDeck]);
+    await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
     const res = await app.request('/api/decks');
     expect(res.status).toBe(200);
     const body = (await res.json()) as { success: true; data: GetDecksResponse };
@@ -92,7 +92,7 @@ describe('GET /api/decks', () => {
   });
 
   it('returns words with correct romanization/english/type from senses', async () => {
-    importCurriculum(testDb, [singleDeck]);
+    await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
     const res = await app.request('/api/decks');
     const body = (await res.json()) as { success: true; data: GetDecksResponse };
     const deck = body.data[0] as AppDeckPayload;
@@ -105,7 +105,7 @@ describe('GET /api/decks', () => {
   });
 
   it('returns lines in position order with correct speaker', async () => {
-    importCurriculum(testDb, [singleDeck]);
+    await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
     const res = await app.request('/api/decks');
     const body = (await res.json()) as { success: true; data: GetDecksResponse };
     const deck = body.data[0] as AppDeckPayload;
@@ -115,7 +115,7 @@ describe('GET /api/decks', () => {
   });
 
   it('returns wordIds in component position order', async () => {
-    importCurriculum(testDb, [singleDeck]);
+    await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
     const res = await app.request('/api/decks');
     const body = (await res.json()) as { success: true; data: GetDecksResponse };
     const deck = body.data[0] as AppDeckPayload;
