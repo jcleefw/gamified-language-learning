@@ -11,7 +11,7 @@ type DbClient = BetterSQLite3Database<typeof schema> & { $client: BetterSqlite3.
 export class SqliteLearningStore implements LearningStore {
   constructor(private readonly db: DbClient) {}
 
-  getAllWordStates(userId: string): RunState {
+  async getAllWordStates(userId: string): Promise<RunState> {
     const rows = this.db
       .select()
       .from(schema.user_word_states)
@@ -34,7 +34,7 @@ export class SqliteLearningStore implements LearningStore {
     );
   }
 
-  upsertWordState(userId: string, state: WordState): void {
+  async upsertWordState(userId: string, state: WordState): Promise<void> {
     this.db
       .insert(schema.user_word_states)
       .values({
@@ -61,7 +61,7 @@ export class SqliteLearningStore implements LearningStore {
       .run();
   }
 
-  getAllSentenceStates(userId: string): SentenceRunState {
+  async getAllSentenceStates(userId: string): Promise<SentenceRunState> {
     const rows = this.db
       .select()
       .from(schema.user_sentence_states)
@@ -83,7 +83,7 @@ export class SqliteLearningStore implements LearningStore {
     );
   }
 
-  upsertSentenceState(userId: string, state: SentenceState): void {
+  async upsertSentenceState(userId: string, state: SentenceState): Promise<void> {
     this.db
       .insert(schema.user_sentence_states)
       .values({
@@ -108,7 +108,7 @@ export class SqliteLearningStore implements LearningStore {
       .run();
   }
 
-  clearUserState(userId: string): void {
+  async clearUserState(userId: string): Promise<void> {
     this.db.delete(schema.user_word_states).where(eq(schema.user_word_states.user_id, userId)).run();
     this.db.delete(schema.user_sentence_states).where(eq(schema.user_sentence_states.user_id, userId)).run();
     this.db.delete(schema.user_shelved_words).where(eq(schema.user_shelved_words.user_id, userId)).run();
@@ -119,7 +119,7 @@ export class SqliteLearningStore implements LearningStore {
   // Stagnation tracking
   // ---------------------------------------------------------------------------
 
-  updateStagnationCounters(userId: string, deckId: string, activeWordIds: string[]): void {
+  async updateStagnationCounters(userId: string, deckId: string, activeWordIds: string[]): Promise<void> {
     if (activeWordIds.length === 0) return;
 
     // Fetch current mastery for all active words
@@ -211,7 +211,7 @@ export class SqliteLearningStore implements LearningStore {
     }
   }
 
-  getStagnantWords(userId: string, deckId: string, threshold: number): string[] {
+  async getStagnantWords(userId: string, deckId: string, threshold: number): Promise<string[]> {
     const rows = this.db
       .select({ word_id: schema.user_deck_word_tracking.word_id })
       .from(schema.user_deck_word_tracking)
@@ -227,7 +227,7 @@ export class SqliteLearningStore implements LearningStore {
     return rows.map((row) => row.word_id);
   }
 
-  resetStagnationCounters(userId: string, deckId: string): void {
+  async resetStagnationCounters(userId: string, deckId: string): Promise<void> {
     this.db
       .delete(schema.user_deck_word_tracking)
       .where(
@@ -239,7 +239,7 @@ export class SqliteLearningStore implements LearningStore {
       .run();
   }
 
-  resetStagnationCountersForWords(userId: string, deckId: string, wordIds: string[]): void {
+  async resetStagnationCountersForWords(userId: string, deckId: string, wordIds: string[]): Promise<void> {
     if (wordIds.length === 0) return;
     this.db
       .delete(schema.user_deck_word_tracking)
@@ -257,7 +257,7 @@ export class SqliteLearningStore implements LearningStore {
   // Shelving (deck-scoped)
   // ---------------------------------------------------------------------------
 
-  getShelvedWords(userId: string, deckId: string): ShelvedWord[] {
+  async getShelvedWords(userId: string, deckId: string): Promise<ShelvedWord[]> {
     const rows = this.db
       .select()
       .from(schema.user_shelved_words)
@@ -275,7 +275,7 @@ export class SqliteLearningStore implements LearningStore {
     }));
   }
 
-  shelveWord(userId: string, deckId: string, wordId: string, batchNum: number): void {
+  async shelveWord(userId: string, deckId: string, wordId: string, batchNum: number): Promise<void> {
     this.db
       .insert(schema.user_shelved_words)
       .values({
@@ -295,7 +295,7 @@ export class SqliteLearningStore implements LearningStore {
       .run();
   }
 
-  unshelveWord(userId: string, deckId: string, wordId: string): void {
+  async unshelveWord(userId: string, deckId: string, wordId: string): Promise<void> {
     this.db
       .delete(schema.user_shelved_words)
       .where(
@@ -308,7 +308,7 @@ export class SqliteLearningStore implements LearningStore {
       .run();
   }
 
-  unshelveAllWords(userId: string, deckId: string): void {
+  async unshelveAllWords(userId: string, deckId: string): Promise<void> {
     this.db
       .delete(schema.user_shelved_words)
       .where(
@@ -320,7 +320,7 @@ export class SqliteLearningStore implements LearningStore {
       .run();
   }
 
-  close(): void {
+  async close(): Promise<void> {
     this.db.$client.close();
   }
 }
