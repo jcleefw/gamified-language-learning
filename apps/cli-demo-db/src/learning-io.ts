@@ -298,15 +298,15 @@ export async function runAdaptiveLoop(
   recheckIds: Set<string> = new Set(),
   strategy: AutoAnswerStrategy | undefined,
   corpus: SentenceContext[],
-  onWordAnswer?: (state: WordState) => void,
-  onSentenceAnswer?: (state: SentenceState) => void,
+  onWordAnswer?: (state: WordState) => void | Promise<void>,
+  onSentenceAnswer?: (state: SentenceState) => void | Promise<void>,
   onGraduation?: GraduationHook,
   shelvingConfig?: ShelvingConfig,
-  onShelve?: (wordId: string, batchNum: number) => void,
-  onUnshelveAll?: () => void,
+  onShelve?: (wordId: string, batchNum: number) => void | Promise<void>,
+  onUnshelveAll?: () => void | Promise<void>,
   initialShelvedIds?: Set<string>,
   /** DS02: called after each batch boundary to detect stagnant word IDs via DB counters. */
-  onGetStagnantIds?: (activeWordIds: string[]) => string[],
+  onGetStagnantIds?: (activeWordIds: string[]) => string[] | Promise<string[]>,
 ): Promise<{ runState: RunState; sentenceRunState: SentenceRunState }> {
   const config: SessionConfig = {
     wordsPerBatch,
@@ -329,7 +329,7 @@ export async function runAdaptiveLoop(
   let totalQuestions = 0;
   let totalMastered = 0;
 
-  onUnshelveAll?.();
+  await onUnshelveAll?.();
 
   for (;;) {
     if (state.active.length === 0 && state.queue.length === 0) break;
@@ -370,7 +370,7 @@ export async function runAdaptiveLoop(
     if (onSentenceAnswer) {
       for (const r of sentenceResults) {
         const ss = sentenceRunState.get(r.sentenceId);
-        if (ss) onSentenceAnswer(ss);
+        if (ss) await onSentenceAnswer(ss);
       }
     }
 
@@ -391,18 +391,18 @@ export async function runAdaptiveLoop(
       for (const wordId of batchWordIds) {
         const ws = state.runState.get(wordId);
         if (!ws) throw new Error(`runState missing entry for answered word: ${wordId}`);
-        onWordAnswer(ws);
+        await onWordAnswer(ws);
       }
     }
 
     // DS02 shelving pipeline: stagnation detection via DB counters (onGetStagnantIds callback).
     if (onShelve) {
       const activeIds = state.active.map((w) => w.id);
-      const stagnant = onGetStagnantIds?.(activeIds) ?? [];
+      const stagnant = (await onGetStagnantIds?.(activeIds)) ?? [];
       const decision = evaluateShelving(stagnant, shelvedSet, shelving);
       for (const id of decision.toShelve) {
         shelvedSet.add(id);
-        onShelve(id, currentBatchNum);
+        await onShelve(id, currentBatchNum);
       }
     }
 
@@ -441,7 +441,7 @@ export async function runAdaptiveLoop(
         }
       }
     }
-    onGraduation(graduatedWordIds, state.runState);
+    await onGraduation(graduatedWordIds, state.runState);
   }
 
   console.log('\n=== Run Complete ===');

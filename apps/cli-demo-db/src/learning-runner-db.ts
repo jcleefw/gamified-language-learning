@@ -28,8 +28,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const foundationalPool = await buildFoundationalPool();
   const corpus = buildSentenceCorpus(db);
 
-  const initialRunState = store.getAllWordStates(CLI_USER_ID);
-  const initialSentenceRunState = store.getAllSentenceStates(CLI_USER_ID);
+  const initialRunState = await store.getAllWordStates(CLI_USER_ID);
+  const initialSentenceRunState = await store.getAllSentenceStates(CLI_USER_ID);
 
   const words = allWords.filter((w) => {
     const ws = initialRunState.get(w.id);

@@ -25,7 +25,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       process.exit(1);
     }
     const db = getDb(DB_PATH) as DbClient;
-    seedDb(fixtureName, db, 'cli-user');
+    await seedDb(fixtureName, db, 'cli-user');
     console.log(`[INFO] Seeded fixture "${fixtureName}" for cli-user.`);
     closeDb();
   } else {
