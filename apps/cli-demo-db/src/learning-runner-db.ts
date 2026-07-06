@@ -28,8 +28,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const foundationalPool = await buildFoundationalPool();
   const corpus = buildSentenceCorpus(db);
 
-  const initialRunState = store.getAllWordStates(CLI_USER_ID);
-  const initialSentenceRunState = store.getAllSentenceStates(CLI_USER_ID);
+  const initialRunState = await store.getAllWordStates(CLI_USER_ID);
+  const initialSentenceRunState = await store.getAllSentenceStates(CLI_USER_ID);
 
   const words = allWords.filter((w) => {
     const ws = initialRunState.get(w.id);
@@ -58,13 +58,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     DEFAULT_SHELVING_CONFIG,
     (wordId, batchNum) =>
       store.shelveWord(CLI_USER_ID, DECK_ID, wordId, batchNum),
-    () => {
-      store.unshelveAllWords(CLI_USER_ID, DECK_ID);
-      store.resetStagnationCounters(CLI_USER_ID, DECK_ID);
+    async () => {
+      await store.unshelveAllWords(CLI_USER_ID, DECK_ID);
+      await store.resetStagnationCounters(CLI_USER_ID, DECK_ID);
     },
     new Set(), // always start with empty shelved set — unshelve-all runs on session start
-    (activeWordIds) => {
-      store.updateStagnationCounters(CLI_USER_ID, DECK_ID, activeWordIds);
+    async (activeWordIds) => {
+      await store.updateStagnationCounters(CLI_USER_ID, DECK_ID, activeWordIds);
       return store.getStagnantWords(
         CLI_USER_ID,
         DECK_ID,

@@ -24,11 +24,11 @@ export function resetDb(dbPath: string): void {
   getDb(dbPath);
 }
 
-export function seedDb(
+export async function seedDb(
   fixtureName: string,
   db: DbClient,
   userId: string = 'cli-user',
-): void {
+): Promise<void> {
   const fixture = fixtures[fixtureName];
   if (!fixture) {
     throw new Error(`seedDb: unknown fixture "${fixtureName}". Available: ${Object.keys(fixtures).join(', ')}`);
@@ -39,6 +39,6 @@ export function seedDb(
   const store = new SqliteLearningStore(db);
   const wordStates = fixture(db);
   for (const ws of wordStates) {
-    store.upsertWordState(userId, ws);
+    await store.upsertWordState(userId, ws);
   }
 }

@@ -26,7 +26,7 @@ describe('SqliteLearningStore', () => {
     store = new SqliteLearningStore(db);
   });
 
-  it('upsert then getAll returns same WordState including lapses', () => {
+  it('upsert then getAll returns same WordState including lapses', async () => {
     const ws: WordState = {
       wordId: 'word-1',
       seen: 10,
@@ -37,13 +37,13 @@ describe('SqliteLearningStore', () => {
       lapses: 4,
     };
 
-    store.upsertWordState('user-a', ws);
-    const result = store.getAllWordStates('user-a');
+    await store.upsertWordState('user-a', ws);
+    const result = await store.getAllWordStates('user-a');
 
     expect(result.get('word-1')).toEqual(ws);
   });
 
-  it('upsert then getAll returns same SentenceState with active:false and lastBatchSeen:-1', () => {
+  it('upsert then getAll returns same SentenceState with active:false and lastBatchSeen:-1', async () => {
     const ss: SentenceState = {
       sentenceId: 'sent-1',
       sentenceStreak: 5,
@@ -53,13 +53,13 @@ describe('SqliteLearningStore', () => {
       active: false,
     };
 
-    store.upsertSentenceState('user-a', ss);
-    const result = store.getAllSentenceStates('user-a');
+    await store.upsertSentenceState('user-a', ss);
+    const result = await store.getAllSentenceStates('user-a');
 
     expect(result.get('sent-1')).toEqual(ss);
   });
 
-  it('second upsert with same (userId, wordId) overwrites — no duplicate rows', () => {
+  it('second upsert with same (userId, wordId) overwrites — no duplicate rows', async () => {
     const ws1: WordState = {
       wordId: 'word-1',
       seen: 1,
@@ -79,12 +79,33 @@ describe('SqliteLearningStore', () => {
       lapses: 1,
     };
 
-    store.upsertWordState('user-a', ws1);
-    store.upsertWordState('user-a', ws2);
-    const result = store.getAllWordStates('user-a');
+    await store.upsertWordState('user-a', ws1);
+    await store.upsertWordState('user-a', ws2);
+    const result = await store.getAllWordStates('user-a');
 
     expect(result.size).toBe(1);
     expect(result.get('word-1')).toEqual(ws2);
+  });
+
+  it('a rejected store write propagates as a rejected promise, not a swallowed error', async () => {
+    const badDb = {
+      insert: () => {
+        throw new Error('simulated write failure');
+      },
+    } as unknown as DbClient;
+    const failingStore = new SqliteLearningStore(badDb);
+
+    await expect(
+      failingStore.upsertWordState('user-a', {
+        wordId: 'word-1',
+        seen: 1,
+        correct: 1,
+        mastery: 1,
+        correctStreak: 1,
+        wrongStreak: 0,
+        lapses: 0,
+      }),
+    ).rejects.toThrow('simulated write failure');
   });
 });
 
@@ -96,72 +117,72 @@ describe('shelving (deck-scoped)', () => {
     store = new SqliteLearningStore(db);
   });
 
-  it('shelveWord + getShelvedWords round-trips', () => {
-    store.shelveWord('user-a', 'deck-1', 'w1', 3);
-    const result = store.getShelvedWords('user-a', 'deck-1');
+  it('shelveWord + getShelvedWords round-trips', async () => {
+    await store.shelveWord('user-a', 'deck-1', 'w1', 3);
+    const result = await store.getShelvedWords('user-a', 'deck-1');
     expect(result).toEqual([{ wordId: 'w1', shelvedAtBatch: 3 }]);
   });
 
-  it('getShelvedWords returns [] when nothing shelved', () => {
-    const result = store.getShelvedWords('user-a', 'deck-1');
+  it('getShelvedWords returns [] when nothing shelved', async () => {
+    const result = await store.getShelvedWords('user-a', 'deck-1');
     expect(result).toEqual([]);
   });
 
-  it('shelving same word twice upserts — single entry with latest batch', () => {
-    store.shelveWord('user-a', 'deck-1', 'w1', 3);
-    store.shelveWord('user-a', 'deck-1', 'w1', 5);
-    const result = store.getShelvedWords('user-a', 'deck-1');
+  it('shelving same word twice upserts — single entry with latest batch', async () => {
+    await store.shelveWord('user-a', 'deck-1', 'w1', 3);
+    await store.shelveWord('user-a', 'deck-1', 'w1', 5);
+    const result = await store.getShelvedWords('user-a', 'deck-1');
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual({ wordId: 'w1', shelvedAtBatch: 5 });
   });
 
-  it('unshelveWord removes one word, leaves others', () => {
-    store.shelveWord('user-a', 'deck-1', 'w1', 1);
-    store.shelveWord('user-a', 'deck-1', 'w2', 2);
-    store.unshelveWord('user-a', 'deck-1', 'w1');
-    const result = store.getShelvedWords('user-a', 'deck-1');
+  it('unshelveWord removes one word, leaves others', async () => {
+    await store.shelveWord('user-a', 'deck-1', 'w1', 1);
+    await store.shelveWord('user-a', 'deck-1', 'w2', 2);
+    await store.unshelveWord('user-a', 'deck-1', 'w1');
+    const result = await store.getShelvedWords('user-a', 'deck-1');
     expect(result).toEqual([{ wordId: 'w2', shelvedAtBatch: 2 }]);
   });
 
-  it('unshelveWord on non-shelved word is a no-op — no error thrown', () => {
-    expect(() => { store.unshelveWord('user-a', 'deck-1', 'w-nonexistent'); }).not.toThrow();
+  it('unshelveWord on non-shelved word is a no-op — no error thrown', async () => {
+    await store.unshelveWord('user-a', 'deck-1', 'w-nonexistent');
   });
 
-  it('unshelveAllWords clears all for a user+deck', () => {
-    store.shelveWord('user-a', 'deck-1', 'w1', 1);
-    store.shelveWord('user-a', 'deck-1', 'w2', 2);
-    store.shelveWord('user-a', 'deck-1', 'w3', 3);
-    store.unshelveAllWords('user-a', 'deck-1');
-    expect(store.getShelvedWords('user-a', 'deck-1')).toEqual([]);
+  it('unshelveAllWords clears all for a user+deck', async () => {
+    await store.shelveWord('user-a', 'deck-1', 'w1', 1);
+    await store.shelveWord('user-a', 'deck-1', 'w2', 2);
+    await store.shelveWord('user-a', 'deck-1', 'w3', 3);
+    await store.unshelveAllWords('user-a', 'deck-1');
+    expect(await store.getShelvedWords('user-a', 'deck-1')).toEqual([]);
   });
 
-  it('unshelveAllWords does not affect other users', () => {
-    store.shelveWord('user-a', 'deck-1', 'w1', 1);
-    store.shelveWord('user-b', 'deck-1', 'w2', 2);
-    store.unshelveAllWords('user-a', 'deck-1');
-    expect(store.getShelvedWords('user-a', 'deck-1')).toEqual([]);
-    expect(store.getShelvedWords('user-b', 'deck-1')).toEqual([{ wordId: 'w2', shelvedAtBatch: 2 }]);
+  it('unshelveAllWords does not affect other users', async () => {
+    await store.shelveWord('user-a', 'deck-1', 'w1', 1);
+    await store.shelveWord('user-b', 'deck-1', 'w2', 2);
+    await store.unshelveAllWords('user-a', 'deck-1');
+    expect(await store.getShelvedWords('user-a', 'deck-1')).toEqual([]);
+    expect(await store.getShelvedWords('user-b', 'deck-1')).toEqual([{ wordId: 'w2', shelvedAtBatch: 2 }]);
   });
 
-  it('unshelveAllWords does not affect other decks for same user', () => {
-    store.shelveWord('user-a', 'deck-1', 'w1', 1);
-    store.shelveWord('user-a', 'deck-2', 'w2', 2);
-    store.unshelveAllWords('user-a', 'deck-1');
-    expect(store.getShelvedWords('user-a', 'deck-1')).toEqual([]);
-    expect(store.getShelvedWords('user-a', 'deck-2')).toEqual([{ wordId: 'w2', shelvedAtBatch: 2 }]);
+  it('unshelveAllWords does not affect other decks for same user', async () => {
+    await store.shelveWord('user-a', 'deck-1', 'w1', 1);
+    await store.shelveWord('user-a', 'deck-2', 'w2', 2);
+    await store.unshelveAllWords('user-a', 'deck-1');
+    expect(await store.getShelvedWords('user-a', 'deck-1')).toEqual([]);
+    expect(await store.getShelvedWords('user-a', 'deck-2')).toEqual([{ wordId: 'w2', shelvedAtBatch: 2 }]);
   });
 
-  it('clearUserState also clears shelved words', () => {
-    store.shelveWord('user-a', 'deck-1', 'w1', 1);
-    store.clearUserState('user-a');
-    expect(store.getShelvedWords('user-a', 'deck-1')).toEqual([]);
+  it('clearUserState also clears shelved words', async () => {
+    await store.shelveWord('user-a', 'deck-1', 'w1', 1);
+    await store.clearUserState('user-a');
+    expect(await store.getShelvedWords('user-a', 'deck-1')).toEqual([]);
   });
 
-  it('getShelvedWords returns multiple words with correct data', () => {
-    store.shelveWord('user-a', 'deck-1', 'w1', 1);
-    store.shelveWord('user-a', 'deck-1', 'w2', 2);
-    store.shelveWord('user-a', 'deck-1', 'w3', 3);
-    const result = store.getShelvedWords('user-a', 'deck-1');
+  it('getShelvedWords returns multiple words with correct data', async () => {
+    await store.shelveWord('user-a', 'deck-1', 'w1', 1);
+    await store.shelveWord('user-a', 'deck-1', 'w2', 2);
+    await store.shelveWord('user-a', 'deck-1', 'w3', 3);
+    const result = await store.getShelvedWords('user-a', 'deck-1');
     expect(result).toHaveLength(3);
     expect(result).toContainEqual({ wordId: 'w1', shelvedAtBatch: 1 });
     expect(result).toContainEqual({ wordId: 'w2', shelvedAtBatch: 2 });
@@ -177,8 +198,8 @@ describe('stagnation counters', () => {
     store = new SqliteLearningStore(db);
   });
 
-  function seedWordState(store: SqliteLearningStore, userId: string, wordId: string, mastery: number): void {
-    store.upsertWordState(userId, {
+  async function seedWordState(store: SqliteLearningStore, userId: string, wordId: string, mastery: number): Promise<void> {
+    await store.upsertWordState(userId, {
       wordId,
       seen: 1,
       correct: 1,
@@ -189,90 +210,90 @@ describe('stagnation counters', () => {
     });
   }
 
-  it('counter increments when mastery is unchanged at batch boundary', () => {
-    seedWordState(store, 'user-a', 'w1', 2);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    const stagnant = store.getStagnantWords('user-a', 'deck-1', 2);
+  it('counter increments when mastery is unchanged at batch boundary', async () => {
+    await seedWordState(store, 'user-a', 'w1', 2);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    const stagnant = await store.getStagnantWords('user-a', 'deck-1', 2);
     expect(stagnant).toContain('w1');
   });
 
-  it('counter resets to 0 when mastery changes', () => {
-    seedWordState(store, 'user-a', 'w1', 1);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+  it('counter resets to 0 when mastery changes', async () => {
+    await seedWordState(store, 'user-a', 'w1', 1);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
 
     // Mastery advances
-    seedWordState(store, 'user-a', 'w1', 2);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await seedWordState(store, 'user-a', 'w1', 2);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
 
     // Only 1 batch at new mastery — should not be stagnant at threshold 2
-    const stagnant = store.getStagnantWords('user-a', 'deck-1', 2);
+    const stagnant = await store.getStagnantWords('user-a', 'deck-1', 2);
     expect(stagnant).not.toContain('w1');
   });
 
-  it('getStagnantWords returns word IDs with stagnation_count >= threshold', () => {
-    seedWordState(store, 'user-a', 'w1', 0);
-    seedWordState(store, 'user-a', 'w2', 0);
+  it('getStagnantWords returns word IDs with stagnation_count >= threshold', async () => {
+    await seedWordState(store, 'user-a', 'w1', 0);
+    await seedWordState(store, 'user-a', 'w2', 0);
     // w1: 3 boundaries with same mastery
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
     // w1 count=3, w2 count=2
-    expect(store.getStagnantWords('user-a', 'deck-1', 3)).toContain('w1');
-    expect(store.getStagnantWords('user-a', 'deck-1', 3)).not.toContain('w2');
+    expect(await store.getStagnantWords('user-a', 'deck-1', 3)).toContain('w1');
+    expect(await store.getStagnantWords('user-a', 'deck-1', 3)).not.toContain('w2');
   });
 
-  it('getStagnantWords returns [] when no words meet threshold', () => {
-    seedWordState(store, 'user-a', 'w1', 0);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    expect(store.getStagnantWords('user-a', 'deck-1', 3)).toEqual([]);
+  it('getStagnantWords returns [] when no words meet threshold', async () => {
+    await seedWordState(store, 'user-a', 'w1', 0);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    expect(await store.getStagnantWords('user-a', 'deck-1', 3)).toEqual([]);
   });
 
-  it('resetStagnationCounters zeroes all counters for user+deck', () => {
-    seedWordState(store, 'user-a', 'w1', 0);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    store.resetStagnationCounters('user-a', 'deck-1');
-    expect(store.getStagnantWords('user-a', 'deck-1', 1)).toEqual([]);
+  it('resetStagnationCounters zeroes all counters for user+deck', async () => {
+    await seedWordState(store, 'user-a', 'w1', 0);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.resetStagnationCounters('user-a', 'deck-1');
+    expect(await store.getStagnantWords('user-a', 'deck-1', 1)).toEqual([]);
   });
 
-  it('stagnation is deck-scoped — deck-2 is unaffected by deck-1 counters', () => {
-    seedWordState(store, 'user-a', 'w1', 0);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    expect(store.getStagnantWords('user-a', 'deck-1', 3)).toContain('w1');
-    expect(store.getStagnantWords('user-a', 'deck-2', 3)).not.toContain('w1');
+  it('stagnation is deck-scoped — deck-2 is unaffected by deck-1 counters', async () => {
+    await seedWordState(store, 'user-a', 'w1', 0);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    expect(await store.getStagnantWords('user-a', 'deck-1', 3)).toContain('w1');
+    expect(await store.getStagnantWords('user-a', 'deck-2', 3)).not.toContain('w1');
   });
 
-  it('clearUserState clears stagnation counters', () => {
-    seedWordState(store, 'user-a', 'w1', 0);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    store.clearUserState('user-a');
-    expect(store.getStagnantWords('user-a', 'deck-1', 1)).toEqual([]);
+  it('clearUserState clears stagnation counters', async () => {
+    await seedWordState(store, 'user-a', 'w1', 0);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.clearUserState('user-a');
+    expect(await store.getStagnantWords('user-a', 'deck-1', 1)).toEqual([]);
   });
 
-  it('resetStagnationCountersForWords resets only the specified word, leaves others', () => {
-    seedWordState(store, 'user-a', 'w1', 0);
-    seedWordState(store, 'user-a', 'w2', 0);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
-    store.resetStagnationCountersForWords('user-a', 'deck-1', ['w1']);
-    expect(store.getStagnantWords('user-a', 'deck-1', 3)).not.toContain('w1');
-    expect(store.getStagnantWords('user-a', 'deck-1', 3)).toContain('w2');
+  it('resetStagnationCountersForWords resets only the specified word, leaves others', async () => {
+    await seedWordState(store, 'user-a', 'w1', 0);
+    await seedWordState(store, 'user-a', 'w2', 0);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1', 'w2']);
+    await store.resetStagnationCountersForWords('user-a', 'deck-1', ['w1']);
+    expect(await store.getStagnantWords('user-a', 'deck-1', 3)).not.toContain('w1');
+    expect(await store.getStagnantWords('user-a', 'deck-1', 3)).toContain('w2');
   });
 
-  it('resetStagnationCountersForWords with empty array is a no-op', () => {
-    seedWordState(store, 'user-a', 'w1', 0);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
-    expect(() => { store.resetStagnationCountersForWords('user-a', 'deck-1', []); }).not.toThrow();
-    expect(store.getStagnantWords('user-a', 'deck-1', 3)).toContain('w1');
+  it('resetStagnationCountersForWords with empty array is a no-op', async () => {
+    await seedWordState(store, 'user-a', 'w1', 0);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.updateStagnationCounters('user-a', 'deck-1', ['w1']);
+    await store.resetStagnationCountersForWords('user-a', 'deck-1', []);
+    expect(await store.getStagnantWords('user-a', 'deck-1', 3)).toContain('w1');
   });
 });

@@ -41,8 +41,8 @@ function makeStoreWithStagnation(shelvingConfig: ShelvingConfig) {
   const userId = 'test-user';
   const deckId = 'test-deck';
 
-  const onGetStagnantIds = (activeWordIds: string[]): string[] => {
-    store.updateStagnationCounters(userId, deckId, activeWordIds);
+  const onGetStagnantIds = async (activeWordIds: string[]): Promise<string[]> => {
+    await store.updateStagnationCounters(userId, deckId, activeWordIds);
     return store.getStagnantWords(userId, deckId, shelvingConfig.stagnationBatchWindow);
   };
 
@@ -74,9 +74,9 @@ describe('StagnationAutoAnswerStrategy', () => {
       new Set(),
       strategy,
       [],
-      (ws) => {
+      async (ws) => {
         capturedMasteries.push(ws.mastery);
-        store.upsertWordState(userId, ws);
+        await store.upsertWordState(userId, ws);
       },
       undefined,
       undefined,
@@ -123,7 +123,7 @@ describe('Shelving integration', () => {
       undefined,
       undefined,
       shelvingConfig,
-      (wordId, batchNum) => { shelvedIds.push(wordId); store.shelveWord(userId, deckId, wordId, batchNum); },
+      async (wordId, batchNum) => { shelvedIds.push(wordId); await store.shelveWord(userId, deckId, wordId, batchNum); },
       undefined,
       undefined,
       onGetStagnantIds,
@@ -159,8 +159,8 @@ describe('Shelving integration', () => {
       new Set(),
       strategy,
       [],
-      (ws) => {
-        store.upsertWordState(userId, ws);
+      async (ws) => {
+        await store.upsertWordState(userId, ws);
         if (shelvingStarted) {
           answeredAfterShelve.push(ws.wordId);
         }
@@ -168,9 +168,9 @@ describe('Shelving integration', () => {
       undefined,
       undefined,
       shelvingConfig,
-      (wordId, batchNum) => {
+      async (wordId, batchNum) => {
         shelvedIds.add(wordId);
-        store.shelveWord(userId, deckId, wordId, batchNum);
+        await store.shelveWord(userId, deckId, wordId, batchNum);
         shelvingStarted = true;
       },
       undefined,
@@ -215,7 +215,7 @@ describe('Shelving integration', () => {
       undefined,
       undefined,
       shelvingConfig,
-      (wordId, batchNum) => { shelvedIds.add(wordId); store.shelveWord(userId, deckId, wordId, batchNum); },
+      async (wordId, batchNum) => { shelvedIds.add(wordId); await store.shelveWord(userId, deckId, wordId, batchNum); },
       undefined,
       undefined,
       onGetStagnantIds,
@@ -283,7 +283,7 @@ describe('Shelving integration', () => {
       onGetStagnantIds,
     );
 
-    const shelvedWords = store.getShelvedWords(userId, deckId);
+    const shelvedWords = await store.getShelvedWords(userId, deckId);
     // At least one word should be shelved in the DB after stagnation
     expect(shelvedWords.length).toBeGreaterThan(0);
     for (const sw of shelvedWords) {
@@ -318,7 +318,7 @@ describe('Shelving integration', () => {
   });
 
   describe('Shelving persistence across sessions', () => {
-    it('shelved words loaded from DB are excluded from active pool on session resume', () => {
+    it('shelved words loaded from DB are excluded from active pool on session resume', async () => {
       const words = makeMinimalWords(3);
       const shelvingConfig: ShelvingConfig = {
         stagnationBatchWindow: 2,
@@ -329,13 +329,13 @@ describe('Shelving integration', () => {
       const shelvedIds = new Set<string>();
 
       // Manually create a scenario: shelf word-0 and word-1
-      store.shelveWord(userId, deckId, 'word-0', 1);
-      store.shelveWord(userId, deckId, 'word-1', 1);
+      await store.shelveWord(userId, deckId, 'word-0', 1);
+      await store.shelveWord(userId, deckId, 'word-1', 1);
       shelvedIds.add('word-0');
       shelvedIds.add('word-1');
 
       // Verify words are in DB
-      const dbShelvedWords = store.getShelvedWords(userId, deckId);
+      const dbShelvedWords = await store.getShelvedWords(userId, deckId);
       expect(dbShelvedWords.length).toBe(2);
 
       // Session 2: Load shelved state from DB and verify shelved words are filtered out

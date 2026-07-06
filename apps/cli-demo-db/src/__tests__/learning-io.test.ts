@@ -94,7 +94,7 @@ describe('onWordAnswer callback', () => {
       new Set(),
       strategy,
       [],
-      (ws) => capturedStates.push(ws),
+      (ws) => { capturedStates.push(ws); },
     );
 
     expect(capturedStates.length).toBeGreaterThan(0);
@@ -150,7 +150,7 @@ describe('onSentenceAnswer callback', () => {
       strategy,
       corpus,
       undefined,
-      (ss) => capturedStates.push(ss),
+      (ss) => { capturedStates.push(ss); },
     );
 
     expect(capturedStates.length).toBeGreaterThan(0);
@@ -235,7 +235,7 @@ describe('write-on-answer integration', () => {
       (ws) => store.upsertWordState('cli-user', ws),
     );
 
-    const persisted = store.getAllWordStates('cli-user');
+    const persisted = await store.getAllWordStates('cli-user');
     expect(persisted.size).toBeGreaterThan(0);
     for (const [, ws] of persisted) {
       expect(ws.seen).toBeGreaterThan(0);
@@ -290,7 +290,7 @@ describe('onGraduation callback', () => {
       [],
       undefined,
       undefined,
-      (ids, rs) => capturedArgs.push([ids, rs]),
+      (ids, rs) => { capturedArgs.push([ids, rs]); },
     );
 
     expect(capturedArgs.length).toBe(1);
@@ -374,9 +374,9 @@ describe('onGraduation callback', () => {
       new Set(),
       strategy,
       [],
-      () => order.push('word'),
+      () => { order.push('word'); },
       undefined,
-      () => order.push('graduation'),
+      () => { order.push('graduation'); },
     );
 
     const graduationIdx = order.lastIndexOf('graduation');

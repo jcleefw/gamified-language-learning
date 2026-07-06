@@ -97,8 +97,8 @@ describe('POST /api/test/seed', () => {
       wordId: 'th::old-word',
       seen: 5, correct: 3, mastery: 2, correctStreak: 1, wrongStreak: 0, lapses: 0,
     };
-    store.upsertWordState('demo-user', existingWord);
-    expect(store.getAllWordStates('demo-user').has('th::old-word')).toBe(true);
+    await store.upsertWordState('demo-user', existingWord);
+    expect((await store.getAllWordStates('demo-user')).has('th::old-word')).toBe(true);
 
     const res = await seed(baseFixture);
 
@@ -106,7 +106,7 @@ describe('POST /api/test/seed', () => {
     const body = await res.json() as { success: boolean; data: null };
     expect(body.success).toBe(true);
 
-    const after = store.getAllWordStates('demo-user');
+    const after = await store.getAllWordStates('demo-user');
     expect(after.has('th::old-word')).toBe(false);
     expect(after.has('th::หิว')).toBe(true);
     expect(after.has('th::กิน')).toBe(true);
@@ -162,8 +162,29 @@ describe('POST /api/test/seed', () => {
     expect(res.status).toBe(200);
 
     const store = new SqliteLearningStore(testDb);
-    const states = store.getAllWordStates('demo-user');
+    const states = await store.getAllWordStates('demo-user');
     expect(states.size).toBe(2); // only the seeded words, no duplicates
+  });
+});
+
+describe('rejected store write propagation', () => {
+  it('surfaces a rejected upsertWordState as a 500 error response, not a silently swallowed floating promise', async () => {
+    const spy = vi
+      .spyOn(SqliteLearningStore.prototype, 'upsertWordState')
+      .mockRejectedValueOnce(new Error('simulated write failure'));
+
+    const res = await app.request('/api/state/word', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wordId: 'th::หิว' }),
+    });
+
+    expect(res.status).toBe(500);
+    const body = await res.json() as { success: boolean; error: { message: string } };
+    expect(body.success).toBe(false);
+    expect(body.error.message).toContain('simulated write failure');
+
+    spy.mockRestore();
   });
 });
 
