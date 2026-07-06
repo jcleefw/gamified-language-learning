@@ -95,15 +95,19 @@ describe('buildSentenceCorpus', () => {
     }
   });
 
-  it('skips sentences with no components — corpus count matches sentence_components coverage', () => {
+  it('skips sentences with no components — corpus count matches doc sentence coverage', () => {
     const corpus = buildSentenceCorpus(db);
     // All sentences in corpus must have at least one component (enforced by buildSentenceCorpus)
     for (const ctx of corpus) {
       expect(ctx.wordOrder.length).toBeGreaterThan(0);
     }
-    // Conversations without breakdowns produce no sentence_components, so those sentences
-    // are excluded. Verify corpus is non-empty and bounded by total sentence rows.
-    const allSentences = db.select().from(schema.sentences).all();
+    // Conversations without breakdowns produce sentences with zero components, so those
+    // are excluded. Verify corpus is non-empty and bounded by total doc sentence count.
+    const allSentences = db
+      .select({ doc: schema.decks.doc })
+      .from(schema.decks)
+      .all()
+      .flatMap((deck) => deck.doc.sentences);
     expect(corpus.length).toBeLessThanOrEqual(allSentences.length);
   });
 });

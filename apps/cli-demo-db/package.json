@@ -16,6 +16,7 @@
     "engine:real-db:seed:sentence-ready": "tsx src/db-tools-cli.ts seed sentence-ready"
   },
   "dependencies": {
+    "@gll/api-contract": "workspace:*",
     "@gll/db": "workspace:*",
     "@gll/srs-engine-v2": "workspace:*",
     "@gll/srs-shelving": "workspace:*",

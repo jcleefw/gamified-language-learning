@@ -98,13 +98,14 @@ describe('SqliteContentStore.importCurriculum', () => {
     store = new SqliteContentStore(db);
   });
 
-  it('populates all content tables for a basic deck', async () => {
+  it('populates a deck row with a doc containing all sentences and components', async () => {
     await store.importCurriculum([deckA]);
 
-    expect(db.select().from(schema.decks).all()).toHaveLength(1);
-    expect(db.select().from(schema.sentences).all()).toHaveLength(2);
+    const decks = db.select().from(schema.decks).all();
+    expect(decks).toHaveLength(1);
+    expect(decks[0].doc.sentences).toHaveLength(2);
+    expect(decks[0].doc.sentences.flatMap((s) => s.components)).toHaveLength(4);
     expect(db.select().from(schema.words).all()).toHaveLength(4);
-    expect(db.select().from(schema.sentence_components).all()).toHaveLength(4);
     expect(db.select().from(schema.deck_words).all()).toHaveLength(4);
   });
 
@@ -115,9 +116,10 @@ describe('SqliteContentStore.importCurriculum', () => {
     expect(deck!.id).toMatch(/^[0-9a-f-]{36}$/);
   });
 
-  it('populates sentences.speaker from AppLine.speaker', async () => {
+  it('populates doc.sentences[].speaker from AppLine.speaker', async () => {
     await store.importCurriculum([deckA]);
-    const sentences = db.select().from(schema.sentences).all();
+    const deck = db.select().from(schema.decks).get()!;
+    const sentences = [...deck.doc.sentences].sort((a, b) => a.position - b.position);
     expect(sentences[0].speaker).toBe('A');
     expect(sentences[1].speaker).toBe('B');
   });
@@ -153,25 +155,22 @@ describe('SqliteContentStore.importCurriculum', () => {
     expect(deckWordRows).toHaveLength(2);
   });
 
-  it('sentence_components.word_id matches words.id (no dangling refs)', async () => {
+  it('doc component wordIds match words.id (no dangling refs)', async () => {
     await store.importCurriculum([deckA]);
-    const components = db.select().from(schema.sentence_components).all();
+    const deck = db.select().from(schema.decks).get()!;
     const wordIds = new Set(db.select().from(schema.words).all().map((w) => w.id));
-    for (const comp of components) {
-      expect(wordIds.has(comp.word_id), `dangling word_id: ${comp.word_id}`).toBe(true);
+    for (const sentence of deck.doc.sentences) {
+      for (const comp of sentence.components) {
+        expect(wordIds.has(comp.wordId), `dangling wordId: ${comp.wordId}`).toBe(true);
+      }
     }
   });
 
-  it('sentence_components are in position order', async () => {
+  it('doc components are in position order', async () => {
     await store.importCurriculum([deckA]);
-    const sentences = db.select().from(schema.sentences).all();
-    for (const sentence of sentences) {
-      const comps = db
-        .select()
-        .from(schema.sentence_components)
-        .where(eq(schema.sentence_components.sentence_id, sentence.id))
-        .all()
-        .sort((a, b) => a.position - b.position);
+    const deck = db.select().from(schema.decks).get()!;
+    for (const sentence of deck.doc.sentences) {
+      const comps = [...sentence.components].sort((a, b) => a.position - b.position);
       for (let i = 0; i < comps.length; i++) {
         expect(comps[i].position).toBe(i);
       }
@@ -182,18 +181,58 @@ describe('SqliteContentStore.importCurriculum', () => {
     await store.importCurriculum([deckA]);
     const before = {
       decks: db.select().from(schema.decks).all().length,
-      sentences: db.select().from(schema.sentences).all().length,
       words: db.select().from(schema.words).all().length,
-      components: db.select().from(schema.sentence_components).all().length,
       deckWords: db.select().from(schema.deck_words).all().length,
     };
 
     await store.importCurriculum([deckA]);
 
     expect(db.select().from(schema.decks).all()).toHaveLength(before.decks);
-    expect(db.select().from(schema.sentences).all()).toHaveLength(before.sentences);
     expect(db.select().from(schema.words).all()).toHaveLength(before.words);
-    expect(db.select().from(schema.sentence_components).all()).toHaveLength(before.components);
     expect(db.select().from(schema.deck_words).all()).toHaveLength(before.deckWords);
+  });
+
+  it('(F2) sentenceId is stable across re-import for the same (deck, line text)', async () => {
+    await store.importCurriculum([deckA]);
+    const before = db.select().from(schema.decks).get()!;
+    const sentenceIdsBefore = [...before.doc.sentences].sort((a, b) => a.position - b.position).map((s) => s.sentenceId);
+
+    await store.importCurriculum([deckA]);
+    const after = db.select().from(schema.decks).get()!;
+    const sentenceIdsAfter = [...after.doc.sentences].sort((a, b) => a.position - b.position).map((s) => s.sentenceId);
+
+    expect(sentenceIdsAfter).toEqual(sentenceIdsBefore);
+  });
+
+  it('(F3) re-import replaces the existing deck doc rather than duplicating the deck row', async () => {
+    await store.importCurriculum([deckA]);
+    const firstId = db.select().from(schema.decks).get()!.id;
+
+    await store.importCurriculum([deckA]);
+    const decks = db.select().from(schema.decks).all();
+
+    expect(decks).toHaveLength(1);
+    expect(decks[0].id).toBe(firstId);
+  });
+
+  it('rolls back the whole transaction when the built doc fails validation — no partial writes', async () => {
+    const invalidDeck: AppDeck = {
+      topic: 'Invalid Deck',
+      lines: [
+        {
+          speaker: 'A',
+          native: '', // fails DeckSentenceSchema's native: z.string().min(1)
+          romanization: 'x',
+          english: 'x',
+          words: [{ native: 'หิว', romanization: 'hǐw', english: 'hungry', type: 'adjective', language: 'th' }],
+        },
+      ],
+    };
+
+    await expect(store.importCurriculum([invalidDeck])).rejects.toThrow();
+
+    expect(db.select().from(schema.decks).all()).toHaveLength(0);
+    expect(db.select().from(schema.words).all()).toHaveLength(0);
+    expect(db.select().from(schema.deck_words).all()).toHaveLength(0);
   });
 });

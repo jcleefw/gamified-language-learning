@@ -1,12 +1,14 @@
 import { randomUUID } from 'crypto';
-import { and, eq, asc } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type BetterSqlite3 from 'better-sqlite3';
-import type { AppDeck, AppDeckPayload, AppWordPayload, AppLinePayload } from '@gll/api-contract';
+import { DeckDocSchema } from '@gll/api-contract';
+import type { AppDeck, AppDeckPayload, AppWordPayload, AppLinePayload, DeckDoc, DeckSentence, DeckComponent } from '@gll/api-contract';
 import type { ContentStore } from './content-store.js';
 import * as schema from './schema.js';
 
 type DbClient = BetterSQLite3Database<typeof schema> & { $client: BetterSqlite3.Database };
+type TxClient = BetterSQLite3Database<typeof schema>;
 
 interface Sense {
   romanization: string;
@@ -30,12 +32,7 @@ export class SqliteContentStore implements ContentStore {
 
   private assembleDeck(deck: typeof schema.decks.$inferSelect): AppDeckPayload {
     const wordRows = this.db
-      .select({
-        id: schema.words.id,
-        text: schema.words.text,
-        language: schema.words.language,
-        senses: schema.words.senses,
-      })
+      .select({ id: schema.words.id, text: schema.words.text, senses: schema.words.senses })
       .from(schema.deck_words)
       .innerJoin(schema.words, eq(schema.deck_words.word_id, schema.words.id))
       .where(eq(schema.deck_words.deck_id, deck.id))
@@ -54,30 +51,15 @@ export class SqliteContentStore implements ContentStore {
       };
     });
 
-    const sentenceRows = this.db
-      .select()
-      .from(schema.sentences)
-      .where(eq(schema.sentences.deck_id, deck.id))
-      .orderBy(asc(schema.sentences.position))
-      .all();
-
-    const lines: AppLinePayload[] = sentenceRows.map((sentence) => {
-      const components = this.db
-        .select({ word_id: schema.sentence_components.word_id })
-        .from(schema.sentence_components)
-        .where(eq(schema.sentence_components.sentence_id, sentence.id))
-        .orderBy(asc(schema.sentence_components.position))
-        .all();
-
-      return {
-        sentenceId: sentence.id,
-        speaker: sentence.speaker ?? '',
-        native: sentence.text,
-        romanization: sentence.romanization ?? '',
-        english: sentence.english ?? '',
-        wordIds: components.map((c) => c.word_id),
-      };
-    });
+    const sortedSentences = [...deck.doc.sentences].sort((a, b) => a.position - b.position);
+    const lines: AppLinePayload[] = sortedSentences.map((sentence) => ({
+      sentenceId: sentence.sentenceId,
+      speaker: sentence.speaker,
+      native: sentence.native,
+      romanization: sentence.romanization,
+      english: sentence.english,
+      wordIds: [...sentence.components].sort((a, b) => a.position - b.position).map((c) => c.wordId),
+    }));
 
     return {
       id: deck.id,
@@ -90,118 +72,99 @@ export class SqliteContentStore implements ContentStore {
   }
 
   async importCurriculum(decks: AppDeck[]): Promise<void> {
-    for (const deck of decks) {
-      // Idempotency: reuse existing deck by name+language if already imported
-      let deckId: string;
-      const existingDeck = this.db
-        .select()
-        .from(schema.decks)
-        .where(and(eq(schema.decks.name, deck.topic), eq(schema.decks.language, 'th')))
-        .get();
-
-      if (existingDeck) {
-        deckId = existingDeck.id;
-      } else {
-        deckId = randomUUID();
-        this.db
-          .insert(schema.decks)
-          .values({
-            id: deckId,
-            name: deck.topic,
-            language: 'th',
-            difficulty: deck.difficulty ?? null,
-            register: deck.register ?? null,
-            created_at: new Date().toISOString(),
-          })
-          .run();
+    this.db.transaction((tx) => {
+      for (const deck of decks) {
+        this.importOneDeck(tx, deck);
       }
+    });
+  }
 
-      // INSERT OR IGNORE words; read back UUID for FK use
-      const wordIdMap = new Map<string, string>();
-      for (const line of deck.lines) {
-        for (const word of line.words) {
-          if (wordIdMap.has(word.native)) continue;
-          this.db
-            .insert(schema.words)
-            .values({
-              id: randomUUID(),
-              language: 'th',
-              text: word.native,
-              senses: JSON.stringify([{ romanization: word.romanization, english: word.english, type: word.type }]),
-            })
-            .onConflictDoNothing()
-            .run();
-          const stored = this.db
-            .select()
-            .from(schema.words)
-            .where(and(eq(schema.words.language, 'th'), eq(schema.words.text, word.native)))
-            .get();
-          if (stored) {
-            wordIdMap.set(word.native, stored.id);
-          }
-        }
-      }
+  private importOneDeck(tx: TxClient, deck: AppDeck): void {
+    const existing = tx
+      .select()
+      .from(schema.decks)
+      .where(and(eq(schema.decks.name, deck.topic), eq(schema.decks.language, 'th')))
+      .get();
+    const deckId = existing?.id ?? randomUUID();
 
-      // Insert sentences; read back actual sentenceId; insert components only if absent
-      for (let si = 0; si < deck.lines.length; si++) {
-        const line = deck.lines[si];
-        const candidateId = randomUUID();
-        this.db
-          .insert(schema.sentences)
+    // Upsert global words; dedupe within this deck by native text
+    const wordIdMap = new Map<string, string>();
+    for (const line of deck.lines) {
+      for (const word of line.words) {
+        if (wordIdMap.has(word.native)) continue;
+        tx.insert(schema.words)
           .values({
-            id: candidateId,
-            deck_id: deckId,
+            id: randomUUID(),
             language: 'th',
-            text: line.native,
-            english: line.english,
-            romanization: line.romanization,
-            speaker: line.speaker,
-            position: si,
+            text: word.native,
+            senses: JSON.stringify([{ romanization: word.romanization, english: word.english, type: word.type }]),
           })
           .onConflictDoNothing()
           .run();
-
-        const sentence = this.db
+        const stored = tx
           .select()
-          .from(schema.sentences)
-          .where(and(eq(schema.sentences.deck_id, deckId), eq(schema.sentences.text, line.native)))
+          .from(schema.words)
+          .where(and(eq(schema.words.language, 'th'), eq(schema.words.text, word.native)))
           .get();
-        if (!sentence) continue;
-
-        // Skip components if already populated (idempotency guard)
-        const existingComponents = this.db
-          .select()
-          .from(schema.sentence_components)
-          .where(eq(schema.sentence_components.sentence_id, sentence.id))
-          .all();
-        if (existingComponents.length > 0) continue;
-
-        for (let ci = 0; ci < line.words.length; ci++) {
-          const word = line.words[ci];
-          const wordId = wordIdMap.get(word.native);
-          if (!wordId) continue;
-          this.db
-            .insert(schema.sentence_components)
-            .values({
-              id: randomUUID(),
-              sentence_id: sentence.id,
-              word_id: wordId,
-              position: ci,
-              romanization: word.romanization,
-              english: word.english,
-            })
-            .run();
+        if (!stored) {
+          throw new Error(`ContentStore.importCurriculum: failed to resolve word id for "${word.native}"`);
         }
+        wordIdMap.set(word.native, stored.id);
       }
+    }
 
-      // Populate deck_words from collected word UUIDs
-      for (const wordId of wordIdMap.values()) {
-        this.db
-          .insert(schema.deck_words)
-          .values({ deck_id: deckId, word_id: wordId })
-          .onConflictDoNothing()
-          .run();
-      }
+    // Stable sentenceId: reuse from the existing doc when re-importing the same (deck, text)
+    // pair, so user_sentence_states rows keyed on sentence_id are not orphaned.
+    const existingSentenceIdByText = new Map<string, string>();
+    if (existing) {
+      for (const s of existing.doc.sentences) existingSentenceIdByText.set(s.native, s.sentenceId);
+    }
+
+    const sentences: DeckSentence[] = deck.lines.map((line, si) => {
+      const components: DeckComponent[] = line.words.map((word, ci) => {
+        const wordId = wordIdMap.get(word.native);
+        if (!wordId) {
+          throw new Error(
+            `ContentStore.importCurriculum: component word "${word.native}" does not resolve to a global word id`,
+          );
+        }
+        return { wordId, position: ci, romanization: word.romanization, english: word.english };
+      });
+
+      return {
+        sentenceId: existingSentenceIdByText.get(line.native) ?? randomUUID(),
+        speaker: line.speaker,
+        native: line.native,
+        english: line.english,
+        romanization: line.romanization,
+        position: si,
+        components,
+      };
+    });
+
+    const doc: DeckDoc = DeckDocSchema.parse({ sentences });
+
+    if (existing) {
+      tx.update(schema.decks).set({ doc }).where(eq(schema.decks.id, deckId)).run();
+    } else {
+      tx.insert(schema.decks)
+        .values({
+          id: deckId,
+          name: deck.topic,
+          language: 'th',
+          difficulty: deck.difficulty ?? null,
+          register: deck.register ?? null,
+          created_at: new Date().toISOString(),
+          doc,
+        })
+        .run();
+    }
+
+    // Rebuild deck_words to exactly match the words referenced by the doc just written
+    tx.delete(schema.deck_words).where(eq(schema.deck_words.deck_id, deckId)).run();
+    const usedWordIds = new Set(sentences.flatMap((s) => s.components.map((c) => c.wordId)));
+    for (const wordId of usedWordIds) {
+      tx.insert(schema.deck_words).values({ deck_id: deckId, word_id: wordId }).onConflictDoNothing().run();
     }
   }
 

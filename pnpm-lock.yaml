@@ -38,6 +38,9 @@ importers:
 
   apps/cli-demo-db:
     dependencies:
+      '@gll/api-contract':
+        specifier: workspace:*
+        version: link:../../packages/api-contract
       '@gll/db':
         specifier: workspace:*
         version: link:../../packages/db

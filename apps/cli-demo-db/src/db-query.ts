@@ -1,6 +1,5 @@
 import { fileURLToPath } from 'url';
 import path from 'path';
-import { eq, asc } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { schema } from '@gll/db';
 import type { MockFoundational, SentenceContext } from '@gll/srs-engine-v2';
@@ -59,24 +58,20 @@ export async function buildFoundationalPool(): Promise<MockFoundational[]> {
 }
 
 export function buildSentenceCorpus(db: DbClient): SentenceContext[] {
-  const sentences = db.select().from(schema.sentences).all();
+  const decks = db.select({ doc: schema.decks.doc }).from(schema.decks).all();
   const corpus: SentenceContext[] = [];
 
-  for (const sentence of sentences) {
-    const components = db
-      .select()
-      .from(schema.sentence_components)
-      .where(eq(schema.sentence_components.sentence_id, sentence.id))
-      .orderBy(asc(schema.sentence_components.position))
-      .all();
+  for (const deck of decks) {
+    for (const sentence of deck.doc.sentences) {
+      if (sentence.components.length === 0) continue;
 
-    if (components.length === 0) continue;
-
-    corpus.push({
-      sentenceId: sentence.id,
-      englishSentence: sentence.english ?? '',
-      wordOrder: components.map((c) => c.word_id),
-    });
+      const wordOrder = [...sentence.components].sort((a, b) => a.position - b.position).map((c) => c.wordId);
+      corpus.push({
+        sentenceId: sentence.sentenceId,
+        englishSentence: sentence.english,
+        wordOrder,
+      });
+    }
   }
 
   return corpus;
