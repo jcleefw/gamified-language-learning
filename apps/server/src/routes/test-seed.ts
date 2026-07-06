@@ -80,7 +80,7 @@ router.post('/test/seed', async (c) => {
   const store = new SqliteLearningStore(db);
 
   // 1. Clear all word states (also clears shelving + stagnation via clearUserState)
-  store.clearUserState(USER_ID);
+  await store.clearUserState(USER_ID);
 
   // 2. Insert word states
   for (const ws of fixture.wordStates) {
@@ -93,7 +93,7 @@ router.post('/test/seed', async (c) => {
       wrongStreak: ws.wrongStreak,
       lapses: ws.lapses,
     };
-    store.upsertWordState(USER_ID, wordState);
+    await store.upsertWordState(USER_ID, wordState);
   }
 
   // 3. Insert stagnation counters directly via raw SQL
@@ -112,7 +112,7 @@ router.post('/test/seed', async (c) => {
 
   // 4. Insert shelved words
   for (const sw of fixture.shelvedWords ?? []) {
-    store.shelveWord(USER_ID, fixture.deckId, sw.wordId, sw.shelvedAtBatch);
+    await store.shelveWord(USER_ID, fixture.deckId, sw.wordId, sw.shelvedAtBatch);
   }
 
   // 5. Set shelving config override if provided

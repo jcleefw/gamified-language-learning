@@ -22,7 +22,7 @@ function getStore() {
   return new SqliteLearningStore(getDb());
 }
 
-router.get('/shelving', (c) => {
+router.get('/shelving', async (c) => {
   const deckId = c.req.query('deckId');
   if (!deckId) {
     const body: ApiResponse<never> = {
@@ -32,7 +32,7 @@ router.get('/shelving', (c) => {
     return c.json(body, 400);
   }
 
-  const shelvedWords = getStore().getShelvedWords(USER_ID, deckId);
+  const shelvedWords = await getStore().getShelvedWords(USER_ID, deckId);
   const data: GetShelvedWordsResponse = shelvedWords.map(
     (sw): ShelvedWordPayload => ({
       wordId: sw.wordId,
@@ -66,7 +66,7 @@ router.post('/shelving/apply', async (c) => {
 
   const store = getStore();
   for (const { wordId, batchNum } of req.toShelve) {
-    store.shelveWord(USER_ID, req.deckId, wordId, batchNum);
+    await store.shelveWord(USER_ID, req.deckId, wordId, batchNum);
   }
 
   const body: ApiResponse<null> = { success: true, data: null };
@@ -94,7 +94,7 @@ router.post('/shelving/unshelve-all', async (c) => {
     return c.json(body, 400);
   }
 
-  getStore().unshelveAllWords(USER_ID, req.deckId);
+  await getStore().unshelveAllWords(USER_ID, req.deckId);
   const body: ApiResponse<null> = { success: true, data: null };
   return c.json(body);
 });
@@ -120,7 +120,7 @@ router.post('/shelving/unshelve-word', async (c) => {
     return c.json(body, 400);
   }
 
-  getStore().unshelveWord(USER_ID, req.deckId, req.wordId);
+  await getStore().unshelveWord(USER_ID, req.deckId, req.wordId);
   const body: ApiResponse<null> = { success: true, data: null };
   return c.json(body);
 });
@@ -150,12 +150,12 @@ router.post('/stagnation/update', async (c) => {
     return c.json(body, 400);
   }
 
-  getStore().updateStagnationCounters(USER_ID, req.deckId, req.activeWordIds);
+  await getStore().updateStagnationCounters(USER_ID, req.deckId, req.activeWordIds);
   const body: ApiResponse<null> = { success: true, data: null };
   return c.json(body);
 });
 
-router.get('/stagnation/stagnant', (c) => {
+router.get('/stagnation/stagnant', async (c) => {
   const deckId = c.req.query('deckId');
   const thresholdParam = c.req.query('threshold');
 
@@ -176,7 +176,7 @@ router.get('/stagnation/stagnant', (c) => {
     return c.json(body, 400);
   }
 
-  const stagnantWordIds = getStore().getStagnantWords(USER_ID, deckId, threshold);
+  const stagnantWordIds = await getStore().getStagnantWords(USER_ID, deckId, threshold);
   const data: GetStagnantWordsResponse = { stagnantWordIds };
   const body: ApiResponse<GetStagnantWordsResponse> = { success: true, data };
   return c.json(body);
@@ -203,7 +203,7 @@ router.post('/stagnation/reset-words', async (c) => {
     return c.json(body, 400);
   }
 
-  getStore().resetStagnationCountersForWords(USER_ID, req.deckId, req.wordIds);
+  await getStore().resetStagnationCountersForWords(USER_ID, req.deckId, req.wordIds);
   const body: ApiResponse<null> = { success: true, data: null };
   return c.json(body);
 });
@@ -229,7 +229,7 @@ router.post('/stagnation/reset', async (c) => {
     return c.json(body, 400);
   }
 
-  getStore().resetStagnationCounters(USER_ID, req.deckId);
+  await getStore().resetStagnationCounters(USER_ID, req.deckId);
   const body: ApiResponse<null> = { success: true, data: null };
   return c.json(body);
 });

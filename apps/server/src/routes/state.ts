@@ -23,8 +23,8 @@ function toPayload(ws: WordState): WordStatePayload {
   };
 }
 
-router.get('/state', (c) => {
-  const runState = getStore().getAllWordStates(USER_ID);
+router.get('/state', async (c) => {
+  const runState = await getStore().getAllWordStates(USER_ID);
   const words: WordStatePayload[] = Array.from(runState.values()).map(toPayload);
   const body: ApiResponse<GetStateResponse> = { success: true, data: { words } };
   return c.json(body);
@@ -61,14 +61,14 @@ router.post('/state/word', async (c) => {
     lapses: req.lapses ?? 0,
   };
 
-  getStore().upsertWordState(USER_ID, ws);
+  await getStore().upsertWordState(USER_ID, ws);
 
   const body: ApiResponse<WordStatePayload> = { success: true, data: toPayload(ws) };
   return c.json(body);
 });
 
-router.delete('/state', (c) => {
-  getStore().clearUserState(USER_ID);
+router.delete('/state', async (c) => {
+  await getStore().clearUserState(USER_ID);
   return c.body(null, 204);
 });
 
