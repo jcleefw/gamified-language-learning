@@ -341,6 +341,20 @@ nextActivePool(active, queue, wordsPerBatch, runState, masteryThreshold,
 ```
 Any word in either set is exempt from retirement that batch.
 
+### Session retry cap and its reset
+
+`sessionRetryCounts` (`AdaptiveSessionState`) tracks, per word, how many retries it has used across the *whole session* (not just the current batch). `finishBatch` accumulates a batch's retries into the running total; once a word's total reaches `maxRetryPerSession`, `submitBatchResult` stops re-enqueueing it on wrong answers for the rest of the session — even though its per-batch `maxRetryPerWord` allowance is untouched.
+
+Example with `maxRetryPerWord=2`, `maxRetryPerSession=5`, `correctStreakThreshold=2`:
+
+- Batches 1–3: a word is wrong every time → 3 questions/batch (1 initial + 2 retries). Cumulative session retries: 2 → 4 → 6.
+- Batch 4: cumulative total (6) is already `>= maxRetryPerSession` (5) → the word gets served **once**, no retries, regardless of the answer.
+- Batches 4–5: word keeps missing → still served once/batch, cumulative total unchanged (no retries were granted to add to it).
+- Batch 6: word is answered correctly twice in a row (`correctStreak >= correctStreakThreshold`, possibly spanning batch 5→6) → `advanceAdaptiveSession` deletes the word's `sessionRetryCounts` entry.
+- Batch 7: the word's cumulative total is back to 0 → full retry behavior resumes, as if it were batch 1 again.
+
+Without this reset, a word that struggled early in a long session would stay retry-starved for every subsequent batch, even after the learner clearly relearned it — silently shrinking how much practice that batch actually serves. The reset is applied once per batch boundary (in `advanceAdaptiveSession`, using the `runState` merged at the end of that batch); it only affects batches starting *after* the streak was hit, since `submitBatchResult` reads a frozen snapshot of `sessionRetryCounts` taken at the start of the batch (`initBatchState`).
+
 ### Retiring and queue refilling
 
 - Retirements happen per-batch after answer processing.
