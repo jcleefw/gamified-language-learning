@@ -1,7 +1,8 @@
 # EP21 - SRS Engine v2: Revision Phase
 
 **Created**: 20260321T145300Z
-**Status**: Draft
+**Status**: Withdrawn
+**Status Changed**: 20260708T010629Z
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
@@ -9,6 +10,7 @@
 **Depends on**: EP20 (all stories complete)
 **Parallel with**: N/A
 **Predecessor**: EP03 (replaced by this epic)
+**Superseded by**: EP36 (SRS Review Phase). This Draft assumed an in-engine build (`SqliteReviewStore`, runner, and `better-sqlite3` inside `srs-engine-v2`) that now conflicts with the DS02 library boundary, EP34's async store contract, and the `srs-shelving` sibling-package precedent. Re-scoped as a 3-layer split in EP36 per the [Review Phase Packaging ADR](../../../product-documentation/architecture/20260708T005635Z-engineering-srs-review-phase-packaging.md). The already-shipped EP21 stories (ST02/ST03 library-boundary refactor, `lapses`, `GraduationHook`) remain valid and are dependencies of EP36.
 
 ---
 
