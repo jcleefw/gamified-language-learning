@@ -628,7 +628,7 @@ onMounted(async () => {
     :max-mastery="CONFIG.streakThresholds.maxMastery"
     :word-pool="wordPool"
     @back="screen = 'select'"
-    @start-quiz="(id) => { void initSession(id); }"
+    @start-quiz="(id) => { void initSession(id, false); }"
     @unshelve-word="onUnshelveWord"
     @update-shelved-set="onUpdateShelvedSet"
     @update-word-states="onUpdateWordStates"
