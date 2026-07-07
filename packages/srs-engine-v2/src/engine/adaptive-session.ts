@@ -88,6 +88,15 @@ export function advanceAdaptiveSession(
     nextSessionRetryCounts.set(id, count);
   }
 
+  // A word that's strung together enough correct answers to hit the
+  // correct-streak threshold gets its retry budget wiped, so a later cold
+  // streak doesn't inherit debt from an earlier hot streak.
+  for (const [id, wordState] of runState) {
+    if (wordState.correctStreak >= config.streakThresholds.correctStreakThreshold) {
+      nextSessionRetryCounts.delete(id);
+    }
+  }
+
   return {
     active,
     queue,
