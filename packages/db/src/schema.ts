@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer, primaryKey, unique } from 'drizzle-orm/sqlite-core';
+import type { DeckDoc } from '@gll/api-contract';
 
 // ---------------------------------------------------------------------------
 // User management
@@ -53,32 +54,7 @@ export const decks = sqliteTable('decks', {
   difficulty: text('difficulty'),
   register: text('register'),
   created_at: text('created_at').notNull(),
-});
-
-export const sentences = sqliteTable(
-  'sentences',
-  {
-    id: text('id').primaryKey(),
-    deck_id: text('deck_id').notNull(),
-    language: text('language').notNull(),
-    text: text('text').notNull(),
-    english: text('english'),
-    romanization: text('romanization'),
-    speaker: text('speaker'),
-    position: integer('position').notNull(),
-  },
-  (table) => [
-    unique('sentences_deck_id_text_unique').on(table.deck_id, table.text),
-  ],
-);
-
-export const sentence_components = sqliteTable('sentence_components', {
-  id: text('id').primaryKey(),
-  sentence_id: text('sentence_id').notNull(),
-  word_id: text('word_id').notNull(),
-  position: integer('position').notNull(),
-  romanization: text('romanization'),
-  english: text('english'),
+  doc: text('doc', { mode: 'json' }).$type<DeckDoc>().notNull(),
 });
 
 export const deck_words = sqliteTable(

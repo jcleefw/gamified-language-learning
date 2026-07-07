@@ -78,6 +78,8 @@ Retirement check: `ws.mastery >= masteryThreshold` (default: 5).
 
 Wrong answers don't disappear — they re-enter the question queue within the same batch, up to a cap (`retryPerWordCap` per batch, `retryPerSessionCap` across the whole session). This is the **recheck mechanic** managed by `BatchState` in `src/engine/batch-queue.ts`.
 
+`retryPerSessionCap` is tracked per word in `AdaptiveSessionState.sessionRetryCounts`, accumulated across batches by `finishBatch`/`advanceAdaptiveSession`. Once a word's cumulative retries hit the cap, it stops getting re-served within a batch — but this budget isn't permanent: `advanceAdaptiveSession` clears a word's `sessionRetryCounts` entry as soon as its `correctStreak` reaches `correctStreakThreshold` again, giving it a full retry allowance on the next batch. Without this reset, a word that struggled for several batches early on would stay retry-starved for the rest of the session even after the learner started getting it right.
+
 The recheck mechanic uses two sets that track a word across its re-appearances:
 
 - **`recheckPending`**: word's first re-appearance. `processRecheckResult` suppresses streak/mastery updates — only `seen` and `correct` increment. Protects against a mis-tap killing a streak.

@@ -194,7 +194,21 @@ watch(
     <!-- Word-block (sentence) -->
     <template v-else-if="question.kind === 'word-block'">
       <p v-if="cheatMode" class="cheat-hint">
-        ✓ {{ question.answer.join(' → ') }}
+        ✓
+        {{
+          (question as SentenceQuestion).answer
+            .map(
+              (wordId: string) =>
+                (question as SentenceQuestion).tiles.find(
+                  (t) => t.wordId === wordId,
+                )?.[
+                  question.direction === 'native-to-romanization'
+                    ? 'romanization'
+                    : 'native'
+                ],
+            )
+            .join(' → ')
+        }}
       </p>
 
       <!-- Answer area -->

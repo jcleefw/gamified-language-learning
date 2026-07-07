@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { schema } from '@gll/db';
+import type { DeckDoc, DeckSentence, DeckComponent } from '@gll/api-contract';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -119,10 +120,32 @@ export function importCurriculum(db: DbClient, foundationalWords?: FoundationalE
       .run();
   }
 
-  // Insert decks + sentences + sentence_components + deck_words
+  // Insert decks (doc-backed) + deck_words
   for (const conv of conversations) {
     const deckId = conv.id;
     const createdAt = new Date(conv.createdAt ?? Date.now()).toISOString();
+
+    const deckWordIds = new Set<string>();
+    const sentences: DeckSentence[] = conv.breakdown.map((entry, si) => {
+      const components: DeckComponent[] = [];
+      for (let ci = 0; ci < entry.components.length; ci++) {
+        const comp = entry.components[ci];
+        const wordId = wordIdMap.get(`th::${comp.thai}`);
+        if (!wordId) continue;
+        components.push({ wordId, position: ci, romanization: comp.romanization, english: comp.english });
+        deckWordIds.add(wordId);
+      }
+      return {
+        sentenceId: randomUUID(),
+        speaker: '',
+        native: entry.thai,
+        english: entry.english,
+        romanization: entry.romanization,
+        position: si,
+        components,
+      };
+    });
+    const doc: DeckDoc = { sentences };
 
     db.insert(schema.decks)
       .values({
@@ -132,50 +155,10 @@ export function importCurriculum(db: DbClient, foundationalWords?: FoundationalE
         difficulty: conv.difficulty ?? null,
         register: conv.register ?? null,
         created_at: createdAt,
+        doc,
       })
       .onConflictDoNothing()
       .run();
-
-    const deckWordIds = new Set<string>();
-
-    for (let si = 0; si < conv.breakdown.length; si++) {
-      const entry = conv.breakdown[si];
-      const sentenceId = randomUUID();
-
-      db.insert(schema.sentences)
-        .values({
-          id: sentenceId,
-          deck_id: deckId,
-          language: 'th',
-          text: entry.thai,
-          english: entry.english,
-          romanization: entry.romanization,
-          speaker: null,
-          position: si,
-        })
-        .onConflictDoNothing()
-        .run();
-
-      for (let ci = 0; ci < entry.components.length; ci++) {
-        const comp = entry.components[ci];
-        const wordId = wordIdMap.get(`th::${comp.thai}`);
-        if (!wordId) continue;
-
-        db.insert(schema.sentence_components)
-          .values({
-            id: randomUUID(),
-            sentence_id: sentenceId,
-            word_id: wordId,
-            position: ci,
-            romanization: comp.romanization,
-            english: comp.english,
-          })
-          .onConflictDoNothing()
-          .run();
-
-        deckWordIds.add(wordId);
-      }
-    }
 
     for (const wordId of deckWordIds) {
       db.insert(schema.deck_words)

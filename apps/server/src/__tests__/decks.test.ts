@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { initDb, schema, importCurriculum } from '@gll/db';
+import { initDb, schema, SqliteContentStore } from '@gll/db';
 import type { AppDeck, AppDeckPayload, ConversationJSON, GetDecksResponse } from '@gll/api-contract';
 
 type TestDb = ReturnType<typeof drizzle<typeof schema>>;
@@ -78,7 +78,7 @@ describe('GET /api/decks', () => {
   });
 
   it('returns deck with UUID id after importCurriculum', async () => {
-    importCurriculum(testDb, [singleDeck]);
+    await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
     const res = await app.request('/api/decks');
     expect(res.status).toBe(200);
     const body = (await res.json()) as { success: true; data: GetDecksResponse };
@@ -92,7 +92,7 @@ describe('GET /api/decks', () => {
   });
 
   it('returns words with correct romanization/english/type from senses', async () => {
-    importCurriculum(testDb, [singleDeck]);
+    await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
     const res = await app.request('/api/decks');
     const body = (await res.json()) as { success: true; data: GetDecksResponse };
     const deck = body.data[0] as AppDeckPayload;
@@ -105,7 +105,7 @@ describe('GET /api/decks', () => {
   });
 
   it('returns lines in position order with correct speaker', async () => {
-    importCurriculum(testDb, [singleDeck]);
+    await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
     const res = await app.request('/api/decks');
     const body = (await res.json()) as { success: true; data: GetDecksResponse };
     const deck = body.data[0] as AppDeckPayload;
@@ -115,7 +115,7 @@ describe('GET /api/decks', () => {
   });
 
   it('returns wordIds in component position order', async () => {
-    importCurriculum(testDb, [singleDeck]);
+    await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
     const res = await app.request('/api/decks');
     const body = (await res.json()) as { success: true; data: GetDecksResponse };
     const deck = body.data[0] as AppDeckPayload;
@@ -162,5 +162,30 @@ describe('POST /api/curriculum/import', () => {
       body: '"not an object"',
     });
     expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for a structurally malformed ConversationJSON body (Zod guard)', async () => {
+    const malformed = { ...sampleConvJSON, breakdown: [{ ...sampleConvJSON.breakdown[0], components: 'not-an-array' }] };
+    const res = await app.request('/api/curriculum/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(malformed),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { success: false; error: { code: string; message: string } };
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe('BAD_REQUEST');
+  });
+
+  it('does not import a deck when the body fails Zod validation', async () => {
+    const malformed = { ...sampleConvJSON, topic: '' };
+    await app.request('/api/curriculum/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(malformed),
+    });
+    const res = await app.request('/api/decks');
+    const body = (await res.json()) as { success: true; data: GetDecksResponse };
+    expect(body.data).toHaveLength(0);
   });
 });

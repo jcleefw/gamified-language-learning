@@ -57,19 +57,28 @@ describe('importCurriculum', () => {
     expect(unique.size).toBe(rows.length);
   });
 
-  it('populates sentences for conversations that have breakdown entries', () => {
+  it('populates doc.sentences for conversations that have breakdown entries', () => {
     importCurriculum(db, foundations);
-    const rows = db.select().from(schema.sentences).all();
+    const rows = db
+      .select({ doc: schema.decks.doc })
+      .from(schema.decks)
+      .all()
+      .flatMap((deck) => deck.doc.sentences);
     expect(rows.length).toBeGreaterThan(0);
   });
 
-  it('populates sentence_components linking sentences to words', () => {
+  it('populates doc components linking sentences to words', () => {
     importCurriculum(db, foundations);
-    const rows = db.select().from(schema.sentence_components).all();
+    const rows = db
+      .select({ doc: schema.decks.doc })
+      .from(schema.decks)
+      .all()
+      .flatMap((deck) => deck.doc.sentences)
+      .flatMap((sentence) => sentence.components);
     expect(rows.length).toBeGreaterThan(0);
   });
 
-  it('populates deck_words derived from sentence_components', () => {
+  it('populates deck_words derived from doc components', () => {
     importCurriculum(db, foundations);
     const rows = db.select().from(schema.deck_words).all();
     expect(rows.length).toBeGreaterThan(0);
@@ -82,11 +91,18 @@ describe('importCurriculum', () => {
   });
 
   it('is idempotent — running twice does not error or duplicate rows', () => {
+    const countSentences = () =>
+      db
+        .select({ doc: schema.decks.doc })
+        .from(schema.decks)
+        .all()
+        .flatMap((deck) => deck.doc.sentences).length;
+
     importCurriculum(db, foundations);
     const after1 = {
       decks: db.select().from(schema.decks).all().length,
       words: db.select().from(schema.words).all().length,
-      sentences: db.select().from(schema.sentences).all().length,
+      sentences: countSentences(),
       foundational_words: db.select().from(schema.foundational_words).all().length,
     };
 
@@ -94,7 +110,7 @@ describe('importCurriculum', () => {
     const after2 = {
       decks: db.select().from(schema.decks).all().length,
       words: db.select().from(schema.words).all().length,
-      sentences: db.select().from(schema.sentences).all().length,
+      sentences: countSentences(),
       foundational_words: db.select().from(schema.foundational_words).all().length,
     };
 

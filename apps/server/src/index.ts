@@ -14,7 +14,7 @@ mkdirSync(path.dirname(DB_PATH), { recursive: true });
 getDb(DB_PATH);
 seedDemoUser(getDb());
 if (process.env.GLL_SEED_CONTENT === '1') {
-  seedContent(getDb());
+  await seedContent(getDb());
 }
 
 serve({ fetch: app.fetch, port: 6060 }, (info) => {

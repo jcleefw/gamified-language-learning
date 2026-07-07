@@ -38,6 +38,9 @@ importers:
 
   apps/cli-demo-db:
     dependencies:
+      '@gll/api-contract':
+        specifier: workspace:*
+        version: link:../../packages/api-contract
       '@gll/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -145,6 +148,10 @@ importers:
         version: 2.2.12(typescript@5.9.3)
 
   packages/api-contract:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       typescript:
         specifier: ^5.7
@@ -2163,6 +2170,9 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+
 snapshots:
 
   '@babel/helper-string-parser@7.27.1': {}
@@ -3831,3 +3841,5 @@ snapshots:
       yargs-parser: 21.1.1
 
   yocto-queue@0.1.0: {}
+
+  zod@4.4.3: {}
