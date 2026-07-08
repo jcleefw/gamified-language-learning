@@ -1,6 +1,6 @@
 import type { ReviewCard } from '@gll/srs-review';
 
-export interface ReviewStore {
+export interface IReviewStore {
   /**
    * Graduation seed — insert a review card ONLY if the word has no card yet
    * (ignore-if-exists). Re-graduating an already-reviewed word must NOT reset its

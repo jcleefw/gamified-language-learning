@@ -21,12 +21,12 @@ export interface AnswerEventRecord {
   createdAt: string;
 }
 
-export interface AnswerEventStore {
+export interface IAnswerEventStore {
   /** Append one transition record. Throws on failure (caller decides fail-open). */
   appendAnswerEvent(record: AnswerEventRecord): Promise<void>;
 }
 
-export class SqliteAnswerEventStore implements AnswerEventStore {
+export class SqliteAnswerEventStore implements IAnswerEventStore {
   constructor(
     private readonly db: DbClient,
     private readonly logger: Logger = new NoopLogger(),

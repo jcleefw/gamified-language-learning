@@ -2,7 +2,7 @@ import type { WordState, RunState } from '@gll/srs-engine-v2';
 import type { SentenceState, SentenceRunState } from '@gll/srs-engine-v2';
 import type { ShelvedWord } from '@gll/srs-shelving';
 
-export interface LearningStore {
+export interface ILearningStore {
   getAllWordStates(userId: string): Promise<RunState>;
   upsertWordState(userId: string, state: WordState): Promise<void>;
 

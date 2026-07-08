@@ -1,6 +1,6 @@
 import type { RunState } from '@gll/srs-engine-v2';
 import type { ReviewScheduler } from '@gll/srs-review';
-import type { ReviewStore } from '@gll/db';
+import type { IReviewStore } from '@gll/db';
 import { toGraduationPerformance } from './graduation-performance.js';
 
 /**
@@ -12,7 +12,7 @@ export async function seedGraduatedReviewCards(
   graduatedWordIds: string[],
   runState: RunState,
   scheduler: ReviewScheduler,
-  reviewStore: ReviewStore,
+  reviewStore: IReviewStore,
   userId: string,
   now: Date = new Date(),
 ): Promise<void> {

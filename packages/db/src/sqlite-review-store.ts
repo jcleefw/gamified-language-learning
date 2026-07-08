@@ -2,12 +2,16 @@ import { and, asc, eq, inArray, lte } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type BetterSqlite3 from 'better-sqlite3';
 import type { ReviewCard } from '@gll/srs-review';
-import type { ReviewStore } from './review-store.js';
+import type { IReviewStore } from './review-store.js';
 import * as schema from './schema.js';
 
-type DbClient = BetterSQLite3Database<typeof schema> & { $client: BetterSqlite3.Database };
+type DbClient = BetterSQLite3Database<typeof schema> & {
+  $client: BetterSqlite3.Database;
+};
 
-function toReviewCard(row: typeof schema.review_cards.$inferSelect): ReviewCard {
+function toReviewCard(
+  row: typeof schema.review_cards.$inferSelect,
+): ReviewCard {
   return {
     wordId: row.word_id,
     due: new Date(row.due),
@@ -15,7 +19,7 @@ function toReviewCard(row: typeof schema.review_cards.$inferSelect): ReviewCard 
   };
 }
 
-export class SqliteReviewStore implements ReviewStore {
+export class SqliteReviewStore implements IReviewStore {
   constructor(private readonly db: DbClient) {}
 
   async seedReviewCard(userId: string, card: ReviewCard): Promise<boolean> {
@@ -54,11 +58,19 @@ export class SqliteReviewStore implements ReviewStore {
       .run();
   }
 
-  async getReviewCard(userId: string, wordId: string): Promise<ReviewCard | null> {
+  async getReviewCard(
+    userId: string,
+    wordId: string,
+  ): Promise<ReviewCard | null> {
     const row = this.db
       .select()
       .from(schema.review_cards)
-      .where(and(eq(schema.review_cards.user_id, userId), eq(schema.review_cards.word_id, wordId)))
+      .where(
+        and(
+          eq(schema.review_cards.user_id, userId),
+          eq(schema.review_cards.word_id, wordId),
+        ),
+      )
       .get();
 
     return row ? toReviewCard(row) : null;
@@ -68,14 +80,23 @@ export class SqliteReviewStore implements ReviewStore {
     const rows = this.db
       .select()
       .from(schema.review_cards)
-      .where(and(eq(schema.review_cards.user_id, userId), lte(schema.review_cards.due, now.toISOString())))
+      .where(
+        and(
+          eq(schema.review_cards.user_id, userId),
+          lte(schema.review_cards.due, now.toISOString()),
+        ),
+      )
       .orderBy(asc(schema.review_cards.due))
       .all();
 
     return rows.map(toReviewCard);
   }
 
-  async getDueReviewCardsForDeck(userId: string, deckId: string, now: Date): Promise<ReviewCard[]> {
+  async getDueReviewCardsForDeck(
+    userId: string,
+    deckId: string,
+    now: Date,
+  ): Promise<ReviewCard[]> {
     const deckWordRows = this.db
       .select({ word_id: schema.deck_words.word_id })
       .from(schema.deck_words)
