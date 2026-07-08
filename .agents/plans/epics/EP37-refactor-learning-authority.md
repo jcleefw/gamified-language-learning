@@ -160,6 +160,8 @@ replayable transition stream the debug-trace epic builds on.
 
 ## Next Steps
 
-1. Review and approve plan
-2. Create Design Spec (DS) for PH01 (`/api/answer` contract + route + transition record)
-3. Begin implementation behind the feature flag
+1. ✅ Review and approve plan
+2. ✅ DS01 — PH00 logging foundation + PH01 `/api/answer` contract + route + transition record ([DS01](../../changelogs/EP37--refactor-learning-authority/20260708T141610Z-EP37-DS01-server-learning-transition.md))
+3. ✅ DS02 — PH02 cross-table integrity in `@gll/db` (`seedReviewCard` ignore-if-exists, orphan tolerance, one-way graduation) ([DS02](../../changelogs/EP37--refactor-learning-authority/20260708T171133Z-EP37-DS02-cross-table-integrity.md))
+4. Create DS for PH03 (server-side Review seeding on the `graduated` event — consumes `seedReviewCard`)
+5. Begin implementation behind the feature flag
