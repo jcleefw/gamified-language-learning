@@ -164,5 +164,6 @@ replayable transition stream the debug-trace epic builds on.
 2. ✅ DS01 — PH00 logging foundation + PH01 `/api/answer` contract + route + transition record ([DS01](../../changelogs/EP37--refactor-learning-authority/20260708T141610Z-EP37-DS01-server-learning-transition.md))
 3. ✅ DS02 — PH02 cross-table integrity in `@gll/db` (`seedReviewCard` ignore-if-exists, orphan tolerance, one-way graduation) ([DS02](../../changelogs/EP37--refactor-learning-authority/20260708T171133Z-EP37-DS02-cross-table-integrity.md))
 4. ✅ DS03 — PH03 server-side Review seeding on graduation (level-triggered, idempotent via `seedReviewCard`) ([DS03](../../changelogs/EP37--refactor-learning-authority/20260708T195919Z-EP37-DS03-server-review-seeding.md))
-5. Create DS for PH04 (client cutover, feature flag, shadow parallel-run + golden-master gate)
-6. Begin implementation behind the feature flag
+5. ✅ DS04 — PH04 client cutover, feature flag (on by default), shadow parallel-run + golden-master gate; includes the recheck-as-wire-fact reconciliation ([DS04](../../changelogs/EP37--refactor-learning-authority/20260708T222525Z-EP37-DS04-client-cutover-rollout-gate.md))
+6. All phases specified (DS01–DS04). Remaining implementation: PH02 ✅, PH03 ✅ done; PH00/PH01 done; PH04 pending
+7. ✅ ADR amendment ratifying the recheck transition rule (client emits the `recheck` fact; server applies it via the shared engine) — added to the authority ADR Pillar 1 (20260708T225259Z)

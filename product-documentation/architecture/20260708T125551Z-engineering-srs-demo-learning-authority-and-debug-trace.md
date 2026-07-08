@@ -71,6 +71,18 @@ key) — is **explicitly deferred**; it would require moving orchestration serve
 rewrite) and is not justified for a demo. The residual gap (client self-reports `correct`) is an **accepted
 risk** for `srs-demo`, recorded in Consequences.
 
+> **Amendment (20260708T225259Z, EP37/DS04) — the recheck transition is server-authoritative via a wire
+> fact.** Pillar 1 says the server runs "the same pure transition." One case needs stating: when a word was
+> just missed, its immediate re-ask is a **recheck** — the engine (`processRecheckResult`) bumps `seen`/`correct`
+> only and freezes mastery/streak/lapses, whereas a plain `updateRunState` would advance them. So the recheck
+> case is part of the authoritative *state* transition, not pool orchestration. The client therefore sends
+> `recheck: boolean` on `AnswerRequest` — a **fact about the answer event** (like `correct`/`latencyMs`), not a
+> policy/threshold — and the server applies the matching transition by **reusing the same pure
+> `processRecheckResult`**. The recheck *trigger* (which word is pending) stays client-side orchestration; only
+> the one derived fact crosses the wire, and it is recorded in `answer_events` so the transition channel replays
+> faithfully. This preserves "contract carries wire facts, server owns policy" and keeps the golden-master gate
+> byte-identical.
+
 ### Pillar 2 — Review authority is server-side, seeded on the transition path
 
 Because graduation is now detected server-side (pillar 1), the server owns Review end-to-end:
