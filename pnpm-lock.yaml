@@ -47,6 +47,9 @@ importers:
       '@gll/srs-engine-v2':
         specifier: workspace:*
         version: link:../../packages/srs-engine-v2
+      '@gll/srs-review':
+        specifier: workspace:*
+        version: link:../../packages/srs-review
       '@gll/srs-shelving':
         specifier: workspace:*
         version: link:../../packages/srs-shelving
@@ -165,6 +168,9 @@ importers:
       '@gll/srs-engine-v2':
         specifier: workspace:*
         version: link:../srs-engine-v2
+      '@gll/srs-review':
+        specifier: workspace:*
+        version: link:../srs-review
       '@gll/srs-shelving':
         specifier: workspace:*
         version: link:../srs-shelving
@@ -189,14 +195,23 @@ importers:
         version: 3.2.4(@types/node@25.5.0)(jiti@2.6.1)(tsx@4.21.0)
 
   packages/srs-engine-v2:
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      typescript:
+        specifier: ^5.7
+        version: 5.9.3
+      vitest:
+        specifier: ^3
+        version: 3.2.4(@types/node@25.5.0)(jiti@2.6.1)(tsx@4.21.0)
+
+  packages/srs-review:
     dependencies:
       ts-fsrs:
         specifier: ^5
         version: 5.2.3
     devDependencies:
-      '@types/better-sqlite3':
-        specifier: ^7.6.13
-        version: 7.6.13
       typescript:
         specifier: ^5.7
         version: 5.9.3

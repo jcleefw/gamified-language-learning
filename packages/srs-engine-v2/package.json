@@ -35,9 +35,6 @@
     "typecheck": "tsc --noEmit",
     "engine:mock-db": "tsx demo/learning-runner.ts"
   },
-  "dependencies": {
-    "ts-fsrs": "^5"
-  },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "typescript": "^5.7",
