@@ -33,7 +33,11 @@
 
 ## Next Steps
 
-- **New epic for PH04** (`srs-demo` Review mode) — first deliverable is an ADR resolving
-  server-authority vs. client-authority. See `recent-decisions.md` and `blocked-items.md`.
+- **New epic for PH04** (`srs-demo` Review mode) — first deliverable is an ADR that must (1) ratify
+  `srs-demo` Learning authority (currently emergent/undocumented, contradicts EP15), then (2) decide
+  Review authority, then (3) settle cross-table integrity (re-graduation, orphans, split-brain).
+  See `recent-decisions.md` (the authority finding) and `blocked-items.md` (full ADR checklist).
+- cli-demo-db is intentionally different (full local authority) and **stays as-is** — not a target
+  for the demo's authority decision.
 - User has flagged **their own concerns for a deeper design discussion** before Track B starts —
   do not begin implementation until that happens.

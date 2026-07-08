@@ -4,6 +4,33 @@
 
 ---
 
+## FINDING: `srs-demo` Learning authority was never decided — it's emergent — 20260708T020000Z
+
+Doc archaeology (prompted by the user asking whether "Learning is client-authority" is a decision
+or an assumption). **It is an assumption / emergent outcome, not a recorded decision — and it
+contradicts the last written authority decision.**
+
+Paper trail:
+- **Headless Hono ADR (2026-03-03)**: server "calls the extracted engines and maps output to JSON" → server-authority intent.
+- **Quiz Contract & Answer Authority ADR (2026-03-13, EP15, Impl-Complete)**: explicit decision — "the server owns the quiz from question generation through answer verification" (client sends `selectedKey`, server runs `processAnswers`). **server-authority, shipped.**
+- **srs-engine-v2 Learning ADR (2026-03-19)**: new *pure library*; "persistence is the calling layer's concern," "RunState ephemeral — persistence deferred," "Hono server remains untouched until engine is solid." → **deferred** the authority question; did NOT decide client-authority.
+- **EP24 (2026-05-11)**: Vue demo to make the engine "observable in a browser"; backend explicitly OUT OF SCOPE; engine ran client-side with localStorage — a demo choice, not an authority decision.
+- **EP32**: v1 cleanup deleted the old `/api/srs/*` server-authority endpoints.
+- **EP31 (2026-06-23, Impl-Complete)**: replaced localStorage by "retrofitting `apps/server` as an HTTP bridge" *because `better-sqlite3` can't run in a Vite browser bundle*. Server became a **thin persistence bridge**; engine stayed client-side.
+
+**So**: today's `srs-demo` Learning = client-authority is a *consequence of a persistence constraint*
+(better-sqlite3 not browser-safe), never a ratified architecture. EP15's server-authority ADR is
+still Impl-Complete on paper, silently superseded. The v2 ADR's "calling layer's concern" line
+**sanctions** cli-demo-db and srs-demo behaving differently — they are different consumers, not
+replicas (user's point).
+
+**Consequence for the new epic's ADR**: it must FIRST ratify what Learning's authority is for
+`srs-demo` (currently undocumented + contradicting EP15), THEN decide Review authority on that
+baseline. The real gap is not "Learning client vs Review server" — it's that Learning's authority
+has no standing decision to be consistent with. See [[blocked-items]].
+
+---
+
 ## Spin PH04 (`srs-demo` Review mode) out to a new epic — 20260708T014500Z
 
 **Context**: DS03 §2 framed Track B as *server-authority* (server owns `FsrsScheduler` + store +
