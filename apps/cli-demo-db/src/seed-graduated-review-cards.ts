@@ -20,6 +20,7 @@ export async function seedGraduatedReviewCards(
     const ws = runState.get(wordId);
     if (!ws) continue;
     const card = scheduler.seed(wordId, toGraduationPerformance(ws), now);
-    await reviewStore.upsertReviewCard(userId, card);
+    // Graduation is idempotent: never reset an already-graduated word's FSRS progress.
+    await reviewStore.seedReviewCard(userId, card);
   }
 }

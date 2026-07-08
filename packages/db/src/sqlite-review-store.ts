@@ -18,6 +18,23 @@ function toReviewCard(row: typeof schema.review_cards.$inferSelect): ReviewCard 
 export class SqliteReviewStore implements ReviewStore {
   constructor(private readonly db: DbClient) {}
 
+  async seedReviewCard(userId: string, card: ReviewCard): Promise<boolean> {
+    const res = this.db
+      .insert(schema.review_cards)
+      .values({
+        user_id: userId,
+        word_id: card.wordId,
+        due: card.due.toISOString(),
+        scheduler_data: JSON.stringify(card.schedulerData),
+      })
+      .onConflictDoNothing({
+        target: [schema.review_cards.user_id, schema.review_cards.word_id],
+      })
+      .run();
+
+    return res.changes > 0;
+  }
+
   async upsertReviewCard(userId: string, card: ReviewCard): Promise<void> {
     this.db
       .insert(schema.review_cards)
