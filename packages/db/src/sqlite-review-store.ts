@@ -18,7 +18,7 @@ function toReviewCard(row: typeof schema.review_cards.$inferSelect): ReviewCard 
 export class SqliteReviewStore implements ReviewStore {
   constructor(private readonly db: DbClient) {}
 
-  async upsertReviewCard(userId: string, card: ReviewCard): Promise<void> {
+  upsertReviewCard(userId: string, card: ReviewCard): Promise<void> {
     this.db
       .insert(schema.review_cards)
       .values({
@@ -35,19 +35,20 @@ export class SqliteReviewStore implements ReviewStore {
         },
       })
       .run();
+    return Promise.resolve();
   }
 
-  async getReviewCard(userId: string, wordId: string): Promise<ReviewCard | null> {
+  getReviewCard(userId: string, wordId: string): Promise<ReviewCard | null> {
     const row = this.db
       .select()
       .from(schema.review_cards)
       .where(and(eq(schema.review_cards.user_id, userId), eq(schema.review_cards.word_id, wordId)))
       .get();
 
-    return row ? toReviewCard(row) : null;
+    return Promise.resolve(row ? toReviewCard(row) : null);
   }
 
-  async getDueReviewCards(userId: string, now: Date): Promise<ReviewCard[]> {
+  getDueReviewCards(userId: string, now: Date): Promise<ReviewCard[]> {
     const rows = this.db
       .select()
       .from(schema.review_cards)
@@ -55,10 +56,10 @@ export class SqliteReviewStore implements ReviewStore {
       .orderBy(asc(schema.review_cards.due))
       .all();
 
-    return rows.map(toReviewCard);
+    return Promise.resolve(rows.map(toReviewCard));
   }
 
-  async getDueReviewCardsForDeck(userId: string, deckId: string, now: Date): Promise<ReviewCard[]> {
+  getDueReviewCardsForDeck(userId: string, deckId: string, now: Date): Promise<ReviewCard[]> {
     const deckWordRows = this.db
       .select({ word_id: schema.deck_words.word_id })
       .from(schema.deck_words)
@@ -66,7 +67,7 @@ export class SqliteReviewStore implements ReviewStore {
       .all();
 
     const wordIds = deckWordRows.map((row) => row.word_id);
-    if (wordIds.length === 0) return [];
+    if (wordIds.length === 0) return Promise.resolve([]);
 
     const rows = this.db
       .select()
@@ -81,16 +82,16 @@ export class SqliteReviewStore implements ReviewStore {
       .orderBy(asc(schema.review_cards.due))
       .all();
 
-    return rows.map(toReviewCard);
+    return Promise.resolve(rows.map(toReviewCard));
   }
 
-  async getAllReviewCards(userId: string): Promise<ReviewCard[]> {
+  getAllReviewCards(userId: string): Promise<ReviewCard[]> {
     const rows = this.db
       .select()
       .from(schema.review_cards)
       .where(eq(schema.review_cards.user_id, userId))
       .all();
 
-    return rows.map(toReviewCard);
+    return Promise.resolve(rows.map(toReviewCard));
   }
 }
