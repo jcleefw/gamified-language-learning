@@ -1,5 +1,6 @@
 import type { ReviewCard } from '@gll/srs-review';
 
+/** Per-user FSRS review cards for words that have graduated out of Learning. */
 export interface IReviewStore {
   /**
    * Graduation seed — insert a review card ONLY if the word has no card yet

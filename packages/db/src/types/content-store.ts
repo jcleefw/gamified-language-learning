@@ -6,6 +6,7 @@ export interface Sense {
   type: string;
 }
 
+/** Curriculum content: decks, words, and sentences, served in API-contract shape. */
 export interface IContentStore {
   /** All decks, fully assembled into the API-contract read shape. */
   getDecks(): Promise<AppDeckPayload[]>;

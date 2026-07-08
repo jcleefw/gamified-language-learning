@@ -14,6 +14,7 @@ export interface AnswerEventRecord {
   createdAt: string;
 }
 
+/** Append-only log of answer transitions, kept alongside (not instead of) current-state tables. */
 export interface IAnswerEventStore {
   /** Append one transition record. Throws on failure (caller decides fail-open). */
   appendAnswerEvent(record: AnswerEventRecord): Promise<void>;
