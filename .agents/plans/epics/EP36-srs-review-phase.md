@@ -1,7 +1,7 @@
 # EP36 - SRS Review Phase (`@gll/srs-review`)
 
 **Created**: 20260708T010629Z
-**Status**: Accepted
+**Status**: Impl-Complete (PH01–PH03) — **PH04 spun out to a new epic** (see "Phase 4 → new epic" below)
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
@@ -106,7 +106,20 @@ together and owns rating inference.
 
 **Scope**: `seed-mock-reviews` script that seeds fixed `wordId`s as due-now `ReviewCard`s in the review DB, so the runner can be exercised without a full Learning run.
 
-### Phase 4: Server-Authority Review Path for `srs-demo` (EP36-PH04) — contract / server / frontend
+### Phase 4 → new epic (was EP36-PH04) — Review in the interactive `srs-demo`
+
+> **Moved out of EP36.** ST10–ST12 below are **not** implemented here. Investigation before
+> starting Track B found that DS03's "server-authority" premise conflicts with the app's actual
+> architecture: `srs-demo` is **client-authority** (imports `@gll/srs-engine-v2`, runs the engine
+> in the browser via `App.vue`/`DeckOverview.vue`), and the Hono server (`routes/state.ts`) is
+> **persistence-only** (`POST /api/state/word` saves a client-computed `WordState`; the server
+> never runs the engine or computes mastery). So ST11's "seed a ReviewCard on the server's
+> learning-answer path" has no hook — graduation happens client-side.
+>
+> This is an **ADR-level decision** (server-authority Review vs. client-authority parity with
+> Learning; whether `ts-fsrs` may enter the browser bundle), not an implementation detail. The new
+> epic's **first step is that ADR**; ST10–ST12 are re-scoped under its outcome. Stories retained
+> below for reference/hand-off.
 
 ### EP36-ST10: Review DTOs in `@gll/api-contract`
 
@@ -124,18 +137,18 @@ together and owns rating inference.
 
 ## Overall Acceptance Criteria
 
-- [ ] `@gll/srs-review` exists as a pure package; `ts-fsrs` is imported **only** in its scheduler file and **no longer** appears in `srs-engine-v2`.
-- [ ] A word that graduates from Learning has a `ReviewCard` seeded and persisted via `ReviewStore`.
-- [ ] The CLI runner (`engine:review`) presents only words with `due <= now` for the chosen deck or global pool.
-- [ ] `srs-demo` has a working Review mode: the frontend fetches due cards from `@gll/server`, quizzes them, and submits answers with client-measured `latencyMs`; the server owns FSRS scheduling and persistence (frontend never imports `ts-fsrs`).
-- [ ] Each answered card is persisted immediately — early exit / crash never loses answered progress.
-- [ ] The user is **never** shown a self-rating prompt; ratings are inferred (wrong → `Again`, correct → `Easy`/`Good`/`Hard` by response time).
-- [ ] Rating thresholds are generous and per-question-type configurable — an ordinary correct answer maps to `Good`, not `Hard`.
-- [ ] A graduated word **never** re-enters the Learning active pool: it is retired one-way by `nextActivePool`, and a lapse in Review maps to `Again` → FSRS Relearning (stays in the Review phase), not a return to Learning. (Review → Learning re-entry is OQ1 — deferred; until then, graduated = permanently in Review.)
-- [ ] Swapping FSRS for another `ReviewScheduler` requires changing one line in the runner; store and schema are untouched.
-- [ ] `review_cards` uses standard, D1-compatible SQL; `scheduler_data` is never inspected outside the scheduler.
-- [ ] All existing EP20 Learning tests pass unchanged.
-- [ ] Edge/limit case: a review session with **zero** due words exits cleanly with a clear message.
+- [x] `@gll/srs-review` exists as a pure package; `ts-fsrs` is imported **only** in its scheduler file and **no longer** appears in `srs-engine-v2`.
+- [x] A word that graduates from Learning has a `ReviewCard` seeded and persisted via `ReviewStore`. *(CLI, ST06)*
+- [x] The CLI runner (`engine:review`) presents only words with `due <= now` for the chosen deck or global pool. *(ST07)*
+- [ ] ~~`srs-demo` has a working Review mode…~~ **Moved to new epic** (PH04) — depends on the authority ADR; premise re-examined (see "Phase 4 → new epic").
+- [x] Each answered card is persisted immediately — early exit / crash never loses answered progress. *(ST07, write-on-answer)*
+- [x] The user is **never** shown a self-rating prompt; ratings are inferred (wrong → `Again`, correct → `Easy`/`Good`/`Hard` by response time). *(ST08)*
+- [x] Rating thresholds are generous and configurable — an ordinary correct answer maps to `Good`, not `Hard`. *(ST08; per-question-type normalisation still deferred — review is word-MC only today)*
+- [x] A graduated word **never** re-enters the Learning active pool: a lapse in Review maps to `Again` → FSRS Relearning (stays in Review), not a return to Learning. *(FsrsScheduler; Review → Learning re-entry is OQ1 — deferred)*
+- [x] Swapping FSRS for another `ReviewScheduler` requires changing one line in the runner; store and schema are untouched.
+- [x] `review_cards` uses standard, D1-compatible SQL; `scheduler_data` is never inspected outside the scheduler.
+- [x] All existing EP20 Learning tests pass unchanged. *(cli-demo-db 59/59 green)*
+- [x] Edge/limit case: a review session with **zero** due words exits cleanly with a clear message. *(ST07)*
 
 ---
 
@@ -164,7 +177,10 @@ Carried forward from EP21 (not in EP36 scope, except OQ6 which the existing sche
 
 ## Next Steps
 
-1. Review and approve this plan
-2. Mark EP21 as **Withdrawn** (superseded by EP36)
-3. Create Design Spec(s) — likely one per phase (scheduler / store / runner)
-4. Begin EP36-ST01
+1. ~~Review and approve this plan~~ ✅
+2. ~~Mark EP21 as **Withdrawn**~~ ✅
+3. ~~Create Design Spec(s)~~ ✅ (DS01 scheduler / DS02 store / DS03 runner)
+4. ~~Begin EP36-ST01~~ ✅ — **PH01–PH03 (ST01–ST09) complete** (commits through `6dd6e04`)
+5. **New epic for PH04** (`srs-demo` Review mode): first deliverable an ADR resolving
+   server-authority vs. client-authority parity with Learning (see "Phase 4 → new epic").
+   Concern flagged for a deeper design discussion before implementation begins.

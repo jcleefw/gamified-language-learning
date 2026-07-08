@@ -1,7 +1,7 @@
 # EP36-DS03: Review Runner, Rating Inference & Graduation Wiring Specification
 
 **Date**: 20260708T013123Z
-**Status**: Draft
+**Status**: Track A Implemented (PH03, ST06–ST09 — commit `6dd6e04`) · **Track B (PH04, ST10–ST12) moved to a new epic** — see [PH03 implementation changelog](20260708T014500Z-EP36-PH03-review-runner-implementation.md) and the epic plan's "Phase 4 → new epic" note. Track B's server-authority premise conflicts with the app's actual client-authority architecture and needs an ADR first.
 **Epic**: [EP36 - SRS Review Phase](../../plans/epics/EP36-srs-review-phase.md)
 
 **Depends on**: [DS01](20260708T011607Z-EP36-DS01-review-scheduler-package.md) (`FsrsScheduler`), [DS02](20260708T012724Z-EP36-DS02-review-store-persistence.md) (`SqliteReviewStore`)
