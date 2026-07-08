@@ -29,5 +29,4 @@ describe('Public API exports', () => {
 
 // Compile-time type assertions — these lines must typecheck
 import type { ShelvingConfig } from '../../index.js';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _config: ShelvingConfig = DEFAULT_SHELVING_CONFIG;

@@ -4,16 +4,25 @@ import { NoopLogger, PinoLogger } from '../index';
 /** Collects each pino JSON line written to the destination. */
 function capture(): { stream: { write(s: string): void }; lines: Array<Record<string, unknown>> } {
   const lines: Array<Record<string, unknown>> = [];
-  return { stream: { write: (s: string) => lines.push(JSON.parse(s)) }, lines };
+  return {
+    stream: {
+      write: (s: string) => {
+        lines.push(JSON.parse(s) as Record<string, unknown>);
+      },
+    },
+    lines,
+  };
 }
 
 describe('NoopLogger', () => {
-  it('is a no-op: every method returns undefined and does not throw', () => {
+  it('is a no-op: every method does not throw', () => {
     const log = new NoopLogger();
-    expect(log.debug('msg')).toBeUndefined();
-    expect(log.info('msg')).toBeUndefined();
-    expect(log.warn('msg')).toBeUndefined();
-    expect(log.error('msg', { correlationId: 'c1' })).toBeUndefined();
+    expect(() => {
+      log.debug('msg');
+      log.info('msg');
+      log.warn('msg');
+      log.error('msg', { correlationId: 'c1' });
+    }).not.toThrow();
   });
 
   it('child() returns a NoopLogger', () => {

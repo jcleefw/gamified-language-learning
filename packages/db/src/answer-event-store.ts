@@ -1,11 +1,12 @@
-import { asc, eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type BetterSqlite3 from 'better-sqlite3';
 import type { WordState } from '@gll/srs-engine-v2';
 import { type Logger, NoopLogger } from '@gll/logger';
 import * as schema from './schema.js';
 
-type DbClient = BetterSQLite3Database<typeof schema> & { $client: BetterSqlite3.Database };
+type DbClient = BetterSQLite3Database<typeof schema> & {
+  $client: BetterSqlite3.Database;
+};
 
 /** One append to the transition channel: the raw answer plus before/after state. */
 export interface AnswerEventRecord {
@@ -42,7 +43,9 @@ export class SqliteAnswerEventStore implements IAnswerEventStore {
           word_id: record.wordId,
           correct: record.correct,
           latency_ms: record.latencyMs,
-          before_state: record.beforeState ? JSON.stringify(record.beforeState) : null,
+          before_state: record.beforeState
+            ? JSON.stringify(record.beforeState)
+            : null,
           after_state: JSON.stringify(record.afterState),
           graduated: record.graduated,
           recheck: record.recheck,

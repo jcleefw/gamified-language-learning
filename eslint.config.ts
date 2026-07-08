@@ -40,6 +40,10 @@ export default tseslint.config(
         'error',
         { prefer: 'type-imports' },
       ],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       '@typescript-eslint/explicit-function-return-type': [
         'error',
         {
@@ -61,7 +65,12 @@ export default tseslint.config(
     // SqliteLearningStore/SqliteContentStore methods are async-over-sync wrappers by design
     // (EP34 ADR, extended to ContentStore by EP35-ST02): the body wraps synchronous
     // better-sqlite3 calls with zero internal `await`. require-await doesn't apply here.
-    files: ['packages/db/src/sqlite-learning-store.ts', 'packages/db/src/sqlite-content-store.ts'],
+    files: [
+      'packages/db/src/sqlite-learning-store.ts',
+      'packages/db/src/sqlite-content-store.ts',
+      'packages/db/src/sqlite-review-store.ts',
+      'packages/db/src/answer-event-store.ts',
+    ],
     rules: {
       '@typescript-eslint/require-await': 'off',
     },
