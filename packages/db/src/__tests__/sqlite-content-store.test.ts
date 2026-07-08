@@ -2,14 +2,11 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { eq, and } from 'drizzle-orm';
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import type BetterSqlite3 from 'better-sqlite3';
 import * as schema from '../schema';
 import { initDb } from '../init-db';
 import { SqliteContentStore } from '../sqlite-content-store';
 import type { AppDeck } from '@gll/api-contract';
-
-type DbClient = BetterSQLite3Database<typeof schema> & { $client: BetterSqlite3.Database };
+import type { DbClient } from '../types/db-client';
 
 function makeTestDb(): DbClient {
   const sqlite = new Database(':memory:');

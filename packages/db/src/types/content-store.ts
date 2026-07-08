@@ -1,5 +1,11 @@
 import type { AppDeck, AppDeckPayload } from '@gll/api-contract';
 
+export interface Sense {
+  romanization: string;
+  english: string;
+  type: string;
+}
+
 export interface IContentStore {
   /** All decks, fully assembled into the API-contract read shape. */
   getDecks(): Promise<AppDeckPayload[]>;

@@ -1,9 +1,8 @@
 import Database from 'better-sqlite3';
-import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as schema from './schema';
 import { initDb } from './init-db';
-
-type DbClient = BetterSQLite3Database<typeof schema> & { $client: Database.Database };
+import type { DbClient } from './types/db-client.js';
 
 let dbInstance: DbClient | null = null;
 

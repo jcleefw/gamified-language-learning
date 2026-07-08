@@ -1,13 +1,8 @@
 import { and, asc, eq, inArray, lte } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import type BetterSqlite3 from 'better-sqlite3';
 import type { ReviewCard } from '@gll/srs-review';
-import type { IReviewStore } from './review-store.js';
+import type { IReviewStore } from './types/review-store.js';
 import * as schema from './schema.js';
-
-type DbClient = BetterSQLite3Database<typeof schema> & {
-  $client: BetterSqlite3.Database;
-};
+import type { DbClient } from './types/db-client.js';
 
 function toReviewCard(
   row: typeof schema.review_cards.$inferSelect,

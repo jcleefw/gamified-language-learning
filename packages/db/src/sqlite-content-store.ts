@@ -1,7 +1,6 @@
 import { randomUUID } from 'crypto';
 import { and, eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import type BetterSqlite3 from 'better-sqlite3';
 import { DeckDocSchema } from '@gll/api-contract';
 import type {
   AppDeck,
@@ -12,19 +11,11 @@ import type {
   DeckSentence,
   DeckComponent,
 } from '@gll/api-contract';
-import type { IContentStore } from './content-store.js';
+import type { IContentStore, Sense } from './types/content-store.js';
 import * as schema from './schema.js';
+import type { DbClient } from './types/db-client.js';
 
-type DbClient = BetterSQLite3Database<typeof schema> & {
-  $client: BetterSqlite3.Database;
-};
 type TxClient = BetterSQLite3Database<typeof schema>;
-
-interface Sense {
-  romanization: string;
-  english: string;
-  type: string;
-}
 
 export class SqliteContentStore implements IContentStore {
   constructor(private readonly db: DbClient) {}

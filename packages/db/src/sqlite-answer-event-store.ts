@@ -1,31 +1,10 @@
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import type BetterSqlite3 from 'better-sqlite3';
-import type { WordState } from '@gll/srs-engine-v2';
 import { type Logger, NoopLogger } from '@gll/logger';
 import * as schema from './schema.js';
-
-type DbClient = BetterSQLite3Database<typeof schema> & {
-  $client: BetterSqlite3.Database;
-};
-
-/** One append to the transition channel: the raw answer plus before/after state. */
-export interface AnswerEventRecord {
-  correlationId: string | null;
-  userId: string;
-  wordId: string;
-  correct: boolean;
-  latencyMs: number;
-  beforeState: WordState | null;
-  afterState: WordState;
-  graduated: boolean;
-  recheck: boolean;
-  createdAt: string;
-}
-
-export interface IAnswerEventStore {
-  /** Append one transition record. Throws on failure (caller decides fail-open). */
-  appendAnswerEvent(record: AnswerEventRecord): Promise<void>;
-}
+import type {
+  IAnswerEventStore,
+  AnswerEventRecord,
+} from './types/answer-event-store.js';
+import type { DbClient } from './types/db-client.js';
 
 export class SqliteAnswerEventStore implements IAnswerEventStore {
   constructor(

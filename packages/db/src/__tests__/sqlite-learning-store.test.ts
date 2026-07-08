@@ -1,6 +1,5 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type BetterSqlite3 from 'better-sqlite3';
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as schema from '../schema';
@@ -8,8 +7,7 @@ import { initDb } from '../init-db';
 import { SqliteLearningStore } from '../sqlite-learning-store';
 import type { WordState } from '@gll/srs-engine-v2';
 import type { SentenceState } from '@gll/srs-engine-v2';
-
-type DbClient = BetterSQLite3Database<typeof schema> & { $client: BetterSqlite3.Database };
+import type { DbClient } from '../types/db-client';
 
 function makeTestDb(): { db: DbClient; sqlite: BetterSqlite3.Database } {
   const sqlite = new Database(':memory:');

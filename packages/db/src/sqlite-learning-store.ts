@@ -1,6 +1,4 @@
 import { and, eq, gte, inArray } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import type BetterSqlite3 from 'better-sqlite3';
 import type {
   WordState,
   RunState,
@@ -8,12 +6,9 @@ import type {
   SentenceRunState,
 } from '@gll/srs-engine-v2';
 import type { ShelvedWord } from '@gll/srs-shelving';
-import type { ILearningStore } from './learning-store.js';
+import type { ILearningStore } from './types/learning-store.js';
 import * as schema from './schema.js';
-
-type DbClient = BetterSQLite3Database<typeof schema> & {
-  $client: BetterSqlite3.Database;
-};
+import type { DbClient } from './types/db-client.js';
 
 export class SqliteLearningStore implements ILearningStore {
   constructor(private readonly db: DbClient) {}
