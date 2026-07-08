@@ -5,7 +5,7 @@ import type {
   AnswerRequest,
   AnswerResponse,
   WordStatePayload,
-} from './index.js';
+} from '../src/index.js';
 
 // AnswerRequest is the raw answer the server derives state from.
 const _req: AnswerRequest = { wordId: 'w1', correct: true, latencyMs: 1200 };
