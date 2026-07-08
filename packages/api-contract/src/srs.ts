@@ -18,6 +18,19 @@ export interface GetStateResponse {
 /** Request body for POST /api/state/word */
 export type UpsertWordStateRequest = WordStatePayload;
 
+/** Request body for POST /api/answer — the raw answer; the server derives state. */
+export interface AnswerRequest {
+  wordId: string;
+  correct: boolean;
+  latencyMs: number;
+}
+
+/** Response data for POST /api/answer. */
+export interface AnswerResponse {
+  wordState: WordStatePayload;   // authoritative post-transition state
+  graduated: boolean;            // word crossed the mastery threshold on this answer
+}
+
 export interface ShelvedWordPayload {
   wordId: string;
   shelvedAtBatch: number;
