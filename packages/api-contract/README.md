@@ -1,48 +1,56 @@
 # @gll/api-contract
 
-Types-only package that defines the HTTP wire format between the GLL server and any client (frontend, CLI, tests). No runtime code — importing this package adds zero bytes to a bundle.
+Types-only package defining the HTTP wire format between the GLL server (`@gll/server`) and any client (Vue frontend, CLI, tests). No runtime code — importing it adds zero bytes to a bundle. Keeps server and client in sync on exact request/response shapes.
 
-## Purpose
+## Public API
 
-Keeps the server and client in sync on exact request/response shapes, and standardises the naming conventions used over HTTP (snake_case, readable enum values) independently of internal engine conventions.
+```ts
+import type {
+  ApiResponse, ApiError,
+  AnswerRequest, AnswerResponse,
+  GetStateResponse, WordStatePayload,
+  GetDecksResponse, AppDeckPayload,
+} from '@gll/api-contract';
+import { ErrorCode, DeckDocSchema } from '@gll/api-contract';
+```
 
-**Engine-internal → wire-format mappings:**
-
-| Internal | Wire |
-|---|---|
-| `'mc'` | `'multiple_choice'` |
-| `'wordBlock'` | `'word_block'` |
-| `'srsM2_review'` | `'anki_review'` |
-
-## Endpoints
-
-### `POST /srs/batch`
-
-Request: `GetBatchRequest` — `{ deckId, size? }`  
-Response: `ApiResponse<BatchPayload>` — batch of quiz questions
-
-### `POST /srs/answers`
-
-Request: `SubmitAnswersRequest` — `{ batchId, answers: QuizAnswer[] }`  
-Response: `ApiResponse<SubmitAnswersResponse>` — per-word results with correct/submitted keys and updated mastery state
-
-### `POST /srs/seed`
-
-Response: `ApiResponse<SeedPayload>` — seeded deck info
+Modules: `errors` (envelope + codes), `srs` (state/answer/shelving DTOs), `content` (decks/curriculum, incl. zod schemas). `auth` (Stage 5) and `curation` (Stage 7) are deferred stubs.
 
 ## Response envelope
 
-All endpoints return `ApiResponse<T>`:
+Every endpoint returns `ApiResponse<T>`:
 
-```typescript
+```ts
 type ApiResponse<T> =
   | { success: true; data: T }
   | { success: false; error: ApiError };
 ```
 
-Error codes are defined in `ErrorCode` — notably `INSUFFICIENT_WORD_POOL` for when the deck doesn't have enough words to compose a batch.
+`ErrorCode`: `NOT_FOUND`, `BAD_REQUEST`, `INTERNAL_ERROR`, `UNAUTHORIZED`, `UNPROCESSABLE_ENTITY`.
 
-## Deferred
+## Endpoints
 
-- `auth.ts` — Stage 5
-- `curation.ts` — Stage 7
+All are served under `/api` by `@gll/server`.
+
+| Method + path | Request | Response data |
+|---|---|---|
+| `GET /api/state` | — | `GetStateResponse` |
+| `POST /api/state/word` | `UpsertWordStateRequest` | `WordStatePayload` |
+| `POST /api/answer` | `AnswerRequest` | `AnswerResponse` |
+| `GET /api/decks` | — | `GetDecksResponse` |
+| `GET /api/shelving` | — | `GetShelvedWordsResponse` |
+| `POST /api/shelving/apply` | `ApplyShelvingRequest` | — |
+| `POST /api/shelving/unshelve-all` | `UnshelveAllRequest` | — |
+| `POST /api/shelving/unshelve-word` | `UnshelveWordRequest` | — |
+| `POST /api/stagnation/update` | `UpdateStagnationCountersRequest` | — |
+| `GET /api/stagnation/stagnant` | — | `GetStagnantWordsResponse` |
+| `POST /api/stagnation/reset` | `ResetStagnationCountersRequest` | — |
+| `POST /api/stagnation/reset-words` | `ResetStagnationCountersForWordsRequest` | — |
+
+`AnswerRequest` — `{ wordId, correct, latencyMs, recheck? }`: the raw answer the server derives authoritative state from. `AnswerResponse` — `{ wordState, graduated }`.
+
+`POST /api/debug-logs` and the `POST /api/test/*` config/seed routes exist for diagnostics and tests; `GET /health` is served at the root (not under `/api`).
+
+## Compile-time guards
+
+`type-tests/` holds `tsc`-only assertions that the DTOs keep their shape. They never run — see the `typecheck` script (`tsconfig.typecheck.json`).
