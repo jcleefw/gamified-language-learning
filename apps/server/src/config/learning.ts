@@ -14,3 +14,13 @@ export const LEARNING_CONFIG: { masteryThreshold: number; streakThresholds: Stre
     maxMastery: 2,
   },
 };
+
+/**
+ * Wire shape for GET /api/config. Declared server-side on purpose: learning
+ * policy is server-owned and must not surface in @gll/api-contract. Clients
+ * consume this read-only and type their result with a local shape.
+ */
+export interface LearningConfigResponse {
+  masteryThreshold: number;
+  streakThresholds: StreakThresholds;
+}
