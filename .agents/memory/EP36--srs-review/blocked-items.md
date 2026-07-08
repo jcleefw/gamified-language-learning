@@ -4,36 +4,14 @@
 
 ## Current blockers
 
-### PH04 (`srs-demo` Review mode) — blocked on an architectural decision
-
-- **Story**: ST10–ST12 (moved to a new epic).
-- **Root cause**: DS03 assumed *server-authority* Review, but `srs-demo` is *client-authority* for
-  Learning (runs the engine in the browser; server is a thin persistence bridge). Crucially, that
-  Learning client-authority was **never a decision — it's emergent and contradicts EP15's
-  server-authority ADR** (see `recent-decisions.md`). So there is no ratified baseline to make
-  Review consistent with.
-- **What the new epic's ADR must cover** (in order):
-  1. **Ratify Learning authority for `srs-demo`** (currently undocumented; EP15 says server-authority,
-     code is client-authority). cli-demo-db is intentionally different (full local authority) and stays.
-  2. **Decide Review authority**: (A) server-authority — server gains `@gll/srs-review` + scheduler +
-     rating inference; graduation seeding needs the mastery threshold moved into the contract/server
-     (it currently lives client-side). (B) client-authority parity — `srs-demo` runs `FsrsScheduler`
-     (ships `ts-fsrs` in the browser, violates the "frontend never imports ts-fsrs" ADR goal).
-  3. **Cross-table integrity** (user's Q1–Q3; no FKs / no PRAGMA foreign_keys today):
-     - Re-graduation policy: `upsert` currently **overwrites** a live review card (resets FSRS
-       progress). Recommend **ignore-if-exists**.
-     - Orphan policy on word deletion: `getDueReviewCards` doesn't join `words`, so orphaned cards
-       stay "due" forever; the CLI runner silently skips them. Readers must tolerate orphans until a
-       cleanup story lands.
-     - Split-brain: nothing prevents a word being in Learning (`user_word_states`) and Review
-       (`review_cards`) simultaneously if the Learning table is corrupted/reset.
-     - Integrity rules should live in the **store layer (`@gll/db`)**, not the Hono route — else the
-       CLI (direct-to-DB, server-bypassing) won't get them.
-- **Also blocked on**: a deeper design discussion the user wants first. Do not start Track B until
-  it happens.
+_None._ EP36 is Impl-Complete for PH01–PH03. PH04 (`srs-demo` Review mode) was spun out to
+**`EP37--srs-review-in-srs-demo`**; its blockers (authority + integrity ADR, pending design
+discussion) live in that branch's `blocked-items.md`.
 
 ---
 
 ## Unblocking history
 
-- _(none yet)_
+- **PH03 build gotcha (resolved)**: `@gll/db` / `@gll/srs-review` are consumed as built `dist/`;
+  DS02's dist was stale (missing `SqliteReviewStore`). Rebuilt both. Future consumers must rebuild
+  after DS01/DS02 source changes.

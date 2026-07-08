@@ -33,11 +33,6 @@
 
 ## Next Steps
 
-- **New epic for PH04** (`srs-demo` Review mode) — first deliverable is an ADR that must (1) ratify
-  `srs-demo` Learning authority (currently emergent/undocumented, contradicts EP15), then (2) decide
-  Review authority, then (3) settle cross-table integrity (re-graduation, orphans, split-brain).
-  See `recent-decisions.md` (the authority finding) and `blocked-items.md` (full ADR checklist).
-- cli-demo-db is intentionally different (full local authority) and **stays as-is** — not a target
-  for the demo's authority decision.
-- User has flagged **their own concerns for a deeper design discussion** before Track B starts —
-  do not begin implementation until that happens.
+- EP36 is done (PH01–PH03). PH04 (`srs-demo` Review mode) is tracked in
+  **`EP37--srs-review-in-srs-demo`** — see that branch's memory for the authority finding, the
+  ADR checklist, and the pending design discussion. cli-demo-db stays as-is (full local authority).
