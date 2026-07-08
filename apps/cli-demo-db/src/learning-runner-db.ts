@@ -1,7 +1,9 @@
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'node:path';
 import { mkdirSync } from 'node:fs';
-import { getDb, closeDb, SqliteLearningStore } from '@gll/db';
+import { getDb, closeDb, SqliteLearningStore, SqliteReviewStore } from '@gll/db';
+import { FsrsScheduler } from '@gll/srs-review';
+import { seedGraduatedReviewCards } from './seed-graduated-review-cards.js';
 import { CorrectAutoAnswerStrategy } from './auto-answer-strategy.js';
 import {
   buildQuizItems,
@@ -22,6 +24,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 
   const db = getDb(DB_PATH) as DbClient;
   const store = new SqliteLearningStore(db);
+  const reviewStore = new SqliteReviewStore(db);
+  const scheduler = new FsrsScheduler();
 
   const allWords = buildQuizItems(db);
   const wordPool = allWords;
@@ -52,8 +56,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     corpus,
     (ws) => store.upsertWordState(CLI_USER_ID, ws),
     (ss) => store.upsertSentenceState(CLI_USER_ID, ss),
-    (ids) => {
-      if (ids.length > 0) console.log('[INFO] Graduated:', ids);
+    async (ids, runState) => {
+      if (ids.length > 0) {
+        console.log('[INFO] Graduated:', ids);
+        await seedGraduatedReviewCards(ids, runState, scheduler, reviewStore, CLI_USER_ID);
+      }
     },
     DEFAULT_SHELVING_CONFIG,
     (wordId, batchNum) =>

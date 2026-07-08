@@ -9,6 +9,8 @@
     "test:watch": "vitest",
     "engine:import-curriculum": "tsx src/import-curriculum.ts",
     "engine:real-db": "tsx src/learning-runner-db.ts",
+    "engine:review": "tsx src/review-runner-db.ts",
+    "engine:review:seed": "tsx src/seed-mock-reviews.ts",
     "engine:real-db:clear": "tsx src/db-tools-cli.ts clear",
     "engine:real-db:reset": "tsx src/db-tools-cli.ts reset",
     "engine:real-db:seed:baseline": "tsx src/db-tools-cli.ts seed baseline",
@@ -19,6 +21,7 @@
     "@gll/api-contract": "workspace:*",
     "@gll/db": "workspace:*",
     "@gll/srs-engine-v2": "workspace:*",
+    "@gll/srs-review": "workspace:*",
     "@gll/srs-shelving": "workspace:*",
     "better-sqlite3": "^12.11.1",
     "drizzle-orm": "^0.45.2"
