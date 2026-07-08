@@ -1,8 +1,9 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { initDb, schema, SqliteLearningStore } from '@gll/db';
+import { initDb, schema, SqliteLearningStore, SqliteReviewStore } from '@gll/db';
 import { updateRunState } from '@gll/srs-engine-v2';
+import { FsrsScheduler } from '@gll/srs-review';
 import type { AnswerResponse, ApiResponse, WordStatePayload } from '@gll/api-contract';
 
 type TestDb = ReturnType<typeof drizzle<typeof schema>>;
@@ -127,6 +128,106 @@ describe('POST /api/answer', () => {
     // State write is intact despite the event-append failure.
     const persisted = await new SqliteLearningStore(testDb).getAllWordStates('demo-user');
     expect(persisted.get('w5')?.seen).toBe(1);
+  });
+
+  // --- ST06: server-side Review seeding on graduation ---
+
+  async function answerCorrect(wordId: string): Promise<ApiResponse<AnswerResponse>> {
+    const res = await post({ wordId, correct: true, latencyMs: 1000 });
+    return (await res.json()) as ApiResponse<AnswerResponse>;
+  }
+
+  it('does not seed a review card before the word is mastered', async () => {
+    await answerCorrect('g1'); // mastery 0
+    await answerCorrect('g1'); // mastery 1 — not yet mastered (threshold 2)
+
+    const cards = await new SqliteReviewStore(testDb).getAllReviewCards('demo-user');
+    expect(cards).toEqual([]);
+  });
+
+  it('graduation seeds exactly one review card', async () => {
+    const before = Date.now();
+    await answerCorrect('g2');
+    await answerCorrect('g2');
+    await answerCorrect('g2'); // 3rd correct → mastery 2 → graduated
+
+    const cards = await new SqliteReviewStore(testDb).getAllReviewCards('demo-user');
+    expect(cards).toHaveLength(1);
+    expect(cards[0].wordId).toBe('g2');
+    expect(cards[0].due).toBeInstanceOf(Date);
+    expect(cards[0].due.getTime()).toBeGreaterThan(before);
+    expect(cards[0].schedulerData).toBeTruthy();
+  });
+
+  it('seeded card is produced by FsrsScheduler with the inferred graduation rating', async () => {
+    await answerCorrect('g3');
+    await answerCorrect('g3');
+    await answerCorrect('g3'); // graduates at correctStreak 3, lapses 0, ratio 1
+
+    const cards = await new SqliteReviewStore(testDb).getAllReviewCards('demo-user');
+    const seeded = cards[0].schedulerData as { stability: number; difficulty: number };
+
+    // stability/difficulty are rating-determined and now-independent; matching a
+    // reference seed proves the correct GraduationPerformance was inferred.
+    const reference = new FsrsScheduler().seed(
+      'ref',
+      { correctStreak: 3, lapses: 0, correctRatio: 1 },
+      new Date(),
+    ).schedulerData as { stability: number; difficulty: number };
+
+    expect(seeded.stability).toBe(reference.stability);
+    expect(seeded.difficulty).toBe(reference.difficulty);
+  });
+
+  it('is idempotent and keeps graduated edge-triggered on continued correct answers', async () => {
+    await answerCorrect('g4');
+    await answerCorrect('g4');
+    await answerCorrect('g4'); // graduates
+
+    const store = new SqliteReviewStore(testDb);
+    const afterGraduation = await store.getReviewCard('demo-user', 'g4');
+
+    const fourth = await answerCorrect('g4');
+    const fifth = await answerCorrect('g4');
+
+    const cards = await store.getAllReviewCards('demo-user');
+    expect(cards).toHaveLength(1); // no duplicate
+
+    const now = await store.getReviewCard('demo-user', 'g4');
+    expect(now!.due.getTime()).toBe(afterGraduation!.due.getTime()); // not reset
+    expect(now!.schedulerData).toEqual(afterGraduation!.schedulerData);
+
+    // graduated is edge-triggered: false once already mastered, despite level-triggered seeding
+    expect(fourth.success && fourth.data.graduated).toBe(false);
+    expect(fifth.success && fifth.data.graduated).toBe(false);
+  });
+
+  it('fails open on seed failure and self-heals on the next mastered answer', async () => {
+    const ddl = (
+      testDb.$client
+        .prepare("SELECT sql FROM sqlite_master WHERE name = 'review_cards'")
+        .get() as { sql: string }
+    ).sql;
+
+    await answerCorrect('g5');
+    await answerCorrect('g5');
+
+    // Break the seed target just before the graduating answer.
+    testDb.$client.exec('DROP TABLE review_cards');
+    const graduating = await answerCorrect('g5'); // seed throws → fail-open
+    expect(graduating.success).toBe(true);
+
+    // Learning state is intact despite the seed failure.
+    const persisted = await new SqliteLearningStore(testDb).getAllWordStates('demo-user');
+    expect(persisted.get('g5')?.mastery).toBe(2);
+
+    // Restore the table; the next mastered answer self-heals the missing card.
+    testDb.$client.exec(ddl);
+    const heal = await answerCorrect('g5');
+    expect(heal.success).toBe(true);
+
+    const cards = await new SqliteReviewStore(testDb).getAllReviewCards('demo-user');
+    expect(cards.map((c) => c.wordId)).toEqual(['g5']);
   });
 
   it('does not affect the legacy POST /api/state/word path', async () => {

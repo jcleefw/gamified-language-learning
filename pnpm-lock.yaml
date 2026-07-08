@@ -87,6 +87,9 @@ importers:
       '@gll/srs-engine-v2':
         specifier: workspace:*
         version: link:../../packages/srs-engine-v2
+      '@gll/srs-review':
+        specifier: workspace:*
+        version: link:../../packages/srs-review
       '@gll/srs-shelving':
         specifier: workspace:*
         version: link:../../packages/srs-shelving

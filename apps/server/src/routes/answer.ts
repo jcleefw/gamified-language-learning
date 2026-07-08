@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
-import { getDb, SqliteLearningStore, SqliteAnswerEventStore } from '@gll/db';
+import { getDb, SqliteLearningStore, SqliteAnswerEventStore, SqliteReviewStore } from '@gll/db';
 import { updateRunState, isMastered, type WordState } from '@gll/srs-engine-v2';
+import { FsrsScheduler } from '@gll/srs-review';
 import {
   ErrorCode,
   type ApiResponse,
@@ -9,9 +10,13 @@ import {
   type WordStatePayload,
 } from '@gll/api-contract';
 import { LEARNING_CONFIG } from '../config/learning.js';
+import { toGraduationPerformance } from '../review/graduation-performance.js';
 import { logger } from '../logger.js';
 
 const USER_ID = 'demo-user';
+
+// Stateless (default FSRS params) — construct once, reuse across requests.
+const scheduler = new FsrsScheduler();
 
 const router = new Hono();
 
@@ -61,7 +66,9 @@ router.post('/answer', async (c) => {
     return c.json(body, 400);
   }
 
-  const store = new SqliteLearningStore(getDb());
+  const now = new Date();
+  const db = getDb();
+  const store = new SqliteLearningStore(db);
   const runState = await store.getAllWordStates(USER_ID);
   const before = runState.get(req.wordId) ?? null;
 
@@ -75,7 +82,7 @@ router.post('/answer', async (c) => {
 
   // Transition channel — fail-open: a diagnostics-write failure must not lose the answer.
   try {
-    await new SqliteAnswerEventStore(getDb(), log).appendAnswerEvent({
+    await new SqliteAnswerEventStore(db, log).appendAnswerEvent({
       correlationId,
       userId: USER_ID,
       wordId: req.wordId,
@@ -84,10 +91,31 @@ router.post('/answer', async (c) => {
       beforeState: before,
       afterState: after,
       graduated,
-      createdAt: new Date().toISOString(),
+      createdAt: now.toISOString(),
     });
   } catch {
     // Already logged by the store; state write stands.
+  }
+
+  // Review seeding — level-triggered: seed a card whenever the word is mastered
+  // and has none yet. Gating on absence self-heals a transient failure on the next
+  // mastered answer while skipping a wasted FSRS computation for already-seeded
+  // words; seedReviewCard's idempotency still covers a concurrent double-seed.
+  // Fail-open: the authoritative Learning write must not be lost to a seed failure.
+  if (isMastered(after, LEARNING_CONFIG.masteryThreshold)) {
+    try {
+      const reviewStore = new SqliteReviewStore(db);
+      if (!(await reviewStore.getReviewCard(USER_ID, after.wordId))) {
+        const card = scheduler.seed(after.wordId, toGraduationPerformance(after), now);
+        await reviewStore.seedReviewCard(USER_ID, card);
+      }
+    } catch (err) {
+      log.error('review-card seed failed', {
+        correlationId: correlationId ?? undefined,
+        wordId: after.wordId,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   const body: ApiResponse<AnswerResponse> = {

@@ -21,6 +21,7 @@
     "@gll/db": "workspace:*",
     "@gll/logger": "workspace:*",
     "@gll/srs-engine-v2": "workspace:*",
+    "@gll/srs-review": "workspace:*",
     "@gll/srs-shelving": "workspace:*",
     "@hono/node-server": "^1",
     "drizzle-orm": "^0.45.2",
