@@ -1,4 +1,4 @@
-import type { RunState, WordState } from '@gll/srs-engine-v2';
+import type { RunState, WordState, StreakThresholds } from '@gll/srs-engine-v2';
 import type {
   AnswerRequest,
   AnswerResponse,
@@ -6,6 +6,16 @@ import type {
   GetStateResponse,
   WordStatePayload,
 } from '@gll/api-contract';
+
+/**
+ * Local consuming shape for GET /api/config. The client owns how it reads the
+ * server's policy; it does NOT import a policy type from @gll/api-contract
+ * (none exists there — learning policy is server-owned by design).
+ */
+export interface LearningPolicy {
+  masteryThreshold: number;
+  streakThresholds: StreakThresholds;
+}
 
 function toWordState(p: WordStatePayload): WordState {
   return {
@@ -72,4 +82,18 @@ export async function postAnswer(req: AnswerRequest): Promise<WordState> {
 export async function clearStore(): Promise<void> {
   const res = await fetch('/api/state', { method: 'DELETE' });
   if (!res.ok) throw new Error(`DELETE /api/state failed: ${res.status}`);
+}
+
+/**
+ * Fetch the server-authoritative learning policy. The client holds no hardcoded
+ * copy of these thresholds — it consumes them read-only at boot. Throws a typed
+ * error on failure so the caller can fail closed rather than fall back to a
+ * built-in policy (a fallback constant would be a second source of truth).
+ */
+export async function loadLearningConfig(): Promise<LearningPolicy> {
+  const res = await fetch('/api/config');
+  if (!res.ok) throw new Error(`GET /api/config failed: ${res.status}`);
+  const body = (await res.json()) as ApiResponse<LearningPolicy>;
+  if (!body.success) throw new Error(`GET /api/config error: ${body.error.message}`);
+  return body.data;
 }

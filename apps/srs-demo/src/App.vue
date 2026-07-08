@@ -30,7 +30,12 @@ import {
 } from '@gll/srs-engine-v2';
 import { evaluateShelving } from '@gll/srs-shelving';
 import type { AppDeckPayload, GetDecksResponse } from '@gll/api-contract';
-import { loadRunState, postAnswer, clearStore } from './composables/useStore';
+import {
+  loadRunState,
+  postAnswer,
+  clearStore,
+  loadLearningConfig,
+} from './composables/useStore';
 import {
   loadShelvedWords,
   applyShelving,
@@ -63,18 +68,20 @@ const wordPool = ref<QuizItem[]>([]);
 type ConfigType = SessionConfig & {
   maxRetryPerWord: number;
   sentenceScheduling: { minSeenForSentence: number; sentenceBatchGap: number };
-  sentenceGraduation: { sentenceCorrectStreakThreshold: number; sentenceWrongStreakThreshold: number };
+  sentenceGraduation: {
+    sentenceCorrectStreakThreshold: number;
+    sentenceWrongStreakThreshold: number;
+  };
   sentenceDirections: SentenceQuestion['direction'][];
 };
 
-const CONFIG = ref<ConfigType>({
+// Client-owned presentation/orchestration config only. Learning policy
+// (masteryThreshold + streakThresholds) is NOT declared here — it is fetched
+// read-only from GET /api/config at boot and merged in. See EP37-DS05.
+type PresentationConfig = Omit<ConfigType, 'masteryThreshold' | 'streakThresholds'>;
+
+const PRESENTATION_DEFAULTS: PresentationConfig = {
   wordsPerBatch: 3,
-  masteryThreshold: 2,
-  streakThresholds: {
-    correctStreakThreshold: 2,
-    wrongStreakThreshold: 2,
-    maxMastery: 2,
-  },
   maxRetryPerSession: 5,
   maxRetryPerWord: 2,
   sentenceScheduling: {
@@ -90,7 +97,13 @@ const CONFIG = ref<ConfigType>({
     'romanization-to-native',
     'native-to-romanization',
   ],
-});
+};
+
+// Policy fields are injected at boot; until then CONFIG carries presentation
+// defaults only. `policyReady` gates session start so nothing runs the engine
+// with unset thresholds (fail-closed — no hardcoded fallback policy).
+const CONFIG = ref<ConfigType>({ ...PRESENTATION_DEFAULTS } as ConfigType);
+const policyReady = ref(false);
 
 type Screen = 'select' | 'quiz' | 'results' | 'overview';
 
@@ -101,7 +114,7 @@ const overviewDeckId = ref<string | null>(null);
 
 const savedDeckName = computed(() => {
   if (!deckId.value) return null;
-  return appDecks.value.find(d => d.id === deckId.value)?.topic ?? null;
+  return appDecks.value.find((d) => d.id === deckId.value)?.topic ?? null;
 });
 
 // Adaptive session state refs
@@ -135,7 +148,9 @@ const defaultWordState = {
 };
 
 const currentRunState = computed<RunState>(() => {
-  return sessionState.value ? sessionState.value.runState : globalRunState.value;
+  return sessionState.value
+    ? sessionState.value.runState
+    : globalRunState.value;
 });
 
 const activeItems = computed<QuizItem[]>(() => {
@@ -186,7 +201,9 @@ function recalculateCompletedDecks() {
 
 const nextDeckId = computed<string | null>(() => {
   const idx = appDecks.value.findIndex((d) => d.id === deckId.value);
-  return idx !== -1 && idx + 1 < appDecks.value.length ? appDecks.value[idx + 1].id : null;
+  return idx !== -1 && idx + 1 < appDecks.value.length
+    ? appDecks.value[idx + 1].id
+    : null;
 });
 
 const batchScore = ref({ correct: 0, total: 0 });
@@ -196,40 +213,6 @@ const questionKey = ref(0);
 function getDeckWords(id: string): QuizItem[] {
   const deck = appDecks.value.find((d) => d.id === id);
   return deck ? (deck.words as QuizItem[]) : [];
-}
-
-async function applyShelvingDecisions(
-  deckIdParam: string,
-  activeIds: string[],
-  batchNumParam: number,
-  shelvedSetParam: Set<string>,
-): Promise<{ newShelvedSet: Set<string> }> {
-  const shelvingConfig = await getShelvingConfig();
-  const stagnantIds = await getStagnantWords(
-    deckIdParam,
-    shelvingConfig.stagnationBatchWindow,
-  ).catch(() => [] as string[]);
-  const decision = evaluateShelving(stagnantIds, shelvedSetParam, shelvingConfig);
-
-  if (decision.toShelve.length > 0) {
-    const toShelvePayload = decision.toShelve.map((id: string) => ({
-      wordId: id,
-      batchNum: batchNumParam,
-    }));
-    console.log('[SHELVING] Applying shelving:', {
-      deckId: deckIdParam,
-      toShelve: toShelvePayload,
-    });
-    try {
-      await applyShelving({ deckId: deckIdParam, toShelve: toShelvePayload });
-      console.log('[SHELVING] Successfully persisted to DB');
-    } catch (err) {
-      console.error('[SHELVING] Failed to persist:', err);
-    }
-    decision.toShelve.forEach((id: string) => shelvedSetParam.add(id));
-  }
-
-  return { newShelvedSet: shelvedSetParam };
 }
 
 const shelvedItems = computed<QuizItem[]>(() => {
@@ -242,7 +225,13 @@ function startBatch() {
   if (!sessionState.value) return;
 
   // Log batch start with pool state, word states, and shelved status
-  logBatchStarted(wordPool.value.length, wordPool.value, batchNum.value + 1, sessionState.value.runState, shelvedSet.value);
+  logBatchStarted(
+    wordPool.value.length,
+    wordPool.value,
+    batchNum.value + 1,
+    sessionState.value.runState,
+    shelvedSet.value,
+  );
 
   // Resolve eligible sentence contexts based on word seen counts and batch spacing
   const eligibleSentences = resolveEligibleContexts(
@@ -258,7 +247,9 @@ function startBatch() {
   const sentenceThunks = eligibleSentences.flatMap(({ ctx, tiles }) =>
     CONFIG.value.sentenceDirections.map(
       (dir) => () =>
-        composeSentenceBatch(ctx, tiles, 'th').filter((q) => q.direction === dir),
+        composeSentenceBatch(ctx, tiles, 'th').filter(
+          (q) => q.direction === dir,
+        ),
     ),
   );
 
@@ -294,6 +285,12 @@ function startBatch() {
 }
 
 async function initSession(id: string, isNewSession = true) {
+  // Fail-closed: never run the engine without server-sourced policy.
+  if (!policyReady.value) {
+    apiError.value =
+      'Learning settings are not loaded yet. Please check the server and try again.';
+    return;
+  }
   deckId.value = id;
   localStorage.setItem(LAST_DECK_KEY, id);
   const allWords = getDeckWords(id);
@@ -313,7 +310,8 @@ async function initSession(id: string, isNewSession = true) {
   // Also exclude shelved words on resume
   const words = allWords.filter((w) => {
     const ws = globalRunState.value.get(w.id);
-    const isMasteredWord = ws != null && isMastered(ws, CONFIG.value.masteryThreshold);
+    const isMasteredWord =
+      ws != null && isMastered(ws, CONFIG.value.masteryThreshold);
     const isShelvedWord = shelvedSet.value.has(w.id);
     return !isMasteredWord && !isShelvedWord;
   });
@@ -347,7 +345,8 @@ async function onResume() {
   try {
     runState = await loadRunState();
   } catch {
-    apiError.value = 'Could not reach the server. Please check that it is running and try again.';
+    apiError.value =
+      'Could not reach the server. Please check that it is running and try again.';
     return;
   }
   globalRunState.value = runState;
@@ -358,7 +357,9 @@ async function onResume() {
   try {
     const shelvedWords = await loadShelvedWords(savedDeckId);
     shelvedSet.value = new Set(shelvedWords.map((sw) => sw.wordId));
-  } catch { /* non-fatal */ }
+  } catch {
+    /* non-fatal */
+  }
   await initSession(savedDeckId, false);
 }
 
@@ -390,11 +391,18 @@ async function finishBatchAndTransition() {
   // Recheck flags derived from the PRE-advance recheckPending — the same guard
   // advanceAdaptiveSession folds through, so the server reproduces the client's
   // WordState exactly (mastery frozen on a re-asked miss).
-  const recheckFlags = classifyRechecks(wordResults, sessionState.value.recheckPending);
+  const recheckFlags = classifyRechecks(
+    wordResults,
+    sessionState.value.recheckPending,
+  );
 
   // Advance adaptive session state via the orchestrator (pools/recheck/shelving
   // stay client-side; the server owns persisted WordState).
-  sessionState.value = advanceAdaptiveSession(sessionState.value, output, CONFIG.value);
+  sessionState.value = advanceAdaptiveSession(
+    sessionState.value,
+    output,
+    CONFIG.value,
+  );
   globalRunState.value = sessionState.value.runState;
 
   const uniqueWordIds = [...new Set(wordResults.map((r) => r.wordId))];
@@ -426,21 +434,41 @@ async function finishBatchAndTransition() {
     }
   }
   if (persistFailed) {
-    apiError.value = 'Could not save some answers. Your latest progress may not be recorded — please check the server and try again.';
+    apiError.value =
+      'Could not save some answers. Your latest progress may not be recorded — please check the server and try again.';
   }
 
   // DS02 shelving pipeline: stagnation detection via persistent DB counters.
   if (deckId.value) {
     const activeIds = sessionState.value.active.map((w) => w.id);
-    await updateStagnationCounters({ deckId: deckId.value, activeWordIds: activeIds }).catch(console.error);
+    await updateStagnationCounters({
+      deckId: deckId.value,
+      activeWordIds: activeIds,
+    }).catch(console.error);
     const shelvingConfig = await getShelvingConfig();
-    const stagnantIds = await getStagnantWords(deckId.value, shelvingConfig.stagnationBatchWindow).catch(() => [] as string[]);
-    const decision = evaluateShelving(stagnantIds, shelvedSet.value, shelvingConfig);
+    const stagnantIds = await getStagnantWords(
+      deckId.value,
+      shelvingConfig.stagnationBatchWindow,
+    ).catch(() => [] as string[]);
+    const decision = evaluateShelving(
+      stagnantIds,
+      shelvedSet.value,
+      shelvingConfig,
+    );
     if (decision.toShelve.length > 0) {
-      const toShelvePayload = decision.toShelve.map((id: string) => ({ wordId: id, batchNum: batchNum.value }));
-      console.log('[SHELVING] Applying shelving:', { deckId: deckId.value, toShelve: toShelvePayload });
+      const toShelvePayload = decision.toShelve.map((id: string) => ({
+        wordId: id,
+        batchNum: batchNum.value,
+      }));
+      console.log('[SHELVING] Applying shelving:', {
+        deckId: deckId.value,
+        toShelve: toShelvePayload,
+      });
       try {
-        await applyShelving({ deckId: deckId.value, toShelve: toShelvePayload });
+        await applyShelving({
+          deckId: deckId.value,
+          toShelve: toShelvePayload,
+        });
         console.log('[SHELVING] Successfully persisted to DB');
       } catch (err) {
         console.error('[SHELVING] Failed to persist:', err);
@@ -449,8 +477,12 @@ async function finishBatchAndTransition() {
 
       // Rebalance active pool: remove shelved words and pull new ones from queue
       const shelvingSet = new Set(decision.toShelve);
-      const newActive = sessionState.value.active.filter((w) => !shelvingSet.has(w.id));
-      const newQueue = sessionState.value.queue.filter((w) => !shelvingSet.has(w.id));
+      const newActive = sessionState.value.active.filter(
+        (w) => !shelvingSet.has(w.id),
+      );
+      const newQueue = sessionState.value.queue.filter(
+        (w) => !shelvingSet.has(w.id),
+      );
 
       const { active, queue } = nextActivePool(
         newActive,
@@ -458,7 +490,10 @@ async function finishBatchAndTransition() {
         CONFIG.value.wordsPerBatch,
         sessionState.value.runState,
         CONFIG.value.masteryThreshold,
-        new Set([...sessionState.value.recheckPending, ...sessionState.value.recheckReentered]),
+        new Set([
+          ...sessionState.value.recheckPending,
+          ...sessionState.value.recheckReentered,
+        ]),
       );
 
       sessionState.value.active = active;
@@ -478,13 +513,26 @@ async function finishBatchAndTransition() {
   batchScore.value = { correct, total: output.results.length };
 
   // Log batch result and final pool state with word states and shelved status
-  logBatchResult(batchNum.value, correct, output.results.length, wordPool.value.length, wordPool.value, sessionState.value.runState, shelvedSet.value);
+  logBatchResult(
+    batchNum.value,
+    correct,
+    output.results.length,
+    wordPool.value.length,
+    wordPool.value,
+    sessionState.value.runState,
+    shelvedSet.value,
+  );
 
-  const deckWordMap = new Map(getDeckWords(deckId.value ?? '').map((w) => [w.id, w]));
+  const deckWordMap = new Map(
+    getDeckWords(deckId.value ?? '').map((w) => [w.id, w]),
+  );
   summary.value = uniqueWordIds.map((wid) => ({
     wordId: wid,
     native: deckWordMap.get(wid)?.native ?? wid,
-    state: sessionState.value!.runState.get(wid) ?? { ...defaultWordState, wordId: wid },
+    state: sessionState.value!.runState.get(wid) ?? {
+      ...defaultWordState,
+      wordId: wid,
+    },
     newlyMastered: newlyMasteredIds.includes(wid),
   }));
 
@@ -565,8 +613,12 @@ onMounted(async () => {
   // Fetch decks from API first — required before any other initialisation
   try {
     const decksRes = await fetch('/api/decks');
-    if (!decksRes.ok) throw new Error(`GET /api/decks failed: ${decksRes.status}`);
-    const decksBody = (await decksRes.json()) as { success: true; data: GetDecksResponse };
+    if (!decksRes.ok)
+      throw new Error(`GET /api/decks failed: ${decksRes.status}`);
+    const decksBody = (await decksRes.json()) as {
+      success: true;
+      data: GetDecksResponse;
+    };
     appDecks.value = decksBody.data;
 
     // Build flat, deduplicated word pool across all decks
@@ -582,7 +634,20 @@ onMounted(async () => {
     }
     wordPool.value = pool;
   } catch {
-    apiError.value = 'Could not reach the server. Please check that it is running and try again.';
+    apiError.value =
+      'Could not reach the server. Please check that it is running and try again.';
+    return;
+  }
+
+  // Learning policy is server-owned — fetch it before anything reads a threshold
+  // (completed-deck detection, session init). Fail closed: no session without it.
+  try {
+    const policy = await loadLearningConfig();
+    CONFIG.value = { ...CONFIG.value, ...policy };
+    policyReady.value = true;
+  } catch {
+    apiError.value =
+      'Could not load learning settings. Please check that the server is running and try again.';
     return;
   }
 
@@ -590,7 +655,8 @@ onMounted(async () => {
   try {
     runState = await loadRunState();
   } catch {
-    apiError.value = 'Could not reach the server. Please check that it is running and try again.';
+    apiError.value =
+      'Could not reach the server. Please check that it is running and try again.';
     recalculateCompletedDecks();
     return;
   }
@@ -615,14 +681,23 @@ onMounted(async () => {
   try {
     const res = await fetch('/api/test/config/sentence');
     if (res.ok) {
-      const body = (await res.json()) as { success: boolean; data: object | null };
+      const body = (await res.json()) as {
+        success: boolean;
+        data: object | null;
+      };
       if (body.success && body.data) {
         const override = body.data as Partial<typeof CONFIG.value>;
         CONFIG.value = {
           ...CONFIG.value,
           ...override,
-          sentenceScheduling: { ...CONFIG.value.sentenceScheduling, ...override.sentenceScheduling },
-          sentenceGraduation: { ...CONFIG.value.sentenceGraduation, ...override.sentenceGraduation },
+          sentenceScheduling: {
+            ...CONFIG.value.sentenceScheduling,
+            ...override.sentenceScheduling,
+          },
+          sentenceGraduation: {
+            ...CONFIG.value.sentenceGraduation,
+            ...override.sentenceGraduation,
+          },
         };
       }
     }
@@ -654,13 +729,17 @@ onMounted(async () => {
 
   <DeckOverview
     v-else-if="screen === 'overview' && overviewDeckId"
-    :deck="appDecks.find(d => d.id === overviewDeckId)!"
+    :deck="appDecks.find((d) => d.id === overviewDeckId)!"
     :run-state="globalRunState"
     :shelved-set="shelvedSet"
     :max-mastery="CONFIG.streakThresholds.maxMastery"
     :word-pool="wordPool"
     @back="screen = 'select'"
-    @start-quiz="(id) => { void initSession(id, false); }"
+    @start-quiz="
+      (id) => {
+        void initSession(id, false);
+      }
+    "
     @unshelve-word="onUnshelveWord"
     @update-shelved-set="onUpdateShelvedSet"
     @update-word-states="onUpdateWordStates"
@@ -696,8 +775,18 @@ onMounted(async () => {
     @next-deck="onNextDeck"
   />
 
-  <div v-if="screen === 'results'" style="text-align: center; padding: 16px;">
-    <button style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer;" @click="flushLogs">
+  <div v-if="screen === 'results'" style="text-align: center; padding: 16px">
+    <button
+      style="
+        padding: 8px 16px;
+        background: #6b7280;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      "
+      @click="flushLogs"
+    >
       💾 Save Debug Logs
     </button>
   </div>
