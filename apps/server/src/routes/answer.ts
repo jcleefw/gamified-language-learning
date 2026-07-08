@@ -13,6 +13,7 @@ import { LEARNING_CONFIG } from '../config/learning.js';
 import { toGraduationPerformance } from '../review/graduation-performance.js';
 import { logger } from '../logger.js';
 
+// TODO: replace with authenticated user id once auth/session middleware exists.
 const USER_ID = 'demo-user';
 
 // Stateless (default FSRS params) — construct once, reuse across requests.
