@@ -7,21 +7,20 @@ import type {
   WordStatePayload,
 } from '@gll/api-contract';
 
+function toWordState(p: WordStatePayload): WordState {
+  return {
+    wordId: p.wordId,
+    seen: p.seen,
+    correct: p.correct,
+    mastery: p.mastery,
+    correctStreak: p.correctStreak,
+    wrongStreak: p.wrongStreak,
+    lapses: p.lapses,
+  } satisfies WordState;
+}
+
 function toRunState(words: WordStatePayload[]): RunState {
-  return new Map(
-    words.map((w) => [
-      w.wordId,
-      {
-        wordId: w.wordId,
-        seen: w.seen,
-        correct: w.correct,
-        mastery: w.mastery,
-        correctStreak: w.correctStreak,
-        wrongStreak: w.wrongStreak,
-        lapses: w.lapses,
-      } satisfies WordState,
-    ]),
-  );
+  return new Map(words.map((w) => [w.wordId, toWordState(w)]));
 }
 
 function toPayload(ws: WordState): WordStatePayload {
@@ -67,16 +66,7 @@ export async function postAnswer(req: AnswerRequest): Promise<WordState> {
   if (!res.ok) throw new Error(`POST /api/answer failed: ${res.status}`);
   const body = (await res.json()) as ApiResponse<AnswerResponse>;
   if (!body.success) throw new Error(`POST /api/answer error: ${body.error.message}`);
-  const p = body.data.wordState;
-  return {
-    wordId: p.wordId,
-    seen: p.seen,
-    correct: p.correct,
-    mastery: p.mastery,
-    correctStreak: p.correctStreak,
-    wrongStreak: p.wrongStreak,
-    lapses: p.lapses,
-  } satisfies WordState;
+  return toWordState(body.data.wordState);
 }
 
 export async function clearStore(): Promise<void> {

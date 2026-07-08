@@ -400,8 +400,12 @@ async function finishBatchAndTransition() {
   const uniqueWordIds = [...new Set(wordResults.map((r) => r.wordId))];
 
   // Server-authoritative persistence: replay each answer through /api/answer in
-  // order and adopt the returned canonical WordState. On failure, surface the
-  // error without overwriting local state with a lost/divergent answer.
+  // order and adopt the returned canonical WordState. `confirmed` tracks what the
+  // server has actually persisted (seeded from the pre-advance state); on a failed
+  // POST we revert that word to its last confirmed value so local state never
+  // advances past the DB, and surface the error rather than silently dropping it.
+  const confirmed = new Map(prevState);
+  let persistFailed = false;
   for (let i = 0; i < wordResults.length; i++) {
     const r = wordResults[i];
     try {
@@ -411,10 +415,18 @@ async function finishBatchAndTransition() {
         latencyMs: 0,
         recheck: recheckFlags[i],
       });
+      confirmed.set(r.wordId, authoritative);
       sessionState.value.runState.set(r.wordId, authoritative);
     } catch (err) {
       console.error('[ANSWER] persistence failed for', r.wordId, err);
+      persistFailed = true;
+      const good = confirmed.get(r.wordId);
+      if (good) sessionState.value.runState.set(r.wordId, good);
+      else sessionState.value.runState.delete(r.wordId);
     }
+  }
+  if (persistFailed) {
+    apiError.value = 'Could not save some answers. Your latest progress may not be recorded — please check the server and try again.';
   }
 
   // DS02 shelving pipeline: stagnation detection via persistent DB counters.
