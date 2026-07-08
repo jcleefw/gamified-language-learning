@@ -4,6 +4,7 @@ import { logger } from 'hono/logger';
 import { ErrorCode, type ApiResponse } from '@gll/api-contract';
 import type { Context } from 'hono';
 import stateRouter from './routes/state.js';
+import answerRouter from './routes/answer.js';
 import shelvingRouter from './routes/shelving.js';
 import testSeedRouter from './routes/test-seed.js';
 import decksRouter from './routes/decks.js';
@@ -26,6 +27,7 @@ app.onError(errorHandler);
 
 app.get('/health', (c) => c.json({ status: 'ok' }));
 app.route('/api', stateRouter);
+app.route('/api', answerRouter);
 app.route('/api', shelvingRouter);
 app.route('/api', testSeedRouter);
 app.route('/api', decksRouter);
