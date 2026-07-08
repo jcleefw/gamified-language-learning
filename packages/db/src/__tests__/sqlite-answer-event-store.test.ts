@@ -28,6 +28,7 @@ const record = (o: Partial<AnswerEventRecord> = {}): AnswerEventRecord => ({
   beforeState: null,
   afterState: { wordId: 'w1', seen: 1, correct: 1, mastery: 0, correctStreak: 1, wrongStreak: 0, lapses: 0 },
   graduated: false,
+  recheck: false,
   createdAt: '2026-07-08T00:00:00.000Z',
   ...o,
 });

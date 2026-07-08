@@ -128,6 +128,7 @@ export const answer_events = sqliteTable('answer_events', {
   before_state: text('before_state'),
   after_state: text('after_state').notNull(),
   graduated: integer('graduated', { mode: 'boolean' }).notNull(),
+  recheck: integer('recheck', { mode: 'boolean' }).notNull().default(false),
   created_at: text('created_at').notNull(),
 });
 

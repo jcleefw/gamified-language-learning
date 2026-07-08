@@ -1,5 +1,11 @@
 import type { RunState, WordState } from '@gll/srs-engine-v2';
-import type { ApiResponse, GetStateResponse, WordStatePayload } from '@gll/api-contract';
+import type {
+  AnswerRequest,
+  AnswerResponse,
+  ApiResponse,
+  GetStateResponse,
+  WordStatePayload,
+} from '@gll/api-contract';
 
 function toRunState(words: WordStatePayload[]): RunState {
   return new Map(
@@ -45,6 +51,32 @@ export async function saveWordState(ws: WordState): Promise<void> {
     body: JSON.stringify(toPayload(ws)),
   });
   if (!res.ok) throw new Error(`POST /api/state/word failed: ${res.status}`);
+}
+
+/**
+ * Server-authoritative persistence: POST a raw answer; the server runs the
+ * transition and returns the canonical WordState. Throws a typed error on
+ * failure so the caller can avoid overwriting local state with a lost answer.
+ */
+export async function postAnswer(req: AnswerRequest): Promise<WordState> {
+  const res = await fetch('/api/answer', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new Error(`POST /api/answer failed: ${res.status}`);
+  const body = (await res.json()) as ApiResponse<AnswerResponse>;
+  if (!body.success) throw new Error(`POST /api/answer error: ${body.error.message}`);
+  const p = body.data.wordState;
+  return {
+    wordId: p.wordId,
+    seen: p.seen,
+    correct: p.correct,
+    mastery: p.mastery,
+    correctStreak: p.correctStreak,
+    wrongStreak: p.wrongStreak,
+    lapses: p.lapses,
+  } satisfies WordState;
 }
 
 export async function clearStore(): Promise<void> {

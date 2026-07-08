@@ -1,0 +1,1 @@
+ALTER TABLE answer_events ADD COLUMN recheck INTEGER NOT NULL DEFAULT 0;

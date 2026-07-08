@@ -74,6 +74,27 @@ export function processRecheckResult(
   };
 }
 
+/**
+ * Per-result recheck flags for a batch: true where the answer is a recheck
+ * (word in recheckPending, consumed once), matching processRecheckResult's
+ * branch guard exactly. Lets a server-authoritative client label each replayed
+ * answer without reimplementing recheck logic. Call with the pre-advance
+ * recheckPending and the batch's word results in answer order.
+ */
+export function classifyRechecks(
+  results: WordQuizResult[],
+  recheckPending: Set<string>,
+): boolean[] {
+  const pending = new Set(recheckPending);
+  return results.map((r) => {
+    if (pending.has(r.wordId)) {
+      pending.delete(r.wordId);
+      return true;
+    }
+    return false;
+  });
+}
+
 /** Retires mastered words from active and fills freed slots from the queue. */
 export function nextActivePool(
   active: QuizItem[],

@@ -17,6 +17,7 @@ export interface AnswerEventRecord {
   beforeState: WordState | null;
   afterState: WordState;
   graduated: boolean;
+  recheck: boolean;
   createdAt: string;
 }
 
@@ -44,6 +45,7 @@ export class SqliteAnswerEventStore implements AnswerEventStore {
           before_state: record.beforeState ? JSON.stringify(record.beforeState) : null,
           after_state: JSON.stringify(record.afterState),
           graduated: record.graduated,
+          recheck: record.recheck,
           created_at: record.createdAt,
         })
         .run();

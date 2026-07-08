@@ -4,6 +4,7 @@ import {
   assembleBatch,
   initAdaptiveSession,
   advanceAdaptiveSession,
+  classifyRechecks,
   getNewlyMasteredIds,
   initBatchState,
   nextQuestion,
@@ -29,7 +30,7 @@ import {
 } from '@gll/srs-engine-v2';
 import { evaluateShelving } from '@gll/srs-shelving';
 import type { AppDeckPayload, GetDecksResponse } from '@gll/api-contract';
-import { loadRunState, saveWordState, clearStore } from './composables/useStore';
+import { loadRunState, postAnswer, clearStore } from './composables/useStore';
 import {
   loadShelvedWords,
   applyShelving,
@@ -383,18 +384,37 @@ async function finishBatchAndTransition() {
   const output = finishBatch(batchState.value);
   const prevState = sessionState.value.runState;
 
-  // Advance adaptive session state via the orchestrator
-  sessionState.value = advanceAdaptiveSession(sessionState.value, output, CONFIG.value);
-  globalRunState.value = sessionState.value.runState;
-
-  // Persist updated word states (write-on-answer)
   const wordResults = output.results.filter(
     (r): r is WordQuizResult => 'wordId' in r,
   );
+  // Recheck flags derived from the PRE-advance recheckPending — the same guard
+  // advanceAdaptiveSession folds through, so the server reproduces the client's
+  // WordState exactly (mastery frozen on a re-asked miss).
+  const recheckFlags = classifyRechecks(wordResults, sessionState.value.recheckPending);
+
+  // Advance adaptive session state via the orchestrator (pools/recheck/shelving
+  // stay client-side; the server owns persisted WordState).
+  sessionState.value = advanceAdaptiveSession(sessionState.value, output, CONFIG.value);
+  globalRunState.value = sessionState.value.runState;
+
   const uniqueWordIds = [...new Set(wordResults.map((r) => r.wordId))];
-  for (const wid of uniqueWordIds) {
-    const ws = sessionState.value.runState.get(wid);
-    if (ws) saveWordState(ws).catch(console.error);
+
+  // Server-authoritative persistence: replay each answer through /api/answer in
+  // order and adopt the returned canonical WordState. On failure, surface the
+  // error without overwriting local state with a lost/divergent answer.
+  for (let i = 0; i < wordResults.length; i++) {
+    const r = wordResults[i];
+    try {
+      const authoritative = await postAnswer({
+        wordId: r.wordId,
+        correct: r.correct,
+        latencyMs: 0,
+        recheck: recheckFlags[i],
+      });
+      sessionState.value.runState.set(r.wordId, authoritative);
+    } catch (err) {
+      console.error('[ANSWER] persistence failed for', r.wordId, err);
+    }
   }
 
   // DS02 shelving pipeline: stagnation detection via persistent DB counters.

@@ -23,6 +23,7 @@ export interface AnswerRequest {
   wordId: string;
   correct: boolean;
   latencyMs: number;
+  recheck?: boolean; // true = re-confirmation of a prior miss (seen/correct-only bump). Default false.
 }
 
 /** Response data for POST /api/answer. */

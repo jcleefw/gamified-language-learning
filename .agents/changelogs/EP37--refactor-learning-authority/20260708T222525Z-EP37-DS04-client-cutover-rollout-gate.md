@@ -1,8 +1,41 @@
 # EP37-DS04: Client Cutover, Rollout Gate & Golden-Master (Phase 4) Specification
 
 **Date**: 20260708T222525Z
-**Status**: Accepted
+**Status**: Accepted — **amended 20260708 (see Amendment 1)**
 **Epic**: [EP37 - Refactor: Learning Authority](../../plans/epics/EP37-refactor-learning-authority.md)
+
+---
+
+## Amendment 1 (20260708) — Direct cutover; drop flag/shadow/golden-master gate
+
+**Decision (supersedes the rollout mechanics below).** The staged rollout is replaced with a
+**direct, unconditional server-authoritative cutover**, verified by **manual testing** rather than an
+automated gate. What this changes vs the body of this spec:
+
+- **No feature flag.** The `SERVER_AUTHORITY` flag (§2, §3, ST08) is **not introduced**. `srs-demo` always
+  persists via `POST /api/answer`; there is no on/off/shadow selector.
+- **No shadow parallel-run.** ST07's shadow compare-and-log stage is **dropped**. The client does not
+  double-write or diff server-vs-local at runtime.
+- **No golden-master merge gate.** ST09's automated byte-parity test is **not** built as a gate; parity is
+  instead confirmed by manual verification of the running app. (Parity still holds *by construction* — both
+  sides fold the same `processRecheckResult` with the same config.)
+- **Legacy client path removed at the call site.** The batch-end `saveWordState` loop is **deleted** from
+  `finishBatchAndTransition` and replaced by the ordered `/api/answer` replay. `POST /api/state/word` and
+  `saveWordState` remain defined but are **no longer reached** from the answer flow (no off-switch retained).
+
+**Retained unchanged (the correctness core):** recheck as a **wire fact** — `AnswerRequest.recheck`, the
+server applying `processRecheckResult` branched on it, the `answer_events.recheck` column, and the client
+sourcing the bit via the pure `classifyRechecks(results, pre-advance recheckPending)`. Without this the
+server would advance mastery on a re-asked miss and diverge from today's behaviour. The §2 recheck
+reconciliation and its ADR touch (below) stand.
+
+**Implementation note:** `WordQuizResult` carries no latency, so the client replay sends `latencyMs: 0`
+(diagnostics-only; never touches the transition).
+
+**As-built story mapping:** ST07 lands as the recheck reconciliation only (contract + server + `answer_events`
++ `classifyRechecks`), no shadow. ST08 lands as the flagless replay cutover. ST09 is **not implemented**.
+
+---
 
 **Architecture**:
 [`srs-demo` Learning Authority, Review Authority & Debug-Trace Contract](../../../product-documentation/architecture/20260708T125551Z-engineering-srs-demo-learning-authority-and-debug-trace.md) — **Rollout & safety** (client cutover + feature flag + shadow parallel-run + golden-master gate). Builds on [DS01](20260708T141610Z-EP37-DS01-server-learning-transition.md) (`/api/answer` + transition channel), [DS02](20260708T171133Z-EP37-DS02-cross-table-integrity.md) (integrity), [DS03](20260708T195919Z-EP37-DS03-server-review-seeding.md) (Review seeding).
