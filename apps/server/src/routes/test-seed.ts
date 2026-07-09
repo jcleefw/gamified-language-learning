@@ -1,10 +1,12 @@
 import { Hono } from 'hono';
-import { getDb, SqliteLearningStore } from '@gll/db';
+import { getDb, SqliteLearningStore, SqliteReviewStore } from '@gll/db';
 import { DEFAULT_SHELVING_CONFIG, type ShelvingConfig } from '@gll/srs-shelving';
 import { ErrorCode, type ApiResponse } from '@gll/api-contract';
 import type { WordState } from '@gll/srs-engine-v2';
+import { FsrsScheduler, type GraduationPerformance } from '@gll/srs-review';
 
 const USER_ID = 'demo-user';
+const scheduler = new FsrsScheduler();
 
 // Module-level config overrides
 let shelvingConfigOverride: Partial<ShelvingConfig> | null = null;
@@ -34,6 +36,14 @@ interface ShelvedWordInput {
   shelvedAtBatch: number;
 }
 
+interface ReviewCardInput {
+  wordId: string;
+  /** Graduation performance used to seed a realistic FSRS scheduler state. Defaults to a 'good' seed. */
+  performance?: GraduationPerformance;
+  /** Milliseconds to offset `due` from now; negative makes the card due already. Defaults to -1 day. */
+  dueOffsetMs?: number;
+}
+
 interface WordStateInput {
   wordId: string;
   seen: number;
@@ -51,6 +61,7 @@ interface ScenarioFixture {
   wordStates: WordStateInput[];
   stagnationCounters: StagnationCounterInput[];
   shelvedWords: ShelvedWordInput[];
+  reviewCards?: ReviewCardInput[];
   config?: Partial<ShelvingConfig>;
 }
 
@@ -78,9 +89,13 @@ router.post('/test/seed', async (c) => {
 
   const db = getDb();
   const store = new SqliteLearningStore(db);
+  const reviewStore = new SqliteReviewStore(db);
 
   // 1. Clear all word states (also clears shelving + stagnation via clearUserState)
   await store.clearUserState(USER_ID);
+
+  // 1b. Clear existing review cards for this user (clearUserState doesn't own this table)
+  db.$client.prepare('DELETE FROM review_cards WHERE user_id = ?').run(USER_ID);
 
   // 2. Insert word states
   for (const ws of fixture.wordStates) {
@@ -113,6 +128,18 @@ router.post('/test/seed', async (c) => {
   // 4. Insert shelved words
   for (const sw of fixture.shelvedWords ?? []) {
     await store.shelveWord(USER_ID, fixture.deckId, sw.wordId, sw.shelvedAtBatch);
+  }
+
+  // 4b. Insert review cards — seeds a realistic FSRS scheduler state via FsrsScheduler,
+  // then overrides `due` so callers don't have to graduate a word through /api/answer
+  // and backdate the row by hand just to get a due card.
+  const now = new Date();
+  for (const rc of fixture.reviewCards ?? []) {
+    const performance = rc.performance ?? { correctStreak: 2, lapses: 0, correctRatio: 1 };
+    const dueOffsetMs = rc.dueOffsetMs ?? -1000 * 60 * 60 * 24;
+    const card = scheduler.seed(rc.wordId, performance, now);
+    card.due = new Date(now.getTime() + dueOffsetMs);
+    await reviewStore.upsertReviewCard(USER_ID, card);
   }
 
   // 5. Set shelving config override if provided

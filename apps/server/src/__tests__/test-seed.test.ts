@@ -59,6 +59,11 @@ interface ScenarioFixture {
     wordId: string;
     shelvedAtBatch: number;
   }>;
+  reviewCards?: Array<{
+    wordId: string;
+    performance?: { correctStreak: number; lapses: number; correctRatio: number };
+    dueOffsetMs?: number;
+  }>;
   config?: {
     stagnationBatchWindow?: number;
     maxShelved?: number;
@@ -154,6 +159,35 @@ describe('POST /api/test/seed', () => {
     expect(shelvedBody.data).toHaveLength(1);
     expect(shelvedBody.data[0].wordId).toBe('th::หิว');
     expect(shelvedBody.data[0].shelvedAtBatch).toBe(3);
+  });
+
+  it('seeds a review card that is immediately due, without going through /api/answer', async () => {
+    const fixture: ScenarioFixture = {
+      ...baseFixture,
+      reviewCards: [{ wordId: 'th::หิว' }],
+    };
+
+    const res = await seed(fixture);
+    expect(res.status).toBe(200);
+
+    const reviewsRes = await app.request('/api/reviews');
+    expect(reviewsRes.status).toBe(200);
+    const reviewsBody = await reviewsRes.json() as { success: boolean; data: { reviews: Array<{ wordId: string; due: string }> } };
+    expect(reviewsBody.data.reviews.map((r) => r.wordId)).toContain('th::หิว');
+  });
+
+  it('reviewCards respects a custom dueOffsetMs (future due does not appear yet)', async () => {
+    const fixture: ScenarioFixture = {
+      ...baseFixture,
+      reviewCards: [{ wordId: 'th::หิว', dueOffsetMs: 1000 * 60 * 60 * 24 }],
+    };
+
+    const res = await seed(fixture);
+    expect(res.status).toBe(200);
+
+    const reviewsRes = await app.request('/api/reviews');
+    const reviewsBody = await reviewsRes.json() as { success: boolean; data: { reviews: Array<{ wordId: string; due: string }> } };
+    expect(reviewsBody.data.reviews.map((r) => r.wordId)).not.toContain('th::หิว');
   });
 
   it('is idempotent — calling twice produces same state', async () => {
