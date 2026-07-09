@@ -13,6 +13,11 @@ export default tseslint.config(
       '**/vitest.config.ts',
       '**/playwright.config.ts',
       'apps/srs-demo/e2e/**',
+      // Compile-time-only DTO assertions, not part of tsconfig.json's `include`
+      // (only tsconfig.typecheck.json's, via `tsc --noEmit -p`). The package's
+      // own lint script already excludes it (`eslint src`); mirror that here so
+      // the root glob doesn't sweep it into type-aware linting with no project.
+      'packages/api-contract/type-tests/**',
     ],
   },
   {
