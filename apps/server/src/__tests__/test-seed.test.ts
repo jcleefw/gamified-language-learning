@@ -63,6 +63,7 @@ interface ScenarioFixture {
     wordId: string;
     performance?: { correctStreak: number; lapses: number; correctRatio: number };
     dueOffsetMs?: number;
+    naturalDue?: boolean;
   }>;
   config?: {
     stagnationBatchWindow?: number;
@@ -87,6 +88,32 @@ async function seed(fixture: ScenarioFixture) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fixture),
+  });
+}
+
+// Seed a deck + words directly so /test/seed/scenario can resolve real word IDs.
+function seedDeckWithWords(deckId: string, wordIds: string[]) {
+  testSqlite
+    .prepare(
+      `INSERT INTO decks (id, name, language, difficulty, register, created_at, doc)
+       VALUES (?, ?, ?, NULL, NULL, ?, ?)`,
+    )
+    .run(deckId, 'Eat', 'th', new Date().toISOString(), JSON.stringify({ sentences: [] }));
+  for (const id of wordIds) {
+    testSqlite
+      .prepare(`INSERT INTO words (id, language, text, senses) VALUES (?, ?, ?, ?)`)
+      .run(id, 'th', id, JSON.stringify([{ romanization: id, english: id, type: 'word' }]));
+    testSqlite
+      .prepare(`INSERT INTO deck_words (deck_id, word_id) VALUES (?, ?)`)
+      .run(deckId, id);
+  }
+}
+
+async function seedScenario(body: unknown) {
+  return app.request('/api/test/seed/scenario', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   });
 }
 
@@ -220,6 +247,32 @@ describe('POST /api/test/seed', () => {
     expect(anytimeIds).toContain('th::กิน'); // AND the not-due word — the anytime fixture works
   });
 
+  // EP39-BUG01: reproduce "mastered N words" faithfully — naturalDue keeps the FSRS
+  // graduation interval (always future), so freshly-mastered words are NOT due now
+  // but ARE practisable via anytime. Verifies "mastered ≠ due today".
+  it('naturalDue seeds a future-due card (absent from /api/reviews, present in /api/reviews/anytime)', async () => {
+    const fixture: ScenarioFixture = {
+      ...baseFixture,
+      wordStates: [
+        { wordId: 'th::หิว', seen: 3, correct: 3, mastery: 2, correctStreak: 2, wrongStreak: 0, lapses: 0 },
+      ],
+      reviewCards: [{ wordId: 'th::หิว', naturalDue: true }],
+    };
+
+    const res = await seed(fixture);
+    expect(res.status).toBe(200);
+
+    const dueBody = (await (await app.request('/api/reviews')).json()) as {
+      data: { reviews: Array<{ wordId: string }> };
+    };
+    expect(dueBody.data.reviews.map((r) => r.wordId)).not.toContain('th::หิว'); // graduation due is in the future
+
+    const anytimeBody = (await (await app.request('/api/reviews/anytime')).json()) as {
+      data: { reviews: Array<{ wordId: string }> };
+    };
+    expect(anytimeBody.data.reviews.map((r) => r.wordId)).toContain('th::หิว'); // still practisable
+  });
+
   it('is idempotent — calling twice produces same state', async () => {
     await seed(baseFixture);
     const res = await seed(baseFixture);
@@ -228,6 +281,63 @@ describe('POST /api/test/seed', () => {
     const store = new SqliteLearningStore(testDb);
     const states = await store.getAllWordStates('demo-user');
     expect(states.size).toBe(2); // only the seeded words, no duplicates
+  });
+});
+
+describe('POST /api/test/seed/scenario', () => {
+  const WORDS = ['w-a', 'w-b', 'w-c'];
+  beforeEach(() => seedDeckWithWords('deck-eat', WORDS));
+
+  it('rejects an unknown scenario name with 400', async () => {
+    const res = await seedScenario({ name: 'bogus' });
+    expect(res.status).toBe(400);
+  });
+
+  it('404s when there is no deck to seed from', async () => {
+    // Fresh DB without the deck: run a scenario against an unknown deckId.
+    const res = await seedScenario({ name: 'mastered-due', deckId: 'no-such-deck' });
+    expect(res.status).toBe(404);
+  });
+
+  it('mastered-fresh: 0 due now, all N practisable via anytime', async () => {
+    const res = await seedScenario({ name: 'mastered-fresh', deckId: 'deck-eat', count: 3 });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { wordIds: string[]; expected: { dueNow: number; anytime: number; reviewUnlocked: boolean } };
+    };
+    expect(body.data.wordIds).toEqual(WORDS);
+    expect(body.data.expected).toEqual({ dueNow: 0, anytime: 3, reviewUnlocked: true });
+
+    const due = (await (await app.request('/api/reviews')).json()) as { data: { reviews: unknown[] } };
+    expect(due.data.reviews).toHaveLength(0); // freshly graduated → nothing due yet
+    const anytime = (await (await app.request('/api/reviews/anytime')).json()) as { data: { reviews: unknown[] } };
+    expect(anytime.data.reviews).toHaveLength(3); // but all 3 are learned/practisable
+  });
+
+  it('mastered-due: all N due now (due list is uncapped — never "only 1")', async () => {
+    const res = await seedScenario({ name: 'mastered-due', count: 3 });
+    expect(res.status).toBe(200);
+    const due = (await (await app.request('/api/reviews')).json()) as { data: { reviews: unknown[] } };
+    expect(due.data.reviews).toHaveLength(3);
+  });
+
+  it('review-only: cards but NO mastered word state (EP39-BUG01) — still N due', async () => {
+    const res = await seedScenario({ name: 'review-only', count: 2 });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { expected: { reviewUnlocked: boolean } } };
+    expect(body.data.expected.reviewUnlocked).toBe(true); // unlock is from card existence
+
+    const store = new SqliteLearningStore(testDb);
+    expect((await store.getAllWordStates('demo-user')).size).toBe(0); // no mastery seeded
+    const due = (await (await app.request('/api/reviews')).json()) as { data: { reviews: unknown[] } };
+    expect(due.data.reviews).toHaveLength(2);
+  });
+
+  it('defaults to the first deck and count 3 when omitted', async () => {
+    const res = await seedScenario({ name: 'mastered-due' });
+    const body = (await res.json()) as { data: { deckId: string; wordIds: string[] } };
+    expect(body.data.deckId).toBe('deck-eat');
+    expect(body.data.wordIds).toHaveLength(3);
   });
 });
 
