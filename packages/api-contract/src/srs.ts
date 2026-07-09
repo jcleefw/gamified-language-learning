@@ -56,10 +56,20 @@ export interface ReviewAnswerRequest {
   questionType: ReviewQuestionType;
 }
 
-/** Response data for POST /api/reviews/answer — the advanced schedule. */
+/** Response data for POST /api/reviews/answer.
+ *  `advanced` = did this answer move the FSRS schedule? (false ⟺ the card was
+ *  not due at answer time → read-only). `due` is the resulting (or unchanged)
+ *  schedule date, ISO-8601. */
 export interface ReviewAnswerResponse {
   wordId: string;
-  due: string; // ISO-8601, post-advance
+  due: string; // ISO-8601 (unchanged when advanced === false)
+  advanced: boolean; // true only when the card was due and the schedule moved
+}
+
+/** Response data for GET /api/reviews/anytime — a bounded, ordered batch over ALL
+ *  learned words (due or not). Item shape reuses DueReviewItem (wordId + ISO due). */
+export interface AnytimeReviewsResponse {
+  reviews: DueReviewItem[]; // ≤50, most-overdue-first with not-due tail least-recently-practised
 }
 
 export interface ShelvedWordPayload {

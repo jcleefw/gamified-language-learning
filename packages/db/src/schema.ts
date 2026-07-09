@@ -145,7 +145,7 @@ export const review_answer_events = sqliteTable('review_answer_events', {
   correct: integer('correct', { mode: 'boolean' }).notNull(),
   latency_ms: integer('latency_ms').notNull(),
   question_type: text('question_type').notNull(), // 'mcq' | 'word-block'
-  rating: text('rating').notNull(),               // inferred ReviewRating ('again'|'good' this build)
+  rating: text('rating'),                          // inferred ReviewRating ('again'|'good'); NULL ⟺ eager/not-due answer (no FSRS rating)
   created_at: text('created_at').notNull(),
 });
 

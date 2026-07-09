@@ -7,7 +7,7 @@ export interface ReviewAnswerEventRecord {
   correct: boolean;
   latencyMs: number;
   questionType: string;
-  rating: string;
+  rating: string | null; // null on the not-due (eager) branch — no FSRS rating
   createdAt: string; // ISO-8601
 }
 

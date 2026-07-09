@@ -190,6 +190,36 @@ describe('POST /api/test/seed', () => {
     expect(reviewsBody.data.reviews.map((r) => r.wordId)).not.toContain('th::หิว');
   });
 
+  // EP39: a positive dueOffsetMs seeds a NOT-DUE learned card — the fixture the
+  // Practice-Anytime path needs. It is absent from /api/reviews (due-only) yet
+  // present in /api/reviews/anytime (all learned words), end-to-end via the seed.
+  it('a future-due (not-due) seeded card is served by /api/reviews/anytime but not /api/reviews', async () => {
+    const fixture: ScenarioFixture = {
+      ...baseFixture,
+      reviewCards: [
+        { wordId: 'th::หิว', dueOffsetMs: -1000 * 60 * 60 }, // due (an hour ago)
+        { wordId: 'th::กิน', dueOffsetMs: 1000 * 60 * 60 * 24 }, // not-due (tomorrow)
+      ],
+    };
+
+    const res = await seed(fixture);
+    expect(res.status).toBe(200);
+
+    const dueBody = (await (await app.request('/api/reviews')).json()) as {
+      data: { reviews: Array<{ wordId: string }> };
+    };
+    const dueIds = dueBody.data.reviews.map((r) => r.wordId);
+    expect(dueIds).toContain('th::หิว');
+    expect(dueIds).not.toContain('th::กิน'); // not-due excluded from due list
+
+    const anytimeBody = (await (await app.request('/api/reviews/anytime')).json()) as {
+      data: { reviews: Array<{ wordId: string }> };
+    };
+    const anytimeIds = anytimeBody.data.reviews.map((r) => r.wordId);
+    expect(anytimeIds).toContain('th::หิว'); // due word present
+    expect(anytimeIds).toContain('th::กิน'); // AND the not-due word — the anytime fixture works
+  });
+
   it('is idempotent — calling twice produces same state', async () => {
     await seed(baseFixture);
     const res = await seed(baseFixture);

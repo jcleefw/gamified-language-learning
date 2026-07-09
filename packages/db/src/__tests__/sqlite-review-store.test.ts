@@ -166,4 +166,54 @@ describe('SqliteReviewStore', () => {
     const result = await store.getDueReviewCardsForDeck('user-a', 'deck-1', now);
     expect(result).toEqual([]);
   });
+
+  // --- EP39-ST03: last-practised recency (MAX(created_at) per word, user-scoped) ---
+
+  it('getLastPracticedAtByWord returns MAX(created_at) per word and omits never-practised words', async () => {
+    const insert = (wordId: string, createdAt: string, userId = 'user-a') =>
+      db
+        .insert(schema.review_answer_events)
+        .values({
+          correlation_id: null,
+          user_id: userId,
+          word_id: wordId,
+          correct: true,
+          latency_ms: 100,
+          question_type: 'mcq',
+          rating: 'good',
+          created_at: createdAt,
+        })
+        .run();
+
+    insert('w1', '2026-07-01T00:00:00.000Z');
+    insert('w1', '2026-07-05T00:00:00.000Z'); // later event wins
+    insert('w2', '2026-07-03T00:00:00.000Z');
+    insert('other-user', '2026-07-09T00:00:00.000Z', 'user-b'); // scoped out
+
+    const map = await store.getLastPracticedAtByWord('user-a');
+
+    expect(map.get('w1')).toBe('2026-07-05T00:00:00.000Z');
+    expect(map.get('w2')).toBe('2026-07-03T00:00:00.000Z');
+    expect(map.has('other-user')).toBe(false);
+    expect(map.size).toBe(2);
+  });
+
+  it('getLastPracticedAtByWord counts eager (rating NULL) events too', async () => {
+    db
+      .insert(schema.review_answer_events)
+      .values({
+        correlation_id: null,
+        user_id: 'user-a',
+        word_id: 'eager',
+        correct: true,
+        latency_ms: 100,
+        question_type: 'mcq',
+        rating: null, // eager/not-due answer still counts as "practised"
+        created_at: '2026-07-06T00:00:00.000Z',
+      })
+      .run();
+
+    const map = await store.getLastPracticedAtByWord('user-a');
+    expect(map.get('eager')).toBe('2026-07-06T00:00:00.000Z');
+  });
 });
