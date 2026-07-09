@@ -94,6 +94,7 @@ const {
   reviewSummary,
   reviewUnlocked,
   refreshDueBadge,
+  refreshReviewAvailability,
   onReview: enterReview,
   onAnytimeReview: enterAnytime,
   onReviewAnswered,
@@ -130,8 +131,9 @@ async function navTo(target: 'home' | 'select' | 'review') {
   if (target === 'review') {
     // The review tab is a mode-selection hub (Due Review · Practice Anytime),
     // always reachable regardless of due-count — no more caught-up dead-end.
-    // Refresh the badge so the hub's Due Review count is honest.
-    await refreshDueBadge();
+    // Refresh the badge (due count) and availability (any card → unlock) so the
+    // hub reflects reality, incl. words graduated earlier that aren't due yet.
+    await Promise.all([refreshDueBadge(), refreshReviewAvailability()]);
     screen.value = 'review-hub';
     return;
   }
@@ -242,10 +244,11 @@ onMounted(async () => {
     deckId.value = localStorage.getItem(LAST_DECK_KEY);
   }
 
-  // Review due-count badge — only when unlocked (gate is local; badge needs the
-  // route). A failed fetch flags badgeError so home shows a dash, never a false
-  // "0 / caught up". No-op when locked (composable checks reviewUnlocked).
-  await refreshDueBadge();
+  // Review state at boot: the due-count badge and card availability. Availability
+  // (any review card exists) unlocks Review even when nothing is due yet, so a
+  // returning user with future-due cards isn't locked out (EP39-BUG01). Both are
+  // error-tolerant (badgeError / best-effort) and safe for a brand-new user.
+  await Promise.all([refreshDueBadge(), refreshReviewAvailability()]);
 
   // Load persisted shelved words for the last active deck on mount
   const savedDeckId = localStorage.getItem(LAST_DECK_KEY);

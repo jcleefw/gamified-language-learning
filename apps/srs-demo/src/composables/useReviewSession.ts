@@ -38,6 +38,10 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
   const dueReviews = ref<DueReviewItem[]>([]); // from GET /api/reviews
   const dueReviewCount = ref<number | null>(null); // badge; null until fetched
   const badgeError = ref(false); // due-count fetch failed (never masquerade as "caught up")
+  // Does the user have ANY review card (due or not)? Set from /api/reviews/anytime.
+  // Unlocks Review even when nothing is due yet (fresh graduation) so Practice
+  // Anytime is reachable — fixes EP39-BUG01 (a due card behind a locked tab).
+  const hasReviewCards = ref(false);
   const reviewBatchState = ref<BatchState | null>(null);
   const reviewQuestion = ref<QuizQuestion | null>(null);
   const reviewShownAt = ref<number>(0); // latency start for the current review question
@@ -56,14 +60,18 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
     nextDue: null,
   });
 
-  // Review unlock gate — purely local truth; no server call. Epic: "locked until
-  // any word is mastered." Fail-closed when config isn't ready (no threshold to test).
+  // Review unlock gate. Epic: "locked until any word is mastered." Unlocked when
+  // EITHER a word is mastered locally (instant, no round-trip — covers a word just
+  // graduated this session) OR the user has any review card (covers a returning
+  // user whose cards exist but aren't currently due — see EP39-BUG01). Fail-closed
+  // when config isn't ready (no threshold to test).
   const reviewUnlocked = computed(
     () =>
       configReady.value &&
-      [...globalRunState.value.values()].some((ws) =>
+      ([...globalRunState.value.values()].some((ws) =>
         isMastered(ws, CONFIG.value.masteryThreshold),
-      ),
+      ) ||
+        hasReviewCards.value),
   );
 
   // wordId → QuizItem resolution against the already-preloaded, cross-deck
@@ -82,11 +90,11 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
     return q.kind;
   }
 
-  // Review due-count badge — only when unlocked (gate is local; badge needs the
-  // route). A failed fetch flags badgeError so home shows a dash, never a false
-  // "0 / caught up".
+  // Review due-count badge. No longer gated on reviewUnlocked: the count itself now
+  // feeds availability (EP39-BUG01), so it must load regardless — a locked-but-due
+  // state must still surface its count. A failed fetch flags badgeError so home
+  // shows a dash, never a false "0 / caught up".
   async function refreshDueBadge() {
-    if (!reviewUnlocked.value) return;
     try {
       const reviews = await loadDueReviews();
       dueReviews.value = reviews;
@@ -94,6 +102,19 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
       badgeError.value = false;
     } catch {
       badgeError.value = true;
+    }
+  }
+
+  // "Does the user have any review card at all?" — sourced from the anytime read
+  // (all learned words, due or not). Drives the unlock gate so Review is reachable
+  // whenever cards exist, even with nothing due today (EP39-BUG01). Best-effort:
+  // on failure the local mastery path still unlocks.
+  async function refreshReviewAvailability() {
+    try {
+      const cards = await loadAnytimeReviews();
+      hasReviewCards.value = cards.length > 0;
+    } catch {
+      // Leave hasReviewCards as-is; mastery still gates unlock.
     }
   }
 
@@ -238,6 +259,7 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
     dueReviews,
     dueReviewCount,
     badgeError,
+    hasReviewCards,
     reviewBatchState,
     reviewQuestion,
     reviewQuestionKey,
@@ -248,6 +270,7 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
     resolveDueItems,
     toReviewQuestionType,
     refreshDueBadge,
+    refreshReviewAvailability,
     onReview,
     onAnytimeReview,
     onReviewAnswered,

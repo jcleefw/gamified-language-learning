@@ -83,6 +83,27 @@ describe('reviewUnlocked gate', () => {
     const { session } = setup({ runState, configReady: false });
     expect(session.reviewUnlocked.value).toBe(false);
   });
+
+  // EP39-BUG01: a due/existing card must unlock Review even with no locally-mastered
+  // word (e.g. a returning user, or the review-only seed fixture).
+  it('unlocks when the user has review cards even if no word is mastered locally', async () => {
+    loadAnytimeReviews.mockResolvedValueOnce([
+      { wordId: 'a', due: '2027-01-01T00:00:00Z' }, // not-due card; no mastered word state
+    ]);
+    const { session } = setup({ runState: new Map() }); // nothing mastered locally
+    expect(session.reviewUnlocked.value).toBe(false); // before the availability fetch
+    await session.refreshReviewAvailability();
+    expect(session.hasReviewCards.value).toBe(true);
+    expect(session.reviewUnlocked.value).toBe(true); // now unlocked purely by card existence
+  });
+
+  it('stays locked when there are neither mastered words nor review cards', async () => {
+    loadAnytimeReviews.mockResolvedValueOnce([]);
+    const { session } = setup({ runState: new Map() });
+    await session.refreshReviewAvailability();
+    expect(session.hasReviewCards.value).toBe(false);
+    expect(session.reviewUnlocked.value).toBe(false);
+  });
 });
 
 describe('resolveDueItems', () => {
