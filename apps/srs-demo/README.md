@@ -115,6 +115,31 @@ curl -s -X POST http://localhost:6060/api/test/seed/scenario \
 Optional body fields: `deckId` (default: first deck), `count` (default 3). Then open Review in the
 app, or assert against `GET /api/reviews` / `GET /api/reviews/anytime`.
 
+> **Restart the API server** after pulling these changes so the `/scenario` route is registered.
+> Each scenario **resets the demo user's state** (word progress + review cards) before seeding.
+
+#### Manual walkthrough — "I mastered N words, why isn't Review showing them?"
+
+This is expected: FSRS schedules a freshly-graduated word's first review in the **future**, so
+"mastered" ≠ "due today". Verify both halves without waiting real days:
+
+```bash
+# Part A — just mastered 3 today: nothing due yet, but all 3 are practisable.
+curl -s -X POST http://localhost:6060/api/test/seed/scenario \
+  -H 'Content-Type: application/json' -d '{"name":"mastered-fresh","count":3}' | python3 -m json.tool
+curl -s http://localhost:6060/api/reviews          # → reviews: []   (nothing due yet)
+curl -s http://localhost:6060/api/reviews/anytime  # → 3 words
+#   UI: Review tab UNLOCKED · Due Review = caught-up · Practice Anytime lists all 3.
+
+# Part B — their due date has arrived: all 3 surface at once (the due list is uncapped).
+curl -s -X POST http://localhost:6060/api/test/seed/scenario \
+  -H 'Content-Type: application/json' -d '{"name":"mastered-due","count":3}' | python3 -m json.tool
+curl -s http://localhost:6060/api/reviews          # → 3 words due
+#   UI: Due Review = 3.
+```
+
+Use `review-only` to confirm Review unlocks purely from a card's existence (no mastered word state).
+
 ### Seeding review cards by hand (low-level)
 
 For custom cases, `/api/test/seed` accepts an optional `reviewCards` fixture field that seeds a
@@ -149,43 +174,11 @@ Each `reviewCards` entry accepts:
 Note: `reviewCards` inserts directly into `review_cards`, bypassing the graduation path in
 `POST /api/answer` — the word does not need a matching `wordStates` entry for this to work.
 
-### Reproducing "master N words" (to verify due-vs-mastered behaviour)
-
-FSRS schedules a freshly-graduated word's first review in the **future** (≈3 days for a "good"
-graduation, ≈8 for "easy") — never immediately. So mastering N words yields **0 due now**; they
-become due later. To reproduce this state without playing through Learning, seed mastered word
-states **and** their review cards with `naturalDue` (both surfaces consistent — mastered word +
-future-due card, exactly as graduation leaves it):
-
-```bash
-# Pick 3 word IDs from a deck
-IDS=$(curl -s http://localhost:6060/api/decks | python3 -c \
-  "import sys,json;w=json.load(sys.stdin)['data'][0]['words'];print(w[0]['id'],w[1]['id'],w[2]['id'])")
-read -r A B C <<< "$IDS"
-
-curl -s -X POST http://localhost:6060/api/test/seed -H 'Content-Type: application/json' -d "{
-  \"name\":\"mastered-3\",\"description\":\"3 mastered words, freshly graduated\",\"deckId\":\"deck-eat\",
-  \"wordStates\":[
-    {\"wordId\":\"$A\",\"seen\":3,\"correct\":3,\"mastery\":2,\"correctStreak\":2,\"wrongStreak\":0,\"lapses\":0},
-    {\"wordId\":\"$B\",\"seen\":3,\"correct\":3,\"mastery\":2,\"correctStreak\":2,\"wrongStreak\":0,\"lapses\":0},
-    {\"wordId\":\"$C\",\"seen\":3,\"correct\":3,\"mastery\":2,\"correctStreak\":2,\"wrongStreak\":0,\"lapses\":0}
-  ],
-  \"stagnationCounters\":[],\"shelvedWords\":[],
-  \"reviewCards\":[
-    {\"wordId\":\"$A\",\"naturalDue\":true},{\"wordId\":\"$B\",\"naturalDue\":true},{\"wordId\":\"$C\",\"naturalDue\":true}
-  ]
-}"
-
-# Expect: Review tab UNLOCKED (3 mastered words); /api/reviews returns 0 (none due yet);
-# Practice Anytime lists all 3.
-curl -s http://localhost:6060/api/reviews          # → { reviews: [] }
-curl -s http://localhost:6060/api/reviews/anytime  # → { reviews: [3 words] }
-```
-
-A "good" graduation is due in ≈3 days, so **tomorrow still shows 0** — all 3 resurface **together on
-day 3** (the due list is uncapped and ordered most-overdue-first; nothing limits it to 1). To verify
-that day-3 state now, drop `naturalDue` from the `reviewCards` entries (they default to already-due):
-`/api/reviews` then returns all 3.
+> **Timing reference.** A "good" graduation schedules the first review ≈3 days out, "easy" ≈8 —
+> never immediately. So mastering N words shows **0 due today, 0 tomorrow**, then **all N due together**
+> on their due date (the list is uncapped — never "only 1"). The `mastered-fresh` / `mastered-due`
+> scenarios above let you observe both states without waiting; for a fully hand-authored equivalent,
+> combine `wordStates` (mastery ≥ 2) with `reviewCards` `naturalDue: true` in a `/api/test/seed` call.
 
 ## Other commands
 
