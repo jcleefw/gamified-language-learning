@@ -6,6 +6,7 @@
 <!-- Status: Accepted | Superseded | Deprecated -->
 
 **Superseded by**: N/A
+**Amended by**: [Review-Ahead & Due-Gated Advance](20260709T143643Z-engineering-review-ahead-and-due-gated-advance.md) (20260710, Accepted) — **resolves OQ8** ("practice-mode / due-date bypass", previously out of scope) by permitting review-ahead with a server-side due-gate on schedule advance.
 **Supersedes (in part)**: [20260321T145300Z Review Phase ADR](20260321T145300Z-engineering-srs-engine-v2-review-phase.md) — packaging/layout and the `reviewCard`-on-`WordState` decision only; its FSRS *behavioural* design still stands
 **Revises**: [EP21-DS02 Library Boundary](../../.agents/changelogs/EP21--srs-engine-v2-revision-build/20260510T162559Z-EP21-DS02-srs-engine-v2-library-boundary.md) — the provisional "`ts-fsrs` stays in `srs-engine-v2`" decision
 **Epic**: EP21 (SRS Engine v2: Revision Phase)
