@@ -1,23 +1,20 @@
 import { Hono } from 'hono';
 import type { ApiResponse } from '@gll/api-contract';
-import { LEARNING_CONFIG, type LearningConfigResponse } from '../config/learning.js';
+import { getAppConfig, type AppConfigResponse } from '../config/learning.js';
 
 const router = new Hono();
 
 /**
- * Read-only learning policy — the single source of truth for the transition
- * thresholds. Clients fetch this at boot and never carry their own copy. The
- * value is derived from LEARNING_CONFIG at request time, so changing the
- * constant changes the response with no other edit. Shaped as "the policy this
- * request should use" so a future per-user resolver can slot in behind it.
+ * Read-only config — the single source of truth for the whole config surface,
+ * categorized by who may change it (user vs system). Clients fetch this at boot
+ * and declare no config of their own. Derived from the server config constants
+ * at request time, so changing a constant changes the response with no other
+ * edit. Shaped so a future per-user resolver can slot in behind the `user` half.
  */
 router.get('/config', (c) => {
-  const body: ApiResponse<LearningConfigResponse> = {
+  const body: ApiResponse<AppConfigResponse> = {
     success: true,
-    data: {
-      masteryThreshold: LEARNING_CONFIG.masteryThreshold,
-      streakThresholds: LEARNING_CONFIG.streakThresholds,
-    },
+    data: getAppConfig(),
   };
   return c.json(body);
 });

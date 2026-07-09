@@ -1,4 +1,9 @@
-import type { RunState, WordState, StreakThresholds } from '@gll/srs-engine-v2';
+import type {
+  RunState,
+  WordState,
+  StreakThresholds,
+  SentenceQuestion,
+} from '@gll/srs-engine-v2';
 import type {
   AnswerRequest,
   AnswerResponse,
@@ -9,12 +14,28 @@ import type {
 
 /**
  * Local consuming shape for GET /api/config. The client owns how it reads the
- * server's policy; it does NOT import a policy type from @gll/api-contract
- * (none exists there — learning policy is server-owned by design).
+ * server's config; it declares none of its own and imports no config type from
+ * @gll/api-contract (none exists there — config is server-owned by design).
+ * Categorized by who may change it: `user` (T1, eventually user-writable) and
+ * `pedagogy` (T2 authored course design, read-only to the client). T3 system
+ * internals are never served.
  */
-export interface LearningPolicy {
-  masteryThreshold: number;
-  streakThresholds: StreakThresholds;
+export interface AppConfig {
+  user: {
+    masteryThreshold: number;
+    streakThresholds: StreakThresholds;
+    wordsPerBatch: number;
+    maxRetryPerSession: number;
+    maxRetryPerWord: number;
+    sentenceDirections: SentenceQuestion['direction'][];
+  };
+  pedagogy: {
+    sentenceScheduling: { minSeenForSentence: number; sentenceBatchGap: number };
+    sentenceGraduation: {
+      sentenceCorrectStreakThreshold: number;
+      sentenceWrongStreakThreshold: number;
+    };
+  };
 }
 
 function toWordState(p: WordStatePayload): WordState {
@@ -85,15 +106,15 @@ export async function clearStore(): Promise<void> {
 }
 
 /**
- * Fetch the server-authoritative learning policy. The client holds no hardcoded
- * copy of these thresholds — it consumes them read-only at boot. Throws a typed
- * error on failure so the caller can fail closed rather than fall back to a
- * built-in policy (a fallback constant would be a second source of truth).
+ * Fetch the server-authoritative config surface. The client holds no hardcoded
+ * config of its own — it consumes the whole surface read-only at boot. Throws a
+ * typed error on failure so the caller can fail closed rather than fall back to
+ * built-in defaults (a fallback would be a second source of truth).
  */
-export async function loadLearningConfig(): Promise<LearningPolicy> {
+export async function loadConfig(): Promise<AppConfig> {
   const res = await fetch('/api/config');
   if (!res.ok) throw new Error(`GET /api/config failed: ${res.status}`);
-  const body = (await res.json()) as ApiResponse<LearningPolicy>;
+  const body = (await res.json()) as ApiResponse<AppConfig>;
   if (!body.success) throw new Error(`GET /api/config error: ${body.error.message}`);
   return body.data;
 }

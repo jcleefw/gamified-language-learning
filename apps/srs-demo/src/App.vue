@@ -34,7 +34,7 @@ import {
   loadRunState,
   postAnswer,
   clearStore,
-  loadLearningConfig,
+  loadConfig,
 } from './composables/useStore';
 import {
   loadShelvedWords,
@@ -75,35 +75,12 @@ type ConfigType = SessionConfig & {
   sentenceDirections: SentenceQuestion['direction'][];
 };
 
-// Client-owned presentation/orchestration config only. Learning policy
-// (masteryThreshold + streakThresholds) is NOT declared here — it is fetched
-// read-only from GET /api/config at boot and merged in. See EP37-DS05.
-type PresentationConfig = Omit<ConfigType, 'masteryThreshold' | 'streakThresholds'>;
-
-const PRESENTATION_DEFAULTS: PresentationConfig = {
-  wordsPerBatch: 3,
-  maxRetryPerSession: 5,
-  maxRetryPerWord: 2,
-  sentenceScheduling: {
-    minSeenForSentence: 1,
-    sentenceBatchGap: 2,
-  },
-  sentenceGraduation: {
-    sentenceCorrectStreakThreshold: 2,
-    sentenceWrongStreakThreshold: 3,
-  },
-  sentenceDirections: [
-    'english-to-native',
-    'romanization-to-native',
-    'native-to-romanization',
-  ],
-};
-
-// Policy fields are injected at boot; until then CONFIG carries presentation
-// defaults only. `policyReady` gates session start so nothing runs the engine
-// with unset thresholds (fail-closed — no hardcoded fallback policy).
-const CONFIG = ref<ConfigType>({ ...PRESENTATION_DEFAULTS } as ConfigType);
-const policyReady = ref(false);
+// No config is declared in the FE. The whole surface is fetched read-only from
+// GET /api/config at boot (see EP37-DS05 + the Config Ownership ADR). Until then
+// CONFIG is empty; `configReady` gates session start so nothing runs the engine
+// with unset config (fail-closed — no hardcoded fallback).
+const CONFIG = ref<ConfigType>({} as ConfigType);
+const configReady = ref(false);
 
 type Screen = 'select' | 'quiz' | 'results' | 'overview';
 
@@ -285,8 +262,8 @@ function startBatch() {
 }
 
 async function initSession(id: string, isNewSession = true) {
-  // Fail-closed: never run the engine without server-sourced policy.
-  if (!policyReady.value) {
+  // Fail-closed: never run the engine without server-sourced config.
+  if (!configReady.value) {
     apiError.value =
       'Learning settings are not loaded yet. Please check the server and try again.';
     return;
@@ -639,12 +616,12 @@ onMounted(async () => {
     return;
   }
 
-  // Learning policy is server-owned — fetch it before anything reads a threshold
+  // Config is server-owned — fetch the whole surface before anything reads it
   // (completed-deck detection, session init). Fail closed: no session without it.
   try {
-    const policy = await loadLearningConfig();
-    CONFIG.value = { ...CONFIG.value, ...policy };
-    policyReady.value = true;
+    const cfg = await loadConfig();
+    CONFIG.value = { ...cfg.user, ...cfg.pedagogy };
+    configReady.value = true;
   } catch {
     apiError.value =
       'Could not load learning settings. Please check that the server is running and try again.';

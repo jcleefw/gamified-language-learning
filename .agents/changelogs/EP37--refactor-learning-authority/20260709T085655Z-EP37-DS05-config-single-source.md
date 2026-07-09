@@ -1,8 +1,20 @@
 # EP37-DS05: Learning-Policy Single Source (server-served config) Specification
 
 **Date**: 20260709T085655Z
-**Status**: Accepted — implemented (ST10 + ST11)
+**Status**: Accepted — implemented (ST10 + ST11), **amended 20260709 (see Amendment 1)**
 **Epic**: [EP37 - Refactor: Learning Authority](../../plans/epics/EP37-refactor-learning-authority.md)
+
+---
+
+## Amendment 1 (20260709) — Scope is the **whole** config surface, categorized user vs system
+
+**Decision (supersedes the "learning-policy only" scope below).** The single-source rule applies to **all** config, not just learning policy. This was **missed scope of ST10 and ST11**, corrected here in line with the [Config Ownership & Layering ADR, Amendment 1](../../../product-documentation/architecture/20260709T091559Z-engineering-config-ownership-and-layering.md) (framing is **system vs user**, not server vs client; **all config is server-sourced**; the FE declares none). What this changes vs the body:
+
+- **ST10 serves the FE surface, categorized by who may change it.** `GET /api/config` returns `{ user, pedagogy }`, not just `{ masteryThreshold, streakThresholds }`. `user` (T1, eventually user-writable): `masteryThreshold`, `streakThresholds`, `wordsPerBatch`, `maxRetryPerSession`, `maxRetryPerWord`, `sentenceDirections`. `pedagogy` (T2 authored course design, read-only to the client): `sentenceScheduling`, `sentenceGraduation`. **T3 system internals** (FSRS params, seed heuristics, `maxMastery`-as-scale) are **never served** (ADR D4). Declared server-side in `apps/server/src/config/learning.ts`; **still nothing in `@gll/api-contract`.**
+- **ST11 removes ALL FE-declared config.** `PRESENTATION_DEFAULTS` is **deleted** from `App.vue` (not just the four policy values). `CONFIG` starts empty and is fully populated from the fetch (`{ ...cfg.user, ...cfg.pedagogy }`). The boot fetch helper is `loadConfig()` (was `loadLearningConfig()`), returning the categorized `AppConfig`; the gate ref is `configReady` (was `policyReady`). Fail-closed is unchanged.
+- **Interim on accounts.** No user accounts yet, so `user` config is hardcoded in the server config module and served read-only; the per-user DB row + `PUT` write path arrive with accounts. The `user`/`pedagogy` split in the wire shape records the future writable boundary now (user → per-user write path; pedagogy → per-deck authoring).
+
+**Retained from the body:** server is the single source; `@gll/api-contract` carries no config value or type; the client consumes read-only and holds no fallback; fail-closed boot. Where the body says "learning policy," read "the whole config surface."
 
 ---
 
