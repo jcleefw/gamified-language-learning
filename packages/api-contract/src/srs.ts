@@ -32,6 +32,36 @@ export interface AnswerResponse {
   graduated: boolean;            // word crossed the mastery threshold on this answer
 }
 
+/** What was shown for a review answer — a wire fact, not policy.
+ *  Mirrors the engine's QuizQuestion.kind so the client reports it as-is. */
+export type ReviewQuestionType = 'mcq' | 'word-block';
+
+/** One due review card for GET /api/reviews. `due` is ISO-8601 (JSON has no Date). */
+export interface DueReviewItem {
+  wordId: string;
+  due: string; // ISO-8601
+}
+
+/** Response data for GET /api/reviews — pool-global due cards, most-overdue-first. */
+export interface DueReviewsResponse {
+  reviews: DueReviewItem[];
+}
+
+/** Request body for POST /api/reviews/answer — raw answer facts; the server infers the rating.
+ *  `latencyMs`/`questionType` are RECORDED, not used for rating in this build. */
+export interface ReviewAnswerRequest {
+  wordId: string;
+  correct: boolean;
+  latencyMs: number;
+  questionType: ReviewQuestionType;
+}
+
+/** Response data for POST /api/reviews/answer — the advanced schedule. */
+export interface ReviewAnswerResponse {
+  wordId: string;
+  due: string; // ISO-8601, post-advance
+}
+
 export interface ShelvedWordPayload {
   wordId: string;
   shelvedAtBatch: number;
