@@ -2,7 +2,7 @@ import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { getDb, closeDb, SqliteReviewStore } from '@gll/db';
-import type { ReviewStore } from '@gll/db';
+import type { IReviewStore } from '@gll/db';
 import { FsrsScheduler } from '@gll/srs-review';
 import type { ReviewScheduler } from '@gll/srs-review';
 import { buildQuizItems } from './db-query.js';
@@ -21,7 +21,7 @@ const MOCK_PERFORMANCE = { correctStreak: 3, lapses: 0, correctRatio: 1 };
  */
 export async function seedMockReviews(
   scheduler: ReviewScheduler,
-  reviewStore: ReviewStore,
+  reviewStore: IReviewStore,
   userId: string,
   wordIds: readonly string[],
   now: Date = new Date(),

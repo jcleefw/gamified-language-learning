@@ -1,14 +1,12 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type BetterSqlite3 from 'better-sqlite3';
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as schema from '../schema';
 import { initDb } from '../init-db';
 import { SqliteReviewStore } from '../sqlite-review-store';
 import type { ReviewCard } from '@gll/srs-review';
-
-type DbClient = BetterSQLite3Database<typeof schema> & { $client: BetterSqlite3.Database };
+import type { DbClient } from '../types/db-client';
 
 function makeTestDb(): { db: DbClient; sqlite: BetterSqlite3.Database } {
   const sqlite = new Database(':memory:');
@@ -104,6 +102,66 @@ describe('SqliteReviewStore', () => {
     ]).run();
 
     await store.upsertReviewCard('user-a', card({ wordId: 'in-deck', due: new Date('2026-07-09T00:00:00.000Z') }));
+
+    const result = await store.getDueReviewCardsForDeck('user-a', 'deck-1', now);
+    expect(result).toEqual([]);
+  });
+
+  // --- ST04: idempotent re-graduation (seedReviewCard, ignore-if-exists) ---
+
+  it('seedReviewCard creates the card and returns true on first graduation', async () => {
+    const inserted = await store.seedReviewCard('user-a', card());
+    expect(inserted).toBe(true);
+    expect(await store.getAllReviewCards('user-a')).toHaveLength(1);
+  });
+
+  it('seedReviewCard is ignore-if-exists: second seed returns false and does not reset FSRS progress', async () => {
+    const original = card({ due: new Date('2026-07-08T00:00:00.000Z'), schedulerData: { stability: 3, difficulty: 5, state: 2 } });
+    await store.seedReviewCard('user-a', original);
+
+    const inserted = await store.seedReviewCard(
+      'user-a',
+      card({ due: new Date('2026-07-20T00:00:00.000Z'), schedulerData: { stability: 99, difficulty: 1, state: 0 } }),
+    );
+
+    expect(inserted).toBe(false);
+    const result = await store.getReviewCard('user-a', 'w1');
+    expect(result!.due.getTime()).toBe(original.due.getTime());
+    expect(result!.schedulerData).toEqual(original.schedulerData);
+  });
+
+  // --- ST05: one-way graduation (re-graduation never rewinds an advanced card) ---
+
+  it('graduation is one-way: re-seeding after a review advance preserves the advanced card', async () => {
+    await store.seedReviewCard('user-a', card());
+    // Review runner advances the card via upsert (overwrite).
+    const advanced = card({ due: new Date('2026-08-01T00:00:00.000Z'), schedulerData: { stability: 42, difficulty: 4, state: 2 } });
+    await store.upsertReviewCard('user-a', advanced);
+
+    // A stray re-graduation must NOT rewind the advanced card.
+    const inserted = await store.seedReviewCard('user-a', card());
+    expect(inserted).toBe(false);
+
+    const result = await store.getReviewCard('user-a', 'w1');
+    expect(result!.due.getTime()).toBe(advanced.due.getTime());
+    expect(result!.schedulerData).toEqual(advanced.schedulerData);
+  });
+
+  // --- ST05: orphan tolerance (a card whose word is gone must never crash a reader) ---
+
+  it('getDueReviewCards tolerates an orphaned card (no words row) without crashing', async () => {
+    const now = new Date('2026-07-08T12:00:00.000Z');
+    // No words row is ever inserted for this word_id.
+    await store.upsertReviewCard('user-a', card({ wordId: 'orphan', due: new Date('2026-07-01T00:00:00.000Z') }));
+
+    const result = await store.getDueReviewCards('user-a', now);
+    expect(result.map((c) => c.wordId)).toEqual(['orphan']);
+  });
+
+  it('getDueReviewCardsForDeck skips a word absent from deck_words without crashing', async () => {
+    const now = new Date('2026-07-08T12:00:00.000Z');
+    // Card exists but the word is not registered in this deck.
+    await store.upsertReviewCard('user-a', card({ wordId: 'not-in-deck', due: new Date('2026-07-01T00:00:00.000Z') }));
 
     const result = await store.getDueReviewCardsForDeck('user-a', 'deck-1', now);
     expect(result).toEqual([]);

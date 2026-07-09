@@ -1,6 +1,13 @@
 import type { AppDeck, AppDeckPayload } from '@gll/api-contract';
 
-export interface ContentStore {
+export interface Sense {
+  romanization: string;
+  english: string;
+  type: string;
+}
+
+/** Curriculum content: decks, words, and sentences, served in API-contract shape. */
+export interface IContentStore {
   /** All decks, fully assembled into the API-contract read shape. */
   getDecks(): Promise<AppDeckPayload[]>;
   /** One deck by id, or null if absent. Forward-looking — no route consumes it yet (unit-tested only; keep per ADR method-surface Q, drop if still unused at implementation). */

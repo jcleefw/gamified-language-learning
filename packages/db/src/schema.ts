@@ -115,6 +115,24 @@ export const review_cards = sqliteTable(
 );
 
 // ---------------------------------------------------------------------------
+// Transition channel — append-only per-answer Learning transition log
+// ---------------------------------------------------------------------------
+
+export const answer_events = sqliteTable('answer_events', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  correlation_id: text('correlation_id'),
+  user_id: text('user_id').notNull(),
+  word_id: text('word_id').notNull(),
+  correct: integer('correct', { mode: 'boolean' }).notNull(),
+  latency_ms: integer('latency_ms').notNull(),
+  before_state: text('before_state'),
+  after_state: text('after_state').notNull(),
+  graduated: integer('graduated', { mode: 'boolean' }).notNull(),
+  recheck: integer('recheck', { mode: 'boolean' }).notNull().default(false),
+  created_at: text('created_at').notNull(),
+});
+
+// ---------------------------------------------------------------------------
 // SRS shelving
 // ---------------------------------------------------------------------------
 

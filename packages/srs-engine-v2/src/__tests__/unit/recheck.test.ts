@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { nextActivePool, processRecheckResult } from '../../engine/session.js';
+import { nextActivePool, processRecheckResult, classifyRechecks } from '../../engine/session.js';
 import type { RunState } from '../../types/word-state.js';
 import type { QuizItem } from '../../engine/compose-word-batch.js';
+import type { WordQuizResult } from '../../types/quiz.js';
 
 function makeItem(id: string): QuizItem {
   return { id, native: id, english: id, romanization: id, type: 'word', language: 'th' } as QuizItem;
@@ -15,6 +16,10 @@ function makeState(
     m.set(wordId, { wordId, seen, correct, mastery, correctStreak: 0, wrongStreak: 0, lapses: 0 });
   }
   return m;
+}
+
+function makeResult(wordId: string, correct: boolean = true): WordQuizResult {
+  return { wordId, correct };
 }
 
 // ---------------------------------------------------------------------------
@@ -191,5 +196,86 @@ describe('processRecheckResult — non-recheck word', () => {
     const result = processRecheckResult('w1', true, runState, recheckPending, recheckReentered, masteryThreshold());
 
     expect(result.runState.get('w1')?.seen).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// classifyRechecks
+// ---------------------------------------------------------------------------
+
+describe('classifyRechecks', () => {
+  it('returns empty array for empty results', () => {
+    const results: WordQuizResult[] = [];
+    const recheckPending = new Set(['w1']);
+
+    const classified = classifyRechecks(results, recheckPending);
+
+    expect(classified).toEqual([]);
+  });
+
+  it('returns all false when recheckPending is empty', () => {
+    const results = [makeResult('w1'), makeResult('w2'), makeResult('w3')];
+    const recheckPending = new Set<string>();
+
+    const classified = classifyRechecks(results, recheckPending);
+
+    expect(classified).toEqual([false, false, false]);
+  });
+
+  it('marks all results as rechecks when all are in recheckPending', () => {
+    const results = [makeResult('w1'), makeResult('w2')];
+    const recheckPending = new Set(['w1', 'w2']);
+
+    const classified = classifyRechecks(results, recheckPending);
+
+    expect(classified).toEqual([true, true]);
+  });
+
+  it('marks no results as rechecks when none are in recheckPending', () => {
+    const results = [makeResult('w1'), makeResult('w2')];
+    const recheckPending = new Set(['w3', 'w4']);
+
+    const classified = classifyRechecks(results, recheckPending);
+
+    expect(classified).toEqual([false, false]);
+  });
+
+  it('marks only first occurrence of a word as recheck, consuming it', () => {
+    const results = [makeResult('w1'), makeResult('w1')];
+    const recheckPending = new Set(['w1']);
+
+    const classified = classifyRechecks(results, recheckPending);
+
+    expect(classified).toEqual([true, false]);
+  });
+
+  it('marks results in order, consuming from recheckPending', () => {
+    const results = [makeResult('w1'), makeResult('w2'), makeResult('w1')];
+    const recheckPending = new Set(['w1', 'w2']);
+
+    const classified = classifyRechecks(results, recheckPending);
+
+    expect(classified).toEqual([true, true, false]);
+  });
+
+  it('handles mixed recheck and non-recheck results', () => {
+    const results = [makeResult('w1'), makeResult('w2'), makeResult('w3'), makeResult('w4')];
+    const recheckPending = new Set(['w1', 'w3']);
+
+    const classified = classifyRechecks(results, recheckPending);
+
+    expect(classified).toEqual([true, false, true, false]);
+  });
+
+  it('does not mutate the input recheckPending set', () => {
+    const results = [makeResult('w1'), makeResult('w2')];
+    const recheckPending = new Set(['w1', 'w2']);
+    const originalSize = recheckPending.size;
+
+    classifyRechecks(results, recheckPending);
+
+    expect(recheckPending.size).toBe(originalSize);
+    expect(recheckPending.has('w1')).toBe(true);
+    expect(recheckPending.has('w2')).toBe(true);
   });
 });

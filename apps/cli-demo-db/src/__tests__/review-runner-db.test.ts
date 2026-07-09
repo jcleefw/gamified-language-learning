@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { schema, initDb, SqliteReviewStore } from '@gll/db';
 import { FsrsScheduler } from '@gll/srs-review';
 import type { MCQQuestion } from '@gll/srs-engine-v2';
-import type { ReviewStore } from '@gll/db';
+import type { IReviewStore } from '@gll/db';
 import type { ReviewCard } from '@gll/srs-review';
 import {
   runReviewSession,
@@ -155,7 +155,7 @@ describe('loadDueCards', () => {
     const store = {
       getDueReviewCards: vi.fn().mockResolvedValue([]),
       getDueReviewCardsForDeck: vi.fn().mockResolvedValue([]),
-    } as unknown as ReviewStore;
+    } as unknown as IReviewStore;
 
     await loadDueCards(store, 'deck', USER, 'cli-deck', NOW);
     expect(store.getDueReviewCardsForDeck).toHaveBeenCalledWith(USER, 'cli-deck', NOW);
@@ -166,7 +166,7 @@ describe('loadDueCards', () => {
     const store = {
       getDueReviewCards: vi.fn().mockResolvedValue([]),
       getDueReviewCardsForDeck: vi.fn().mockResolvedValue([]),
-    } as unknown as ReviewStore;
+    } as unknown as IReviewStore;
 
     await loadDueCards(store, 'pool', USER, 'cli-deck', NOW);
     expect(store.getDueReviewCards).toHaveBeenCalledWith(USER, NOW);

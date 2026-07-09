@@ -4,33 +4,18 @@
 
 ---
 
-## Spin PH04 (`srs-demo` Review mode) out to a new epic — 20260708T014500Z
+## Spin PH04 (`srs-demo` Review mode) out to a new epic (EP37) — 20260708T014500Z
 
 **Context**: DS03 §2 framed Track B as *server-authority* (server owns `FsrsScheduler` + store +
-rating inference; frontend never imports `ts-fsrs`). Investigation before starting Track B found
-this conflicts with the app's actual architecture.
+rating inference; frontend never imports `ts-fsrs`). Investigation before starting Track B found this
+conflicts with the app's actual (emergent) **client-authority** for Learning: `srs-demo` runs the
+engine in the browser; the Hono server (`routes/state.ts`) is a thin persistence bridge. So DS03-ST11's
+"seed a ReviewCard on the server's learning-answer path" has no hook — graduation happens client-side.
 
-**Finding (verified in code)**: the app is **client-authority for Learning**:
-- `srs-demo` imports `@gll/srs-engine-v2` and runs the engine in the browser (`App.vue`,
-  `DeckOverview.vue`: `nextQuestion`, advance `WordState`, batch composition).
-- The Hono server (`apps/server/src/routes/state.ts`) is **persistence-only**: `POST
-  /api/state/word` saves a client-computed `WordState`; the server never runs the engine or
-  computes mastery.
-- Therefore DS03-ST11's "seed a ReviewCard on the server's learning-answer path when a word
-  crosses the mastery threshold" has **no hook** — graduation happens client-side.
-
-**Decision**: Close EP36 at PH01–PH03 (a complete, shippable CLI vertical). Move PH04 (ST10–ST12)
-to a **new epic** whose first deliverable is an ADR.
-
-**The fork the ADR must resolve**:
-- (A) Review = server-authority (new `/api/review/*` owns FSRS + inference). Clean `ts-fsrs`
-  isolation; but asymmetric with Learning and the server must learn the mastery-threshold rule.
-- (B) Review = client-authority, mirroring Learning (`srs-demo` runs `FsrsScheduler`, thin persist
-  endpoint). Symmetric; but violates "frontend never imports `ts-fsrs`" and ships FSRS in the bundle.
-
-**Impact**: package boundaries, server responsibilities, browser bundle. User has additional
-concerns to raise in that discussion (not yet captured — ask, don't assume). Related ADR:
-`product-documentation/architecture/20260708T005635Z-engineering-srs-review-phase-packaging.md`.
+**Decision**: Close EP36 at PH01–PH03 (a complete, shippable CLI vertical). Move PH04 (ST10–ST12) to a
+new epic — **`EP37--srs-review-in-srs-demo`** — whose first deliverable is an ADR (authority +
+integrity). Full finding, the authority archaeology, and the ADR checklist now live in **EP37's
+branch memory** (`.agents/memory/EP37--srs-review-in-srs-demo/`).
 
 ---
 

@@ -2,7 +2,7 @@ import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { getDb, closeDb, SqliteReviewStore } from '@gll/db';
-import type { ReviewStore } from '@gll/db';
+import type { IReviewStore } from '@gll/db';
 import { FsrsScheduler } from '@gll/srs-review';
 import type { ReviewCard, ReviewScheduler } from '@gll/srs-review';
 import { composeWordBatch } from '@gll/srs-engine-v2';
@@ -30,7 +30,7 @@ export interface ReviewSessionDeps {
   questionFor: (wordId: string) => MCQQuestion | null;
   provider: ReviewAnswerProvider;
   scheduler: ReviewScheduler;
-  reviewStore: ReviewStore;
+  reviewStore: IReviewStore;
   userId: string;
   now?: () => Date;
   log?: (msg: string) => void;
@@ -68,7 +68,7 @@ export async function runReviewSession(deps: ReviewSessionDeps): Promise<{ revie
 
 /** Dispatches to the deck-scoped or pool-global store method based on mode. */
 export function loadDueCards(
-  reviewStore: ReviewStore,
+  reviewStore: IReviewStore,
   mode: ReviewMode,
   userId: string,
   deckId: string,

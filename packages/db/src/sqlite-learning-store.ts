@@ -1,14 +1,16 @@
 import { and, eq, gte, inArray } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import type BetterSqlite3 from 'better-sqlite3';
-import type { WordState, RunState, SentenceState, SentenceRunState } from '@gll/srs-engine-v2';
+import type {
+  WordState,
+  RunState,
+  SentenceState,
+  SentenceRunState,
+} from '@gll/srs-engine-v2';
 import type { ShelvedWord } from '@gll/srs-shelving';
-import type { LearningStore } from './learning-store.js';
+import type { ILearningStore } from './types/learning-store.js';
 import * as schema from './schema.js';
+import type { DbClient } from './types/db-client.js';
 
-type DbClient = BetterSQLite3Database<typeof schema> & { $client: BetterSqlite3.Database };
-
-export class SqliteLearningStore implements LearningStore {
+export class SqliteLearningStore implements ILearningStore {
   constructor(private readonly db: DbClient) {}
 
   async getAllWordStates(userId: string): Promise<RunState> {
@@ -48,7 +50,10 @@ export class SqliteLearningStore implements LearningStore {
         lapses: state.lapses,
       })
       .onConflictDoUpdate({
-        target: [schema.user_word_states.user_id, schema.user_word_states.word_id],
+        target: [
+          schema.user_word_states.user_id,
+          schema.user_word_states.word_id,
+        ],
         set: {
           seen: state.seen,
           correct: state.correct,
@@ -83,7 +88,10 @@ export class SqliteLearningStore implements LearningStore {
     );
   }
 
-  async upsertSentenceState(userId: string, state: SentenceState): Promise<void> {
+  async upsertSentenceState(
+    userId: string,
+    state: SentenceState,
+  ): Promise<void> {
     this.db
       .insert(schema.user_sentence_states)
       .values({
@@ -96,7 +104,10 @@ export class SqliteLearningStore implements LearningStore {
         active: state.active ? 1 : 0,
       })
       .onConflictDoUpdate({
-        target: [schema.user_sentence_states.user_id, schema.user_sentence_states.sentence_id],
+        target: [
+          schema.user_sentence_states.user_id,
+          schema.user_sentence_states.sentence_id,
+        ],
         set: {
           sentence_streak: state.sentenceStreak,
           last_batch_seen: state.lastBatchSeen,
@@ -109,22 +120,41 @@ export class SqliteLearningStore implements LearningStore {
   }
 
   async clearUserState(userId: string): Promise<void> {
-    this.db.delete(schema.user_word_states).where(eq(schema.user_word_states.user_id, userId)).run();
-    this.db.delete(schema.user_sentence_states).where(eq(schema.user_sentence_states.user_id, userId)).run();
-    this.db.delete(schema.user_shelved_words).where(eq(schema.user_shelved_words.user_id, userId)).run();
-    this.db.delete(schema.user_deck_word_tracking).where(eq(schema.user_deck_word_tracking.user_id, userId)).run();
+    this.db
+      .delete(schema.user_word_states)
+      .where(eq(schema.user_word_states.user_id, userId))
+      .run();
+    this.db
+      .delete(schema.user_sentence_states)
+      .where(eq(schema.user_sentence_states.user_id, userId))
+      .run();
+    this.db
+      .delete(schema.user_shelved_words)
+      .where(eq(schema.user_shelved_words.user_id, userId))
+      .run();
+    this.db
+      .delete(schema.user_deck_word_tracking)
+      .where(eq(schema.user_deck_word_tracking.user_id, userId))
+      .run();
   }
 
   // ---------------------------------------------------------------------------
   // Stagnation tracking
   // ---------------------------------------------------------------------------
 
-  async updateStagnationCounters(userId: string, deckId: string, activeWordIds: string[]): Promise<void> {
+  async updateStagnationCounters(
+    userId: string,
+    deckId: string,
+    activeWordIds: string[],
+  ): Promise<void> {
     if (activeWordIds.length === 0) return;
 
     // Fetch current mastery for all active words
     const masteryRows = this.db
-      .select({ word_id: schema.user_word_states.word_id, mastery: schema.user_word_states.mastery })
+      .select({
+        word_id: schema.user_word_states.word_id,
+        mastery: schema.user_word_states.mastery,
+      })
       .from(schema.user_word_states)
       .where(
         and(
@@ -134,7 +164,9 @@ export class SqliteLearningStore implements LearningStore {
       )
       .all();
 
-    const masteryByWordId = new Map(masteryRows.map((row) => [row.word_id, row.mastery]));
+    const masteryByWordId = new Map(
+      masteryRows.map((row) => [row.word_id, row.mastery]),
+    );
 
     // Fetch existing tracking rows
     const trackingRows = this.db
@@ -149,7 +181,9 @@ export class SqliteLearningStore implements LearningStore {
       )
       .all();
 
-    const trackingByWordId = new Map(trackingRows.map((row) => [row.word_id, row]));
+    const trackingByWordId = new Map(
+      trackingRows.map((row) => [row.word_id, row]),
+    );
 
     for (const wordId of activeWordIds) {
       const currentMastery = masteryByWordId.get(wordId) ?? 0;
@@ -211,7 +245,11 @@ export class SqliteLearningStore implements LearningStore {
     }
   }
 
-  async getStagnantWords(userId: string, deckId: string, threshold: number): Promise<string[]> {
+  async getStagnantWords(
+    userId: string,
+    deckId: string,
+    threshold: number,
+  ): Promise<string[]> {
     const rows = this.db
       .select({ word_id: schema.user_deck_word_tracking.word_id })
       .from(schema.user_deck_word_tracking)
@@ -239,7 +277,11 @@ export class SqliteLearningStore implements LearningStore {
       .run();
   }
 
-  async resetStagnationCountersForWords(userId: string, deckId: string, wordIds: string[]): Promise<void> {
+  async resetStagnationCountersForWords(
+    userId: string,
+    deckId: string,
+    wordIds: string[],
+  ): Promise<void> {
     if (wordIds.length === 0) return;
     this.db
       .delete(schema.user_deck_word_tracking)
@@ -257,7 +299,10 @@ export class SqliteLearningStore implements LearningStore {
   // Shelving (deck-scoped)
   // ---------------------------------------------------------------------------
 
-  async getShelvedWords(userId: string, deckId: string): Promise<ShelvedWord[]> {
+  async getShelvedWords(
+    userId: string,
+    deckId: string,
+  ): Promise<ShelvedWord[]> {
     const rows = this.db
       .select()
       .from(schema.user_shelved_words)
@@ -275,7 +320,12 @@ export class SqliteLearningStore implements LearningStore {
     }));
   }
 
-  async shelveWord(userId: string, deckId: string, wordId: string, batchNum: number): Promise<void> {
+  async shelveWord(
+    userId: string,
+    deckId: string,
+    wordId: string,
+    batchNum: number,
+  ): Promise<void> {
     this.db
       .insert(schema.user_shelved_words)
       .values({
@@ -295,7 +345,11 @@ export class SqliteLearningStore implements LearningStore {
       .run();
   }
 
-  async unshelveWord(userId: string, deckId: string, wordId: string): Promise<void> {
+  async unshelveWord(
+    userId: string,
+    deckId: string,
+    wordId: string,
+  ): Promise<void> {
     this.db
       .delete(schema.user_shelved_words)
       .where(

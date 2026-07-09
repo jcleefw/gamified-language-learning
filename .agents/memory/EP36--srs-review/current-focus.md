@@ -33,7 +33,6 @@
 
 ## Next Steps
 
-- **New epic for PH04** (`srs-demo` Review mode) — first deliverable is an ADR resolving
-  server-authority vs. client-authority. See `recent-decisions.md` and `blocked-items.md`.
-- User has flagged **their own concerns for a deeper design discussion** before Track B starts —
-  do not begin implementation until that happens.
+- EP36 is done (PH01–PH03). PH04 (`srs-demo` Review mode) is tracked in
+  **`EP37--srs-review-in-srs-demo`** — see that branch's memory for the authority finding, the
+  ADR checklist, and the pending design discussion. cli-demo-db stays as-is (full local authority).

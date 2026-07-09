@@ -4,19 +4,14 @@
 
 ## Current blockers
 
-### PH04 (`srs-demo` Review mode) — blocked on an architectural decision
-
-- **Story**: ST10–ST12 (moved to a new epic).
-- **Root cause**: DS03 assumed *server-authority* Review, but the app is *client-authority* for
-  Learning (`srs-demo` runs the engine; server is persistence-only). The two must be reconciled.
-  See `recent-decisions.md` for the full finding and the A/B fork.
-- **What's needed**: an ADR resolving server-authority vs. client-authority parity (and whether
-  `ts-fsrs` may enter the browser bundle). **Plus** a deeper design discussion the user wants to
-  have first — the user has additional concerns ("a few pointers") not yet captured. Do not start
-  Track B until that discussion happens.
+_None._ EP36 is Impl-Complete for PH01–PH03. PH04 (`srs-demo` Review mode) was spun out to
+**`EP37--srs-review-in-srs-demo`**; its blockers (authority + integrity ADR, pending design
+discussion) live in that branch's `blocked-items.md`.
 
 ---
 
 ## Unblocking history
 
-- _(none yet)_
+- **PH03 build gotcha (resolved)**: `@gll/db` / `@gll/srs-review` are consumed as built `dist/`;
+  DS02's dist was stale (missing `SqliteReviewStore`). Rebuilt both. Future consumers must rebuild
+  after DS01/DS02 source changes.
