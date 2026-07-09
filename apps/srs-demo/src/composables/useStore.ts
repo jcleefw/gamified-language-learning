@@ -8,7 +8,11 @@ import type {
   AnswerRequest,
   AnswerResponse,
   ApiResponse,
+  DueReviewItem,
+  DueReviewsResponse,
   GetStateResponse,
+  ReviewAnswerRequest,
+  ReviewAnswerResponse,
   WordStatePayload,
 } from '@gll/api-contract';
 
@@ -98,6 +102,41 @@ export async function postAnswer(req: AnswerRequest): Promise<WordState> {
   const body = (await res.json()) as ApiResponse<AnswerResponse>;
   if (!body.success) throw new Error(`POST /api/answer error: ${body.error.message}`);
   return toWordState(body.data.wordState);
+}
+
+/**
+ * Pool-global due review cards, most-overdue-first (server-ordered). Throws a
+ * typed error on failure so the caller can surface it rather than render a false
+ * "caught up" empty session.
+ */
+export async function loadDueReviews(): Promise<DueReviewItem[]> {
+  const res = await fetch('/api/reviews');
+  if (!res.ok) throw new Error(`GET /api/reviews failed: ${res.status}`);
+  const body = (await res.json()) as ApiResponse<DueReviewsResponse>;
+  if (!body.success) throw new Error(`GET /api/reviews error: ${body.error.message}`);
+  return body.data.reviews;
+}
+
+/**
+ * Post a review answer; the server maps it to an FSRS rating, advances the
+ * schedule, and returns the new `due`. Throws a typed error on failure so the
+ * caller can avoid advancing the queue past a lost answer (write-on-answer:
+ * DS01 leaves the card unchanged on error). The client computes no rating or
+ * interval — it adopts whatever schedule comes back.
+ */
+export async function postReviewAnswer(
+  req: ReviewAnswerRequest,
+): Promise<ReviewAnswerResponse> {
+  const res = await fetch('/api/reviews/answer', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new Error(`POST /api/reviews/answer failed: ${res.status}`);
+  const body = (await res.json()) as ApiResponse<ReviewAnswerResponse>;
+  if (!body.success)
+    throw new Error(`POST /api/reviews/answer error: ${body.error.message}`);
+  return body.data;
 }
 
 export async function clearStore(): Promise<void> {

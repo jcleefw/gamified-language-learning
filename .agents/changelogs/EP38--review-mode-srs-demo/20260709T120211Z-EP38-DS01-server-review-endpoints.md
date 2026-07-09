@@ -1,7 +1,7 @@
 # EP38-DS01: Server Review Endpoints (read / advance / record) Specification
 
 **Date**: 20260709T120211Z
-**Status**: Draft
+**Status**: Impl-Complete
 **Epic**: [EP38 - Review Mode in `srs-demo`](../../plans/epics/EP38-review-mode-srs-demo.md)
 
 **Architecture**:
@@ -283,3 +283,35 @@ POST /api/reviews/answer   { wordId, correct, latencyMs, questionType }
 4. Each advance appends a durable `review_answer_events` record (raw facts + inferred rating + correlation id), fail-open, feeding no rating logic now.
 5. `@gll/api-contract` gains only wire DTOs — no rating, threshold, or band type; `ReviewRating` stays behind `@gll/srs-review`; the frontend imports no `ts-fsrs` (no frontend code added here).
 6. No type errors; `POST /api/answer` (EP37 seeding) and all other routes are unchanged.
+
+## 7. Implementation Notes (20260709)
+
+**Status: all four stories landed.** ST01 (`b832b6e`), ST02/ST03 (`8859ff2`),
+ST04 (`5cc667c`). `GET /api/reviews` and `POST /api/reviews/answer` live in
+[`apps/server/src/routes/reviews.ts`](../../../apps/server/src/routes/reviews.ts);
+the append-only channel is `review_answer_events` + `SqliteReviewAnswerEventStore`.
+Built as specified — correctness-only rating (`correct ? 'good' : 'again'`),
+`upsertReviewCard` (not seed), `NOT_FOUND` on missing card, fail-open record.
+
+**Verified live** during DS02 verification (Playwright drive against a real
+server): `GET /api/reviews` returns due cards most-overdue-first as ISO `due`;
+`POST /api/reviews/answer` advanced a card (`due` moved ~4 days out) and returned
+the new schedule; a forced `500` on the answer left the client halted without
+advancing.
+
+**⚠️ Known gap — no first-class way to reach a "review is due" state for
+testing.** Two facts combine into a real friction point discovered while
+verifying DS02:
+- A card is only created **on graduation** via `POST /api/answer` — and its
+  first `due` is scheduled **in the future** (FSRS), so it does **not** appear in
+  `GET /api/reviews` immediately.
+- `POST /api/test/seed` seeds `WordState`/shelving/stagnation but **not** review
+  cards.
+
+So exercising Review (manually or via e2e) currently requires graduating a word
+**and then backdating `review_cards.due` directly in SQLite**. This is the main
+reason DS02's e2e is deferred. **Recommended follow-up**: a test-only seed
+endpoint (e.g. `POST /api/test/seed-review` inserting an already-due card with
+valid `scheduler_data`) so Review can be driven without touching the DB file. The
+manual backdate workaround is documented in
+[`apps/srs-demo/README.md`](../../../apps/srs-demo/README.md#seeding-a-due-review-card-to-exercise-review-mode).

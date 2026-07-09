@@ -29,12 +29,19 @@ import {
   type SentenceQuestion,
 } from '@gll/srs-engine-v2';
 import { evaluateShelving } from '@gll/srs-shelving';
-import type { AppDeckPayload, GetDecksResponse } from '@gll/api-contract';
+import type {
+  AppDeckPayload,
+  GetDecksResponse,
+  DueReviewItem,
+  ReviewQuestionType,
+} from '@gll/api-contract';
 import {
   loadRunState,
   postAnswer,
   clearStore,
   loadConfig,
+  loadDueReviews,
+  postReviewAnswer,
 } from './composables/useStore';
 import {
   loadShelvedWords,
@@ -57,6 +64,9 @@ import DeckSelector from './components/DeckSelector.vue';
 import QuizCard from './components/QuizCard.vue';
 import BatchResults, { type BatchSummary } from './components/BatchResults.vue';
 import DeckOverview from './components/DeckOverview.vue';
+import HomeDashboard from './components/HomeDashboard.vue';
+import ReviewSummary from './components/ReviewSummary.vue';
+import NavMenu from './components/NavMenu.vue';
 
 const LAST_DECK_KEY = 'srs-demo-last-deck';
 
@@ -82,12 +92,29 @@ type ConfigType = SessionConfig & {
 const CONFIG = ref<ConfigType>({} as ConfigType);
 const configReady = ref(false);
 
-type Screen = 'select' | 'quiz' | 'results' | 'overview';
+type Screen = 'home' | 'select' | 'quiz' | 'results' | 'overview' | 'review';
 
-const screen = ref<Screen>('select');
+const screen = ref<Screen>('home');
 const hasSavedSession = ref(false);
 const deckId = ref<string | null>(null);
 const overviewDeckId = ref<string | null>(null);
+
+// --- Review mode (EP38-DS02) — pool-global session; the client is a dumb
+// terminal: it renders questions, self-reports facts, and adopts the schedule
+// the server returns. It computes no rating and no `due`, and imports no FSRS
+// scheduler. ---
+const dueReviews = ref<DueReviewItem[]>([]); // from GET /api/reviews
+const dueReviewCount = ref<number | null>(null); // badge; null until fetched
+const badgeError = ref(false); // due-count fetch failed (never masquerade as "caught up")
+const reviewBatchState = ref<BatchState | null>(null);
+const reviewQuestion = ref<QuizQuestion | null>(null);
+const reviewShownAt = ref<number>(0); // latency start for the current review question
+const reviewQuestionKey = ref(0);
+const reviewCaughtUp = ref(false); // nothing was due on entry
+const reviewSummary = ref<{ reviewed: number; nextDue: string | null }>({
+  reviewed: 0,
+  nextDue: null,
+});
 
 const savedDeckName = computed(() => {
   if (!deckId.value) return null;
@@ -153,6 +180,60 @@ const masteredGlobal = computed<QuizItem[]>(() =>
     return ws != null && isMastered(ws, CONFIG.value.masteryThreshold);
   }),
 );
+
+// Review unlock gate — purely local truth; no server call. Epic: "locked until
+// any word is mastered." Fail-closed when config isn't ready (no threshold to test).
+const reviewUnlocked = computed(
+  () =>
+    configReady.value &&
+    [...globalRunState.value.values()].some((ws) =>
+      isMastered(ws, CONFIG.value.masteryThreshold),
+    ),
+);
+
+// wordId → QuizItem resolution against the already-preloaded, cross-deck
+// wordPool. Orphans (word deleted; no pool match) are skipped, not errored —
+// pillar-3 tolerance carried through the UI.
+function resolveDueItems(reviews: DueReviewItem[]): QuizItem[] {
+  const byId = new Map(wordPool.value.map((w) => [w.id, w]));
+  return reviews
+    .map((r) => byId.get(r.wordId))
+    .filter((w): w is QuizItem => w != null);
+}
+
+// ReviewQuestionType mirrors QuizQuestion.kind, so the client reports what was
+// shown as-is — no mapping/renaming (a DS01 wire fact, not policy).
+function toReviewQuestionType(q: QuizQuestion): ReviewQuestionType {
+  return q.kind;
+}
+
+// --- Top nav menu (EP38-ST08) ---
+// Which top-level destination the current screen belongs to (for highlighting).
+const activeNav = computed<'home' | 'learn' | 'review'>(() => {
+  if (screen.value === 'home') return 'home';
+  if (screen.value === 'review') return 'review';
+  return 'learn'; // 'select' | 'quiz' | 'results' | 'overview'
+});
+
+// Navigate from the always-visible nav menu. The nav is shown on every screen,
+// so leaving an active Learning quiz mid-batch must not silently drop answers:
+// Learning persists on batch finish (not per-answer), so flush the partial batch
+// first (same path as Exit). Review is write-on-answer — each answered card is
+// already durable — so no flush is needed there.
+async function navTo(target: 'home' | 'select' | 'review') {
+  if (
+    screen.value === 'quiz' &&
+    batchState.value &&
+    batchState.value.results.length > 0
+  ) {
+    await finishBatchAndTransition(); // persists the answered results
+  }
+  if (target === 'review') {
+    void onReview();
+    return;
+  }
+  screen.value = target;
+}
 
 const completedDeckIds = ref<Set<string>>(new Set());
 
@@ -588,6 +669,117 @@ function onSelectDeck() {
   screen.value = 'select';
 }
 
+// --- Review handlers (EP38-DS02) ---
+
+function onLearn() {
+  screen.value = 'select';
+}
+
+// Enter a pool-global review session. Refreshes due cards (also keeps the badge
+// honest), resolves them against wordPool (skipping orphans), and builds
+// questions via the same pipeline Learning uses. An empty due list shows the
+// caught-up state rather than an error.
+async function onReview() {
+  apiError.value = null;
+  let reviews: DueReviewItem[];
+  try {
+    reviews = await loadDueReviews();
+  } catch {
+    // Gate is local truth; a failed fetch must surface, not fake "caught up".
+    badgeError.value = true;
+    apiError.value =
+      'Could not load your reviews. Please check that the server is running and try again.';
+    return; // stay on home
+  }
+  dueReviews.value = reviews;
+  dueReviewCount.value = reviews.length;
+  badgeError.value = false;
+
+  reviewSummary.value = { reviewed: 0, nextDue: null };
+  reviewBatchState.value = null;
+  reviewQuestion.value = null;
+
+  const items = resolveDueItems(reviews);
+  if (items.length === 0) {
+    reviewCaughtUp.value = true;
+    screen.value = 'review';
+    return;
+  }
+  reviewCaughtUp.value = false;
+
+  // Same pipeline/UI as Learning; distractors come from the full cross-deck
+  // wordPool. Retries disabled (0) so each due word is asked exactly once.
+  const questions = assembleBatch(items, wordPool.value, [], items.length, {
+    excludeIds: new Set<string>(),
+  });
+  reviewBatchState.value = initBatchState(questions, 0, new Map(), 0);
+  const { question, state } = nextQuestion(reviewBatchState.value);
+  reviewBatchState.value = state;
+  reviewQuestion.value = question;
+  reviewShownAt.value = performance.now();
+  reviewQuestionKey.value++;
+  screen.value = 'review';
+}
+
+function advanceReviewQueue(result: QuizResult) {
+  if (!reviewBatchState.value) return;
+  reviewBatchState.value = submitBatchResult(reviewBatchState.value, result);
+  if (isBatchDone(reviewBatchState.value)) {
+    reviewQuestion.value = null; // → summary sub-state on the 'review' screen
+  } else {
+    const { question, state } = nextQuestion(reviewBatchState.value);
+    reviewBatchState.value = state;
+    reviewQuestion.value = question;
+    reviewShownAt.value = performance.now();
+    reviewQuestionKey.value++;
+  }
+}
+
+async function onReviewAnswered(result: QuizResult) {
+  if (!reviewBatchState.value || !reviewQuestion.value) return;
+  const questionType = toReviewQuestionType(reviewQuestion.value);
+
+  // Review only generates word MCQs (word items, no sentence thunks). Guard a
+  // stray sentence result rather than POST a malformed request.
+  if (!('wordId' in result)) {
+    advanceReviewQueue(result);
+    return;
+  }
+
+  const latencyMs = Math.max(0, Math.round(performance.now() - reviewShownAt.value));
+  let res;
+  try {
+    res = await postReviewAnswer({
+      wordId: result.wordId,
+      correct: result.correct,
+      latencyMs,
+      questionType,
+    });
+  } catch (err) {
+    // DS01 leaves the card unchanged on error; do not advance past this word or
+    // fake success — surface it (write-on-answer contract).
+    console.error('[REVIEW] answer persistence failed for', result.wordId, err);
+    apiError.value =
+      'Could not save your review answer. Your progress may not be recorded — please check the server and try again.';
+    return;
+  }
+
+  // Adopt the server-returned schedule for the summary horizon (no client math).
+  reviewSummary.value.reviewed++;
+  const prev = reviewSummary.value.nextDue;
+  if (prev === null || new Date(res.due).getTime() < new Date(prev).getTime()) {
+    reviewSummary.value.nextDue = res.due;
+  }
+
+  advanceReviewQueue(result);
+}
+
+function onReviewExit() {
+  // Already-answered advances are durable server-side; re-entry reloads only the
+  // still-due cards (partial-session resume).
+  screen.value = 'home';
+}
+
 function onNextDeck(id: string) {
   void initSession(id);
 }
@@ -665,6 +857,20 @@ onMounted(async () => {
     deckId.value = localStorage.getItem(LAST_DECK_KEY);
   }
 
+  // Review due-count badge — only when unlocked (gate is local; badge needs the
+  // route). A failed fetch flags badgeError so home shows a dash, never a false
+  // "0 / caught up".
+  if (reviewUnlocked.value) {
+    try {
+      const reviews = await loadDueReviews();
+      dueReviews.value = reviews;
+      dueReviewCount.value = reviews.length;
+      badgeError.value = false;
+    } catch {
+      badgeError.value = true;
+    }
+  }
+
   // Load persisted shelved words for the last active deck on mount
   const savedDeckId = localStorage.getItem(LAST_DECK_KEY);
   if (savedDeckId) {
@@ -709,12 +915,31 @@ onMounted(async () => {
 </script>
 
 <template>
+  <NavMenu
+    :active="activeNav"
+    :review-unlocked="reviewUnlocked"
+    :due-count="dueReviewCount"
+    :badge-error="badgeError"
+    @home="navTo('home')"
+    @learn="navTo('select')"
+    @review="navTo('review')"
+  />
+
   <div v-if="apiError" class="api-error" role="alert">
     {{ apiError }}
   </div>
 
+  <HomeDashboard
+    v-if="screen === 'home'"
+    :review-unlocked="reviewUnlocked"
+    :due-count="dueReviewCount"
+    :badge-error="badgeError"
+    @learn="onLearn"
+    @review="onReview"
+  />
+
   <DeckSelector
-    v-if="screen === 'select'"
+    v-else-if="screen === 'select'"
     :decks="appDecks"
     :has-saved-session="hasSavedSession"
     :saved-deck-id="deckId"
@@ -773,6 +998,30 @@ onMounted(async () => {
     @select-deck="onSelectDeck"
     @next-deck="onNextDeck"
   />
+
+  <!-- Review session: same QuizCard UI as Learning (D5 — no self-rating prompt).
+       Three sub-states: active question, end-of-session summary, or caught-up. -->
+  <template v-else-if="screen === 'review'">
+    <QuizCard
+      v-if="reviewQuestion && reviewBatchState"
+      :key="reviewQuestionKey"
+      :question="reviewQuestion"
+      :index="reviewBatchState.results.length"
+      :total="reviewBatchState.initialCount"
+      :active-items="[]"
+      :queue="[]"
+      :mastered-deck="[]"
+      @answered="onReviewAnswered"
+      @exit="onReviewExit"
+    />
+    <ReviewSummary
+      v-else
+      :caught-up="reviewCaughtUp"
+      :reviewed="reviewSummary.reviewed"
+      :next-due="reviewSummary.nextDue"
+      @home="onReviewExit"
+    />
+  </template>
 
   <div v-if="screen === 'results'" style="text-align: center; padding: 16px">
     <button

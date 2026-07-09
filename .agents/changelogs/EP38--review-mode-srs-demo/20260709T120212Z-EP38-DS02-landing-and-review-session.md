@@ -1,7 +1,7 @@
 # EP38-DS02: Landing Dashboard & Review Session in `srs-demo` Specification
 
 **Date**: 20260709T120212Z
-**Status**: Draft
+**Status**: Impl-Complete (e2e deferred)
 **Epic**: [EP38 - Review Mode in `srs-demo`](../../plans/epics/EP38-review-mode-srs-demo.md)
 
 **Architecture**:
@@ -224,6 +224,57 @@ summary (queue exhausted)
 - [ ] After a partial session, re-entering Review shows only the cards still due (already-advanced ones dropped off), proving resume via `GET /api/reviews`
 - [ ] No `ts-fsrs` import in the frontend bundle; the Learn flow remains unchanged
 
+### Phase 3: Cross-screen navigation (EP38-PH03)
+
+> Added after the ST05–ST07 build. Verification surfaced a navigation dead-end:
+> the app is a state-`ref` SPA (`screen` union, no `vue-router`), and once the
+> user follows **Learn** into `'select'` (or `'overview'`) there is **no way back
+> to `'home'` or into `'review'`** — `DeckSelector`'s only exits lead deeper into
+> a quiz. Only `'home'` can reach Review, and nothing can reach `'home'`. This
+> phase adds a persistent nav menu so the three top-level destinations are always
+> reachable. Decision: a **web-style top nav menu** (not a router) — it sets the
+> existing `screen` ref, keeping the SPA architecture and leaving `vue-router` a
+> separate, out-of-scope decision (§1).
+
+### EP38-ST08: Persistent top nav menu (Home / Learn / Review)
+
+**Scope**: A persistent web-style top navigation menu with three items — **Home**
+(→ `'home'`), **Learn** (→ `'select'`), **Review** (→ `enterReview`) — rendered
+above the screen content. The Review item **reuses ST05's gate and badge**:
+disabled/locked (🔒) until any word is mastered (`reviewUnlocked`), and showing
+the due-count badge (`dueReviewCount`, dash on `badgeError`) when unlocked. The
+menu is **always visible** (every screen, including `'quiz'` and `'review'`) —
+the conventional webapp pattern. Because it can be clicked mid-flow, navigating
+away from an **active Learning quiz** must not silently drop answers: Learning
+persists on batch-finish (not per-answer), so a `navTo` helper **flushes a
+partial batch** (via the existing `finishBatchAndTransition` path) before
+navigating. Review is **write-on-answer** (each answered card is already durable),
+so leaving a review session via the menu needs no flush. Home stays the boot
+landing; the menu adds cross-navigation on top of it. No `ts-fsrs` import; no
+`vue-router`.
+
+**Read List**: `apps/srs-demo/src/App.vue` (`Screen` union, `screen` ref,
+`reviewUnlocked`/`dueReviewCount`/`badgeError`, `onReview`/`onLearn` handlers,
+template screen blocks), `apps/srs-demo/src/components/HomeDashboard.vue` (Learn/
+Review card + gate/badge markup to mirror), `apps/srs-demo/src/components/DeckSelector.vue`
+(header styling reference)
+
+**Tasks**:
+
+- [ ] Add `NavMenu.vue` — props `{ active: 'home' | 'learn' | 'review', reviewUnlocked, dueCount, badgeError }`, emits `home` / `learn` / `review`; Review item disabled + 🔒 when `!reviewUnlocked`, badge (or dash) when unlocked
+- [ ] Add an `activeNav` computed in `App.vue` mapping `screen` → nav group (`'home'`→home; `'select'`/`'overview'`/`'results'`→learn; `'review'`→review)
+- [ ] Render `<NavMenu>` unconditionally (always visible, all screens)
+- [ ] Add a `navTo(target)` helper: if leaving an **active quiz** with answered results, `await finishBatchAndTransition()` (persist) first, then go to `target`; Review needs no flush (write-on-answer). Wire nav emits to `navTo('home' | 'select' | 'review')`
+
+**Acceptance Criteria**:
+
+- [ ] From the deck-select screen (`'select'`) the user can navigate to **Home** and to **Review** via the menu (the reported dead-end is gone)
+- [ ] From `'overview'` and `'results'` the menu is present and reaches all three destinations
+- [ ] The Review menu item is locked (disabled/🔒) until a word is mastered, then shows the due-count badge — identical gate/badge behaviour to the home dashboard (ST05), sourced from the same computeds
+- [ ] The menu is **always visible**, including during an active quiz and an active review question
+- [ ] **No silent data loss**: answering a question then navigating away mid-batch via the menu persists that answer (server `WordState` reflects it) — a partial Learning batch is flushed before navigating; leaving a review mid-session is safe by write-on-answer
+- [ ] `'home'` remains the boot landing; the existing Learn flow (`initSession`/`startBatch`/`postAnswer`) is unchanged; no `ts-fsrs` and no `vue-router` imported
+
 ## 6. Success Criteria
 
 1. `srs-demo` boots to a `'home'` dashboard routing to Learn (unchanged deck flow) or Review; Review is locked until any word is mastered, then shows a due-count badge and opens even when nothing is due.
@@ -232,3 +283,37 @@ summary (queue exhausted)
 4. Write-on-answer holds through the UI: exiting mid-session preserves every advanced card, and re-entry reloads only the remaining due cards (partial-session resume).
 5. A failed review answer surfaces a typed error without silently dropping the answer or advancing past it; an orphaned due card never crashes the session.
 6. No type errors; the existing Learning flow (`'select'`/`'quiz'`/`'results'`/`'overview'`, `postAnswer`) is unchanged.
+7. An always-visible top nav menu makes Home / Learn / Review reachable from every screen (fixing the deck-select dead-end) and reuses the Review gate + due badge; navigating away from an active Learning quiz flushes the partial batch so no answer is lost (Review is write-on-answer). No `vue-router` is introduced.
+
+## 7. Implementation Notes (20260709)
+
+**Status: ST05–ST08 built and verified.** New components:
+[`HomeDashboard.vue`](../../../apps/srs-demo/src/components/HomeDashboard.vue),
+[`ReviewSummary.vue`](../../../apps/srs-demo/src/components/ReviewSummary.vue),
+[`NavMenu.vue`](../../../apps/srs-demo/src/components/NavMenu.vue); `useStore`
+gained `loadDueReviews`/`postReviewAnswer`; [`App.vue`](../../../apps/srs-demo/src/App.vue)
+holds the `Screen` union (`+ 'home' | 'review'`, default `'home'`), the
+`reviewUnlocked` gate, the review session refs/handlers, and the `navTo` helper.
+
+**Deviations / additions from the original draft:**
+- **ST08 (nav) was added after the ST05–ST07 build** — verification surfaced a
+  navigation dead-end (deck-select could not reach Home/Review). See Phase 3.
+- **Nav is always-visible with flush-on-leave**, not hidden during immersive
+  flows. Initial build hid it during quiz/review; changed on request to the
+  conventional always-visible webapp pattern, adding the partial-batch flush so
+  no Learning answer is silently dropped (§ST08).
+
+**Verification** (this DS has no unit tests — `srs-demo` is Playwright-BDD only):
+verified by `vue-tsc` typecheck + a `ts-fsrs`/`vue-router` grep guard + a manual
+Playwright drive against a real server. Confirmed end-to-end: boot→home, Learn→
+deck-select, Review lock→unlock + due badge, a review question in the identical
+`QuizCard` (no self-rating prompt), `POST /api/reviews/answer` advance +
+summary, caught-up state, answer-failure halt (no queue advance), and the full
+nav flow incl. flush-on-leave persisting a mid-batch answer.
+
+**⚠️ e2e deferred (BDD `review.feature`).** Two reasons: `srs-demo` e2e is flaky,
+and — the blocker — there is **no first-class way to seed a due review card**
+(DS01 §7): cards seed with a future `due` and `/api/test/seed` doesn't cover
+review cards, so a UI-only test can't reach a due state without backdating the DB.
+Picking up review e2e should follow the DS01 recommendation (a test-only
+seed-due-review endpoint). Tracked as a follow-up, not part of this DS.

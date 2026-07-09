@@ -71,6 +71,8 @@ All routes are mounted under `/api` (see `src/app.ts`); handlers live in
 | POST | `/api/state/word` | `state.ts` | Legacy client-computed state upsert (superseded by `/api/answer`) |
 | DELETE | `/api/state` | `state.ts` | Clear all persisted state |
 | POST | `/api/answer` | `answer.ts` | Server-authoritative: run the Learning transition for one answer, persist it, seed a Review card on graduation |
+| GET | `/api/reviews` | `reviews.ts` | List the user's due review cards, pool-global, most-overdue-first |
+| POST | `/api/reviews/answer` | `reviews.ts` | Server-authoritative Review advance: map the answer to an FSRS rating, advance + persist the card, return the new due date |
 | GET | `/api/shelving` | `shelving.ts` | List shelved words for a deck |
 | POST | `/api/shelving/apply` | `shelving.ts` | Shelve a set of words |
 | POST | `/api/shelving/unshelve-all` | `shelving.ts` | Unshelve every word in a deck |

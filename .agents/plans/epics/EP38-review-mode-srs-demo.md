@@ -1,7 +1,7 @@
 # EP38 - Review Mode in `srs-demo`
 
 **Created**: 20260709T111254Z
-**Status**: Draft
+**Status**: Impl-Complete (BDD/e2e deferred)
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
@@ -143,32 +143,43 @@ review them) and delivers the first user-facing payoff of the whole Review inves
 
 **Scope**: End-of-session summary (reviewed count / next-due horizon), a "caught up — nothing due" state when the due list is empty, and return to `'home'`; re-entry naturally reloads remaining due cards (partial-session resume, 20260321 §10).
 
+### EP38-ST08: Persistent top nav menu (Home / Learn / Review)
+
+**Scope**: Added during the DS02 build after verification surfaced a navigation dead-end — once the user entered the Learn deck-select flow there was no way back to `'home'` or into `'review'` (the app is a state-`ref` SPA, no `vue-router`). An always-visible top nav menu makes all three top-level destinations reachable from every screen, reusing the Review unlock gate + due badge; navigating away from an active Learning quiz flushes the partial batch (write-on-answer for Review needs none) so no answer is lost. No `vue-router`. Detailed in [DS02 §5 (Phase 3)](../../changelogs/EP38--review-mode-srs-demo/20260709T120212Z-EP38-DS02-landing-and-review-session.md).
+
 ---
 
 ## Overall Acceptance Criteria
 
-- [ ] The `'home'` landing routes to Learn or Review; the Review entry is locked until at least one
+- [x] The `'home'` landing routes to Learn or Review; the Review entry is locked until at least one
       word is mastered, then shows a due-count badge and opens even when nothing is due.
-- [ ] A word seeded at graduation (EP37) appears as a pool-global due card via `GET /api/reviews`
+- [x] A word seeded at graduation (EP37) appears as a pool-global due card via `GET /api/reviews`
       once its due date passes.
-- [ ] Answering a due review posts `{ wordId, correct, latencyMs, questionType }`; the **server** maps
+- [x] Answering a due review posts `{ wordId, correct, latencyMs, questionType }`; the **server** maps
       it to a rating (wrong→`again`; correct→`good`, response time **not** used) and the card's `due`
       advances via `FsrsScheduler.schedule`. A slow-but-correct answer is not penalised. The client
       never imports `ts-fsrs`.
-- [ ] Each review answer's `latencyMs` + `questionType` are recorded durably (for the future
+- [x] Each review answer's `latencyMs` + `questionType` are recorded durably (for the future
       response-time feature) without affecting the rating.
-- [ ] The user is **never** shown a self-rating prompt (D5) — review questions look like Learning
+- [x] The user is **never** shown a self-rating prompt (D5) — review questions look like Learning
       questions.
-- [ ] Write-on-answer: exiting mid-session preserves every already-answered card's advanced schedule;
+- [x] Write-on-answer: exiting mid-session preserves every already-answered card's advanced schedule;
       re-entering reloads only the remaining due cards.
-- [ ] No review threshold/band is exposed via `GET /api/config` (correctness-only rating needs none;
+- [x] No review threshold/band is exposed via `GET /api/config` (correctness-only rating needs none;
       future bands are T3, never exposed).
-- [ ] **Edge/limit**: a malformed/failed `/api/reviews/answer` leaves the persisted `ReviewCard`
+- [x] **Edge/limit**: a malformed/failed `/api/reviews/answer` leaves the persisted `ReviewCard`
       unchanged and surfaces a typed error; the client does not silently drop the answer or advance
       the queue past it.
-- [ ] **Edge/limit**: a due card whose word was deleted (orphan) does not crash the read route
-      (pillar 3 tolerance holds through the UI).
-- [ ] Frontend bundle does not import `ts-fsrs`.
+- [x] **Edge/limit**: a due card whose word was deleted (orphan) does not crash the read route
+      (pillar 3 tolerance holds through the UI — client `resolveDueItems` skips orphans).
+- [x] Frontend bundle does not import `ts-fsrs`.
+
+> **Verification** (20260709): AC confirmed via a Playwright drive against a real server (home
+> gate/badge, review session + `POST /api/reviews/answer` advance, caught-up, answer-failure halt,
+> nav) plus `vue-tsc` + a `ts-fsrs` grep guard. DS01 route/store behaviour verified live and by its
+> unit tests. **BDD/e2e is deferred** — see Next Steps; the blocker is the lack of a due-review-card
+> seed (a graduated card's first `due` is in the future and `/api/test/seed` doesn't cover review
+> cards, so a UI-only test can't reach a due state without backdating the DB).
 
 ---
 
@@ -183,6 +194,9 @@ review them) and delivers the first user-facing payoff of the whole Review inves
 
 ## Next Steps
 
-1. Review and approve plan
-2. Create Design Spec (DS) — likely DS01 (PH01 server: read/advance routes + review-answer record) then DS02 (PH02 client: `'home'` landing + Review session)
-3. Begin implementation
+1. ~~Review and approve plan~~ ✅
+2. ~~Create Design Spec (DS) — DS01 (PH01 server: read/advance routes + review-answer record), DS02 (PH02 client: `'home'` landing + Review session)~~ ✅ — both **Impl-Complete**
+3. ~~Begin implementation~~ ✅ — ST01–ST08 built and verified (see DS01 §7, DS02 §7 Implementation Notes)
+4. **Follow-up — test-only seed for a due review card** (e.g. `POST /api/test/seed-review`): the current build has no first-class way to put the system into a "review is due" state (graduated cards seed with a future `due`; `/api/test/seed` doesn't cover review cards). Blocks review BDD/e2e.
+5. **Follow-up — BDD/e2e** (`review.feature`): deferred pending step 4 (and `srs-demo` e2e flakiness). Verified for now via manual Playwright drive + typecheck + `ts-fsrs` grep guard.
+6. **Deferred by scope** (unchanged from Out of scope): response-time rating bands, deck-scoped review, lapse→Learning re-entry, orphan cleanup, "mark as hard".
