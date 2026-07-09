@@ -187,6 +187,11 @@ const batchScore = ref({ correct: 0, total: 0 });
 const summary = ref<BatchSummary[]>([]);
 const questionKey = ref(0);
 
+// Guards finishBatchAndTransition against re-entrant invocation (e.g. Exit
+// clicked while the last answer's /api/answer replay is still in flight) —
+// a second concurrent run would double-POST the same answers.
+const isFinishingBatch = ref(false);
+
 function getDeckWords(id: string): QuizItem[] {
   const deck = appDecks.value.find((d) => d.id === id);
   return deck ? (deck.words as QuizItem[]) : [];
@@ -312,6 +317,12 @@ function onSelect(id: string) {
 }
 
 function onOverview(id: string) {
+  // Fail-closed: DeckOverview reads CONFIG.value.streakThresholds.maxMastery.
+  if (!configReady.value) {
+    apiError.value =
+      'Learning settings are not loaded yet. Please check the server and try again.';
+    return;
+  }
   overviewDeckId.value = id;
   screen.value = 'overview';
 }
@@ -357,6 +368,17 @@ async function onClear() {
 }
 
 async function finishBatchAndTransition() {
+  if (!sessionState.value || !batchState.value) return;
+  if (isFinishingBatch.value) return;
+  isFinishingBatch.value = true;
+  try {
+    await finishBatchAndTransitionImpl();
+  } finally {
+    isFinishingBatch.value = false;
+  }
+}
+
+async function finishBatchAndTransitionImpl() {
   if (!sessionState.value || !batchState.value) return;
 
   const output = finishBatch(batchState.value);
