@@ -6,6 +6,7 @@ export type Screen =
   | 'quiz'
   | 'results'
   | 'overview'
+  | 'review-hub'
   | 'review';
 
 export type ConfigType = SessionConfig & {

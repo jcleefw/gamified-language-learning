@@ -4,8 +4,14 @@ import { computed } from 'vue';
 const props = defineProps<{
   // True when there was nothing due on entry (caught-up state, no session run).
   caughtUp: boolean;
-  // Number of cards reviewed this session.
+  // Session type — drives the summary copy. Due review reports "reviewed";
+  // anytime reports "practised (N advanced their schedule)".
+  mode: 'due' | 'anytime';
+  // Number of cards reviewed/practised this session.
   reviewed: number;
+  // How many of those advanced their FSRS schedule (server `advanced` flag). For a
+  // due session this equals `reviewed`; for anytime, only the words that were due.
+  advanced: number;
   // Nearest next-due ISO date across the cards advanced this session; null if none.
   nextDue: string | null;
 }>();
@@ -36,8 +42,16 @@ const nextDueLabel = computed(() => {
     </template>
 
     <template v-else>
-      <h2 class="score">Review complete</h2>
-      <p class="summary-line">
+      <h2 class="score">
+        {{ mode === 'anytime' ? 'Practice complete' : 'Review complete' }}
+      </h2>
+      <p v-if="mode === 'anytime'" class="summary-line">
+        You practised <strong>{{ reviewed }}</strong>
+        {{ reviewed === 1 ? 'word' : 'words' }}<template v-if="advanced > 0">
+          (<strong>{{ advanced }}</strong> advanced their schedule)</template
+        >.
+      </p>
+      <p v-else class="summary-line">
         You reviewed <strong>{{ reviewed }}</strong>
         {{ reviewed === 1 ? 'word' : 'words' }}.
       </p>
@@ -47,7 +61,7 @@ const nextDueLabel = computed(() => {
     </template>
 
     <div class="summary-actions">
-      <button class="btn-primary" @click="emit('home')">Back to home</button>
+      <button class="btn-primary" @click="emit('home')">Back to review</button>
     </div>
   </div>
 </template>

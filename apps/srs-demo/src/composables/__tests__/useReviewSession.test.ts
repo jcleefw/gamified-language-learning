@@ -5,13 +5,17 @@ import type { DueReviewItem } from '@gll/api-contract';
 import { useReviewSession } from '../useReviewSession';
 import type { ConfigType } from '../../types';
 
-// The composable's only I/O is these two useStore helpers — mock the module so
-// the tests exercise orchestration logic, not the HTTP layer.
+// The composable's only I/O is these useStore helpers — mock the module so the
+// tests exercise orchestration logic, not the HTTP layer.
 const loadDueReviews = vi.fn<() => Promise<DueReviewItem[]>>();
+const loadAnytimeReviews = vi.fn<() => Promise<DueReviewItem[]>>();
 const postReviewAnswer =
-  vi.fn<(req: unknown) => Promise<{ wordId: string; due: string }>>();
+  vi.fn<
+    (req: unknown) => Promise<{ wordId: string; due: string; advanced: boolean }>
+  >();
 vi.mock('../useStore', () => ({
   loadDueReviews: (...args: []) => loadDueReviews(...args),
+  loadAnytimeReviews: (...args: []) => loadAnytimeReviews(...args),
   postReviewAnswer: (...args: [unknown]) => postReviewAnswer(...args),
 }));
 
@@ -57,6 +61,7 @@ function setup(opts: {
 
 beforeEach(() => {
   loadDueReviews.mockReset();
+  loadAnytimeReviews.mockReset();
   postReviewAnswer.mockReset();
 });
 
@@ -155,12 +160,65 @@ describe('onReviewAnswered', () => {
     postReviewAnswer.mockResolvedValueOnce({
       wordId: 'a',
       due: '2026-02-01T00:00:00Z',
+      advanced: true,
     });
     const { session } = await enterWithOneDue();
     await session.onReviewAnswered({ wordId: 'a', correct: true } as never);
     // Single due card exhausted → summary sub-state (question null), horizon adopted.
     expect(session.reviewQuestion.value).toBeNull();
     expect(session.reviewSummary.value.reviewed).toBe(1);
+    expect(session.reviewSummary.value.advanced).toBe(1);
     expect(session.reviewSummary.value.nextDue).toBe('2026-02-01T00:00:00Z');
+  });
+
+  it('a read-only (advanced:false) answer counts as reviewed but does not move the horizon', async () => {
+    postReviewAnswer.mockResolvedValueOnce({
+      wordId: 'a',
+      due: '2027-01-01T00:00:00Z', // unchanged far-future due — must NOT pollute nextDue
+      advanced: false,
+    });
+    const { session } = await enterWithOneDue();
+    await session.onReviewAnswered({ wordId: 'a', correct: true } as never);
+    expect(session.reviewSummary.value.reviewed).toBe(1);
+    expect(session.reviewSummary.value.advanced).toBe(0);
+    expect(session.reviewSummary.value.nextDue).toBeNull();
+  });
+});
+
+describe('onAnytimeReview', () => {
+  const pool = [makeItem('a'), makeItem('b'), makeItem('c'), makeItem('d')];
+
+  it('surfaces an error and stays when the anytime fetch fails', async () => {
+    loadAnytimeReviews.mockRejectedValueOnce(new Error('boom'));
+    const { deps, session } = setup({ pool });
+    const outcome = await session.onAnytimeReview();
+    expect(outcome).toBe('stayed');
+    expect(deps.apiError.value).not.toBeNull();
+  });
+
+  it('builds a queue from all learned words and marks the session anytime', async () => {
+    loadAnytimeReviews.mockResolvedValueOnce([
+      { wordId: 'a', due: '2027-01-01T00:00:00Z' }, // not-due word still served
+    ]);
+    const { session } = setup({ pool });
+    const outcome = await session.onAnytimeReview();
+    expect(outcome).toBe('entered');
+    expect(session.reviewMode.value).toBe('anytime');
+    expect(session.reviewCaughtUp.value).toBe(false);
+    expect(session.reviewQuestion.value).not.toBeNull();
+  });
+
+  it('resets the summary (incl. advanced) on entry and never calls the due endpoint', async () => {
+    loadAnytimeReviews.mockResolvedValueOnce([
+      { wordId: 'a', due: '2027-01-01T00:00:00Z' },
+    ]);
+    const { session } = setup({ pool });
+    await session.onAnytimeReview();
+    expect(session.reviewSummary.value).toEqual({
+      reviewed: 0,
+      advanced: 0,
+      nextDue: null,
+    });
+    expect(loadDueReviews).not.toHaveBeenCalled();
   });
 });

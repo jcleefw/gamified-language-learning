@@ -7,6 +7,7 @@ import type {
 import type {
   AnswerRequest,
   AnswerResponse,
+  AnytimeReviewsResponse,
   ApiResponse,
   DueReviewItem,
   DueReviewsResponse,
@@ -114,6 +115,22 @@ export async function loadDueReviews(): Promise<DueReviewItem[]> {
   if (!res.ok) throw new Error(`GET /api/reviews failed: ${res.status}`);
   const body = (await res.json()) as ApiResponse<DueReviewsResponse>;
   if (!body.success) throw new Error(`GET /api/reviews error: ${body.error.message}`);
+  return body.data.reviews;
+}
+
+/**
+ * All learned words (due and not-due), server-ordered and bounded to ≤50 — the
+ * Practice-Anytime batch. Same wire shape as the due list. The server owns the
+ * ordering (most-overdue-first, not-due tail least-recently-practised) and the
+ * bound; the client renders whatever order comes back. Throws a typed error on
+ * failure so the caller can surface it rather than render an empty session.
+ */
+export async function loadAnytimeReviews(): Promise<DueReviewItem[]> {
+  const res = await fetch('/api/reviews/anytime');
+  if (!res.ok) throw new Error(`GET /api/reviews/anytime failed: ${res.status}`);
+  const body = (await res.json()) as ApiResponse<AnytimeReviewsResponse>;
+  if (!body.success)
+    throw new Error(`GET /api/reviews/anytime error: ${body.error.message}`);
   return body.data.reviews;
 }
 

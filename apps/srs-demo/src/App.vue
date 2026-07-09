@@ -15,6 +15,7 @@ import QuizCard from './components/QuizCard.vue';
 import BatchResults from './components/BatchResults.vue';
 import DeckOverview from './components/DeckOverview.vue';
 import HomeDashboard from './components/HomeDashboard.vue';
+import ReviewHub from './components/ReviewHub.vue';
 import ReviewSummary from './components/ReviewSummary.vue';
 import NavMenu from './components/NavMenu.vue';
 import type { ConfigType, Screen } from './types';
@@ -89,10 +90,12 @@ const {
   reviewQuestion,
   reviewQuestionKey,
   reviewCaughtUp,
+  reviewMode,
   reviewSummary,
   reviewUnlocked,
   refreshDueBadge,
   onReview: enterReview,
+  onAnytimeReview: enterAnytime,
   onReviewAnswered,
 } = useReviewSession({
   wordPool,
@@ -106,7 +109,8 @@ const {
 // Which top-level destination the current screen belongs to (for highlighting).
 const activeNav = computed<'home' | 'learn' | 'review'>(() => {
   if (screen.value === 'home') return 'home';
-  if (screen.value === 'review') return 'review';
+  if (screen.value === 'review-hub' || screen.value === 'review')
+    return 'review';
   return 'learn'; // 'select' | 'quiz' | 'results' | 'overview'
 });
 
@@ -124,17 +128,27 @@ async function navTo(target: 'home' | 'select' | 'review') {
     await finishBatchAndTransition(); // persists the answered results
   }
   if (target === 'review') {
-    void onReview();
+    // The review tab is a mode-selection hub (Due Review · Practice Anytime),
+    // always reachable regardless of due-count — no more caught-up dead-end.
+    // Refresh the badge so the hub's Due Review count is honest.
+    await refreshDueBadge();
+    screen.value = 'review-hub';
     return;
   }
   screen.value = target;
 }
 
-// Enter a review session: the composable fetches/builds the queue and reports
-// whether it entered ('entered' — show the 'review' screen, possibly caught-up)
-// or stayed on home ('stayed' — a fetch error surfaced via apiError).
+// Enter a DUE review session from the hub: the composable fetches/builds the queue
+// and reports whether it entered ('entered' — show the 'review' screen, possibly
+// caught-up) or stayed ('stayed' — a fetch error surfaced via apiError).
 async function onReview() {
   const outcome = await enterReview();
+  if (outcome === 'entered') screen.value = 'review';
+}
+
+// Enter a Practice-Anytime session from the hub (all learned words, due or not).
+async function onAnytime() {
+  const outcome = await enterAnytime();
   if (outcome === 'entered') screen.value = 'review';
 }
 
@@ -165,9 +179,10 @@ function onLearn() {
 }
 
 function onReviewExit() {
-  // Already-answered advances are durable server-side; re-entry reloads only the
-  // still-due cards (partial-session resume).
-  screen.value = 'home';
+  // Already-answered advances are durable server-side (write-on-answer), so
+  // leaving mid-session loses nothing. The hub is the review landing; re-entry
+  // re-fetches a freshly-ordered batch (server rotates the not-due tail).
+  screen.value = 'review-hub';
 }
 
 onMounted(async () => {
@@ -296,7 +311,16 @@ onMounted(async () => {
     :due-count="dueReviewCount"
     :badge-error="badgeError"
     @learn="onLearn"
-    @review="onReview"
+    @review="navTo('review')"
+  />
+
+  <ReviewHub
+    v-else-if="screen === 'review-hub'"
+    :review-unlocked="reviewUnlocked"
+    :due-count="dueReviewCount"
+    :badge-error="badgeError"
+    @due="onReview"
+    @anytime="onAnytime"
   />
 
   <DeckSelector
@@ -372,13 +396,16 @@ onMounted(async () => {
       :active-items="[]"
       :queue="[]"
       :mastered-deck="[]"
+      :feedback-dwell="true"
       @answered="onReviewAnswered"
       @exit="onReviewExit"
     />
     <ReviewSummary
       v-else
       :caught-up="reviewCaughtUp"
+      :mode="reviewMode"
       :reviewed="reviewSummary.reviewed"
+      :advanced="reviewSummary.advanced"
       :next-due="reviewSummary.nextDue"
       @home="onReviewExit"
     />

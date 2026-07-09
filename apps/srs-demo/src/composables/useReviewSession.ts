@@ -13,7 +13,11 @@ import {
   type BatchState,
 } from '@gll/srs-engine-v2';
 import type { DueReviewItem, ReviewQuestionType } from '@gll/api-contract';
-import { loadDueReviews, postReviewAnswer } from './useStore';
+import {
+  loadAnytimeReviews,
+  loadDueReviews,
+  postReviewAnswer,
+} from './useStore';
 import type { ConfigType } from '../types';
 
 export interface UseReviewSessionDeps {
@@ -39,8 +43,16 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
   const reviewShownAt = ref<number>(0); // latency start for the current review question
   const reviewQuestionKey = ref(0);
   const reviewCaughtUp = ref(false); // nothing was due on entry
-  const reviewSummary = ref<{ reviewed: number; nextDue: string | null }>({
+  // Session-type marker — UI only (summary copy + exit target); never sent to the
+  // server. Due-ness is server truth (ADR §2); the client can't and shouldn't decide it.
+  const reviewMode = ref<'due' | 'anytime'>('due');
+  const reviewSummary = ref<{
+    reviewed: number;
+    advanced: number;
+    nextDue: string | null;
+  }>({
     reviewed: 0,
+    advanced: 0,
     nextDue: null,
   });
 
@@ -85,7 +97,31 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
     }
   }
 
-  // Enter a pool-global review session. Refreshes due cards (also keeps the
+  // Build the queue from resolved QuizItems and ask the first question. Shared by
+  // due and anytime entry — the only divergence between the two is the source
+  // endpoint and the session-type marker. Same pipeline/UI as Learning;
+  // distractors come from the full cross-deck wordPool. Retries disabled (0) so
+  // each word is asked exactly once. An empty list shows the caught-up state.
+  function startSessionFromItems(items: QuizItem[]) {
+    reviewBatchState.value = null;
+    reviewQuestion.value = null;
+    if (items.length === 0) {
+      reviewCaughtUp.value = true;
+      return;
+    }
+    reviewCaughtUp.value = false;
+    const questions = assembleBatch(items, wordPool.value, [], items.length, {
+      excludeIds: new Set<string>(),
+    });
+    reviewBatchState.value = initBatchState(questions, 0, new Map(), 0);
+    const { question, state } = nextQuestion(reviewBatchState.value);
+    reviewBatchState.value = state;
+    reviewQuestion.value = question;
+    reviewShownAt.value = performance.now();
+    reviewQuestionKey.value++;
+  }
+
+  // Enter a pool-global DUE review session. Refreshes due cards (also keeps the
   // badge honest), resolves them against wordPool (skipping orphans), and builds
   // questions via the same pipeline Learning uses. An empty due list shows the
   // caught-up state rather than an error.
@@ -99,34 +135,36 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
       badgeError.value = true;
       apiError.value =
         'Could not load your reviews. Please check that the server is running and try again.';
-      return 'stayed'; // stay on home
+      return 'stayed'; // stay on hub
     }
     dueReviews.value = reviews;
     dueReviewCount.value = reviews.length;
     badgeError.value = false;
 
-    reviewSummary.value = { reviewed: 0, nextDue: null };
-    reviewBatchState.value = null;
-    reviewQuestion.value = null;
+    reviewMode.value = 'due';
+    reviewSummary.value = { reviewed: 0, advanced: 0, nextDue: null };
+    startSessionFromItems(resolveDueItems(reviews));
+    return 'entered';
+  }
 
-    const items = resolveDueItems(reviews);
-    if (items.length === 0) {
-      reviewCaughtUp.value = true;
-      return 'entered';
+  // Enter a Practice-Anytime session over ALL learned words (due or not), sourced
+  // from GET /api/reviews/anytime (server-ordered, ≤50). The answer round-trip is
+  // identical to due review — the server due-gates, and we read `advanced` back
+  // (see onReviewAnswered). No due-ness is inspected or sent (ADR §2).
+  async function onAnytimeReview(): Promise<'entered' | 'stayed'> {
+    apiError.value = null;
+    let reviews: DueReviewItem[];
+    try {
+      reviews = await loadAnytimeReviews();
+    } catch {
+      apiError.value =
+        'Could not load words to practise. Please check that the server is running and try again.';
+      return 'stayed'; // stay on hub
     }
-    reviewCaughtUp.value = false;
 
-    // Same pipeline/UI as Learning; distractors come from the full cross-deck
-    // wordPool. Retries disabled (0) so each due word is asked exactly once.
-    const questions = assembleBatch(items, wordPool.value, [], items.length, {
-      excludeIds: new Set<string>(),
-    });
-    reviewBatchState.value = initBatchState(questions, 0, new Map(), 0);
-    const { question, state } = nextQuestion(reviewBatchState.value);
-    reviewBatchState.value = state;
-    reviewQuestion.value = question;
-    reviewShownAt.value = performance.now();
-    reviewQuestionKey.value++;
+    reviewMode.value = 'anytime';
+    reviewSummary.value = { reviewed: 0, advanced: 0, nextDue: null };
+    startSessionFromItems(resolveDueItems(reviews));
     return 'entered';
   }
 
@@ -177,10 +215,20 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
     }
 
     // Adopt the server-returned schedule for the summary horizon (no client math).
+    // `advanced` is server truth (due-gate, DS01): only an advanced answer moved
+    // the schedule, so only its `due` may narrow the next-due horizon. A read-only
+    // (eager, not-due) answer returns its unchanged far-future `due` — folding that
+    // in would misreport the horizon.
     reviewSummary.value.reviewed++;
-    const prev = reviewSummary.value.nextDue;
-    if (prev === null || new Date(res.due).getTime() < new Date(prev).getTime()) {
-      reviewSummary.value.nextDue = res.due;
+    if (res.advanced) {
+      reviewSummary.value.advanced++;
+      const prev = reviewSummary.value.nextDue;
+      if (
+        prev === null ||
+        new Date(res.due).getTime() < new Date(prev).getTime()
+      ) {
+        reviewSummary.value.nextDue = res.due;
+      }
     }
 
     advanceReviewQueue(result);
@@ -194,12 +242,14 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
     reviewQuestion,
     reviewQuestionKey,
     reviewCaughtUp,
+    reviewMode,
     reviewSummary,
     reviewUnlocked,
     resolveDueItems,
     toReviewQuestionType,
     refreshDueBadge,
     onReview,
+    onAnytimeReview,
     onReviewAnswered,
   };
 }
