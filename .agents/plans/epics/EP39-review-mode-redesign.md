@@ -120,6 +120,30 @@ scheduler rewrite and without corrupting real intervals.
 
 **Scope**: End-of-session summary for the anytime path (e.g. count reviewed; how many advanced vs. read-only), parity with the due-review summary, returning to the review hub. (FR-013.)
 
+### Phase 4: Seeding infrastructure — snapshot builder + seed CLI (EP39-PH04)
+
+Test/verification infrastructure to reach any review state (including multi-day FSRS histories) as a
+**snapshot**, via a shared scenario builder and a zero-config `pnpm seed` CLI — replacing the manual
+`curl`-chain seeding. Additive: no production route/scheduler/schema change; the 5 boundary
+`new Date()` sites stay untouched. See [DS03](../../changelogs/EP39--review-mode-redesign/20260710T090952Z-EP39-DS03-fsrs-seeding-snapshot-builder.md)
+and its [ADR](../../../product-documentation/architecture/20260710T090706Z-engineering-fsrs-seeding-snapshot-builder.md).
+
+### EP39-ST08: Shared scenario builder (extract from route-private `applyFixture`)
+
+**Scope**: Lift scenario construction + fixture application out of the route-private closure into a shared module so HTTP and CLI both import it; existing presets produce byte-identical results. No production time-path change.
+
+### EP39-ST09: Multi-day snapshot presets via backdated FSRS composition
+
+**Scope**: Compose `FsrsScheduler.seed` + N× `schedule` at strictly-increasing backdated offsets to build engine-computed multi-day cards (`relapsed-due`, `mature-interval`); guard against out-of-order (negative-elapsed) steps.
+
+### EP39-ST10: `pnpm seed` CLI over the shared builder
+
+**Scope**: In-process CLI; DB path resolved **identically to the server** (`GLL_DB_PATH` → else `.data/srs-demo.db`); `--list`, `--dry-run`, `--count`, `--deck`. Enables the 2-terminal manual-test loop with no server restart.
+
+### EP39-ST11: Docs — replace curl chains with `pnpm seed`
+
+**Scope**: Update the srs-demo README to lead with `pnpm seed` (incl. span-days + `--dry-run`), keep HTTP for config-override/e2e, document the 2-terminal loop + caveats.
+
 ---
 
 ## Overall Acceptance Criteria
@@ -162,9 +186,11 @@ scheduler rewrite and without corrupting real intervals.
 1. ~~Review and approve plan~~ ✅ (20260710)
 2. ~~Accept the ADR + add `Amended by` back-references in the 20260321 and 20260708 ADRs~~ ✅ (20260710)
 3. Create Design Spec (DS) — DS01 (PH01 server: due-gate + anytime endpoint), DS02 (PH02/PH03 client:
-   feedback moment + review hub + Practice Anytime session)
+   feedback moment + review hub + Practice Anytime session), **DS03 (PH04 seeding infra: snapshot
+   builder + `pnpm seed` CLI) — ✅ drafted (20260710)**
 4. Begin implementation — build order: ST02 due-gate → ST03 anytime endpoint → ST04 feedback (parallel,
-   no server dep) → ST05/06/07 hub + session
+   no server dep) → ST05/06/07 hub + session. **Seeding infra (ST08→ST11) is parallel/independent — no
+   production dep; enables manual verification of the above.**
 5. **Deferred by scope** (unchanged from Out of scope): retry-until-correct-today, Difficult Words
    (+ OQ-D), Speed Review, typing/listening types, retention metric (OQ-C), feedback auto-advance
    (OI-004), Learning-path MCQ feedback
