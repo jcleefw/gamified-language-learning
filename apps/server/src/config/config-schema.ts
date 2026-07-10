@@ -29,7 +29,10 @@ export const putConfigSchema = z
   .object({
     difficultyPreset: z.enum(selectablePresets).optional(),
     wordsPerBatch: z.number().int().min(1).max(10).optional(),
-    sentenceDirections: z.array(z.enum(KNOWN_DIRECTIONS)).optional(),
+    // `.min(1)`: an empty list is not "no preference" — it silently disables all
+    // sentence questions (startBatch flat-maps to zero thunks). Reject it, mirroring
+    // `wordsPerBatch`'s lower bound.
+    sentenceDirections: z.array(z.enum(KNOWN_DIRECTIONS)).min(1).optional(),
   })
   .strict();
 

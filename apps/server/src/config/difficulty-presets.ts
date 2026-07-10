@@ -35,7 +35,10 @@ export const DEFAULT_PRESET: DifficultyPreset = 'normal';
  * write-path enum so `gentle`/`intense` are rejected until their bundles land.
  */
 export function isDifficultyPreset(x: unknown): x is DifficultyPreset {
-  return typeof x === 'string' && x in DIFFICULTY_PRESETS;
+  // `hasOwnProperty`, not `in`: `in` walks the prototype chain, so `'toString'`
+  // /`'constructor'` would match and `resolvePreset` would return an inherited
+  // function as a bundle. Only OWN, populated preset names are selectable.
+  return typeof x === 'string' && Object.prototype.hasOwnProperty.call(DIFFICULTY_PRESETS, x);
 }
 
 /** Resolve a preset name to its bundle. Throws for deferred/unknown names. */

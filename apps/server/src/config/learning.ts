@@ -1,5 +1,5 @@
 import type { StreakThresholds, SentenceQuestion } from '@gll/srs-engine-v2';
-import type { IUserConfigStore } from '@gll/db';
+import type { IUserConfigStore, UserConfigRecord } from '@gll/db';
 import {
   DEFAULT_PRESET,
   isDifficultyPreset,
@@ -59,21 +59,23 @@ export const DEFAULT_LEARNING: {
 };
 
 /**
- * Resolve the difficulty preset in effect for a user: the stored name if it is
- * currently selectable, otherwise the default. Guarding with `isDifficultyPreset`
- * keeps the hot path robust if a once-stored name is later deferred (falls back
- * rather than throwing). The write path is the primary guard; this is defence.
+ * The preset name in effect for a stored config: the stored name if it is currently
+ * selectable, otherwise the default. Guarding with `isDifficultyPreset` keeps the hot
+ * path robust if a once-stored name is later deferred (falls back rather than
+ * throwing). The write path is the primary guard; this is defence.
  */
+function resolvePresetName(cfg: UserConfigRecord | null): DifficultyPreset {
+  return cfg && isDifficultyPreset(cfg.difficultyPreset)
+    ? cfg.difficultyPreset
+    : DEFAULT_PRESET;
+}
+
+/** Resolve the difficulty `StreakThresholds` in effect for a user. */
 export async function resolveUserThresholds(
   store: IUserConfigStore,
   userId: string,
 ): Promise<StreakThresholds> {
-  const cfg = await store.get(userId);
-  const name: DifficultyPreset =
-    cfg && isDifficultyPreset(cfg.difficultyPreset)
-      ? cfg.difficultyPreset
-      : DEFAULT_PRESET;
-  return resolvePreset(name);
+  return resolvePreset(resolvePresetName(await store.get(userId)));
 }
 
 /**
@@ -115,10 +117,7 @@ export async function getAppConfig(
   userId: string,
 ): Promise<AppConfigResponse> {
   const cfg = await store.get(userId);
-  const presetName: DifficultyPreset =
-    cfg && isDifficultyPreset(cfg.difficultyPreset)
-      ? cfg.difficultyPreset
-      : DEFAULT_PRESET;
+  const presetName = resolvePresetName(cfg);
 
   return {
     user: {

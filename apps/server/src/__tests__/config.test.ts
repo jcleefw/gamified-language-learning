@@ -101,6 +101,8 @@ describe('PUT /api/config', () => {
     ['deferred preset gentle', { difficultyPreset: 'gentle' }],
     ['unknown preset', { difficultyPreset: 'turbo' }],
     ['out-of-range wordsPerBatch', { wordsPerBatch: 0 }],
+    // Empty directions would silently disable all sentence questions — not "no preference".
+    ['empty sentenceDirections', { sentenceDirections: [] }],
   ])('rejects %s with 400 and persists nothing', async (_label, payload) => {
     const res = await put(payload);
     expect(res.status).toBe(400);
