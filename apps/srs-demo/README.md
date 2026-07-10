@@ -94,51 +94,61 @@ curl -X POST http://localhost:6060/api/test/seed \
   -d @apps/srs-demo/e2e/fixtures/scenarios/stagnant-word-ready-to-shelve.json
 ```
 
-### Named review scenarios (one call — recommended)
+### Named review scenarios (recommended) — `pnpm seed`
 
-`POST /api/test/seed/scenario` builds a complete, correct review state in one call, **auto-resolving
-real deck words** so you never hand-author a fixture. It resets the user's state, seeds it, and
-returns the words used plus the expected outcome (handy for manual checks and e2e):
+Named scenarios build a complete, correct review state in one shot, **auto-resolving real deck
+words** so you never hand-author a fixture. The scenario catalogue (FSRS composition included) is
+shared by a CLI and an HTTP endpoint — use whichever fits.
+
+**Two-terminal manual-test loop (no curl):**
+
+```bash
+# Terminal 1 — app + server (holds .data/srs-demo.db)
+pnpm --filter @gll/srs-demo dev:all
+
+# Terminal 2 — seed a state, then reload the browser
+pnpm --filter @gll/server seed mastered-due --count 3
+pnpm --filter @gll/server seed --list          # show all scenarios
+pnpm --filter @gll/server seed relapsed-due --dry-run   # inspect, write nothing
+```
+
+The CLI runs in-process and defaults to the **same DB path the server uses** (`GLL_DB_PATH` → else
+`.data/srs-demo.db`), so a seed is visible on the next request — **just reload the browser, no server
+restart**.
+
+| `name` | Seeds | Verifies |
+| --- | --- | --- |
+| `mastered-fresh` | N mastered words + cards at the natural FSRS graduation due (future) | "mastered ≠ due today": `dueNow: 0`, `anytime: N`, Review unlocked |
+| `mastered-due` | N mastered words + cards **due now** | all N surface at once (due list is uncapped) |
+| `review-only` | cards **due now**, but **no** mastered word state | Review unlocks from card existence alone (EP39-BUG01 regression) |
+| `relapsed-due` | graduate → review → **lapse** → relearn over ~3 weeks, now due | multi-day history as an engine-computed snapshot; `dueNow: N` |
+| `mature-interval` | several good reviews → long interval, **not** due | learned-but-not-due: `dueNow: 0`, practisable via anytime |
+
+Flags: `--count N` (default 3), `--deck <deckId>` (default: first deck), `--dry-run`, `--list`.
+
+**Caveats (2-terminal loop):**
+
+1. **Same DB path** — the CLI defaults to the server's; only override `GLL_DB_PATH` if the server has it too, or you'll seed a DB nobody reads.
+2. **Reload to refresh** — seeding changes the DB; the already-rendered app re-fetches on reload.
+3. **Config overrides are HTTP-only** — shelving/sentence config lives in the running server's memory, so use the HTTP endpoint (below) for those, not the CLI.
+
+**HTTP endpoint (e2e / config-override cases):** `POST /api/test/seed/scenario` takes the same
+`{ name, deckId?, count? }` and returns `{ scenario, deckId, wordIds, expected }`:
 
 ```bash
 curl -s -X POST http://localhost:6060/api/test/seed/scenario \
   -H 'Content-Type: application/json' -d '{"name":"mastered-fresh","count":3}'
-# → { success, data: { scenario, deckId, wordIds, expected: { dueNow, anytime, reviewUnlocked } } }
 ```
 
-| `name` | Seeds | Verifies |
-| --- | --- | --- |
-| `mastered-fresh` | N mastered words + review cards at the real FSRS graduation due (future) | "mastered ≠ due today": `dueNow: 0`, `anytime: N`, Review unlocked |
-| `mastered-due` | N mastered words + review cards **due now** | all N surface at once (due list is uncapped) |
-| `review-only` | review cards **due now**, but **no** mastered word state | Review unlocks from card existence alone (EP39-BUG01 regression) |
-
-Optional body fields: `deckId` (default: first deck), `count` (default 3). Then open Review in the
-app, or assert against `GET /api/reviews` / `GET /api/reviews/anytime`.
-
-> **Restart the API server** after pulling these changes so the `/scenario` route is registered.
 > Each scenario **resets the demo user's state** (word progress + review cards) before seeding.
 
-#### Manual walkthrough — "I mastered N words, why isn't Review showing them?"
+#### Why "mastered N words" isn't immediately due
 
-This is expected: FSRS schedules a freshly-graduated word's first review in the **future**, so
-"mastered" ≠ "due today". Verify both halves without waiting real days:
-
-```bash
-# Part A — just mastered 3 today: nothing due yet, but all 3 are practisable.
-curl -s -X POST http://localhost:6060/api/test/seed/scenario \
-  -H 'Content-Type: application/json' -d '{"name":"mastered-fresh","count":3}' | python3 -m json.tool
-curl -s http://localhost:6060/api/reviews          # → reviews: []   (nothing due yet)
-curl -s http://localhost:6060/api/reviews/anytime  # → 3 words
-#   UI: Review tab UNLOCKED · Due Review = caught-up · Practice Anytime lists all 3.
-
-# Part B — their due date has arrived: all 3 surface at once (the due list is uncapped).
-curl -s -X POST http://localhost:6060/api/test/seed/scenario \
-  -H 'Content-Type: application/json' -d '{"name":"mastered-due","count":3}' | python3 -m json.tool
-curl -s http://localhost:6060/api/reviews          # → 3 words due
-#   UI: Due Review = 3.
-```
-
-Use `review-only` to confirm Review unlocks purely from a card's existence (no mastered word state).
+FSRS schedules a freshly-graduated word's first review in the **future**, so "mastered" ≠ "due
+today". `mastered-fresh` reproduces this (nothing due, all N practisable via anytime); `mastered-due`
+places them due now; `relapsed-due`/`mature-interval` reproduce real multi-day histories without
+waiting real days. Assert against `GET /api/reviews` (due) and `GET /api/reviews/anytime` (all
+learned).
 
 ### Seeding review cards by hand (low-level)
 

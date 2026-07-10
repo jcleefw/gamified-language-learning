@@ -339,6 +339,29 @@ describe('POST /api/test/seed/scenario', () => {
     expect(body.data.deckId).toBe('deck-eat');
     expect(body.data.wordIds).toHaveLength(3);
   });
+
+  it('relapsed-due: engine-computed multi-day lapsed card is due now', async () => {
+    const res = await seedScenario({ name: 'relapsed-due', count: 1 });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { expected: { dueNow: number } } };
+    expect(body.data.expected.dueNow).toBe(1);
+
+    const due = (await (await app.request('/api/reviews')).json()) as { data: { reviews: unknown[] } };
+    expect(due.data.reviews).toHaveLength(1); // surfaces on the due list
+  });
+
+  it('mature-interval: not due now, but practisable via anytime', async () => {
+    const res = await seedScenario({ name: 'mature-interval', count: 1 });
+    expect(res.status).toBe(200);
+
+    const due = (await (await app.request('/api/reviews')).json()) as { data: { reviews: unknown[] } };
+    expect(due.data.reviews).toHaveLength(0); // natural future due → not on due list
+
+    const anytime = (await (await app.request('/api/reviews/anytime')).json()) as {
+      data: { reviews: unknown[] };
+    };
+    expect(anytime.data.reviews).toHaveLength(1); // but learned → practisable
+  });
 });
 
 describe('rejected store write propagation', () => {

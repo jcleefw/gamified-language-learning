@@ -9,7 +9,8 @@ import { DEFAULT_SHELVING_CONFIG, type ShelvingConfig } from '@gll/srs-shelving'
 import { ErrorCode, type ApiResponse } from '@gll/api-contract';
 import type { WordState } from '@gll/srs-engine-v2';
 import { FsrsScheduler, type GraduationPerformance } from '@gll/srs-review';
-import { LEARNING_CONFIG } from '../config/learning.js';
+import { buildScenario, REVIEW_SCENARIOS } from '../seed/scenario-builder.js';
+import { applyBuiltScenario } from '../seed/apply-scenario.js';
 
 const USER_ID = 'demo-user';
 const scheduler = new FsrsScheduler();
@@ -176,32 +177,22 @@ router.post('/test/seed', async (c) => {
 // ---------------------------------------------------------------------------
 // Named review scenarios — one-call presets that build the exact state we want to
 // verify (auto-resolving real deck words), so callers don't hand-author fixtures.
-// Reusable for manual verification AND e2e. Each returns the words used and the
-// expected observable outcome so a caller/test can assert against it.
+// The scenario catalogue + FSRS composition live in the shared builder
+// (src/seed/scenario-builder.ts) so this route and the seed CLI seed identically.
 // ---------------------------------------------------------------------------
 
-const REVIEW_SCENARIOS = ['mastered-fresh', 'mastered-due', 'review-only'] as const;
-type ReviewScenario = (typeof REVIEW_SCENARIOS)[number];
-
 interface ScenarioRequest {
-  name: ReviewScenario;
+  name: string;
   deckId?: string; // default: first deck
   count?: number; // words to seed; default 3
 }
 
 interface ScenarioResult {
-  scenario: ReviewScenario;
+  scenario: string;
   deckId: string;
   wordIds: string[];
   /** What the seeded state should produce, for manual/e2e assertions. */
   expected: { dueNow: number; anytime: number; reviewUnlocked: boolean };
-}
-
-// A "mastered" word state at the graduation threshold — the state a graduated word
-// carries, so the review-unlock gate and the review card stay consistent.
-function masteredWordState(wordId: string): WordStateInput {
-  const m = LEARNING_CONFIG.masteryThreshold;
-  return { wordId, seen: m + 1, correct: m + 1, mastery: m, correctStreak: m, wrongStreak: 0, lapses: 0 };
 }
 
 router.post('/test/seed/scenario', async (c) => {
@@ -216,12 +207,13 @@ router.post('/test/seed/scenario', async (c) => {
     return c.json(body, 400);
   }
 
-  if (!reqBody?.name || !REVIEW_SCENARIOS.includes(reqBody.name)) {
+  const spec = reqBody?.name ? REVIEW_SCENARIOS[reqBody.name] : undefined;
+  if (!spec) {
     const body: ApiResponse<never> = {
       success: false,
       error: {
         code: ErrorCode.BAD_REQUEST,
-        message: `name must be one of: ${REVIEW_SCENARIOS.join(', ')}`,
+        message: `name must be one of: ${Object.keys(REVIEW_SCENARIOS).join(', ')}`,
       },
     };
     return c.json(body, 400);
@@ -249,42 +241,15 @@ router.post('/test/seed/scenario', async (c) => {
     return c.json(body, 400);
   }
 
-  const fixture: ScenarioFixture = {
-    name: reqBody.name,
-    description: `review scenario: ${reqBody.name}`,
+  const built = buildScenario(spec, { wordIds, deckId: deck.id, now: new Date(), scheduler });
+  await applyBuiltScenario(built, { db: getDb(), userId: USER_ID });
+
+  const data: ScenarioResult = {
+    scenario: spec.name,
     deckId: deck.id,
-    wordStates: [],
-    stagnationCounters: [],
-    shelvedWords: [],
-    reviewCards: [],
+    wordIds,
+    expected: built.expected,
   };
-  let expected: ScenarioResult['expected'];
-
-  switch (reqBody.name) {
-    // Freshly mastered today: mastered word states + review cards at the real FSRS
-    // graduation due (future). Nothing due yet; all N practisable via anytime.
-    case 'mastered-fresh':
-      fixture.wordStates = wordIds.map(masteredWordState);
-      fixture.reviewCards = wordIds.map((wordId) => ({ wordId, naturalDue: true }));
-      expected = { dueNow: 0, anytime: wordIds.length, reviewUnlocked: true };
-      break;
-    // Mastered and their due date has arrived: all N are due now (verifies the due
-    // list is uncapped — mastering N never yields "only 1").
-    case 'mastered-due':
-      fixture.wordStates = wordIds.map(masteredWordState);
-      fixture.reviewCards = wordIds.map((wordId) => ({ wordId })); // default: already due
-      expected = { dueNow: wordIds.length, anytime: wordIds.length, reviewUnlocked: true };
-      break;
-    // Review cards but NO mastered word state (EP39-BUG01 repro): Review must unlock
-    // from card existence alone. All N due now.
-    case 'review-only':
-      fixture.reviewCards = wordIds.map((wordId) => ({ wordId })); // default: already due
-      expected = { dueNow: wordIds.length, anytime: wordIds.length, reviewUnlocked: true };
-      break;
-  }
-
-  await applyFixture(fixture);
-  const data: ScenarioResult = { scenario: reqBody.name, deckId: deck.id, wordIds, expected };
   const body: ApiResponse<ScenarioResult> = { success: true, data };
   return c.json(body);
 });
