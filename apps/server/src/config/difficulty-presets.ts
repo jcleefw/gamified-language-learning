@@ -1,5 +1,4 @@
 import type { StreakThresholds } from '@gll/srs-engine-v2';
-import { LEARNING_CONFIG } from './learning.js';
 
 /**
  * Server-only difficulty knob (T1). The preset NAME is the unit of persistence
@@ -14,16 +13,17 @@ import { LEARNING_CONFIG } from './learning.js';
 export type DifficultyPreset = 'gentle' | 'normal' | 'intense';
 
 /**
- * Name → bundle map. Only `normal` is populated, pinned to today's
- * `LEARNING_CONFIG.streakThresholds`, so the default user sees zero behaviour
- * change. `maxMastery` is the fixed T3 scale and stays identical across every
- * preset once `gentle`/`intense` land. Server-only: never in `@gll/api-contract`
- * or `@gll/db`.
+ * Name → bundle map. Only `normal` is populated — its values are today's config,
+ * so the default user sees zero behaviour change. `maxMastery` is the fixed T3
+ * scale (== `FIXED_SYSTEM.maxMastery`) and stays identical across every preset
+ * once `gentle`/`intense` land. Inlined here (not imported from `learning.ts`) so
+ * the preset map is the single source of `streakThresholds`, with no import cycle.
+ * Server-only: never in `@gll/api-contract` or `@gll/db`.
  */
 export const DIFFICULTY_PRESETS: Partial<
   Record<DifficultyPreset, StreakThresholds>
 > = {
-  normal: LEARNING_CONFIG.streakThresholds, // == today's config
+  normal: { correctStreakThreshold: 2, wrongStreakThreshold: 2, maxMastery: 2 }, // == today's config
   // gentle:  DEFERRED — values TBD (more correct-in-a-row to graduate, forgiving on misses)
   // intense: DEFERRED — values TBD (graduate fast, punish misses)
 };

@@ -12,7 +12,7 @@ import {
 } from '@gll/db';
 import { FsrsScheduler, type ReviewCard } from '@gll/srs-review';
 import type { WordState } from '@gll/srs-engine-v2';
-import { LEARNING_CONFIG } from '../config/learning.js';
+import { DEFAULT_LEARNING } from '../config/learning.js';
 import {
   loadLearningRows,
   replayLearningRows,
@@ -40,7 +40,7 @@ const ws = (o: Partial<WordState> = {}): WordState => ({
 function foldAnswer(before: WordState | null, correct: boolean): WordState {
   const rows = replayLearningRows(
     [{ correlationId: null, wordId: 'w1', correct, recheck: false, beforeState: before, afterState: ws() }],
-    LEARNING_CONFIG,
+    DEFAULT_LEARNING,
   );
   return rows[0].recomputed as WordState;
 }
@@ -63,7 +63,7 @@ describe('replay harness — Learning (answer_events)', () => {
       createdAt: '2026-07-10T00:00:01.000Z',
     });
 
-    const results = replayLearningRows(loadLearningRows(db), LEARNING_CONFIG);
+    const results = replayLearningRows(loadLearningRows(db), DEFAULT_LEARNING);
     expect(results).toHaveLength(2);
     expect(results.every((r) => r.matched)).toBe(true);
 
@@ -82,7 +82,7 @@ describe('replay harness — Learning (answer_events)', () => {
       graduated: false, recheck: false, createdAt: '2026-07-10T00:00:00.000Z',
     });
 
-    const fixture = buildFixture('learning', replayLearningRows(loadLearningRows(db), LEARNING_CONFIG));
+    const fixture = buildFixture('learning', replayLearningRows(loadLearningRows(db), DEFAULT_LEARNING));
     expect(fixture.allMatched).toBe(false);
     expect(fixture.firstDivergence?.correlationId).toBe('c1');
   });

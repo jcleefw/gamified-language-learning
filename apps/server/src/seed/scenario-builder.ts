@@ -1,6 +1,6 @@
 import type { ReviewCard, ReviewRating, GraduationPerformance } from '@gll/srs-review';
 import type { FsrsScheduler } from '@gll/srs-review';
-import { LEARNING_CONFIG } from '../config/learning.js';
+import { FIXED_SYSTEM } from '../config/learning.js';
 
 /** Word-state row shape seeded by a scenario (mirrors WordState fields). */
 export interface WordStateInput {
@@ -84,7 +84,7 @@ const DEFAULT_PERFORMANCE: GraduationPerformance = { correctStreak: 2, lapses: 0
 
 /** A mastered WordState at the graduation threshold — keeps the unlock gate + card consistent. */
 function masteredWordState(wordId: string): WordStateInput {
-  const m = LEARNING_CONFIG.masteryThreshold;
+  const m = FIXED_SYSTEM.masteryThreshold;
   return { wordId, seen: m + 1, correct: m + 1, mastery: m, correctStreak: m, wrongStreak: 0, lapses: 0 };
 }
 

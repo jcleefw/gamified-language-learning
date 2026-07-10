@@ -5,18 +5,20 @@ import {
   isDifficultyPreset,
   resolvePreset,
 } from '../difficulty-presets.js';
-import { LEARNING_CONFIG } from '../learning.js';
+import { FIXED_SYSTEM } from '../learning.js';
 
 describe('difficulty-presets', () => {
-  it("resolvePreset('normal') deep-equals today's LEARNING_CONFIG.streakThresholds", () => {
-    expect(resolvePreset('normal')).toEqual(LEARNING_CONFIG.streakThresholds);
+  it("resolvePreset('normal') is today's config (no behaviour change for the default user)", () => {
+    expect(resolvePreset('normal')).toEqual({
+      correctStreakThreshold: 2,
+      wrongStreakThreshold: 2,
+      maxMastery: 2,
+    });
   });
 
   it('DEFAULT_PRESET is normal, and normal keeps the fixed T3 maxMastery scale', () => {
     expect(DEFAULT_PRESET).toBe('normal');
-    expect(resolvePreset('normal').maxMastery).toBe(
-      LEARNING_CONFIG.streakThresholds.maxMastery,
-    );
+    expect(resolvePreset('normal').maxMastery).toBe(FIXED_SYSTEM.maxMastery);
   });
 
   it('isDifficultyPreset is true for normal only (⟺ present in DIFFICULTY_PRESETS)', () => {

@@ -144,15 +144,15 @@ POST /api/answer
 **Read List**: `apps/server/src/routes/config.ts`, `apps/server/src/config/learning.ts`, `apps/srs-demo/src/App.vue` (boot merge ~L242), `apps/srs-demo/src/types.ts`, DS01's `user-config-store` + `difficulty-presets`
 **Tasks**:
 
-- [ ] Make `getAppConfig(userId)` async; read `IUserConfigStore`, fall back per field, resolve the preset, return `{ user, system }` (drop `pedagogy`).
-- [ ] Update the route to `getCurrentUserId()` and `await getAppConfig(userId)`.
-- [ ] Change the client merge to `{ ...cfg.user, ...cfg.system }`; confirm `ConfigType` still satisfied.
+- [x] Make `getAppConfig(userId)` async; read `IUserConfigStore`, fall back per field, resolve the preset, return `{ user, system }` (drop `pedagogy`). *(As-built: `getAppConfig(store, userId)` — the store is passed in, matching how routes construct stores and keeping it unit-testable.)*
+- [x] Update the route to `getCurrentUserId()` and `await getAppConfig(userId)`.
+- [x] Change the client merge to `{ ...cfg.user, ...cfg.system }`; confirm `ConfigType` still satisfied.
 
 **Acceptance Criteria**:
 
-- [ ] A user with no config (NULL blob) gets `difficultyPreset:'normal'` and values byte-identical to today's response (minus `pedagogy`, plus `system`).
-- [ ] After a preset override exists, `user.streakThresholds` equals `resolvePreset(that preset)`.
-- [ ] The client renders with no missing `CONFIG` field; `configReady` gating unchanged; progress bar (`streakThresholds.maxMastery`) and completed-deck detection (`masteryThreshold`) still resolve.
+- [x] A user with no config (NULL blob) gets `difficultyPreset:'normal'` and values byte-identical to today's response (minus `pedagogy`, plus `system`).
+- [x] After a preset override exists, `user.streakThresholds` equals `resolvePreset(that preset)`.
+- [x] The client renders with no missing `CONFIG` field; `configReady` gating unchanged; progress bar (`streakThresholds.maxMastery`) and completed-deck detection (`masteryThreshold`) still resolve.
 
 ### EP41-ST05: `PUT /api/config` write path (zod)
 
@@ -160,15 +160,15 @@ POST /api/answer
 **Read List**: `apps/server/src/routes/config.ts`, `apps/server/src/index.ts` (route mount), `apps/server/package.json`, DS01's `user-config-store` + `difficulty-presets`
 **Tasks**:
 
-- [ ] Add `zod` to `apps/server` deps (`^4.4.3`); add `config/config-schema.ts` (`putConfigSchema` `.strict()`, `sentenceDirections` membership check).
-- [ ] Add `PUT /api/config`: `safeParse` → 400 on failure (field errors); on success `userConfigStore.put(getCurrentUserId(), patch)` then return the freshly-resolved `AppConfigResponse`.
-- [ ] Ensure unknown keys (e.g. `masteryThreshold`) and unknown preset names are rejected, nothing persisted.
+- [x] Add `zod` to `apps/server` deps (`^4.4.3`); add `config/config-schema.ts` (`putConfigSchema` `.strict()`, `sentenceDirections` membership check via `z.enum(KNOWN_DIRECTIONS)`).
+- [x] Add `PUT /api/config`: `safeParse` → 400 on failure (field errors folded into the `ApiError.message`, since the shared `ApiError` has no `details` field); on success `userConfigStore.put(getCurrentUserId(), patch)` then return the freshly-resolved `AppConfigResponse`.
+- [x] Ensure unknown keys (e.g. `masteryThreshold`) and unknown preset names are rejected, nothing persisted.
 
 **Acceptance Criteria**:
 
-- [ ] Valid `{ difficultyPreset:'normal' }` and `{ wordsPerBatch: 4 }` persist; the response reflects the resolved config.
-- [ ] `{ masteryThreshold: 5 }` (unknown key), `{ difficultyPreset:'intense' }` / `{ difficultyPreset:'gentle' }` (deferred), `{ difficultyPreset:'turbo' }` (unknown), `{ wordsPerBatch: 0 }` (out of range) each 400 with nothing written.
-- [ ] The zod schema/types appear only under `apps/server` — never in `@gll/api-contract`.
+- [x] Valid `{ difficultyPreset:'normal' }` and `{ wordsPerBatch: 4 }` persist; the response reflects the resolved config.
+- [x] `{ masteryThreshold: 5 }` (unknown key), `{ difficultyPreset:'intense' }` / `{ difficultyPreset:'gentle' }` (deferred), `{ difficultyPreset:'turbo' }` (unknown), `{ wordsPerBatch: 0 }` (out of range) each 400 with nothing written.
+- [x] The zod schema/types appear only under `apps/server` — never in `@gll/api-contract`.
 
 ### Phase 4: Tier boundary application (EP41-PH04)
 
@@ -178,15 +178,19 @@ POST /api/answer
 **Read List**: `apps/server/src/config/learning.ts`, `apps/server/src/routes/answer.ts`, `packages/srs-engine-v2/src/types/word-state.ts` (`updateRunState`, `isMastered`), DS01's `difficulty-presets`
 **Tasks**:
 
-- [ ] Introduce `FIXED_SYSTEM` (T3 constants); retire `LEARNING_CONFIG`/`USER_PRESENTATION`/`PEDAGOGY_CONFIG` into the T1-base + `FIXED_SYSTEM` split.
-- [ ] In `answer.ts`, resolve per-user `streakThresholds` from the user's preset; pass the **fixed** `masteryThreshold` and the **per-user** thresholds to `updateRunState`/`isMastered`.
-- [ ] Confirm no T3 value is served under `user` and no T1 value is hard-coded on the transition.
+- [x] Introduce `FIXED_SYSTEM` (T3 constants) + `T1_BASE` (T1 non-difficulty fallbacks); retire `LEARNING_CONFIG`/`USER_PRESENTATION`/`PEDAGOGY_CONFIG` into that split. *(A derived `DEFAULT_LEARNING = { masteryThreshold: FIXED_SYSTEM.masteryThreshold, streakThresholds: resolvePreset(DEFAULT_PRESET) }` is exported for server-side tooling — replay harness/`scenario-builder` — that needs the default policy as one bundle; it is derived, not an independent source of truth.)*
+- [x] In `answer.ts`, resolve per-user `streakThresholds` from the user's preset (via `resolveUserThresholds(store, userId)`); pass the **fixed** `masteryThreshold` and the **per-user** thresholds to `updateRunState`/`isMastered`.
+- [x] Confirm no T3 value is served under `user` and no T1 value is hard-coded on the transition.
 
 **Acceptance Criteria**:
 
-- [ ] `answer.ts` resolves `streakThresholds` from the current user's stored preset via `IUserConfigStore` (not from a module constant); a test with an **injected** second bundle shows the transition uses per-user thresholds while `masteryThreshold`/`maxMastery` stay fixed. (Observable divergence across shipped presets lands with `gentle`/`intense`.)
-- [ ] A default user's `/api/answer` transition is byte-identical to today (`normal` == old `LEARNING_CONFIG`).
-- [ ] `masteryThreshold`/`maxMastery` are single fixed constants; scoring remains direction-blind; existing `answer` tests pass (default user).
+- [x] `answer.ts` resolves `streakThresholds` from the current user's stored preset via `IUserConfigStore` (not from a module constant); a test with an **injected** second bundle (`DIFFICULTY_PRESETS.intense`, `correctStreakThreshold:1`) shows the transition uses per-user thresholds (masters in one correct) while `masteryThreshold`/`maxMastery` stay fixed.
+- [x] A default user's `/api/answer` transition is byte-identical to today (`normal` == old `LEARNING_CONFIG`); existing `answer` tests pass unchanged.
+- [x] `masteryThreshold`/`maxMastery` are single fixed constants; scoring remains direction-blind; existing `answer` tests pass (default user).
+
+---
+
+**Verification (as-built):** `@gll/db` 70 tests pass (rebuilt so `IUserConfigStore`/`SqliteUserConfigStore` surface in `dist`). `apps/server` typecheck clean, **150 tests pass** (142 prior + 6 new GET/PUT config tests + 1 injected-bundle ST06 test + 1 partial-merge). `apps/srs-demo` `vue-tsc` clean, 49 tests pass. `LEARNING_CONFIG`/`USER_PRESENTATION`/`PEDAGOGY_CONFIG` fully retired from `apps/server` (the remaining hits are separate local constants in `apps/cli-demo-db` and `srs-engine-v2/demo`, out of scope).
 
 ## 6. Success Criteria
 
