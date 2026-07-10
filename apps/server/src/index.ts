@@ -4,11 +4,9 @@ import { serve } from '@hono/node-server';
 import { getDb } from '@gll/db';
 import app from './app.js';
 import { seedDemoUser, seedContent } from './seed/seed-db.js';
+import { defaultDbPath } from './config/db-path.js';
 
-const PROJECT_ROOT = path.resolve(import.meta.dirname, '../../..');
-const DB_PATH = process.env.GLL_DB_PATH
-  ? path.resolve(process.env.GLL_DB_PATH)
-  : path.resolve(PROJECT_ROOT, '.data/srs-demo.db');
+const DB_PATH = defaultDbPath(process.env);
 
 mkdirSync(path.dirname(DB_PATH), { recursive: true });
 getDb(DB_PATH);
