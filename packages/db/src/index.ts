@@ -17,9 +17,14 @@ export type {
   IReviewTransitionEventStore,
   ReviewTransitionEventRecord,
 } from './types/review-transition-event-store';
+export type {
+  IUserConfigStore,
+  UserConfigRecord,
+} from './types/user-config-store';
 export { SqliteLearningStore } from './sqlite-learning-store';
 export { SqliteContentStore } from './sqlite-content-store';
 export { SqliteReviewStore } from './sqlite-review-store';
 export { SqliteAnswerEventStore } from './sqlite-answer-event-store';
 export { SqliteReviewAnswerEventStore } from './sqlite-review-answer-event-store';
 export { SqliteReviewTransitionEventStore } from './sqlite-review-transition-event-store';
+export { SqliteUserConfigStore } from './sqlite-user-config-store';

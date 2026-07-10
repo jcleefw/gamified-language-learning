@@ -5,11 +5,23 @@ import type { DeckDoc } from '@gll/api-contract';
 // User management
 // ---------------------------------------------------------------------------
 
+/** One user's config overrides (T1), stored as a JSON blob on the identity row.
+ *  Every field is optional; a field's absence (or a NULL `config` column) means
+ *  "no override", resolved to the server's base/preset default at the read path
+ *  (DS02). `difficultyPreset` is a preset NAME — the name-only invariant is
+ *  enforced by the write path (DS02), not by storage. */
+export interface UserConfigJson {
+  difficultyPreset?: string | null;
+  wordsPerBatch?: number | null;
+  sentenceDirections?: string[] | null;
+}
+
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
   role: text('role').notNull().default('learner'),
   created_at: text('created_at').notNull(),
+  config: text('config', { mode: 'json' }).$type<UserConfigJson>(),
 });
 
 // ---------------------------------------------------------------------------

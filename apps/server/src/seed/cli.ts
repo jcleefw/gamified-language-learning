@@ -4,8 +4,9 @@ import { getDb } from '@gll/db';
 import { defaultDbPath } from '../config/db-path.js';
 import { REVIEW_SCENARIOS } from './scenario-builder.js';
 import { runSeed, type RunSeedArgs } from './run-seed.js';
+import { DEMO_USER_ID } from '../identity/current-user.js';
 
-const USER_ID = 'demo-user';
+const USER_ID = DEMO_USER_ID;
 
 interface CliArgs extends RunSeedArgs {
   list: boolean;

@@ -11,10 +11,10 @@ import {
 } from '@gll/api-contract';
 import { LEARNING_CONFIG } from '../config/learning.js';
 import { toGraduationPerformance } from '../review/graduation-performance.js';
+import { getCurrentUserId } from '../identity/current-user.js';
 import { logger } from '../logger.js';
 
-// TODO: replace with authenticated user id once auth/session middleware exists.
-const USER_ID = 'demo-user';
+const USER_ID = getCurrentUserId();
 
 // Stateless (default FSRS params) — construct once, reuse across requests.
 const scheduler = new FsrsScheduler();
