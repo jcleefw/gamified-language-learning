@@ -29,6 +29,8 @@ import {
 import { evaluateShelving } from '@gll/srs-shelving';
 import type { AppDeckPayload } from '@gll/api-contract';
 import { loadRunState, postAnswer, clearStore } from './useStore';
+import { createCorrelationLedger } from './useCorrelation';
+import { getTraceSession } from './useTraceSession';
 import {
   loadShelvedWords,
   applyShelving,
@@ -38,13 +40,6 @@ import {
   resetStagnationCounters,
   getShelvingConfig,
 } from './useShelving';
-import {
-  logDeckStarted,
-  logBatchStarted,
-  logBatchQuestions,
-  logBatchResult,
-  clearLogs,
-} from './useQuizDebugLog';
 import type { BatchSummary } from '../components/BatchResults.vue';
 import type { ConfigType, Screen } from '../types';
 
@@ -75,6 +70,24 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
   const globalRunState = ref<RunState>(new Map());
   const batchState = ref<BatchState | null>(null);
   const currentQuestion = ref<QuizQuestion | null>(null);
+
+  // Correlation ledger (EP40-ST01) — one id per word served this session, held
+  // app-side (never inside the pure engine's batch state). Reset per session; a
+  // recheck re-ask of the same word reuses its id (same logical event). Read back
+  // at the batched /api/answer replay so each transition row carries its serve id.
+  const correlation = createCorrelationLedger();
+
+  // Appearance channel (EP40-ST04) — record the "why did this word appear" seams,
+  // keyed by the current question's correlation id. Fail-open (record() no-ops when
+  // no trace is active and swallows its own errors); never gates orchestration.
+  function traceQuestionServed(question: QuizQuestion | null): void {
+    const wordId = question?.kind === 'mcq' ? question.wordId : undefined;
+    getTraceSession().record({
+      correlationId: wordId ? correlation.peek(wordId) ?? null : null,
+      channel: 'appearance',
+      data: { kind: 'question-served', detail: { kind: question?.kind, wordId } },
+    });
+  }
 
   // Sentence state (in-memory only; not persisted in EP31)
   const sentenceRunState = ref<SentenceRunState>(new Map());
@@ -182,15 +195,6 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
   function startBatch() {
     if (!sessionState.value) return;
 
-    // Log batch start with pool state, word states, and shelved status
-    logBatchStarted(
-      wordPool.value.length,
-      wordPool.value,
-      batchNum.value + 1,
-      sessionState.value.runState,
-      shelvedSet.value,
-    );
-
     // Resolve eligible sentence contexts based on word seen counts and batch spacing
     const eligibleSentences = resolveEligibleContexts(
       sentenceCorpus.value,
@@ -222,9 +226,6 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
 
     batchNum.value++;
 
-    // Log questions served in this batch
-    logBatchQuestions(batchNum.value, questions, questions.length);
-
     // Initialize serializable batch state
     batchState.value = initBatchState(
       questions,
@@ -237,6 +238,8 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
     const { question, state: nextState } = nextQuestion(batchState.value);
     batchState.value = nextState;
     currentQuestion.value = question;
+    if (question?.kind === 'mcq') correlation.forWord(question.wordId); // mint on serve
+    traceQuestionServed(question);
     questionKey.value++;
 
     screen.value = 'quiz';
@@ -251,11 +254,11 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
     }
     deckId.value = id;
     localStorage.setItem(LAST_DECK_KEY, id);
+    correlation.reset(); // fresh id-per-word ledger for this session
     const allWords = getDeckWords(id);
 
     if (isNewSession) {
       // New session: clear shelving + stagnation state
-      clearLogs();
       shelvedSet.value = new Set();
       await Promise.all([
         unshelveAll({ deckId: id }).catch(console.error),
@@ -281,9 +284,6 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
       new Set(),
       globalRunState.value,
     );
-
-    // Log deck start with pool state, word states, and shelved status
-    logDeckStarted(words.length, words, globalRunState.value, shelvedSet.value);
 
     startBatch();
   }
@@ -360,6 +360,17 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
       sessionState.value.recheckPending,
     );
 
+    // Appearance: a re-asked missed word — keyed by that word's serve id.
+    wordResults.forEach((r, i) => {
+      if (recheckFlags[i]) {
+        getTraceSession().record({
+          correlationId: correlation.peek(r.wordId) ?? null,
+          channel: 'appearance',
+          data: { kind: 'recheck-triggered', detail: { wordId: r.wordId } },
+        });
+      }
+    });
+
     // Advance adaptive session state via the orchestrator (pools/recheck/shelving
     // stay client-side; the server owns persisted WordState).
     sessionState.value = advanceAdaptiveSession(
@@ -368,6 +379,17 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
       CONFIG.value,
     );
     globalRunState.value = sessionState.value.runState;
+
+    // Appearance: the pool the orchestrator selected for the next batch (the
+    // "what will the learner see next" decision). Not keyed to one question.
+    getTraceSession().record({
+      correlationId: null,
+      channel: 'appearance',
+      data: {
+        kind: 'pool-selected',
+        detail: { activeWordIds: sessionState.value.active.map((w) => w.id) },
+      },
+    });
 
     const uniqueWordIds = [...new Set(wordResults.map((r) => r.wordId))];
 
@@ -381,12 +403,17 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
     for (let i = 0; i < wordResults.length; i++) {
       const r = wordResults[i];
       try {
-        const authoritative = await postAnswer({
-          wordId: r.wordId,
-          correct: r.correct,
-          latencyMs: 0,
-          recheck: recheckFlags[i],
-        });
+        const authoritative = await postAnswer(
+          {
+            wordId: r.wordId,
+            correct: r.correct,
+            latencyMs: 0,
+            recheck: recheckFlags[i],
+          },
+          // The id minted when this word was served; peek-or-mint guards a word
+          // answered without a recorded serve (e.g. resumed mid-batch).
+          correlation.forWord(r.wordId),
+        );
         confirmed.set(r.wordId, authoritative);
         sessionState.value.runState.set(r.wordId, authoritative);
       } catch (err) {
@@ -476,17 +503,6 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
     const correct = output.results.filter((a) => a.correct).length;
     batchScore.value = { correct, total: output.results.length };
 
-    // Log batch result and final pool state with word states and shelved status
-    logBatchResult(
-      batchNum.value,
-      correct,
-      output.results.length,
-      wordPool.value.length,
-      wordPool.value,
-      sessionState.value.runState,
-      shelvedSet.value,
-    );
-
     const deckWordMap = new Map(
       getDeckWords(deckId.value ?? '').map((w) => [w.id, w]),
     );
@@ -528,6 +544,8 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
       const { question, state: nextState } = nextQuestion(batchState.value);
       batchState.value = nextState;
       currentQuestion.value = question;
+      if (question?.kind === 'mcq') correlation.forWord(question.wordId); // mint on serve
+      traceQuestionServed(question);
       questionKey.value++;
     }
   }
