@@ -9,6 +9,7 @@ import type {
   QuizItem,
 } from '@gll/srs-engine-v2';
 import PoolDebugPanel from './PoolDebugPanel.vue';
+import { env } from '../env';
 
 const props = defineProps<{
   question: QuizQuestion;
@@ -25,7 +26,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ answered: [result: QuizResult]; exit: [] }>();
 
-const cheatMode = import.meta.env.VITE_CHEAT_MODE === 'true';
+const cheatMode = env.cheatMode;
 
 const answered = ref(false);
 const selectedLabel = ref<string | null>(null);
