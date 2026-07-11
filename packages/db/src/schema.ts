@@ -150,6 +150,23 @@ export const review_answer_events = sqliteTable('review_answer_events', {
 });
 
 // ---------------------------------------------------------------------------
+// Revision transition channel (EP40-ST05) — append-only per-answer card-state
+// transition log. Pure transition log (before/after card), separate from the
+// review_answer_events answer log; joined to inputs by correlation_id. Written
+// on the due (advance) branch only — brings Revision to answer_events fidelity.
+// ---------------------------------------------------------------------------
+
+export const review_transition_events = sqliteTable('review_transition_events', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  correlation_id: text('correlation_id'),
+  user_id: text('user_id').notNull(),
+  word_id: text('word_id').notNull(),
+  before_card: text('before_card').notNull(), // JSON ReviewCard (pre-advance)
+  after_card: text('after_card').notNull(),   // JSON ReviewCard (post-advance)
+  created_at: text('created_at').notNull(),
+});
+
+// ---------------------------------------------------------------------------
 // SRS shelving
 // ---------------------------------------------------------------------------
 

@@ -81,7 +81,6 @@ All routes are mounted under `/api` (see `src/app.ts`); handlers live in
 | GET | `/api/stagnation/stagnant` | `shelving.ts` | List words stagnant at a given threshold |
 | POST | `/api/stagnation/reset-words` | `shelving.ts` | Reset stagnation counters for specific words |
 | POST | `/api/stagnation/reset` | `shelving.ts` | Reset all stagnation counters for a deck |
-| POST | `/api/debug-logs` | `debug-logs.ts` | Accept a batch of client debug-log snapshots |
 | POST | `/api/test/seed` | `test-seed.ts` | Seed a scripted test scenario directly to the DB |
 | POST/DELETE | `/api/test/config/shelving` | `test-seed.ts` | Override/reset shelving config for manual testing |
 | GET/POST/DELETE | `/api/test/config/sentence` | `test-seed.ts` | Override/reset sentence config for manual testing |

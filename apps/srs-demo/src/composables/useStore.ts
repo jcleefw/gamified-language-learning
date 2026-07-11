@@ -16,6 +16,7 @@ import type {
   ReviewAnswerResponse,
   WordStatePayload,
 } from '@gll/api-contract';
+import { getTraceSession, type ApiChannelData } from './useTraceSession';
 
 /**
  * Local consuming shape for GET /api/config. The client owns how it reads the
@@ -25,6 +26,45 @@ import type {
  * `pedagogy` (T2 authored course design, read-only to the client). T3 system
  * internals are never served.
  */
+// EP40-ST03 (API channel) — record an `api` TraceEntry around a fetch: method,
+// path, status/ok on completion; `error` on a non-ok response or a network throw.
+// Fail-open: recording never gates the request (record() no-ops when no trace is
+// active and swallows its own errors), and the original throw is preserved.
+async function tracedFetch(
+  path: string,
+  init: RequestInit,
+  correlationId?: string,
+): Promise<Response> {
+  const method = init.method ?? 'GET';
+  const trace = getTraceSession();
+  try {
+    const res = await fetch(path, init);
+    trace.record({
+      correlationId: correlationId ?? null,
+      channel: 'api',
+      data: {
+        method,
+        path,
+        status: res.status,
+        ok: res.ok,
+        ...(res.ok ? {} : { error: `${method} ${path} failed: ${res.status}` }),
+      } satisfies ApiChannelData,
+    });
+    return res;
+  } catch (err) {
+    trace.record({
+      correlationId: correlationId ?? null,
+      channel: 'api',
+      data: {
+        method,
+        path,
+        error: err instanceof Error ? err.message : String(err),
+      } satisfies ApiChannelData,
+    });
+    throw err;
+  }
+}
+
 export interface AppConfig {
   user: {
     masteryThreshold: number;
@@ -93,12 +133,24 @@ export async function saveWordState(ws: WordState): Promise<void> {
  * transition and returns the canonical WordState. Throws a typed error on
  * failure so the caller can avoid overwriting local state with a lost answer.
  */
-export async function postAnswer(req: AnswerRequest): Promise<WordState> {
-  const res = await fetch('/api/answer', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(req),
-  });
+export async function postAnswer(
+  req: AnswerRequest,
+  correlationId?: string,
+): Promise<WordState> {
+  const res = await tracedFetch(
+    '/api/answer',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Correlation is a transport concern (a header), not a wire fact in the body.
+        // Omitted when absent; the server degrades gracefully to a null correlation.
+        ...(correlationId ? { 'x-correlation-id': correlationId } : {}),
+      },
+      body: JSON.stringify(req),
+    },
+    correlationId,
+  );
   if (!res.ok) throw new Error(`POST /api/answer failed: ${res.status}`);
   const body = (await res.json()) as ApiResponse<AnswerResponse>;
   if (!body.success) throw new Error(`POST /api/answer error: ${body.error.message}`);
@@ -143,12 +195,21 @@ export async function loadAnytimeReviews(): Promise<DueReviewItem[]> {
  */
 export async function postReviewAnswer(
   req: ReviewAnswerRequest,
+  correlationId?: string,
 ): Promise<ReviewAnswerResponse> {
-  const res = await fetch('/api/reviews/answer', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(req),
-  });
+  const res = await tracedFetch(
+    '/api/reviews/answer',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Header transport (see postAnswer); the server reads it on this route too.
+        ...(correlationId ? { 'x-correlation-id': correlationId } : {}),
+      },
+      body: JSON.stringify(req),
+    },
+    correlationId,
+  );
   if (!res.ok) throw new Error(`POST /api/reviews/answer failed: ${res.status}`);
   const body = (await res.json()) as ApiResponse<ReviewAnswerResponse>;
   if (!body.success)
