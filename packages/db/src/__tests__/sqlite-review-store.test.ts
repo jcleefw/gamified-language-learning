@@ -170,7 +170,7 @@ describe('SqliteReviewStore', () => {
   // --- EP39-ST03: last-practised recency (MAX(created_at) per word, user-scoped) ---
 
   it('getLastPracticedAtByWord returns MAX(created_at) per word and omits never-practised words', async () => {
-    const insert = (wordId: string, createdAt: string, userId = 'user-a') =>
+    const insert = (wordId: string, createdAt: string, userId = 'user-a'): unknown =>
       db
         .insert(schema.review_answer_events)
         .values({
@@ -212,13 +212,13 @@ describe('SqliteReviewStore', () => {
       { correctStreak: 5, lapses: 0, correctRatio: 1 },
     ];
     for (const [i, perf] of perfs.entries()) {
-      await store.upsertReviewCard('user-a', scheduler.seed(`w${i}`, perf, now));
+      await store.upsertReviewCard('user-a', scheduler.seed(`w${String(i)}`, perf, now));
     }
 
     // Today: graduation schedules ahead → nothing due yet.
     expect(await store.getDueReviewCards('user-a', now)).toEqual([]);
     // Tomorrow: still nothing (a "good" graduation is ~3 days out, not 1).
-    const plus = (days: number) => new Date(now.getTime() + days * 86_400_000);
+    const plus = (days: number): Date => new Date(now.getTime() + days * 86_400_000);
     expect(await store.getDueReviewCards('user-a', plus(1))).toEqual([]);
 
     // By 8 days later: all three have crossed their due date and resurface together.
