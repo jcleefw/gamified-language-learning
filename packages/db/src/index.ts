@@ -7,6 +7,7 @@ export type { IReviewStore } from './types/review-store';
 export type {
   IAnswerEventStore,
   AnswerEventRecord,
+  ResolvedThresholds,
 } from './types/answer-event-store';
 export type {
   IReviewAnswerEventStore,

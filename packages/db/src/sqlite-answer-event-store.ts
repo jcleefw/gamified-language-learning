@@ -28,6 +28,7 @@ export class SqliteAnswerEventStore implements IAnswerEventStore {
           after_state: JSON.stringify(record.afterState),
           graduated: record.graduated,
           recheck: record.recheck,
+          resolved_thresholds: JSON.stringify(record.resolvedThresholds),
           created_at: record.createdAt,
         })
         .run();
