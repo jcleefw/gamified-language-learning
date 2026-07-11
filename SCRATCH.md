@@ -4,3 +4,4 @@
 - [ ] user authentication - pending adr
 - [ ] review mode - difficult mode,
 - [ ] work out a path for local / d1 to workalongside
+- [ ] debug log should be feature flag
