@@ -21,20 +21,21 @@ import type {
  * Local consuming shape for GET /api/config. The client owns how it reads the
  * server's config; it declares none of its own and imports no config type from
  * @gll/api-contract (none exists there — config is server-owned by design).
- * Categorized by who may change it: `user` (T1, eventually user-writable) and
- * `pedagogy` (T2 authored course design, read-only to the client). T3 system
- * internals are never served.
+ * Categorized by who may change it: `user` (T1, resolved defaults ← overrides,
+ * writable via PUT /api/config) and `system` (T3 fixed engine mechanics, served
+ * read-only because the client applies them but never writes them).
  */
 export interface AppConfig {
   user: {
-    masteryThreshold: number;
+    difficultyPreset: string;
     streakThresholds: StreakThresholds;
     wordsPerBatch: number;
-    maxRetryPerSession: number;
-    maxRetryPerWord: number;
     sentenceDirections: SentenceQuestion['direction'][];
   };
-  pedagogy: {
+  system: {
+    masteryThreshold: number;
+    maxRetryPerSession: number;
+    maxRetryPerWord: number;
     sentenceScheduling: { minSeenForSentence: number; sentenceBatchGap: number };
     sentenceGraduation: {
       sentenceCorrectStreakThreshold: number;

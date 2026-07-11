@@ -11,8 +11,9 @@ import type { WordState } from '@gll/srs-engine-v2';
 import { FsrsScheduler, type GraduationPerformance } from '@gll/srs-review';
 import { buildScenario, REVIEW_SCENARIOS } from '../seed/scenario-builder.js';
 import { applyBuiltScenario } from '../seed/apply-scenario.js';
+import { getCurrentUserId } from '../identity/current-user.js';
 
-const USER_ID = 'demo-user';
+const USER_ID = getCurrentUserId();
 const scheduler = new FsrsScheduler();
 
 // Module-level config overrides

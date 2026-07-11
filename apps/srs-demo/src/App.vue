@@ -221,7 +221,7 @@ onMounted(async () => {
   // (completed-deck detection, session init). Fail closed: no session without it.
   try {
     const cfg = await loadConfig();
-    CONFIG.value = { ...cfg.user, ...cfg.pedagogy };
+    CONFIG.value = { ...cfg.user, ...cfg.system };
     configReady.value = true;
   } catch {
     apiError.value =
