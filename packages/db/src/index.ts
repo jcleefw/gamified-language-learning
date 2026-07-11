@@ -8,7 +8,12 @@ export type {
   IAnswerEventStore,
   AnswerEventRecord,
 } from './types/answer-event-store';
+export type {
+  IReviewAnswerEventStore,
+  ReviewAnswerEventRecord,
+} from './types/review-answer-event-store';
 export { SqliteLearningStore } from './sqlite-learning-store';
 export { SqliteContentStore } from './sqlite-content-store';
 export { SqliteReviewStore } from './sqlite-review-store';
 export { SqliteAnswerEventStore } from './sqlite-answer-event-store';
+export { SqliteReviewAnswerEventStore } from './sqlite-review-answer-event-store';

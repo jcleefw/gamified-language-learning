@@ -152,6 +152,9 @@ importers:
       vite:
         specifier: ^6
         version: 6.4.2(@types/node@25.5.0)(jiti@2.6.1)(tsx@4.21.0)
+      vitest:
+        specifier: ^3
+        version: 3.2.4(@types/node@25.5.0)(jiti@2.6.1)(tsx@4.21.0)
       vue-tsc:
         specifier: ^2
         version: 2.2.12(typescript@5.9.3)

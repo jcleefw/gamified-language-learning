@@ -133,6 +133,23 @@ export const answer_events = sqliteTable('answer_events', {
 });
 
 // ---------------------------------------------------------------------------
+// Review-answer channel — append-only per-review-answer log (seed data for the
+// deferred response-time-scoring feature; never feeds the rating).
+// ---------------------------------------------------------------------------
+
+export const review_answer_events = sqliteTable('review_answer_events', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  correlation_id: text('correlation_id'),
+  user_id: text('user_id').notNull(),
+  word_id: text('word_id').notNull(),
+  correct: integer('correct', { mode: 'boolean' }).notNull(),
+  latency_ms: integer('latency_ms').notNull(),
+  question_type: text('question_type').notNull(), // 'mcq' | 'word-block'
+  rating: text('rating'),                          // inferred ReviewRating ('again'|'good'); NULL ⟺ eager/not-due answer (no FSRS rating)
+  created_at: text('created_at').notNull(),
+});
+
+// ---------------------------------------------------------------------------
 // SRS shelving
 // ---------------------------------------------------------------------------
 

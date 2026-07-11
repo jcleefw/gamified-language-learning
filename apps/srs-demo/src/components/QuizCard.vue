@@ -18,6 +18,10 @@ const props = defineProps<{
   queue: QuizItem[];
   masteredDeck: QuizItem[];
   shelvedItems?: QuizItem[];
+  // When true, an MCQ holds on a right/wrong reveal and advances only on an
+  // explicit Next (mirrors the sentence path). Default false keeps Learning's
+  // emit-on-click behaviour byte-identical. Review passes true.
+  feedbackDwell?: boolean;
 }>();
 const emit = defineEmits<{ answered: [result: QuizResult]; exit: [] }>();
 
@@ -25,6 +29,8 @@ const cheatMode = import.meta.env.VITE_CHEAT_MODE === 'true';
 
 const answered = ref(false);
 const selectedLabel = ref<string | null>(null);
+// Chosen MCQ correctness, held for the reveal + deferred emit (feedbackDwell only).
+const mcqCorrect = ref<boolean | null>(null);
 
 // Word-block (sentence) state
 const selectedTiles = ref<SentenceTile[]>([]);
@@ -40,9 +46,26 @@ function answerMCQ(choice: MCQQuestion['choices'][number]) {
   if (answered.value || props.question.kind !== 'mcq') return;
   answered.value = true;
   selectedLabel.value = choice.label;
+  mcqCorrect.value = choice.isCorrect;
+  // Dwell mode holds on the reveal; the emit is deferred to confirmMCQ (Next).
+  if (!props.feedbackDwell) {
+    emit('answered', {
+      wordId: props.question.wordId,
+      correct: choice.isCorrect,
+    });
+  }
+}
+
+function confirmMCQ() {
+  if (
+    !answered.value ||
+    props.question.kind !== 'mcq' ||
+    mcqCorrect.value === null
+  )
+    return;
   emit('answered', {
-    wordId: props.question.wordId,
-    correct: choice.isCorrect,
+    wordId: (props.question as MCQQuestion).wordId,
+    correct: mcqCorrect.value,
   });
 }
 
@@ -142,6 +165,7 @@ watch(
   (q) => {
     answered.value = false;
     selectedLabel.value = null;
+    mcqCorrect.value = null;
     sentenceCorrect.value = null;
     if (q.kind === 'word-block') {
       selectedTiles.value = [];
@@ -189,6 +213,18 @@ watch(
           </button>
         </li>
       </ul>
+
+      <!-- Feedback moment (review only): hold on the reveal, advance on Next. The
+           correct choice is already highlighted green and the wrong pick red above. -->
+      <template v-if="feedbackDwell && answered && mcqCorrect !== null">
+        <div
+          class="sentence-feedback"
+          :class="{ correct: mcqCorrect, wrong: !mcqCorrect }"
+        >
+          {{ mcqCorrect ? '✓ Correct!' : '✗ Incorrect' }}
+        </div>
+        <button class="btn-submit" @click="confirmMCQ">Next</button>
+      </template>
     </template>
 
     <!-- Word-block (sentence) -->

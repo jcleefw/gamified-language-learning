@@ -35,4 +35,11 @@ export interface IReviewStore {
 
   /** All the user's review cards (any due date). */
   getAllReviewCards(userId: string): Promise<ReviewCard[]>;
+
+  /**
+   * Last-practised timestamp per word (MAX(created_at) over review_answer_events),
+   * covering both scheduled and eager answers. Feeds the anytime-batch recency
+   * re-rank; a word absent from the map has never been practised.
+   */
+  getLastPracticedAtByWord(userId: string): Promise<Map<string, string>>;
 }
