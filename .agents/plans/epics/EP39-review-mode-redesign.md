@@ -1,7 +1,7 @@
 # EP39 - Review Mode: Eager Practice & Feedback (Memrise-inspired)
 
 **Created**: 20260710T010141Z
-**Status**: Accepted
+**Status**: Impl-Complete
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
@@ -150,26 +150,26 @@ sites stay untouched. Governed by its own FSRS Seeding Snapshot Builder design s
 
 ## Overall Acceptance Criteria
 
-- [ ] The review tab lands on a **mode hub** (Due Review · Practice Anytime), reachable even when nothing
+- [x] The review tab lands on a **mode hub** (Due Review · Practice Anytime), reachable even when nothing
       is due; there is no caught-up terminus.
-- [ ] A learner can start a **Practice Anytime** session over learned words regardless of due date; the
+- [x] A learner can start a **Practice Anytime** session over learned words regardless of due date; the
       batch is **≤50**, most-overdue-first, with the not-due tail re-ranked least-recently-practised.
-- [ ] Answering a **not-due** word in any path **does not** mutate its FSRS scheduler state
+- [x] Answering a **not-due** word in any path **does not** mutate its FSRS scheduler state
       (`due`/stability/difficulty) — the next scheduled review does not move — yet the answer **is**
       recorded to `review_answer_events`. (NFR-005 / ADR §3.)
-- [ ] Answering a **due** word advances its schedule, whether reached via the due queue or an anytime
+- [x] Answering a **due** word advances its schedule, whether reached via the due queue or an anytime
       session; due-ness is derived **server-side**, not from a client flag.
-- [ ] After an **MCQ** answer the learner sees whether they were correct and, on a miss, the correct
+- [x] After an **MCQ** answer the learner sees whether they were correct and, on a miss, the correct
       answer, and advances only on an explicit action. No self-rating prompt appears (D5).
-- [ ] A learner can **exit** a review session at any time non-destructively; re-entering a Practice
+- [x] A learner can **exit** a review session at any time non-destructively; re-entering a Practice
       Anytime session does **not** re-serve the same **not-due** words in the same order (due words
       self-demote via their advanced schedule).
-- [ ] **Edge/limit**: a learned word that cannot be resolved to content/distractors (orphan) is skipped
+- [x] **Edge/limit**: a learned word that cannot be resolved to content/distractors (orphan) is skipped
       without failing the anytime session (pillar-3 tolerance holds through the UI).
-- [ ] **Edge/limit**: a failed `review_answer_events` append on the not-due path is fail-open — it must
+- [x] **Edge/limit**: a failed `review_answer_events` append on the not-due path is fail-open — it must
       not fabricate a schedule advance; a failed *schedule* write on the due path leaves the card
       unchanged and surfaces a typed error (write-on-answer contract, unchanged from EP38).
-- [ ] Frontend bundle does not import `ts-fsrs` (grep guard passes).
+- [x] Frontend bundle does not import `ts-fsrs` (grep guard passes).
 
 ---
 
@@ -186,9 +186,7 @@ sites stay untouched. Governed by its own FSRS Seeding Snapshot Builder design s
 
 1. ~~Review and approve plan~~ ✅ (20260710)
 2. ~~Accept the ADR~~ ✅ (20260710)
-3. Create Design Spec (DS) — DS01 (PH01 server: due-gate + anytime endpoint), DS02 (PH02/PH03 client:
-   feedback moment + review hub + Practice Anytime session), DS03 (PH04 seeding infra: snapshot builder +
-   `pnpm seed` CLI).
+3. ~~Create Design Spec (DS)~~ ✅ — [DS01](../../changelogs/EP39--review-mode-redesign/20260710T011037Z-EP39-DS01-server-due-gate-and-anytime.md) (PH01 server: due-gate + anytime endpoint), [DS02](../../changelogs/EP39--review-mode-redesign/20260710T011740Z-EP39-DS02-client-feedback-hub-anytime.md) (PH02/PH03 client: feedback moment + review hub + Practice Anytime session), [DS03](../../changelogs/EP39--review-mode-redesign/20260710T090952Z-EP39-DS03-fsrs-seeding-snapshot-builder.md) (PH04 seeding infra: snapshot builder + `pnpm seed` CLI) — all **Impl-Complete**.
 4. Build order: ST02 due-gate → ST03 anytime endpoint → ST04 feedback (parallel, no server dep) →
    ST05/06/07 hub + session. Seeding infra (ST08→ST11) is parallel/independent — no production dep.
 5. **Deferred by scope**: retry-until-correct-today, Difficult Words (+ ADR OQ-D), Speed Review,

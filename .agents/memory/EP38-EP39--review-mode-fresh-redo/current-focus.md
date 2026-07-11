@@ -43,17 +43,38 @@ EP38's due-review session **only ever fetches due cards**, so "advance FSRS on e
 - `0726164` — **two epics**: `.agents/plans/epics/EP38-review-mode-srs-demo.md` (fresh foundation) +
   `EP39-review-mode-redesign.md` (fresh eager-practice/feedback/hub/seeding delta).
 
-## Next steps (NOT done — user said "stop after commit")
+## DS specs — DONE (5 fresh specs + seeding ADR)
 
-1. **DS specs** — per each epic's Next Steps: EP38 DS01 (server endpoints) + DS02 (client landing/session);
-   EP39 DS01 (due-gate + anytime endpoint), DS02 (feedback + hub + Practice Anytime), DS03 (seeding infra).
-   Write these FRESH too, in `.agents/changelogs/{branch}/…`, same framing.
-2. Decide whether to also update global auto-memory `MEMORY.md` pointer.
+Written fresh, matching the **actual shipped implementation** (code read from the reference branch at
+the **EP39 tip `9b56cda`**, before EP40/EP41 touched config/identity — so snippets are EP38/EP39
+as-shipped, real code not sketches). User directive: "the writing should match [the implementation],
+just copy the code from the reference branch." Status on all five: **Impl-Complete**.
+
+- `a95a6d2` — **seeding ADR** brought in fresh (alone): `…/architecture/20260710T090706Z-…fsrs-seeding-snapshot-builder.md`.
+- DS commit (below) — 5 specs:
+  - EP38-DS01 (server read/advance/record — **EP38 form**, no due-gate; due-gate is EP39)
+  - EP38-DS02 (landing + `useReviewSession` + nav + summary — composable from the start, folds the
+    reference's separate DS03 composable-refactor away; unlock gate = mastery-only, EP39 broadens it)
+  - EP39-DS01 (due-gate + anytime endpoint + `orderAnytimeBatch` + migration 0009 nullable rating)
+  - EP39-DS02 (MCQ feedbackDwell + ReviewHub + Practice Anytime + `hasReviewCards` broadened gate
+    [folds EP39-BUG01 in as the final gate form] + advanced tally)
+  - EP39-DS03 (snapshot builder + `pnpm seed` CLI; ties to the seeding ADR)
+- EP39 epic bumped **Accepted → Impl-Complete**, ACs checked, Next-Steps DS links added.
+
+Key faithful-split decisions:
+- Reference `reviews.ts` merges EP38 base + EP39 due-gate. DS01(EP38) shows the pre-gate form;
+  EP39-DS01 shows the due-gate branch. Truthful because EP38's due session only serves due cards.
+- Dropped the reference's EP38-DS03 (App.vue composable refactor) and EP39-BUG01 as standalone docs —
+  fresh lens describes their END STATE inside DS02s (useReviewSession from day one; card-based unlock).
+
+## Next steps (optional)
+
+1. Decide whether to update global auto-memory `MEMORY.md` pointer.
+2. Optional: rename product-doc/DS filename slugs to drop "-redesign-" (kept stable for clean replace).
 
 ## Open items / caveats
 
-- **Seeding ADR not brought in**: `20260710T090706Z-…fsrs-seeding-snapshot-builder.md` is absent on this
-  branch, so EP39 Phase 4 names it WITHOUT a deep link. Bring it in (fresh) when writing EP39-DS03.
+- **Seeding ADR**: now brought in fresh (`a95a6d2`); EP39-DS03 links it.
 - **On-main due-only wording**: `20260321T145300Z-…review-phase.md` (on main) still says review is
   due-only. New ADR "Relates to" it rather than amending. Left main-owned doc alone; light touch needed
   if full self-consistency wanted.
