@@ -123,7 +123,11 @@ This ADR ratifies the *contract*, not the implementation:
   3. **Transition channel** (server) — the authoritative per-answer `WordState` change, with inputs. →
      scenario (iii)
 - **Replayable.** Because the engine is pure, the transition channel is a deterministic input log: replaying
-  it reproduces any state bug and yields regression fixtures for free.
+  it reproduces any state bug and yields regression fixtures for free. The replay *mechanism* — transition-recompute,
+  the self-contained artifact, and the tool that consumes it — is specified in
+  [Seeding & Replay — One Domain-Replay Tool](20260711T140330Z-engineering-seeding-replay-domain-replay-tool.md),
+  which also narrows this determinism claim to its honest scope: it holds for the **transition** channel (no clock/RNG
+  on that path), while the **appearance** channel is recorded context, not recomputed.
 
 The transition channel is a byproduct of pillar 1; the API and appearance channels stay client-side by nature
 and do **not** depend on the authority move.

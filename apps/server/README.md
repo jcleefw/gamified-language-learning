@@ -55,6 +55,14 @@ To run the server together with the `srs-demo` frontend, use
   the pure `@gll/srs-engine-v2` transition and persists the result — clients
   send raw answers and adopt the returned canonical `WordState`. See the
   [Learning Authority ADR](../../product-documentation/architecture/20260708T125551Z-engineering-srs-demo-learning-authority-and-debug-trace.md).
+  - The transition itself is the single pure function
+    [`src/learning/apply-answer.ts`](src/learning/apply-answer.ts) (`applyAnswer`).
+    The `/api/answer` route **and** artifact-replay both call it, so replay parity
+    holds by construction — there is no second transition implementation.
+  - Every answer is appended to `answer_events` with the `resolvedThresholds`
+    (per-user config) it was computed under, so the transition is replayable
+    off any origin DB. See the
+    [Domain-Replay Tool ADR](../../product-documentation/architecture/20260711T140330Z-engineering-seeding-replay-domain-replay-tool.md).
 
 ## API routes
 
@@ -111,6 +119,36 @@ curl http://localhost:6060/api/state
 # Clear all user state
 curl -X DELETE http://localhost:6060/api/state
 ```
+
+## Seeding & replay
+
+The `pnpm seed` CLI (`src/seed/cli.ts`) composes state and writes it through the
+`@gll/db` stores. It defaults to the app DB path (`GLL_DB_PATH` or
+`<repo-root>/.data/srs-demo.db`) and the `demo-user` — no `--db-path`/`--user`
+flags, by design.
+
+```bash
+# List the built-in scenarios
+pnpm --filter @gll/server seed --list
+
+# Seed a named scenario (reload the app to see it)
+pnpm --filter @gll/server seed mastered-due
+
+# Replay a captured debug-trace artifact through the shared applyAnswer and
+# diff each recomputed WordState against the recorded one. Prints a step table
+# and exits non-zero on the first divergence (the pinpointed bug).
+pnpm --filter @gll/server seed replay <artifact.json>            # fresh :memory: DB (default)
+pnpm --filter @gll/server seed replay <artifact.json> --fresh
+pnpm --filter @gll/server seed replay <artifact.json> --existing-db   # replay onto the app DB
+```
+
+A replay artifact is **self-contained** (resolved thresholds + lazy per-word
+baseline + ordered inputs + recorded appearance context), so it reproduces the
+exact `WordState` trajectory on any machine with no dependency on the origin
+database. A faithful session replays byte-exact (golden-master), and any
+artifact can be dropped into `src/replay/__tests__/fixtures/` to become a
+regression assertion. Recording artifacts in `srs-demo` is a separate concern
+(EP40-DS02); this app only **consumes** them.
 
 ## Testing
 
