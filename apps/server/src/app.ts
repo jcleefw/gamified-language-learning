@@ -8,6 +8,7 @@ import answerRouter from './routes/answer.js';
 import shelvingRouter from './routes/shelving.js';
 import testSeedRouter from './routes/test-seed.js';
 import decksRouter from './routes/decks.js';
+import debugLogsRouter from './routes/debug-logs.js';
 import configRouter from './routes/config.js';
 import reviewsRouter from './routes/reviews.js';
 
@@ -32,6 +33,7 @@ app.route('/api', answerRouter);
 app.route('/api', shelvingRouter);
 app.route('/api', testSeedRouter);
 app.route('/api', decksRouter);
+app.route('/api', debugLogsRouter);
 app.route('/api', configRouter);
 app.route('/api', reviewsRouter);
 

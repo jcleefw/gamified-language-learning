@@ -11,7 +11,6 @@ import type {
   ResetStagnationCountersForWordsRequest,
 } from '@gll/api-contract';
 import { DEFAULT_SHELVING_CONFIG, type ShelvingConfig } from '@gll/srs-shelving';
-import { getTraceSession } from './useTraceSession';
 
 export async function loadShelvedWords(deckId: string): Promise<ShelvedWordPayload[]> {
   const res = await fetch(`/api/shelving?deckId=${encodeURIComponent(deckId)}`);
@@ -22,13 +21,6 @@ export async function loadShelvedWords(deckId: string): Promise<ShelvedWordPaylo
 }
 
 export async function applyShelving(request: ApplyShelvingRequest): Promise<void> {
-  // Appearance channel (EP40-ST04) — the shelve decision (why a word left the pool).
-  // Not keyed to one question; fail-open (no-op when no trace is active).
-  getTraceSession().record({
-    correlationId: null,
-    channel: 'appearance',
-    data: { kind: 'shelving-decision', detail: { action: 'shelve', request } },
-  });
   const res = await fetch('/api/shelving/apply', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -80,11 +72,6 @@ export async function resetStagnationCounters(request: ResetStagnationCountersRe
 }
 
 export async function unshelveWord(request: UnshelveWordRequest): Promise<void> {
-  getTraceSession().record({
-    correlationId: null,
-    channel: 'appearance',
-    data: { kind: 'shelving-decision', detail: { action: 'unshelve', request } },
-  });
   const res = await fetch('/api/shelving/unshelve-word', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

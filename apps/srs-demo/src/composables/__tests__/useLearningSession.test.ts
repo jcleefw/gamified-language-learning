@@ -42,6 +42,14 @@ vi.mock('../useShelving', () => ({
 }));
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+vi.mock('../useQuizDebugLog', () => ({
+  logDeckStarted: vi.fn(),
+  logBatchStarted: vi.fn(),
+  logBatchQuestions: vi.fn(),
+  logBatchResult: vi.fn(),
+  clearLogs: vi.fn(),
+}));
+
 function makeWord(id: string): QuizItem {
   return {
     id,

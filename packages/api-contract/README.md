@@ -49,7 +49,7 @@ All are served under `/api` by `@gll/server`.
 
 `AnswerRequest` — `{ wordId, correct, latencyMs, recheck? }`: the raw answer the server derives authoritative state from. `AnswerResponse` — `{ wordState, graduated }`.
 
-The `POST /api/test/*` config/seed routes exist for diagnostics and tests; `GET /health` is served at the root (not under `/api`).
+`POST /api/debug-logs` and the `POST /api/test/*` config/seed routes exist for diagnostics and tests; `GET /health` is served at the root (not under `/api`).
 
 ## Compile-time guards
 
