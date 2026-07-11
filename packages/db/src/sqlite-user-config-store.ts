@@ -23,7 +23,7 @@ export class SqliteUserConfigStore implements IUserConfigStore {
   }
 
   async get(userId: string): Promise<UserConfigRecord | null> {
-    const blob = this.readBlob(userId);
+    const blob = await this.readBlob(userId);
     if (!blob) return null;
     return {
       difficultyPreset: blob.difficultyPreset ?? null,
@@ -35,11 +35,13 @@ export class SqliteUserConfigStore implements IUserConfigStore {
   async put(userId: string, patch: Partial<UserConfigRecord>): Promise<void> {
     // Read-modify-write: merge only the provided keys into the existing blob so
     // absent keys are preserved. (Whole-blob rewrite is inherent to this shape.)
-    const current = this.readBlob(userId) ?? {};
+    const current = (await this.readBlob(userId)) ?? {};
     const next: UserConfigJson = { ...current };
-    if ('difficultyPreset' in patch) next.difficultyPreset = patch.difficultyPreset;
+    if ('difficultyPreset' in patch)
+      next.difficultyPreset = patch.difficultyPreset;
     if ('wordsPerBatch' in patch) next.wordsPerBatch = patch.wordsPerBatch;
-    if ('sentenceDirections' in patch) next.sentenceDirections = patch.sentenceDirections;
+    if ('sentenceDirections' in patch)
+      next.sentenceDirections = patch.sentenceDirections;
 
     this.db
       .update(schema.users)
