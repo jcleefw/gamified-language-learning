@@ -5,7 +5,7 @@
 **Epic**: [EP41 - Per-User Config Preference Tier (T1)](../../plans/EP41-config-preference-tier.md)
 
 **Architecture**:
-[Config Ownership — Two-Tier Model](../../../product-documentation/architecture/20260711T004050Z-engineering-config-ownership-two-tier.md) — **D4**, Accepted. This DS delivers the **foundation half** of EP41: the single current-user resolver (ST01), the per-user config store (ST02), and the server-owned difficulty-preset map (ST03). It builds the storage and policy substrate but changes **no HTTP behaviour** — the `GET`/`PUT /api/config` surface and the T3 tier-reclassification are deferred to **DS02**. It consumes the tier classification (T1 vs T3) from the ADR as-is; it does not re-decide which knob lives where.
+[Config Ownership — Two-Tier Model](../../../product-documentation/architecture/20260711T004050Z-engineering-config-ownership-two-tier.md) — **D4**, Accepted. This DS delivers the **foundation half** of EP41: the single current-user resolver (ST01), the per-user config store (ST02), and the server-owned difficulty-preset map (ST03). It builds the storage and policy substrate but changes **no HTTP behaviour** — the `GET`/`PUT /api/user/config` surface and the T3 tier-reclassification are deferred to **DS02**. It consumes the tier classification (T1 vs T3) from the ADR as-is; it does not re-decide which knob lives where.
 
 > **Amendment (20260711, as-built).** Per-user config is stored as a **JSON blob on the identity row (`users.config`)**, not a standalone `user_config` table. Rationale: the field set is tiny and closed (3 prefs) and this keeps the change minimal; the trade-off accepted is that storage can no longer *enforce* the preset-name-only invariant — that guard **moves entirely to DS02's `PUT` write path (zod)**. The `IUserConfigStore` port (`get`/`put`) is unchanged; only the physical storage differs. Two consequences carried into DS02: (a) `put` targets an existing `users` row (writing config for a non-existent user is a silent no-op); (b) `put` is a whole-blob read-modify-write (lost-update risk under concurrent writers — moot while single-user). See §3 and the Consequences note below.
 
@@ -29,7 +29,7 @@ This DS lays the substrate the T1 tier stands on, in three independent layers:
 - **`@gll/db` store pattern** — `types/I*Store.ts` port → `Sqlite*Store` impl → barrel export, exactly as `SqliteLearningStore` etc. `SqliteUserConfigStore` is a new instance of this shape (over a `users` column rather than its own table), not a new pattern. **`users` table + `seedDemoUser`** are reused — the blob is a new nullable column on the existing row.
 - **`StreakThresholds`** from `@gll/srs-engine-v2` — the preset bundle *is* this existing type; no new engine type.
 
-**Not in this DS**: `GET /api/config` override resolution, `PUT /api/config` + zod validation, dropping the `pedagogy` key, the read-only `system` section, and moving T3 knobs to fixed constants — all **DS02**. No route reads the `users.config` blob yet; this DS only makes it exist and be writable through the store.
+**Not in this DS**: `GET /api/user/config` override resolution, `PUT /api/user/config` + zod validation, dropping the `pedagogy` key, the read-only `system` section, and moving T3 knobs to fixed constants — all **DS02**. No route reads the `users.config` blob yet; this DS only makes it exist and be writable through the store.
 
 ---
 
@@ -192,7 +192,7 @@ resolvePreset('intense') → { correctStreakThreshold:1, wrongStreakThreshold:3,
 
 The as-built decision to store config as a JSON blob on `users.config` (rather than a dedicated `user_config` table) has three downstream consequences DS02 must account for:
 
-1. **Name-only invariant is enforced only at the write path.** Storage cannot reject a raw `correctStreakThreshold` written into the blob. DS02's `PUT /api/config` zod schema (`.strict()` + preset enum from `DIFFICULTY_PRESETS`, no T3 keys) is therefore the **sole** guard — it is not a defence-in-depth layer over a storage constraint, it is *the* constraint. Treat it as load-bearing.
+1. **Name-only invariant is enforced only at the write path.** Storage cannot reject a raw `correctStreakThreshold` written into the blob. DS02's `PUT /api/user/config` zod schema (`.strict()` + preset enum from `DIFFICULTY_PRESETS`, no T3 keys) is therefore the **sole** guard — it is not a defence-in-depth layer over a storage constraint, it is *the* constraint. Treat it as load-bearing.
 2. **`put` requires an existing `users` row.** Config lives on the identity row, so `put` is an `UPDATE ... WHERE id = userId` — a **silent no-op** for a non-existent user. Fine today (the demo user is always seeded via `seedDemoUser`); revisit when real signup/auth lands so a config write for a not-yet-persisted user can't be silently dropped.
 3. **`put` is a whole-blob read-modify-write.** Concurrent writers to *different* fields can lose-update (last writer wins the whole blob). Not a live risk while single-user; note it for the multi-user path (a per-field `UPDATE ... json_set`, row lock, or a return to a columnar table would remove it).
 
