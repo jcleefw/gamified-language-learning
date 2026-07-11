@@ -67,10 +67,32 @@ Key faithful-split decisions:
 - Dropped the reference's EP38-DS03 (App.vue composable refactor) and EP39-BUG01 as standalone docs —
   fresh lens describes their END STATE inside DS02s (useReviewSession from day one; card-based unlock).
 
+## Code brought in — DONE (`4b636fa`)
+
+User corrected the docs-only premise: "This worktree should consist code change too" — the branch
+should be the real, mergeable EP38+EP39 branch, not docs-only. Brought in the **exact epic-scoped code**
+from the reference branch tip `9b56cda`:
+
+- Confirmed `merge-base(main, 9b56cda) == main`, so `git diff main 9b56cda` (45 files) is precisely
+  EP38+EP39 — no EP40/EP41 leakage possible by construction.
+- Per user instruction ("only bring in affected line related to Epic"), inspected the borderline
+  tooling/config files (`eslint.config.ts`, `package.json`×2, `vitest.workspace.ts`) individually before
+  bulk-applying — all four hunks are directly epic-necessitated (review-store eslint exception, `seed`
+  script, `vitest` test infra, workspace glob for `apps/*`). No unrelated content found in any of the 45
+  files.
+- `git checkout 9b56cda -- <45 files>` (server routes/seed infra, db schema/migrations/stores, contract
+  DTOs, srs-demo composables/components), then verified before committing:
+  `pnpm install` → `pnpm -r build` (packages need `dist/` to resolve in a fresh worktree) →
+  `pnpm -r typecheck` (9/9 clean) → `pnpm -r test` (512 tests / 51 files, all green).
+- One pre-existing lint gap (3 rules in `sqlite-review-store.test.ts`) confirmed byte-identical to the
+  reference branch — not introduced by this bring-in, left as-is (out of scope for a faithful copy).
+- Commit `4b636fa`.
+
 ## Next steps (optional)
 
 1. Decide whether to update global auto-memory `MEMORY.md` pointer.
 2. Optional: rename product-doc/DS filename slugs to drop "-redesign-" (kept stable for clean replace).
+3. Optional: fix the pre-existing lint gap in `sqlite-review-store.test.ts` (not epic-scope, inherited).
 
 ## Open items / caveats
 
