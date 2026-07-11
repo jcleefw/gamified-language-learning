@@ -75,6 +75,7 @@ export default tseslint.config(
       'packages/db/src/sqlite-content-store.ts',
       'packages/db/src/sqlite-review-store.ts',
       'packages/db/src/sqlite-answer-event-store.ts',
+      'packages/db/src/sqlite-review-answer-event-store.ts',
     ],
     rules: {
       '@typescript-eslint/require-await': 'off',

@@ -9,7 +9,9 @@
     "build": "vue-tsc --noEmit && vite build",
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview",
-    "e2e": "bddgen test && playwright test"
+    "e2e": "bddgen test && playwright test",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@gll/api-contract": "workspace:*",
@@ -24,6 +26,7 @@
     "playwright-bdd": "^9",
     "typescript": "^5.7",
     "vite": "^6",
+    "vitest": "^3",
     "vue-tsc": "^2"
   }
 }
