@@ -5,9 +5,11 @@ import {
   SqliteAnswerEventStore,
   SqliteReviewStore,
   SqliteUserConfigStore,
+  type ResolvedThresholds,
 } from '@gll/db';
-import { processRecheckResult, isMastered, type WordState } from '@gll/srs-engine-v2';
+import { isMastered, type WordState } from '@gll/srs-engine-v2';
 import { FsrsScheduler } from '@gll/srs-review';
+import { applyAnswer } from '../learning/apply-answer.js';
 import {
   ErrorCode,
   type ApiResponse,
@@ -77,38 +79,26 @@ router.post('/answer', async (c) => {
   const now = new Date();
   const db = getDb();
   const store = new SqliteLearningStore(db);
-  const runState = await store.getAllWordStates(USER_ID);
-  const before = runState.get(req.wordId) ?? null;
 
   // Difficulty (T1) takes effect HERE, on the authoritative transition: the mastery
   // bar is the FIXED T3 value (same finish line for everyone), while streak
   // forgiveness is the current user's resolved preset. Only `normal` ships today, so
   // this is byte-identical for the default user — but the wiring is complete, so
   // `gentle`/`intense` will apply with no further change to this path.
-  const masteryThreshold = FIXED_SYSTEM.masteryThreshold;
-  const streakThresholds = await resolveUserThresholds(
-    new SqliteUserConfigStore(db),
+  const thresholds: ResolvedThresholds = {
+    masteryThreshold: FIXED_SYSTEM.masteryThreshold,
+    streakThresholds: await resolveUserThresholds(new SqliteUserConfigStore(db), USER_ID),
+  };
+
+  // The one shared Learning transition — the same pure fold artifact-replay runs, so
+  // replay parity holds by construction. `recheck` travels as a wire fact (like
+  // correct/latency), not server policy; a re-asked missed word bumps seen/correct only.
+  const { before, after, graduated } = await applyAnswer(
+    store,
     USER_ID,
+    { wordId: req.wordId, correct: req.correct, latencyMs: req.latencyMs, recheck: req.recheck ?? false },
+    thresholds,
   );
-
-  // Reuse the exact pure recheck branch so a re-asked missed word bumps
-  // seen/correct only (mastery frozen), byte-identical to the client's fold.
-  // recheck travels as a wire fact (like correct/latency), not server policy.
-  const { runState: next } = processRecheckResult(
-    req.wordId,
-    req.correct,
-    runState,
-    req.recheck ? new Set([req.wordId]) : new Set(), // recheckPending
-    new Set(),                                       // recheckReentered (WordState-irrelevant here)
-    masteryThreshold,
-    streakThresholds,
-  );
-  const after = next.get(req.wordId)!;
-
-  await store.upsertWordState(USER_ID, after);
-
-  const wasMastered = before ? isMastered(before, masteryThreshold) : false;
-  const graduated = !wasMastered && isMastered(after, masteryThreshold);
 
   // Transition channel — fail-open: a diagnostics-write failure must not lose the answer.
   try {
@@ -122,6 +112,7 @@ router.post('/answer', async (c) => {
       afterState: after,
       graduated,
       recheck: req.recheck ?? false,
+      resolvedThresholds: thresholds,
       createdAt: now.toISOString(),
     });
   } catch {
@@ -133,7 +124,7 @@ router.post('/answer', async (c) => {
   // mastered answer while skipping a wasted FSRS computation for already-seeded
   // words; seedReviewCard's idempotency still covers a concurrent double-seed.
   // Fail-open: the authoritative Learning write must not be lost to a seed failure.
-  if (isMastered(after, masteryThreshold)) {
+  if (isMastered(after, thresholds.masteryThreshold)) {
     try {
       const reviewStore = new SqliteReviewStore(db);
       if (!(await reviewStore.getReviewCard(USER_ID, after.wordId))) {
