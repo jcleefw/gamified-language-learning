@@ -5,11 +5,23 @@ import type { DeckDoc } from '@gll/api-contract';
 // User management
 // ---------------------------------------------------------------------------
 
+/** One user's config overrides (T1), stored as a JSON blob on the identity row.
+ *  Every field is optional; a field's absence (or a NULL `config` column) means
+ *  "no override", resolved to the server's base/preset default at the read path
+ *  (DS02). `difficultyPreset` is a preset NAME — the name-only invariant is
+ *  enforced by the write path (DS02), not by storage. */
+export interface UserConfigJson {
+  difficultyPreset?: string | null;
+  wordsPerBatch?: number | null;
+  sentenceDirections?: string[] | null;
+}
+
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
   role: text('role').notNull().default('learner'),
   created_at: text('created_at').notNull(),
+  config: text('config', { mode: 'json' }).$type<UserConfigJson>(),
 });
 
 // ---------------------------------------------------------------------------
@@ -145,7 +157,24 @@ export const review_answer_events = sqliteTable('review_answer_events', {
   correct: integer('correct', { mode: 'boolean' }).notNull(),
   latency_ms: integer('latency_ms').notNull(),
   question_type: text('question_type').notNull(), // 'mcq' | 'word-block'
-  rating: text('rating').notNull(),               // inferred ReviewRating ('again'|'good' this build)
+  rating: text('rating'),                          // inferred ReviewRating ('again'|'good'); NULL ⟺ eager/not-due answer (no FSRS rating)
+  created_at: text('created_at').notNull(),
+});
+
+// ---------------------------------------------------------------------------
+// Revision transition channel (EP40-ST05) — append-only per-answer card-state
+// transition log. Pure transition log (before/after card), separate from the
+// review_answer_events answer log; joined to inputs by correlation_id. Written
+// on the due (advance) branch only — brings Revision to answer_events fidelity.
+// ---------------------------------------------------------------------------
+
+export const review_transition_events = sqliteTable('review_transition_events', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  correlation_id: text('correlation_id'),
+  user_id: text('user_id').notNull(),
+  word_id: text('word_id').notNull(),
+  before_card: text('before_card').notNull(), // JSON ReviewCard (pre-advance)
+  after_card: text('after_card').notNull(),   // JSON ReviewCard (post-advance)
   created_at: text('created_at').notNull(),
 });
 

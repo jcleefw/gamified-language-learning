@@ -6,6 +6,7 @@
 <!-- Status: Accepted | Superseded | Deprecated -->
 
 **Superseded by**: N/A
+**Amended by**: [Review-Ahead & Due-Gated Advance](20260709T143643Z-engineering-review-ahead-and-due-gated-advance.md) (20260710, Accepted) — reverses the due-only review model: review-ahead is now permitted, and schedule advance is gated on due-ness rather than applied to every answer.
 **Epic**: EP21
 **RFC**: N/A
 

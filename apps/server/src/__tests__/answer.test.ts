@@ -1,7 +1,15 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { initDb, schema, SqliteLearningStore, SqliteReviewStore } from '@gll/db';
+import {
+  initDb,
+  schema,
+  SqliteLearningStore,
+  SqliteReviewStore,
+  SqliteUserConfigStore,
+} from '@gll/db';
+import { DIFFICULTY_PRESETS } from '../config/difficulty-presets.js';
+import { seedDemoUser } from '../seed/seed-db.js';
 import { updateRunState } from '@gll/srs-engine-v2';
 import { FsrsScheduler } from '@gll/srs-review';
 import type { AnswerResponse, ApiResponse, WordStatePayload } from '@gll/api-contract';
@@ -240,5 +248,39 @@ describe('POST /api/answer', () => {
 
     const persisted = await new SqliteLearningStore(testDb).getAllWordStates('demo-user');
     expect(persisted.get('legacy')?.mastery).toBe(1);
+  });
+});
+
+// --- EP41-ST06: per-user difficulty is applied on the transition ---
+describe('POST /api/answer applies the current user\'s difficulty preset', () => {
+  it('uses the per-user resolved streakThresholds while the mastery bar stays fixed', async () => {
+    // Inject a selectable second preset (masters in ONE correct — normal needs two).
+    // DIFFICULTY_PRESETS is the mutable source the write path + transition both read,
+    // so this exercises real per-user resolution without shipping gentle/intense.
+    DIFFICULTY_PRESETS.intense = {
+      correctStreakThreshold: 1,
+      wrongStreakThreshold: 5,
+      maxMastery: 2, // fixed scale — identical to normal's, never tuned per preset
+    };
+    try {
+      seedDemoUser(testDb); // put targets an existing users row
+      await new SqliteUserConfigStore(testDb).put('demo-user', {
+        difficultyPreset: 'intense',
+      });
+
+      // One correct answer: intense (threshold 1) → mastery 1; normal (threshold 2)
+      // would still be mastery 0. The divergence proves the per-user bundle applied.
+      const res = await post({ wordId: 'wi', correct: true, latencyMs: 1000 });
+      const body = (await res.json()) as ApiResponse<AnswerResponse>;
+      if (!body.success) throw new Error('expected success');
+      expect(body.data.wordState.mastery).toBe(1);
+      expect(body.data.wordState.correctStreak).toBe(1);
+
+      // maxMastery/mastery bar are the fixed T3 value regardless of preset.
+      const persisted = await new SqliteLearningStore(testDb).getAllWordStates('demo-user');
+      expect(persisted.get('wi')?.mastery).toBe(1);
+    } finally {
+      delete DIFFICULTY_PRESETS.intense; // don't leak the injected preset to other tests
+    }
   });
 });

@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, lte } from 'drizzle-orm';
+import { and, asc, eq, inArray, lte, sql } from 'drizzle-orm';
 import type { ReviewCard } from '@gll/srs-review';
 import type { IReviewStore } from './types/review-store.js';
 import * as schema from './schema.js';
@@ -125,5 +125,19 @@ export class SqliteReviewStore implements IReviewStore {
       .all();
 
     return rows.map(toReviewCard);
+  }
+
+  async getLastPracticedAtByWord(userId: string): Promise<Map<string, string>> {
+    const rows = this.db
+      .select({
+        word_id: schema.review_answer_events.word_id,
+        last: sql<string>`MAX(${schema.review_answer_events.created_at})`,
+      })
+      .from(schema.review_answer_events)
+      .where(eq(schema.review_answer_events.user_id, userId))
+      .groupBy(schema.review_answer_events.word_id)
+      .all();
+
+    return new Map(rows.map((r) => [r.word_id, r.last]));
   }
 }

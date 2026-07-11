@@ -1,35 +1,22 @@
 import type { StreakThresholds, SentenceQuestion } from '@gll/srs-engine-v2';
+import type { IUserConfigStore, UserConfigRecord } from '@gll/db';
+import {
+  DEFAULT_PRESET,
+  isDifficultyPreset,
+  resolvePreset,
+  type DifficultyPreset,
+} from './difficulty-presets.js';
 
 /**
- * Server-authoritative Learning policy. Behavioural config lives here, never in
- * @gll/api-contract — clients render UI and send raw answers; they must not carry
- * or version learning policy. Applied server-side on the /api/answer transition.
+ * T1 base — the fallback values for the per-user tunable preferences that are NOT
+ * part of the difficulty bundle. A user's override wins; an absent override falls
+ * back here. Difficulty itself is a preset name resolved via `difficulty-presets`.
  */
-export const LEARNING_CONFIG: { masteryThreshold: number; streakThresholds: StreakThresholds } = {
-  masteryThreshold: 2,
-  streakThresholds: {
-    correctStreakThreshold: 2,
-    wrongStreakThreshold: 2,
-    maxMastery: 2,
-  },
-};
-
-/**
- * User-tunable presentation/orchestration config (T1). Applied by the client,
- * but declared here — config is never spread into the FE. A per-user override +
- * write path arrive with accounts; hardcoded for now. See the Config Ownership &
- * Layering ADR (Amendment 1): system-vs-user is the axis, all config is
- * server-sourced.
- */
-const USER_PRESENTATION: {
+export const T1_BASE: {
   wordsPerBatch: number;
-  maxRetryPerSession: number;
-  maxRetryPerWord: number;
   sentenceDirections: SentenceQuestion['direction'][];
 } = {
   wordsPerBatch: 3,
-  maxRetryPerSession: 5,
-  maxRetryPerWord: 2,
   sentenceDirections: [
     'english-to-native',
     'romanization-to-native',
@@ -38,43 +25,77 @@ const USER_PRESENTATION: {
 };
 
 /**
- * Pedagogy / content config (T2). Not user-writable: sentence unlock timing and
- * sentence graduation thresholds are authored course design, not personal taste.
- * Served globally for now; its eventual home is per-deck (see the Config
- * Ownership ADR). Distinct from T3 system internals, which are never served.
+ * T3 fixed system constants — engine mechanics and the fixed mastery bar. Identical
+ * for every user/preset and never user-writable (the `PUT /api/config` schema has no
+ * key for any of them). `masteryThreshold`/`maxMastery` are the single fixed bar:
+ * per-user tuning would desync analytics + review-card seeding. Served read-only under
+ * `system` (the client legitimately applies these), but never written back.
  */
-const PEDAGOGY_CONFIG: {
-  sentenceScheduling: { minSeenForSentence: number; sentenceBatchGap: number };
-  sentenceGraduation: {
-    sentenceCorrectStreakThreshold: number;
-    sentenceWrongStreakThreshold: number;
-  };
-} = {
+export const FIXED_SYSTEM = {
+  masteryThreshold: 2, // fixed bar (completed-deck detection + graduation trigger)
+  maxMastery: 2, // fixed scale (also inside every preset bundle; drives the progress bar)
+  maxRetryPerSession: 5,
+  maxRetryPerWord: 2,
   sentenceScheduling: { minSeenForSentence: 1, sentenceBatchGap: 2 },
   sentenceGraduation: {
     sentenceCorrectStreakThreshold: 2,
     sentenceWrongStreakThreshold: 3,
   },
+} as const;
+
+/**
+ * The default learning policy as a single `{ masteryThreshold, streakThresholds }`
+ * bundle — the fixed T3 bar plus the default preset's forgiveness. Derived, not an
+ * independent source of truth. Used by server-side tooling (replay/seed) that needs
+ * the default-user policy as one object; the live `/api/answer` transition resolves
+ * `streakThresholds` per user instead.
+ */
+export const DEFAULT_LEARNING: {
+  masteryThreshold: number;
+  streakThresholds: StreakThresholds;
+} = {
+  masteryThreshold: FIXED_SYSTEM.masteryThreshold,
+  streakThresholds: resolvePreset(DEFAULT_PRESET),
 };
 
 /**
- * Wire shape for GET /api/config — the config surface the FE applies,
- * categorized by who may change it: `user` (T1) and `pedagogy` (T2). T3 system
- * internals (FSRS params, seed heuristics, maxMastery-as-scale) are NEVER served
- * (D4). Declared server-side on purpose: config is server-owned and must not
- * surface in @gll/api-contract. The client consumes this read-only and declares
- * no config of its own.
+ * The preset name in effect for a stored config: the stored name if it is currently
+ * selectable, otherwise the default. Guarding with `isDifficultyPreset` keeps the hot
+ * path robust if a once-stored name is later deferred (falls back rather than
+ * throwing). The write path is the primary guard; this is defence.
+ */
+function resolvePresetName(cfg: UserConfigRecord | null): DifficultyPreset {
+  return cfg && isDifficultyPreset(cfg.difficultyPreset)
+    ? cfg.difficultyPreset
+    : DEFAULT_PRESET;
+}
+
+/** Resolve the difficulty `StreakThresholds` in effect for a user. */
+export async function resolveUserThresholds(
+  store: IUserConfigStore,
+  userId: string,
+): Promise<StreakThresholds> {
+  return resolvePreset(resolvePresetName(await store.get(userId)));
+}
+
+/**
+ * Wire shape for GET /api/config, tier-shaped and asymmetric: `user` (T1, resolved
+ * from defaults ← overrides, the only writable surface) and `system` (T3, fixed,
+ * served read-only because the client applies it but a route never writes it). No
+ * `pedagogy` key (the empty T2 tier was eliminated). Declared server-side on purpose:
+ * config is server-owned and must not surface in @gll/api-contract.
  */
 export interface AppConfigResponse {
   user: {
-    masteryThreshold: number;
+    difficultyPreset: DifficultyPreset;
     streakThresholds: StreakThresholds;
     wordsPerBatch: number;
-    maxRetryPerSession: number;
-    maxRetryPerWord: number;
     sentenceDirections: SentenceQuestion['direction'][];
   };
-  pedagogy: {
+  system: {
+    masteryThreshold: number;
+    maxRetryPerSession: number;
+    maxRetryPerWord: number;
     sentenceScheduling: { minSeenForSentence: number; sentenceBatchGap: number };
     sentenceGraduation: {
       sentenceCorrectStreakThreshold: number;
@@ -83,14 +104,36 @@ export interface AppConfigResponse {
   };
 }
 
-/** Assemble the categorized config served read-only to clients. */
-export function getAppConfig(): AppConfigResponse {
+/**
+ * Assemble the config served read-only to clients: base ← the current user's
+ * overrides. Reads the preset name + standalone prefs from the store, falls back to
+ * `DEFAULT_PRESET`/`T1_BASE` per absent field, resolves the preset to its bundle, and
+ * returns `{ user, system }`. A user with no overrides (NULL blob) resolves to today's
+ * values, so the default user's response is byte-identical (minus `pedagogy`, plus
+ * `system`).
+ */
+export async function getAppConfig(
+  store: IUserConfigStore,
+  userId: string,
+): Promise<AppConfigResponse> {
+  const cfg = await store.get(userId);
+  const presetName = resolvePresetName(cfg);
+
   return {
     user: {
-      masteryThreshold: LEARNING_CONFIG.masteryThreshold,
-      streakThresholds: LEARNING_CONFIG.streakThresholds,
-      ...USER_PRESENTATION,
+      difficultyPreset: presetName,
+      streakThresholds: resolvePreset(presetName),
+      wordsPerBatch: cfg?.wordsPerBatch ?? T1_BASE.wordsPerBatch,
+      sentenceDirections:
+        (cfg?.sentenceDirections as SentenceQuestion['direction'][] | null) ??
+        T1_BASE.sentenceDirections,
     },
-    pedagogy: { ...PEDAGOGY_CONFIG },
+    system: {
+      masteryThreshold: FIXED_SYSTEM.masteryThreshold,
+      maxRetryPerSession: FIXED_SYSTEM.maxRetryPerSession,
+      maxRetryPerWord: FIXED_SYSTEM.maxRetryPerWord,
+      sentenceScheduling: { ...FIXED_SYSTEM.sentenceScheduling },
+      sentenceGraduation: { ...FIXED_SYSTEM.sentenceGraduation },
+    },
   };
 }

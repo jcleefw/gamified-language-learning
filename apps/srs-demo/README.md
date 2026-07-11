@@ -94,36 +94,101 @@ curl -X POST http://localhost:6060/api/test/seed \
   -d @apps/srs-demo/e2e/fixtures/scenarios/stagnant-word-ready-to-shelve.json
 ```
 
-### Seeding a due review card (to exercise Review mode)
+### Named review scenarios (recommended) — `pnpm seed`
 
-Review mode only surfaces words whose review card is **due**. Two things to know:
+Named scenarios build a complete, correct review state in one shot, **auto-resolving real deck
+words** so you never hand-author a fixture. The scenario catalogue (FSRS composition included) is
+shared by a CLI and an HTTP endpoint — use whichever fits.
 
-- A card is created **only when a word graduates** (masters) via `POST /api/answer` — `/api/test/seed` seeds `WordState`/shelving but **not** review cards.
-- A freshly graduated card's `due` is scheduled **in the future**, so it will not appear in `GET /api/reviews` yet. To review it now, backdate its `due` directly in SQLite.
+**Two-terminal manual-test loop (no curl):**
 
 ```bash
-# 0. Pick a word UUID from a deck
+# Terminal 1 — app + server (holds .data/srs-demo.db)
+pnpm --filter @gll/srs-demo dev:all
+
+# Terminal 2 — seed a state, then reload the browser
+pnpm --filter @gll/server seed mastered-due --count 3
+pnpm --filter @gll/server seed --list          # show all scenarios
+pnpm --filter @gll/server seed relapsed-due --dry-run   # inspect, write nothing
+```
+
+The CLI runs in-process and defaults to the **same DB path the server uses** (`GLL_DB_PATH` → else
+`.data/srs-demo.db`), so a seed is visible on the next request — **just reload the browser, no server
+restart**.
+
+| `name` | Seeds | Verifies |
+| --- | --- | --- |
+| `mastered-fresh` | N mastered words + cards at the natural FSRS graduation due (future) | "mastered ≠ due today": `dueNow: 0`, `anytime: N`, Review unlocked |
+| `mastered-due` | N mastered words + cards **due now** | all N surface at once (due list is uncapped) |
+| `review-only` | cards **due now**, but **no** mastered word state | Review unlocks from card existence alone (EP39-BUG01 regression) |
+| `relapsed-due` | graduate → review → **lapse** → relearn over ~3 weeks, now due | multi-day history as an engine-computed snapshot; `dueNow: N` |
+| `mature-interval` | several good reviews → long interval, **not** due | learned-but-not-due: `dueNow: 0`, practisable via anytime |
+
+Flags: `--count N` (default 3), `--deck <deckId>` (default: first deck), `--dry-run`, `--list`.
+
+**Caveats (2-terminal loop):**
+
+1. **Same DB path** — the CLI defaults to the server's; only override `GLL_DB_PATH` if the server has it too, or you'll seed a DB nobody reads.
+2. **Reload to refresh** — seeding changes the DB; the already-rendered app re-fetches on reload.
+3. **Config overrides are HTTP-only** — shelving/sentence config lives in the running server's memory, so use the HTTP endpoint (below) for those, not the CLI.
+
+**HTTP endpoint (e2e / config-override cases):** `POST /api/test/seed/scenario` takes the same
+`{ name, deckId?, count? }` and returns `{ scenario, deckId, wordIds, expected }`:
+
+```bash
+curl -s -X POST http://localhost:6060/api/test/seed/scenario \
+  -H 'Content-Type: application/json' -d '{"name":"mastered-fresh","count":3}'
+```
+
+> Each scenario **resets the demo user's state** (word progress + review cards) before seeding.
+
+#### Why "mastered N words" isn't immediately due
+
+FSRS schedules a freshly-graduated word's first review in the **future**, so "mastered" ≠ "due
+today". `mastered-fresh` reproduces this (nothing due, all N practisable via anytime); `mastered-due`
+places them due now; `relapsed-due`/`mature-interval` reproduce real multi-day histories without
+waiting real days. Assert against `GET /api/reviews` (due) and `GET /api/reviews/anytime` (all
+learned).
+
+### Seeding review cards by hand (low-level)
+
+For custom cases, `/api/test/seed` accepts an optional `reviewCards` fixture field that seeds a
+realistic FSRS scheduler state (via `FsrsScheduler.seed`) and sets `due` for you — no need to
+graduate a word through `POST /api/answer` or backdate SQLite by hand.
+
+```bash
+# 0. Pick a word ID from a deck
 WORD=$(curl -s http://localhost:6060/api/decks | python3 -c \
   "import sys,json;print(json.load(sys.stdin)['data'][0]['words'][0]['id'])")
 
-# 1. Master it — POST correct answers until it graduates (default threshold: 2).
-#    Graduation seeds a Review card server-side.
-for i in 1 2 3; do
-  curl -s -X POST http://localhost:6060/api/answer \
-    -H 'Content-Type: application/json' \
-    -d "{\"wordId\":\"$WORD\",\"correct\":true,\"latencyMs\":500}" >/dev/null
-done
+# 1. Seed a due review card directly.
+curl -s -X POST http://localhost:6060/api/test/seed \
+  -H 'Content-Type: application/json' \
+  -d "{\"name\":\"due-review\",\"description\":\"due review card\",\"deckId\":\"deck-eat\",\"wordStates\":[],\"stagnationCounters\":[],\"shelvedWords\":[],\"reviewCards\":[{\"wordId\":\"$WORD\"}]}"
 
-# 2. Backdate the card's due so it is due now (adjust GLL_DB_PATH if you overrode it).
-PAST=$(python3 -c "import datetime;print((datetime.datetime.now(datetime.UTC)-datetime.timedelta(days=1)).isoformat())")
-sqlite3 .data/srs-demo.db "UPDATE review_cards SET due='$PAST' WHERE word_id='$WORD';"
-
-# 3. Confirm it is now due, then open Review in the app.
+# 2. Confirm it is now due, then open Review in the app.
 curl -s http://localhost:6060/api/reviews
 ```
 
-> This backdating step is a manual workaround for the current build; a test-only
-> "seed due review card" endpoint is a planned follow-up.
+Each `reviewCards` entry accepts:
+
+- `wordId` (required)
+- `performance` — `{ correctStreak, lapses, correctRatio }`, fed into the FSRS seed heuristic
+  to control the initial interval; defaults to a "good" graduation (`correctStreak: 2, lapses: 0,
+  correctRatio: 1`)
+- `dueOffsetMs` — milliseconds from now to set `due`; defaults to `-86400000` (1 day in the past,
+  i.e. already due). Pass a positive value to seed a card that is **not** due yet.
+- `naturalDue` — `true` keeps the **FSRS graduation interval** (the real due a freshly-mastered word
+  gets) instead of overriding it. Use this to reproduce real graduation timing (overrides `dueOffsetMs`).
+
+Note: `reviewCards` inserts directly into `review_cards`, bypassing the graduation path in
+`POST /api/answer` — the word does not need a matching `wordStates` entry for this to work.
+
+> **Timing reference.** A "good" graduation schedules the first review ≈3 days out, "easy" ≈8 —
+> never immediately. So mastering N words shows **0 due today, 0 tomorrow**, then **all N due together**
+> on their due date (the list is uncapped — never "only 1"). The `mastered-fresh` / `mastered-due`
+> scenarios above let you observe both states without waiting; for a fully hand-authored equivalent,
+> combine `wordStates` (mastery ≥ 2) with `reviewCards` `naturalDue: true` in a `/api/test/seed` call.
 
 ## Other commands
 

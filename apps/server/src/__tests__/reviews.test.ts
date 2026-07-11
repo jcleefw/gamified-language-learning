@@ -5,10 +5,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { initDb, schema, SqliteReviewStore } from '@gll/db';
 import { FsrsScheduler, type ReviewCard } from '@gll/srs-review';
 import type {
+  AnytimeReviewsResponse,
   ApiResponse,
   DueReviewsResponse,
   ReviewAnswerResponse,
 } from '@gll/api-contract';
+import { orderAnytimeBatch } from '../routes/reviews.js';
 
 type TestDb = ReturnType<typeof drizzle<typeof schema>>;
 let testDb: TestDb;
@@ -48,6 +50,15 @@ async function seedCard(wordId: string, dueOffsetMs: number): Promise<ReviewCard
 
 async function getReviews(): Promise<Response> {
   return app.request('/api/reviews', { method: 'GET' });
+}
+
+async function getAnytime(): Promise<Response> {
+  return app.request('/api/reviews/anytime', { method: 'GET' });
+}
+
+/** Minimal ReviewCard for pure-helper tests — only wordId/due matter to the ordering. */
+function cardOf(wordId: string, due: Date): ReviewCard {
+  return { wordId, due, schedulerData: {} as ReviewCard['schedulerData'] };
 }
 
 async function postAnswer(
@@ -275,5 +286,256 @@ describe('POST /api/reviews/answer', () => {
     );
     // The advance stands despite the record failure.
     expect(persisted!.due.getTime()).toBeGreaterThan(card.due.getTime());
+  });
+
+  // --- EP39-ST02: due-gate (ADR §2 / NFR-005) ---
+
+  it('advances a DUE card and reports advanced:true (EP38 behaviour + the new flag)', async () => {
+    const card = await seedCard('due1', -1_000);
+
+    const res = await postAnswer({
+      wordId: 'due1',
+      correct: true,
+      latencyMs: 1000,
+      questionType: 'mcq',
+    });
+    const body = (await res.json()) as ApiResponse<ReviewAnswerResponse>;
+    if (!body.success) throw new Error('expected success');
+
+    expect(body.data.advanced).toBe(true);
+    const persisted = await new SqliteReviewStore(testDb).getReviewCard(USER_ID, 'due1');
+    expect(persisted!.due.getTime()).toBeGreaterThan(card.due.getTime());
+    expect(persisted!.due.toISOString()).toBe(body.data.due);
+  });
+
+  it('NFR-005: a NOT-DUE answer is read-only — due + scheduler_data byte-for-byte unchanged, advanced:false', async () => {
+    await seedCard('eager1', 60 * 60_000); // due one hour from now
+    const store = new SqliteReviewStore(testDb);
+    const before = await store.getReviewCard(USER_ID, 'eager1');
+
+    const res = await postAnswer({
+      wordId: 'eager1',
+      correct: true,
+      latencyMs: 1000,
+      questionType: 'mcq',
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ApiResponse<ReviewAnswerResponse>;
+    if (!body.success) throw new Error('expected success');
+
+    expect(body.data.advanced).toBe(false);
+    expect(body.data.due).toBe(before!.due.toISOString()); // unchanged due echoed back
+
+    const after = await store.getReviewCard(USER_ID, 'eager1');
+    expect(after!.due.toISOString()).toBe(before!.due.toISOString());
+    expect(after!.schedulerData).toEqual(before!.schedulerData);
+  });
+
+  it('a NOT-DUE answer still appends exactly one event row with rating NULL and the raw facts', async () => {
+    await seedCard('eager2', 60 * 60_000);
+    await postAnswer({
+      wordId: 'eager2',
+      correct: false,
+      latencyMs: 4200,
+      questionType: 'word-block',
+    });
+
+    const rows = testDb.select().from(schema.review_answer_events).all();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].rating).toBeNull(); // durable read-only marker
+    expect(rows[0].word_id).toBe('eager2');
+    expect(rows[0].correct).toBe(false);
+    expect(rows[0].latency_ms).toBe(4200);
+    expect(rows[0].question_type).toBe('word-block');
+  });
+
+  it('a DUE answer appends one row with a non-null rating equal to what scheduled the card', async () => {
+    await seedCard('due2', -1_000);
+    await postAnswer({ wordId: 'due2', correct: false, latencyMs: 900, questionType: 'mcq' });
+
+    const rows = testDb.select().from(schema.review_answer_events).all();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].rating).toBe('again');
+  });
+
+  // --- EP40-ST05: Revision transition channel (replay parity) ---
+
+  it('a DUE answer writes one review_transition_events row with before=persisted, after=advanced', async () => {
+    const card = await seedCard('tr1', -1_000);
+    await postAnswer(
+      { wordId: 'tr1', correct: true, latencyMs: 1000, questionType: 'mcq' },
+      { 'x-correlation-id': 'corr-tr' },
+    );
+
+    const rows = testDb
+      .select()
+      .from(schema.review_transition_events)
+      .orderBy(asc(schema.review_transition_events.id))
+      .all();
+    expect(rows).toHaveLength(1);
+    const row = rows[0];
+    expect(row.correlation_id).toBe('corr-tr');
+    expect(row.user_id).toBe(USER_ID);
+    expect(row.word_id).toBe('tr1');
+
+    const before = JSON.parse(row.before_card) as { due: string };
+    const after = JSON.parse(row.after_card) as { due: string };
+    // before mirrors the persisted card at answer time.
+    expect(before.due).toBe(card.due.toISOString());
+    // after mirrors the persisted advance (matches what the store now holds).
+    const persisted = await new SqliteReviewStore(testDb).getReviewCard(USER_ID, 'tr1');
+    expect(after.due).toBe(persisted!.due.toISOString());
+  });
+
+  it('an EAGER (not-due) answer writes NO transition row', async () => {
+    await seedCard('trEager', 60 * 60_000);
+    await postAnswer({ wordId: 'trEager', correct: true, latencyMs: 1000, questionType: 'mcq' });
+
+    const rows = testDb.select().from(schema.review_transition_events).all();
+    expect(rows).toHaveLength(0);
+  });
+
+  it('replay parity: feeding before_card back through the scheduler reproduces after_card', async () => {
+    await seedCard('trReplay', -1_000);
+    await postAnswer({ wordId: 'trReplay', correct: false, latencyMs: 900, questionType: 'mcq' });
+
+    const row = testDb.select().from(schema.review_transition_events).all()[0];
+    const before = JSON.parse(row.before_card) as ReviewCard;
+    const after = JSON.parse(row.after_card) as ReviewCard;
+    // Re-hydrate `due` (JSON serialised it to a string) and replay the recorded
+    // rating at the captured answer time (created_at) — the same inputs the route
+    // used, so the pure scheduler must reproduce the recorded advance byte-for-byte.
+    const rehydrated: ReviewCard = { ...before, due: new Date(before.due) };
+    const replayed = scheduler.schedule(rehydrated, 'again', new Date(row.created_at));
+    // Parity is byte-identity through the storage boundary: the stored after_card
+    // equals the JSON serialisation of a freshly replayed advance.
+    expect(JSON.parse(JSON.stringify(replayed))).toEqual(after);
+  });
+
+  it('fails open when the transition append fails: 200 and the advance is intact', async () => {
+    const card = await seedCard('trFail', -1_000);
+    testDb.$client.exec('DROP TABLE review_transition_events');
+
+    const res = await postAnswer({
+      wordId: 'trFail',
+      correct: true,
+      latencyMs: 900,
+      questionType: 'mcq',
+    });
+    expect(res.status).toBe(200);
+
+    const persisted = await new SqliteReviewStore(testDb).getReviewCard(USER_ID, 'trFail');
+    expect(persisted!.due.getTime()).toBeGreaterThan(card.due.getTime());
+  });
+});
+
+describe('GET /api/reviews/anytime', () => {
+  it('returns ALL learned words — due AND not-due (unlike GET /api/reviews)', async () => {
+    await seedCard('past', -60_000);
+    await seedCard('future', 60 * 60_000);
+
+    const res = await getAnytime();
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ApiResponse<AnytimeReviewsResponse>;
+    if (!body.success) throw new Error('expected success');
+
+    expect(new Set(body.data.reviews.map((r) => r.wordId))).toEqual(
+      new Set(['past', 'future']),
+    );
+  });
+
+  it('orders due cards first (most-overdue-first), then the not-due tail', async () => {
+    await seedCard('future', 60 * 60_000);
+    await seedCard('recentDue', -1_000);
+    await seedCard('oldestDue', -100_000);
+
+    const res = await getAnytime();
+    const body = (await res.json()) as ApiResponse<AnytimeReviewsResponse>;
+    if (!body.success) throw new Error('expected success');
+
+    expect(body.data.reviews.map((r) => r.wordId)).toEqual([
+      'oldestDue',
+      'recentDue',
+      'future',
+    ]);
+  });
+
+  it('caps the batch at 50 even with more learned words', async () => {
+    for (let i = 0; i < 55; i++) await seedCard(`w${i}`, -(i + 1) * 1_000);
+
+    const res = await getAnytime();
+    const body = (await res.json()) as ApiResponse<AnytimeReviewsResponse>;
+    if (!body.success) throw new Error('expected success');
+    expect(body.data.reviews).toHaveLength(50);
+  });
+
+  it('tolerates an orphaned card (no word row) and serialises `due` as ISO', async () => {
+    await seedCard('orphan', -1_000);
+    const res = await getAnytime();
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ApiResponse<AnytimeReviewsResponse>;
+    if (!body.success) throw new Error('expected success');
+    const due = body.data.reviews[0].due;
+    expect(new Date(due).toISOString()).toBe(due);
+  });
+
+  it('FR-016: after practising one not-due word it rotates behind the untouched one', async () => {
+    await seedCard('a', 60 * 60_000);
+    await seedCard('b', 60 * 60_000);
+
+    // Practise 'a' (not-due → read-only, but recorded → most-recently-practised).
+    await postAnswer({ wordId: 'a', correct: true, latencyMs: 1000, questionType: 'mcq' });
+
+    const res = await getAnytime();
+    const body = (await res.json()) as ApiResponse<AnytimeReviewsResponse>;
+    if (!body.success) throw new Error('expected success');
+    // 'b' (never practised) precedes 'a' (just practised) in the not-due tail.
+    expect(body.data.reviews.map((r) => r.wordId)).toEqual(['b', 'a']);
+  });
+});
+
+describe('orderAnytimeBatch (pure helper)', () => {
+  const now = new Date('2026-07-10T00:00:00.000Z');
+  const past = (ms: number) => new Date(now.getTime() - ms);
+  const future = (ms: number) => new Date(now.getTime() + ms);
+
+  it('puts due cards first, most-overdue-first', () => {
+    const cards = [
+      cardOf('recent', past(1_000)),
+      cardOf('oldest', past(100_000)),
+      cardOf('middle', past(50_000)),
+    ];
+    const out = orderAnytimeBatch(cards, new Map(), now);
+    expect(out.map((c) => c.wordId)).toEqual(['oldest', 'middle', 'recent']);
+  });
+
+  it('ranks the not-due tail least-recently-practised first; never-practised sorts to the front', () => {
+    const cards = [
+      cardOf('recentlySeen', future(1_000)),
+      cardOf('neverSeen', future(1_000)),
+      cardOf('longAgo', future(1_000)),
+    ];
+    const lastSeen = new Map([
+      ['recentlySeen', '2026-07-09T23:00:00.000Z'],
+      ['longAgo', '2026-07-01T00:00:00.000Z'],
+      // neverSeen absent → front of tail
+    ]);
+    const out = orderAnytimeBatch(cards, lastSeen, now);
+    expect(out.map((c) => c.wordId)).toEqual(['neverSeen', 'longAgo', 'recentlySeen']);
+  });
+
+  it('due tail precedes the not-due tail regardless of recency', () => {
+    const cards = [
+      cardOf('futureNeverSeen', future(1_000)),
+      cardOf('dueRecentlySeen', past(1_000)),
+    ];
+    const lastSeen = new Map([['dueRecentlySeen', '2026-07-09T23:59:00.000Z']]);
+    const out = orderAnytimeBatch(cards, lastSeen, now);
+    expect(out.map((c) => c.wordId)).toEqual(['dueRecentlySeen', 'futureNeverSeen']);
+  });
+
+  it('bounds the result to the limit', () => {
+    const cards = Array.from({ length: 60 }, (_, i) => cardOf(`w${i}`, past(i + 1)));
+    expect(orderAnytimeBatch(cards, new Map(), now, 50)).toHaveLength(50);
   });
 });
