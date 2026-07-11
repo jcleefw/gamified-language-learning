@@ -1,7 +1,10 @@
 # Current Focus — EP41 Config Preference Tier (per-user T1)
 
-**Branch**: `feat/EP41--user-config-reference` (off `main`).
-**Last updated**: 20260711T005000Z
+**Status**: Completed. All 7 stories (DS01 + DS02) implemented; epic plan's Overall Acceptance
+Criteria all checked off (BDD criterion satisfied via vitest — `config.test.ts` / `answer.test.ts` —
+not Gherkin `.feature` files; none authored for this epic).
+**Branch**: `feat/EP41--user-config-reference` (off `main`), not yet merged to `main`.
+**Last updated**: 20260711T014500Z
 
 ---
 
@@ -46,10 +49,10 @@ Treat these as the source of truth; do not re-derive scope.
    standalone prefs (`wordsPerBatch`, `sentenceDirections`).
 3. **Difficulty presets** — Gentle/Normal/Intense → validated bundle of streak thresholds
    (`correctStreakThreshold`, `wrongStreakThreshold`). Server owns the name→bundle map.
-4. **`GET /api/config` resolves** `defaults ← user overrides` for current user; drop the `pedagogy`
+4. **`GET /api/user/config` resolves** `defaults ← user overrides` for current user; drop the `pedagogy`
    key; add a read-only "system" section for served T3 the client applies. Current assembly:
    [config.ts](../../../apps/server/src/routes/config.ts) + [learning.ts](../../../apps/server/src/config/learning.ts).
-5. **`PUT /api/config` write path** — **zod** validation, **server-side** (schema never in
+5. **`PUT /api/user/config` write path** — **zod** validation, **server-side** (schema never in
    `@gll/api-contract`); reject unknown presets / out-of-range prefs. Note: server routes currently
    hand-roll validation (no zod yet); this adds zod as an `apps/server` dep.
 6. **Forward-only retroactivity; no recalibrate.**
@@ -64,6 +67,8 @@ pedagogy; raw-knob tuning; opt-in recalibrate.
 
 ## Next steps
 
-1. Manual verification of the config flow (`GET`/`PUT /api/config`, per-user difficulty applied on
-   `/api/answer`) before merge.
-2. Ship only `normal`; `gentle`/`intense` remain wired but not offered until the difficulty ADR opens them.
+Epic complete on this branch. Remaining before merge to `main`:
+
+1. Merge `feat/EP41--user-config-reference` to `main`.
+2. `gentle`/`intense` presets remain wired but unselectable (reserved names, no bundle) until a later
+   epic opens them via the difficulty ADR.

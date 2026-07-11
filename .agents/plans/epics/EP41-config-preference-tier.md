@@ -2,7 +2,7 @@
 
 **Created**: 20260711T010304Z
 
-**Status**: Accepted
+**Status**: Completed
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
@@ -36,8 +36,8 @@ comparable, and config policy never leaks into `@gll/api-contract`.
 - A single seeded `demo-user` identity and one current-user resolver replacing the duplicated `USER_ID` constants.
 - A per-user config table storing a **difficulty preset name** plus standalone T1 prefs.
 - Named **difficulty presets** (Gentle / Normal / Intense) → server-owned bundle of streak thresholds.
-- `GET /api/config` resolving `system defaults ← user overrides`, dropping the `pedagogy` key, and exposing a read-only `system` section for the T3 values the client legitimately applies.
-- `PUT /api/config` write path with **server-side zod validation** (schema never in `@gll/api-contract`).
+- `GET /api/user/config` resolving `system defaults ← user overrides`, dropping the `pedagogy` key, and exposing a read-only `system` section for the T3 values the client legitimately applies.
+- `PUT /api/user/config` write path with **server-side zod validation** (schema never in `@gll/api-contract`).
 - Forward-only application of preference changes (no recalibrate / no retro-rewrite).
 - Tier reclassification in code: T3 knobs become fixed constants; served read-only only where the client applies them.
 
@@ -73,11 +73,11 @@ comparable, and config policy never leaks into `@gll/api-contract`.
 
 ### Phase 3: Config resolution & write (EP41-PH03)
 
-### EP41-ST04: `GET /api/config` resolves user overrides
+### EP41-ST04: `GET /api/user/config` resolves user overrides
 
 **Scope**: Assemble the response as `system defaults ← current-user overrides`; drop the `pedagogy` key; add a read-only `system` section carrying the T3 values the client applies (progress-bar `maxMastery`, sentence scheduler, `masteryThreshold` for completed-deck detection). Fail-closed shape unchanged for the FE.
 
-### EP41-ST05: `PUT /api/config` write path
+### EP41-ST05: `PUT /api/user/config` write path
 
 **Scope**: New write route with **server-side zod** validation (adds zod as an `apps/server` dep; schema stays out of `@gll/api-contract`). Reject unknown preset names and out-of-range standalone prefs; persist via `IUserConfigStore.put` for the current user; forward-only (no recalibrate). *(Sole enforcement of the name-only invariant, given blob storage.)*
 
@@ -91,13 +91,13 @@ comparable, and config policy never leaks into `@gll/api-contract`.
 
 ## Overall Acceptance Criteria
 
-- [ ] A single seeded `demo-user` exists; no route reads a hard-coded `USER_ID` constant — all go through one resolver.
-- [ ] Per-user config (`users.config` blob) persists a difficulty preset name + standalone prefs; a fresh user (NULL blob) resolves to system defaults.
-- [ ] `GET /api/config` returns `defaults ← overrides` with no `pedagogy` key and a read-only `system` section; FE remains fail-closed.
-- [ ] `PUT /api/config` validates server-side with zod, rejects unknown presets / out-of-range prefs, and persists forward-only.
-- [ ] Difficulty presets change streak pacing only; `masteryThreshold` / `maxMastery` remain fixed for every user.
-- [ ] No config policy type or value appears in `@gll/api-contract`; scoring remains direction-blind.
-- [ ] BDD coverage for: preset selection changes pacing, invalid write rejected, fresh user gets defaults.
+- [x] A single seeded `demo-user` exists; no route reads a hard-coded `USER_ID` constant — all go through one resolver.
+- [x] Per-user config (`users.config` blob) persists a difficulty preset name + standalone prefs; a fresh user (NULL blob) resolves to system defaults.
+- [x] `GET /api/user/config` returns `defaults ← overrides` with no `pedagogy` key and a read-only `system` section; FE remains fail-closed.
+- [x] `PUT /api/user/config` validates server-side with zod, rejects unknown presets / out-of-range prefs, and persists forward-only.
+- [x] Difficulty presets change streak pacing only; `masteryThreshold` / `maxMastery` remain fixed for every user.
+- [x] No config policy type or value appears in `@gll/api-contract`; scoring remains direction-blind.
+- [x] Coverage for: preset selection changes pacing, invalid write rejected, fresh user gets defaults. *(Satisfied via vitest integration tests — `apps/server/src/__tests__/config.test.ts`, `answer.test.ts` — not Gherkin `.feature` files; no `apps/srs-demo/e2e/features/*.feature` was authored for this epic.)*
 
 ---
 
@@ -109,6 +109,4 @@ comparable, and config policy never leaks into `@gll/api-contract`.
 
 ## Next Steps
 
-1. Review and approve plan
-2. Create Design Spec(s) — likely DS01 (identity + storage) and DS02 (resolve + write + tier cleanup)
-3. Begin implementation
+Complete. Implemented across [DS01](../../changelogs/EP41--config-preference-tier/20260711T011809Z-EP41-DS01-identity-and-preference-storage.md) (identity + storage) and [DS02](../../changelogs/EP41--config-preference-tier/20260711T012341Z-EP41-DS02-config-resolve-write-and-tier-application.md) (resolve + write + tier cleanup) on `feat/EP41--user-config-reference`. Only `normal` ships a difficulty bundle; `gentle`/`intense` remain reserved, unselectable names for a later epic.
