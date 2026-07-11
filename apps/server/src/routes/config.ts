@@ -12,7 +12,7 @@ const router = new Hono();
  * fetch this at boot and declare no config of their own. `user` (T1) is resolved and
  * writable via PUT; `system` (T3) is fixed and served read-only.
  */
-router.get('/config', async (c) => {
+router.get('/user/config', async (c) => {
   const store = new SqliteUserConfigStore(getDb());
   const body: ApiResponse<AppConfigResponse> = {
     success: true,
@@ -29,7 +29,7 @@ router.get('/config', async (c) => {
  * On success the freshly-resolved config is returned so the client re-syncs in one
  * round trip.
  */
-router.put('/config', async (c) => {
+router.put('/user/config', async (c) => {
   let payload: unknown;
   try {
     payload = await c.req.json();

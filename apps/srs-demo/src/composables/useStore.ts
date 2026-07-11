@@ -18,11 +18,11 @@ import type {
 } from '@gll/api-contract';
 
 /**
- * Local consuming shape for GET /api/config. The client owns how it reads the
+ * Local consuming shape for GET /api/user/config. The client owns how it reads the
  * server's config; it declares none of its own and imports no config type from
  * @gll/api-contract (none exists there — config is server-owned by design).
  * Categorized by who may change it: `user` (T1, resolved defaults ← overrides,
- * writable via PUT /api/config) and `system` (T3 fixed engine mechanics, served
+ * writable via PUT /api/user/config) and `system` (T3 fixed engine mechanics, served
  * read-only because the client applies them but never writes them).
  */
 export interface AppConfig {
@@ -169,9 +169,9 @@ export async function clearStore(): Promise<void> {
  * built-in defaults (a fallback would be a second source of truth).
  */
 export async function loadConfig(): Promise<AppConfig> {
-  const res = await fetch('/api/config');
-  if (!res.ok) throw new Error(`GET /api/config failed: ${res.status}`);
+  const res = await fetch('/api/user/config');
+  if (!res.ok) throw new Error(`GET /api/user/config failed: ${res.status}`);
   const body = (await res.json()) as ApiResponse<AppConfig>;
-  if (!body.success) throw new Error(`GET /api/config error: ${body.error.message}`);
+  if (!body.success) throw new Error(`GET /api/user/config error: ${body.error.message}`);
   return body.data;
 }

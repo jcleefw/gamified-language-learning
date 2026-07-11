@@ -3,7 +3,7 @@ import type { SentenceQuestion } from '@gll/srs-engine-v2';
 import { DIFFICULTY_PRESETS, type DifficultyPreset } from './difficulty-presets.js';
 
 /**
- * Server-side validation for `PUT /api/config` — the SOLE guard of the
+ * Server-side validation for `PUT /api/user/config` — the SOLE guard of the
  * preset-name-only invariant (DS01 stores config as a JSON blob, so storage cannot
  * reject a raw threshold). Load-bearing, not defence-in-depth.
  *

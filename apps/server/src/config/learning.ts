@@ -26,7 +26,7 @@ export const T1_BASE: {
 
 /**
  * T3 fixed system constants — engine mechanics and the fixed mastery bar. Identical
- * for every user/preset and never user-writable (the `PUT /api/config` schema has no
+ * for every user/preset and never user-writable (the `PUT /api/user/config` schema has no
  * key for any of them). `masteryThreshold`/`maxMastery` are the single fixed bar:
  * per-user tuning would desync analytics + review-card seeding. Served read-only under
  * `system` (the client legitimately applies these), but never written back.
@@ -64,7 +64,7 @@ export async function resolveUserThresholds(
 }
 
 /**
- * Wire shape for GET /api/config, tier-shaped and asymmetric: `user` (T1, resolved
+ * Wire shape for GET /api/user/config, tier-shaped and asymmetric: `user` (T1, resolved
  * from defaults ← overrides, the only writable surface) and `system` (T3, fixed,
  * served read-only because the client applies it but a route never writes it). No
  * `pedagogy` key (the empty T2 tier was eliminated). Declared server-side on purpose:

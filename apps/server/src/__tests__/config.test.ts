@@ -25,7 +25,7 @@ beforeEach(async () => {
 const { default: app } = await import('../app.js');
 
 async function getConfig(): Promise<AppConfigResponse> {
-  const res = await app.request('/api/config');
+  const res = await app.request('/api/user/config');
   expect(res.status).toBe(200);
   const body = (await res.json()) as ApiResponse<AppConfigResponse>;
   if (!body.success) throw new Error('expected success');
@@ -33,14 +33,14 @@ async function getConfig(): Promise<AppConfigResponse> {
 }
 
 async function put(body: unknown): Promise<Response> {
-  return app.request('/api/config', {
+  return app.request('/api/user/config', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 }
 
-describe('GET /api/config', () => {
+describe('GET /api/user/config', () => {
   it('resolves the two-section shape for a user with no overrides (default = normal)', async () => {
     const data = await getConfig();
 
@@ -72,7 +72,7 @@ describe('GET /api/config', () => {
   });
 });
 
-describe('PUT /api/config', () => {
+describe('PUT /api/user/config', () => {
   it('persists a valid preset selection and echoes the resolved config', async () => {
     const res = await put({ difficultyPreset: 'normal' });
     expect(res.status).toBe(200);
