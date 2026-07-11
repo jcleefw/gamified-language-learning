@@ -39,6 +39,7 @@ const record = (o: Partial<AnswerEventRecord> = {}): AnswerEventRecord => ({
   },
   graduated: false,
   recheck: false,
+  resolvedThresholds: { masteryThreshold: 2, streakThresholds: THRESHOLDS },
   createdAt: '2026-07-08T00:00:00.000Z',
   ...o,
 });
@@ -78,6 +79,18 @@ describe('SqliteAnswerEventStore', () => {
     expect(JSON.parse(row.after_state)).toEqual(record().afterState);
     expect(row.graduated).toBe(false);
     expect(row.created_at).toBe('2026-07-08T00:00:00.000Z');
+  });
+
+  it('persists the resolved thresholds the transition was computed under (round-trip)', async () => {
+    const store = new SqliteAnswerEventStore(db);
+    const resolvedThresholds = {
+      masteryThreshold: 2,
+      streakThresholds: { correctStreakThreshold: 3, wrongStreakThreshold: 1, maxMastery: 2 },
+    };
+    await store.appendAnswerEvent(record({ resolvedThresholds }));
+
+    const rows = db.select().from(schema.answer_events).all();
+    expect(JSON.parse(rows[0].resolved_thresholds)).toEqual(resolvedThresholds);
   });
 
   it('orders rows by a monotonic id', async () => {

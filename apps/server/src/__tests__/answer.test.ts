@@ -71,6 +71,17 @@ describe('POST /api/answer', () => {
     expect(persisted.get('w1')).toEqual(expected);
   });
 
+  it('records the resolved thresholds the transition used in answer_events', async () => {
+    await post({ wordId: 'wt', correct: true, latencyMs: 1200 });
+
+    const rows = testDb.select().from(schema.answer_events).all();
+    expect(rows).toHaveLength(1);
+    expect(JSON.parse(rows[0].resolved_thresholds)).toEqual({
+      masteryThreshold: 2,
+      streakThresholds: { correctStreakThreshold: 2, wrongStreakThreshold: 2, maxMastery: 2 },
+    });
+  });
+
   it('graduates on the 3rd consecutive correct (mastery 0→1→2)', async () => {
     const graduated: boolean[] = [];
     const masteries: number[] = [];
