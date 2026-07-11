@@ -48,7 +48,7 @@ To run the server together with the `srs-demo` frontend, use
   cards, answer/transition events) lives in SQLite via `@gll/db`, accessed
   through store classes (`SqliteLearningStore`, `SqliteReviewStore`, etc.).
 - **Learning policy and app config are server-owned**, never carried or
-  versioned by a client. `GET /api/config` is the single source of truth,
+  versioned by a client. `GET /api/user/config` is the single source of truth,
   categorized by who may change it — see the
   [Config Ownership & Layering ADR](../../product-documentation/architecture/20260709T091559Z-engineering-config-ownership-and-layering.md).
 - **The state transition is server-authoritative**: `POST /api/answer` runs
@@ -64,7 +64,8 @@ All routes are mounted under `/api` (see `src/app.ts`); handlers live in
 | Method | Path | File | Purpose |
 | --- | --- | --- | --- |
 | GET | `/health` | `app.ts` | Liveness check |
-| GET | `/api/config` | `config.ts` | Read-only app config (`{ user, pedagogy }`) — learning policy + presentation/orchestration defaults |
+| GET | `/api/user/config` | `config.ts` | Resolved per-user app config (`{ user, system }`) — user's T1 overrides ← base, plus read-only T3 system config |
+| PUT | `/api/user/config` | `config.ts` | Write a partial T1 config patch for the current user (server-side zod validation) |
 | GET | `/api/decks` | `decks.ts` | List all decks |
 | POST | `/api/curriculum/import` | `decks.ts` | Import a new deck from `ConversationJSON` |
 | GET | `/api/state` | `state.ts` | Get all persisted `WordState` for the demo user |
@@ -93,8 +94,8 @@ Every response is wrapped in the `ApiResponse<T>` envelope from
 ## Manual API checks
 
 ```bash
-# App config (learning policy + presentation/pedagogy defaults)
-curl http://localhost:6060/api/config
+# App config (resolved per-user T1 overrides + read-only T3 system config)
+curl http://localhost:6060/api/user/config
 
 # List decks (with UUID ids)
 curl http://localhost:6060/api/decks

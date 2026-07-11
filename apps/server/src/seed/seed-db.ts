@@ -6,6 +6,7 @@ import type BetterSqlite3 from 'better-sqlite3';
 import { schema, SqliteContentStore } from '@gll/db';
 import type { ConversationJSON } from '@gll/api-contract';
 import { transformConversation } from '../transform-conversation.js';
+import { DEMO_USER_ID } from '../identity/current-user.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
@@ -19,7 +20,7 @@ type DbClient = BetterSQLite3Database<typeof schema> & { $client: BetterSqlite3.
 export function seedDemoUser(db: DbClient): void {
   db.insert(schema.users)
     .values({
-      id: 'demo-user',
+      id: DEMO_USER_ID,
       email: 'demo@example.com',
       role: 'learner',
       created_at: new Date().toISOString(),

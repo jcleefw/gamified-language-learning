@@ -5,6 +5,8 @@ import type { AppDeckPayload, GetDecksResponse } from '@gll/api-contract';
 import { loadRunState, loadConfig } from './composables/useStore';
 import { loadShelvedWords } from './composables/useShelving';
 import { flushLogs as flushDebugLogs } from './composables/useQuizDebugLog';
+import { applyTestSentenceConfig } from './composables/useTestSentenceConfig';
+import { env } from './env';
 import { useReviewSession } from './composables/useReviewSession';
 import {
   useLearningSession,
@@ -221,7 +223,7 @@ onMounted(async () => {
   // (completed-deck detection, session init). Fail closed: no session without it.
   try {
     const cfg = await loadConfig();
-    CONFIG.value = { ...cfg.user, ...cfg.pedagogy };
+    CONFIG.value = { ...cfg.user, ...cfg.system };
     configReady.value = true;
   } catch {
     apiError.value =
@@ -261,33 +263,7 @@ onMounted(async () => {
     }
   }
 
-  // Load sentence config override for tests
-  try {
-    const res = await fetch('/api/test/config/sentence');
-    if (res.ok) {
-      const body = (await res.json()) as {
-        success: boolean;
-        data: object | null;
-      };
-      if (body.success && body.data) {
-        const override = body.data as Partial<typeof CONFIG.value>;
-        CONFIG.value = {
-          ...CONFIG.value,
-          ...override,
-          sentenceScheduling: {
-            ...CONFIG.value.sentenceScheduling,
-            ...override.sentenceScheduling,
-          },
-          sentenceGraduation: {
-            ...CONFIG.value.sentenceGraduation,
-            ...override.sentenceGraduation,
-          },
-        };
-      }
-    }
-  } catch {
-    // Non-fatal: use default config
-  }
+  if (env.testHooks) await applyTestSentenceConfig(CONFIG);
 
   recalculateCompletedDecks();
 });
@@ -414,7 +390,10 @@ onMounted(async () => {
     />
   </template>
 
-  <div v-if="screen === 'results'" style="text-align: center; padding: 16px">
+  <div
+    v-if="env.debugMode && screen === 'results'"
+    style="text-align: center; padding: 16px"
+  >
     <button
       style="
         padding: 8px 16px;

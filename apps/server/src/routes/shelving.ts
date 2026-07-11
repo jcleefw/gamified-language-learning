@@ -13,8 +13,9 @@ import {
   type ResetStagnationCountersRequest,
   type ResetStagnationCountersForWordsRequest,
 } from '@gll/api-contract';
+import { getCurrentUserId } from '../identity/current-user.js';
 
-const USER_ID = 'demo-user';
+const USER_ID = getCurrentUserId();
 
 const router = new Hono();
 
