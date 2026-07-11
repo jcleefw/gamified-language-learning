@@ -1,11 +1,11 @@
 # ADR: Config Ownership & Layering (System vs Pedagogy vs User Preference)
 
 **Date**: 20260709T091559Z
-**Status**: Draft
+**Status**: Superseded
 
 <!-- Status: Accepted | Superseded | Deprecated -->
 
-**Superseded by**: N/A
+**Superseded by**: [Config Ownership — Two-Tier Model](20260711T004050Z-engineering-config-ownership-two-tier.md)
 **Epic**: Realised incrementally. EP37 (Learning Authority) lands the server-owned learning-policy source (DS05); a future per-user-config epic lands the preference tier. This ADR does not fix epic numbers.
 **RFC**: N/A
 
