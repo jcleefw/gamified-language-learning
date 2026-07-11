@@ -3,7 +3,6 @@ import {
   getDb,
   SqliteReviewStore,
   SqliteReviewAnswerEventStore,
-  SqliteReviewTransitionEventStore,
 } from '@gll/db';
 import { FsrsScheduler, type ReviewCard, type ReviewRating } from '@gll/srs-review';
 import {
@@ -150,12 +149,10 @@ router.post('/reviews/answer', async (c) => {
   // Due path only: advance + persist (write-on-answer). Not-due leaves the card's
   // scheduler state (due/schedulerData) byte-for-byte untouched (NFR-005).
   let resultDue = card.due;
-  let advancedCard: ReviewCard | null = null;
   if (isDue) {
     const advanced = scheduler.schedule(card, rating as ReviewRating, now);
     await store.upsertReviewCard(USER_ID, advanced);
     resultDue = advanced.due;
-    advancedCard = advanced;
   }
 
   // Durable record on BOTH branches — fail-open: a record-write failure must not lose
@@ -173,25 +170,6 @@ router.post('/reviews/answer', async (c) => {
     });
   } catch {
     // Already logged by the store; the advance (if any) stands.
-  }
-
-  // Transition channel (EP40-ST05) — due branch only: a pure before/after card
-  // snapshot for replay parity with Learning's answer_events. An eager (not-due)
-  // answer has no transition, so it writes no transition row. Fail-open: a
-  // diagnostics-write failure must never lose or block the persisted advance above.
-  if (advancedCard) {
-    try {
-      await new SqliteReviewTransitionEventStore(getDb(), log).appendReviewTransitionEvent({
-        correlationId,
-        userId: USER_ID,
-        wordId: req.wordId,
-        beforeCard: card,
-        afterCard: advancedCard,
-        createdAt: now.toISOString(),
-      });
-    } catch {
-      // Already logged by the store; the advance stands.
-    }
   }
 
   const data: ReviewAnswerResponse = {

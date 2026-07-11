@@ -18,8 +18,6 @@ import {
   loadDueReviews,
   postReviewAnswer,
 } from './useStore';
-import { mintCorrelationId, type CorrelationId } from './useCorrelation';
-import { getTraceSession } from './useTraceSession';
 import type { ConfigType } from '../types';
 
 export interface UseReviewSessionDeps {
@@ -47,9 +45,6 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
   const reviewBatchState = ref<BatchState | null>(null);
   const reviewQuestion = ref<QuizQuestion | null>(null);
   const reviewShownAt = ref<number>(0); // latency start for the current review question
-  // Correlation id for the currently-shown review question (EP40-ST01). Minted on
-  // show, sent with its answer POST — Review has no recheck, so one id per question.
-  const reviewCorrelationId = ref<CorrelationId | null>(null);
   const reviewQuestionKey = ref(0);
   const reviewCaughtUp = ref(false); // nothing was due on entry
   // Session-type marker — UI only (summary copy + exit target); never sent to the
@@ -123,22 +118,6 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
     }
   }
 
-  // Appearance channel (EP40-ST04) — the review-queue "which word appears next"
-  // seam, keyed by the just-minted question correlation id. Fail-open.
-  function traceReviewQuestionServed(question: QuizQuestion | null): void {
-    getTraceSession().record({
-      correlationId: reviewCorrelationId.value,
-      channel: 'appearance',
-      data: {
-        kind: 'question-served',
-        detail: {
-          mode: reviewMode.value,
-          wordId: question?.kind === 'mcq' ? question.wordId : undefined,
-        },
-      },
-    });
-  }
-
   // Build the queue from resolved QuizItems and ask the first question. Shared by
   // due and anytime entry — the only divergence between the two is the source
   // endpoint and the session-type marker. Same pipeline/UI as Learning;
@@ -160,8 +139,6 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
     reviewBatchState.value = state;
     reviewQuestion.value = question;
     reviewShownAt.value = performance.now();
-    reviewCorrelationId.value = mintCorrelationId();
-    traceReviewQuestionServed(question);
     reviewQuestionKey.value++;
   }
 
@@ -222,8 +199,6 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
       reviewBatchState.value = state;
       reviewQuestion.value = question;
       reviewShownAt.value = performance.now();
-      reviewCorrelationId.value = mintCorrelationId();
-      traceReviewQuestionServed(question);
       reviewQuestionKey.value++;
     }
   }
@@ -245,15 +220,12 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
     );
     let res;
     try {
-      res = await postReviewAnswer(
-        {
-          wordId: result.wordId,
-          correct: result.correct,
-          latencyMs,
-          questionType,
-        },
-        reviewCorrelationId.value ?? undefined,
-      );
+      res = await postReviewAnswer({
+        wordId: result.wordId,
+        correct: result.correct,
+        latencyMs,
+        questionType,
+      });
     } catch (err) {
       // DS01 leaves the card unchanged on error; do not advance past this word or
       // fake success — surface it (write-on-answer contract).

@@ -4,7 +4,7 @@ import { type QuizItem, type RunState } from '@gll/srs-engine-v2';
 import type { AppDeckPayload, GetDecksResponse } from '@gll/api-contract';
 import { loadRunState, loadConfig } from './composables/useStore';
 import { loadShelvedWords } from './composables/useShelving';
-import { getTraceSession } from './composables/useTraceSession';
+import { flushLogs as flushDebugLogs } from './composables/useQuizDebugLog';
 import { useReviewSession } from './composables/useReviewSession';
 import {
   useLearningSession,
@@ -165,27 +165,9 @@ function onOverview(id: string) {
   screen.value = 'overview';
 }
 
-// Debug-trace controls (EP40) — situational start/stop; on stop the in-memory
-// API + appearance entries are exported as a downloadable JSON artefact,
-// reconciled offline against the DB transition rows by correlationId (DS02/OQ2).
-const trace = getTraceSession();
-const traceActive = trace.active;
-
-function startTrace() {
-  trace.start();
-}
-
-function stopAndExportTrace() {
-  trace.stop();
-  const data = trace.exportSession();
-  if (!data) return;
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `trace-${data.sessionId}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+async function flushLogs() {
+  await flushDebugLogs();
+  alert('Debug logs saved to manual-test-results');
 }
 
 // --- Nav destinations reached from the home dashboard / review screen ---
@@ -432,7 +414,7 @@ onMounted(async () => {
     />
   </template>
 
-  <div style="text-align: center; padding: 16px">
+  <div v-if="screen === 'results'" style="text-align: center; padding: 16px">
     <button
       style="
         padding: 8px 16px;
@@ -442,9 +424,9 @@ onMounted(async () => {
         border-radius: 4px;
         cursor: pointer;
       "
-      @click="traceActive ? stopAndExportTrace() : startTrace()"
+      @click="flushLogs"
     >
-      {{ traceActive ? '⏹ Stop & Export Trace' : '⏺ Start Debug Trace' }}
+      💾 Save Debug Logs
     </button>
   </div>
 </template>
