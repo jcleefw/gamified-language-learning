@@ -127,3 +127,75 @@ describe('POST /api/debug/transitions (EP40-ST07)', () => {
     expect(res.status).toBe(400);
   });
 });
+
+async function postRecent(body: unknown): Promise<Response> {
+  return app.request('/api/debug/transitions-recent', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+describe('POST /api/debug/transitions-recent (EP40 post-hoc dump)', () => {
+  it('assembles a replayable slice from the most recent answers, no correlation ids needed', async () => {
+    // Un-armed rows carry a null correlation id — the post-hoc path must still recover them.
+    insertEvent({ correlationId: '', wordId: 'w1', before: null, after: ws('w1', 1) });
+    insertEvent({ correlationId: '', wordId: 'w1', before: ws('w1', 1), after: ws('w1', 2) });
+
+    const res = await postRecent({ lastN: 100 });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ApiResponse<DebugTransitionsResponse>;
+    if (!body.success) throw new Error('expected success');
+
+    expect(body.data.inputs.map((i) => i.wordId)).toEqual(['w1', 'w1']);
+    expect(body.data.inputs[1].recordedAfter).toEqual(ws('w1', 2));
+    expect(body.data.thresholds).toEqual(THRESHOLDS);
+  });
+
+  it('honours lastN, taking only the newest rows in application order', async () => {
+    insertEvent({ correlationId: '', wordId: 'old', before: null, after: ws('old', 1) });
+    insertEvent({ correlationId: '', wordId: 'mid', before: null, after: ws('mid', 1) });
+    insertEvent({ correlationId: '', wordId: 'new', before: null, after: ws('new', 1) });
+
+    const res = await postRecent({ lastN: 2 });
+    const body = (await res.json()) as ApiResponse<DebugTransitionsResponse>;
+    if (!body.success) throw new Error('expected success');
+    expect(body.data.inputs.map((i) => i.wordId)).toEqual(['mid', 'new']);
+  });
+
+  it('defaults lastN when the body is empty', async () => {
+    insertEvent({ correlationId: '', wordId: 'w1', before: null, after: ws('w1', 1) });
+    const res = await postRecent({});
+    const body = (await res.json()) as ApiResponse<DebugTransitionsResponse>;
+    if (!body.success) throw new Error('expected success');
+    expect(body.data.inputs).toHaveLength(1);
+  });
+
+  it('returns an empty slice when there are no answers yet', async () => {
+    const res = await postRecent({ lastN: 50 });
+    const body = (await res.json()) as ApiResponse<DebugTransitionsResponse>;
+    if (!body.success) throw new Error('expected success');
+    expect(body.data).toEqual({ thresholds: null, baseline: [], inputs: [] });
+  });
+
+  it('returns 400 on a non-positive lastN', async () => {
+    const res = await postRecent({ lastN: -3 });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when recent rows span a non-uniform threshold set', async () => {
+    insertEvent({ correlationId: '', wordId: 'w1', before: null, after: ws('w1', 1) });
+    insertEvent({
+      correlationId: '',
+      wordId: 'w2',
+      before: null,
+      after: ws('w2', 1),
+      thresholds: {
+        masteryThreshold: 2,
+        streakThresholds: { correctStreakThreshold: 3, wrongStreakThreshold: 2, maxMastery: 2 },
+      },
+    });
+    const res = await postRecent({ lastN: 100 });
+    expect(res.status).toBe(400);
+  });
+});
