@@ -38,4 +38,12 @@ export interface IAnswerEventStore {
     userId: string,
     correlationIds: string[],
   ): Promise<AnswerEventRecord[]>;
+
+  /**
+   * Read the most recent `limit` transition records for `userId`, returned in application
+   * order (id ascending). Powers post-hoc debug-trace assembly (EP40): every `/api/answer`
+   * persists its transition unconditionally, so a session that was never armed with a
+   * recording is still recoverable from these rows (correlationId is null on un-armed rows).
+   */
+  getRecentAnswerEvents(userId: string, limit: number): Promise<AnswerEventRecord[]>;
 }

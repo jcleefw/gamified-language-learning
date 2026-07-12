@@ -1,4 +1,4 @@
-import { and, eq, inArray, asc } from 'drizzle-orm';
+import { and, eq, inArray, asc, desc } from 'drizzle-orm';
 import { type Logger, NoopLogger } from '@gll/logger';
 import * as schema from './schema.js';
 import type { WordState } from '@gll/srs-engine-v2';
@@ -62,20 +62,44 @@ export class SqliteAnswerEventStore implements IAnswerEventStore {
       .orderBy(asc(schema.answer_events.id))
       .all();
 
-    return rows.map((row) => ({
-      correlationId: row.correlation_id,
-      userId: row.user_id,
-      wordId: row.word_id,
-      correct: row.correct,
-      latencyMs: row.latency_ms,
-      beforeState: row.before_state
-        ? (JSON.parse(row.before_state) as WordState)
-        : null,
-      afterState: JSON.parse(row.after_state) as WordState,
-      graduated: row.graduated,
-      recheck: row.recheck,
-      resolvedThresholds: JSON.parse(row.resolved_thresholds) as ResolvedThresholds,
-      createdAt: row.created_at,
-    }));
+    return rows.map(rowToRecord);
   }
+
+  async getRecentAnswerEvents(
+    userId: string,
+    limit: number,
+  ): Promise<AnswerEventRecord[]> {
+    if (limit <= 0) return [];
+    // Take the newest `limit` rows (id descending + limit), then restore application
+    // order (id ascending) so the caller folds transitions in the order they happened.
+    const rows = this.db
+      .select()
+      .from(schema.answer_events)
+      .where(eq(schema.answer_events.user_id, userId))
+      .orderBy(desc(schema.answer_events.id))
+      .limit(limit)
+      .all();
+
+    return rows.reverse().map(rowToRecord);
+  }
+}
+
+type AnswerEventRow = typeof schema.answer_events.$inferSelect;
+
+function rowToRecord(row: AnswerEventRow): AnswerEventRecord {
+  return {
+    correlationId: row.correlation_id,
+    userId: row.user_id,
+    wordId: row.word_id,
+    correct: row.correct,
+    latencyMs: row.latency_ms,
+    beforeState: row.before_state
+      ? (JSON.parse(row.before_state) as WordState)
+      : null,
+    afterState: JSON.parse(row.after_state) as WordState,
+    graduated: row.graduated,
+    recheck: row.recheck,
+    resolvedThresholds: JSON.parse(row.resolved_thresholds) as ResolvedThresholds,
+    createdAt: row.created_at,
+  };
 }

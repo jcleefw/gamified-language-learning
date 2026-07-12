@@ -144,6 +144,49 @@ describe('SqliteAnswerEventStore', () => {
     });
   });
 
+  describe('getRecentAnswerEvents (EP40 post-hoc dump)', () => {
+    it('returns the most recent `limit` rows in application (id ascending) order', async () => {
+      const store = new SqliteAnswerEventStore(db);
+      for (const wordId of ['a', 'b', 'c', 'd']) {
+        await store.appendAnswerEvent(record({ wordId }));
+      }
+      // Newest 2 rows are c, d — returned oldest-first so a fold applies them in order.
+      const out = await store.getRecentAnswerEvents('demo-user', 2);
+      expect(out.map((r) => r.wordId)).toEqual(['c', 'd']);
+    });
+
+    it('returns all rows in id order when limit exceeds the row count', async () => {
+      const store = new SqliteAnswerEventStore(db);
+      await store.appendAnswerEvent(record({ wordId: 'a' }));
+      await store.appendAnswerEvent(record({ wordId: 'b' }));
+      const out = await store.getRecentAnswerEvents('demo-user', 100);
+      expect(out.map((r) => r.wordId)).toEqual(['a', 'b']);
+    });
+
+    it('recovers rows with a null correlationId (the un-armed / post-hoc case)', async () => {
+      const store = new SqliteAnswerEventStore(db);
+      await store.appendAnswerEvent(record({ correlationId: null, wordId: 'a' }));
+      const out = await store.getRecentAnswerEvents('demo-user', 10);
+      expect(out).toHaveLength(1);
+      expect(out[0].correlationId).toBeNull();
+      expect(out[0].afterState.wordId).toBe('w1');
+    });
+
+    it('scopes to the given user', async () => {
+      const store = new SqliteAnswerEventStore(db);
+      await store.appendAnswerEvent(record({ wordId: 'mine', userId: 'demo-user' }));
+      await store.appendAnswerEvent(record({ wordId: 'theirs', userId: 'other-user' }));
+      const out = await store.getRecentAnswerEvents('demo-user', 10);
+      expect(out.map((r) => r.wordId)).toEqual(['mine']);
+    });
+
+    it('returns [] for a non-positive limit without touching the db', async () => {
+      const store = new SqliteAnswerEventStore(db);
+      await store.appendAnswerEvent(record());
+      expect(await store.getRecentAnswerEvents('demo-user', 0)).toEqual([]);
+    });
+  });
+
   it('replay: folding updateRunState over events in id order reproduces stored afterState', async () => {
     const store = new SqliteAnswerEventStore(db);
 
