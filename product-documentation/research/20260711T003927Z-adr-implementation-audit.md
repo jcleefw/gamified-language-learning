@@ -36,7 +36,7 @@ Confidence tiers used: **High** = read the logic + changelog; **Med** = symbol/t
 | Review-ahead / due-gated advance (07-09, EP39)    | Accepted       | ✅                          | due-gate `reviews.ts:145`; `/anytime`; eager `rating=null`; `ReviewHub.vue`; **EP39**    | High       |
 | FSRS seeding snapshot builder (07-10)             | Accepted       | ✅                          | `seed/scenario-builder.ts` backdated replay                                              | Med        |
 | Seed scenario placement (07-10)                   | Accepted       | ✅                          | `apps/server/src/seed/*` consolidated                                                    | Med        |
-| Config two-tier (07-11, EP41)                     | Accepted       | 🔧 in progress              | presets, per-user store, `pedagogy` dropped, `masteryThreshold` fixed; **EP41** (branch) | High       |
+| Config two-tier (07-11, EP41)                     | Accepted       | ✅                          | presets, per-user store, `pedagogy` dropped, `masteryThreshold` fixed; **EP41** (merged main, #38, 07-12) | High       |
 | Question-direction recording (07-11)              | Accepted       | ⏸ **deferred by design**    | no impl expected; see §5                                                                 | High       |
 
 ---

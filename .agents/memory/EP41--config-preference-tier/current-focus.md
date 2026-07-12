@@ -3,8 +3,8 @@
 **Status**: Completed. All 7 stories (DS01 + DS02) implemented; epic plan's Overall Acceptance
 Criteria all checked off (BDD criterion satisfied via vitest — `config.test.ts` / `answer.test.ts` —
 not Gherkin `.feature` files; none authored for this epic).
-**Branch**: `feat/EP41--user-config-reference` (off `main`), not yet merged to `main`.
-**Last updated**: 20260711T140330Z
+**Branch**: `feat/EP41--user-config-reference` — merged to `main` via PR #38 (commit `0c05513`, 07-12).
+**Last updated**: 20260712
 
 ---
 
