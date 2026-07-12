@@ -6,7 +6,7 @@ import { loadRunState, loadConfig } from './composables/useStore';
 import { loadShelvedWords } from './composables/useShelving';
 import {
   useDebugRecording,
-  shouldFinalizeOnNav,
+  finalizeRecordingOnNav,
   crossesPhaseOrMidQuiz,
   dumpRecentAndDownload,
 } from './composables/useDebugRecording';
@@ -198,25 +198,15 @@ async function navTo(target: 'home' | 'select' | 'review') {
 
   // Finalize AFTER the partial-batch flush so the artifact includes the last batch's
   // transitions (they land in answer_events via the flush's POST /api/answer calls).
-  // Independent of needsConfirm's trigger: gated only on isRecording.
-  const finalizeFirst = shouldFinalizeOnNav(
-    isRecording.value,
-    recorder.phase.value,
-    targetPhase,
-    isMidQuiz,
-  );
-  if (finalizeFirst) {
-    try {
-      await recorder.finalizeAndDownload();
-    } catch {
-      // finalizeAndDownload restores state to 'recording' and rethrows on failure.
-      // Do NOT navigate: proceeding would carry the still-live recording across the
-      // Learning↔Review boundary (or out of the batch) — the exact leak this guard
-      // exists to prevent. Stay put so the tester can retry Stop.
-      apiError.value =
-        'Could not assemble the recording before navigating. Your recording is still active — please check the server and try again.';
-      return;
-    }
+  // Debug-only concern, extracted to keep this function reading as plain nav-guard logic.
+  const finalizeOutcome = await finalizeRecordingOnNav(recorder, targetPhase, isMidQuiz);
+  if (finalizeOutcome === 'failed') {
+    // Do NOT navigate: proceeding would carry the still-live recording across the
+    // Learning↔Review boundary (or out of the batch) — the exact leak this guard
+    // exists to prevent. Stay put so the tester can retry Stop.
+    apiError.value =
+      'Could not assemble the recording before navigating. Your recording is still active — please check the server and try again.';
+    return;
   }
 
   if (target === 'review') {

@@ -263,3 +263,30 @@ export function shouldFinalizeOnNav(
   if (!isRecording) return false;
   return crossesPhaseOrMidQuiz(recordingPhase, targetPhase, isMidQuiz);
 }
+
+/**
+ * Debug-only nav side effect (RULES.md: extract debug/dump concerns out of feature
+ * functions): finalizes the active recording if `shouldFinalizeOnNav` says the target
+ * crosses its boundary. Kept out of `navTo` so that function reads as pure nav-guard
+ * logic. On failure, `finalizeAndDownload` already restores the recorder to 'recording'
+ * — this just reports the outcome so the caller can decide whether to still navigate.
+ */
+export async function finalizeRecordingOnNav(
+  recorder: UseDebugRecording,
+  targetPhase: Phase,
+  isMidQuiz: boolean,
+): Promise<'not-needed' | 'finalized' | 'failed'> {
+  const finalizeFirst = shouldFinalizeOnNav(
+    recorder.isRecording.value,
+    recorder.phase.value,
+    targetPhase,
+    isMidQuiz,
+  );
+  if (!finalizeFirst) return 'not-needed';
+  try {
+    await recorder.finalizeAndDownload();
+    return 'finalized';
+  } catch {
+    return 'failed';
+  }
+}
