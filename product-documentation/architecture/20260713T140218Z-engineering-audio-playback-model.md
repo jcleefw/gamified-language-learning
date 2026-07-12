@@ -78,6 +78,14 @@ The player uses one `<audio>` element per surface: set `currentTime = audioStart
 
 No `audioUrl` (or no markers) ⟹ no play control rendered; the question and overview work unchanged. Audio never gates answering.
 
+### 7. Cache aggressively — files are immutable per key
+
+A deck's conversation file is fetched **repeatedly** across a session (both playback surfaces re-request the same `audioUrl`) and **across testers** (every tester of the same deck fetches the same key). Since `audio_key` objects are never mutated in place — a re-recording gets a **new** key, not an overwrite (see paired authoring ADR) — each object is safe to cache forever once written:
+
+- The object is written with `Cache-Control: public, max-age=31536000, immutable` at upload time (the curator/upload path — `putObject` — sets this header; the read path stays pure string composition and does not touch it).
+- This makes the browser cache the file after first play (no re-fetch on segment replays or slow-down toggles) and lets the bucket's edge (R2's Cloudflare CDN in production) serve repeat cross-tester requests without hitting bucket egress.
+- Because the header is `immutable`, correctness depends on the **never-overwrite-a-key** rule holding: if a key's bytes ever changed post-upload, caches would keep serving the stale file. This is the same constraint the paired authoring ADR already establishes for markers; audio content follows it too.
+
 ---
 
 ## Consequences
@@ -102,3 +110,4 @@ No `audioUrl` (or no markers) ⟹ no play control rendered; the question and ove
 | Marker units confirmed as seconds-float; ms rounding at edges? | Dev |
 | Segment UX: autoplay vs tap-to-play on the word-block question; iOS session-unlock | Dev |
 | Audio file format + `decks.audio_key` naming convention | Dev (marking ADR) |
+| ~~Repeat-play egress cost~~ **Resolved**: `Cache-Control: public, max-age=31536000, immutable` on upload (§7) | PO | ✅ 2026-07-13 |

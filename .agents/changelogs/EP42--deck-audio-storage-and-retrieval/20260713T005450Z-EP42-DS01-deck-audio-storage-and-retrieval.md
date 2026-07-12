@@ -47,6 +47,7 @@ Four independent layers:
 | Audio format | `mp3` | Broadest browser `<audio>` support; single format for the MVP (answers playback-ADR open question) |
 | Missing markers on a sentence | `audioStart`/`audioEnd` simply absent from that `AppLinePayload` | No playable segment for that sentence (playback ADR §1); other sentences unaffected |
 | R2 cutover | Change endpoint + creds + public URL env only; **no code path branches on provider** | Verified by code review (epic AC); MinIO and R2 are both S3-compatible + public-URL |
+| Cache policy | `putObject` sets `Cache-Control: public, max-age=31536000, immutable` on every write | Objects are never overwritten in place (playback ADR §7); safe to cache forever — cuts repeat-play egress on both MinIO and R2/its CDN |
 
 ## 3. Data Structures
 
@@ -98,7 +99,10 @@ export function makeResolveAudioUrl(
 
 /** Dev/curator-only upload. Constructs the S3 client LAZILY here — the only
  *  place @aws-sdk/client-s3 and credentials are touched. Throws if config
- *  incomplete (called only by the ST03 script, never on the request path). */
+ *  incomplete (called only by the ST03 script, never on the request path).
+ *  Always writes Cache-Control: public, max-age=31536000, immutable — keys
+ *  are never overwritten in place (playback ADR §7), so objects are safe
+ *  to cache forever once written. */
 export async function putObject(
   cfg: AudioStorageConfig,
   key: string,
@@ -164,12 +168,14 @@ curate <deckId> <audio.mp3>
 - [ ] Add `apps/server/src/storage/audio-store.ts`: `AudioStorageConfig`, `loadAudioStorageConfig(env)`, `makeResolveAudioUrl(cfg)`, `putObject(cfg, key, body, contentType?)`.
 - [ ] `makeResolveAudioUrl` is pure string compose (trim a trailing `/` on the base); returns `undefined` when key is null/empty **or** `publicUrl` is unset. No SDK import at module top-level used on this path.
 - [ ] Construct the `S3Client` **inside `putObject` only** (lazy); `putObject` uses `forcePathStyle: true` (MinIO) and throws a clear error if `endpoint`/`bucket`/creds are missing.
+- [ ] `putObject` passes `CacheControl: 'public, max-age=31536000, immutable'` on every `PutObjectCommand`.
 
 **Acceptance Criteria**:
 
 - [ ] `makeResolveAudioUrl(cfg)('decks/d1/audio.mp3')` → `'<publicUrl>/decks/d1/audio.mp3'` (no double slash); returns `undefined` for `null`/`''` key and when `publicUrl` is unset.
 - [ ] Importing/using `audio-store.ts` for resolution performs **no** network call and constructs **no** `S3Client`.
 - [ ] `loadAudioStorageConfig({})` (empty env) returns an all-`undefined` config without throwing.
+- [ ] An object written by `putObject` reports `Cache-Control: public, max-age=31536000, immutable` when fetched back from MinIO.
 
 ### EP42-ST03: Local curator script — paired audio upload + `audio_key` sync
 
@@ -249,3 +255,4 @@ curate <deckId> <audio.mp3>
 4. The curator script keeps bucket object and DB row in sync in one idempotent run.
 5. MinIO→R2 is an env-only change — no code path branches on provider (verified by code review).
 6. All existing `SqliteContentStore` call sites are backward-compatible; no type errors; existing tests pass unchanged.
+7. Every uploaded object carries `Cache-Control: public, max-age=31536000, immutable`.

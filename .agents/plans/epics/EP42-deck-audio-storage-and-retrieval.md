@@ -29,6 +29,7 @@ This epic builds the **full storage-to-wire path** end to end, against a **local
 - `DeckSentence.audioStart` / `audioEnd` fields (optional, seconds-float) in `DeckDoc`.
 - MinIO container (Docker Compose) simulating an S3-compatible bucket, with an auto-provisioned, public-read `gll-audio` bucket. *(Done.)*
 - Server-side storage config (env-driven: endpoint, bucket, credentials, public URL base) and a thin S3-compatible client wrapper resolving `decks.audio_key` → a playable URL.
+- Long-lived cache headers on upload (`Cache-Control: public, max-age=31536000, immutable`) — audio objects are never overwritten in place, so once written they're safe to cache forever, cutting repeat-play egress on both MinIO and R2.
 - Wire additions: `AppDeckPayload.audioUrl?`, `AppLinePayload.audioStart?`/`audioEnd?`, wired into the existing `GET /api/decks` read path — absent key ⟹ absent `audioUrl`, no error.
 - A local **curator script** pairing audio + content: uploads the audio file to the bucket *and* writes `decks.audio_key` + sentence markers through the existing seed/import path in one invocation, so the bucket object and the DB row never drift apart. This is the local stand-in for what Pass 2's server-write endpoint will eventually do over HTTP.
 - Env-var contract designed so switching to R2 in production is a config change only (endpoint + credentials), never a code branch.
@@ -53,7 +54,7 @@ This epic builds the **full storage-to-wire path** end to end, against a **local
 
 ### EP42-ST02: Server storage config + S3-compatible client wrapper
 
-**Scope**: Server — env-driven config (`GLL_AUDIO_ENDPOINT`, `GLL_AUDIO_BUCKET`, `GLL_AUDIO_ACCESS_KEY_ID`/`SECRET`, `GLL_AUDIO_PUBLIC_URL`) plus a thin client (AWS SDK v3, S3-compatible) exposing `resolveAudioUrl(key)` and a dev-only `putObject` helper.
+**Scope**: Server — env-driven config (`GLL_AUDIO_ENDPOINT`, `GLL_AUDIO_BUCKET`, `GLL_AUDIO_ACCESS_KEY_ID`/`SECRET`, `GLL_AUDIO_PUBLIC_URL`) plus a thin client (AWS SDK v3, S3-compatible) exposing `resolveAudioUrl(key)` and a dev-only `putObject` helper. `putObject` sets `Cache-Control: public, max-age=31536000, immutable` on every write (playback ADR §7).
 
 ### EP42-ST03: Local curator script — paired audio upload + marker seed
 
@@ -84,6 +85,7 @@ This epic builds the **full storage-to-wire path** end to end, against a **local
 - [ ] A documented command uploads a local audio file into the bucket **and** persists `decks.audio_key` + markers to the DB in the same run — the two never drift, checked by re-running against the same deck and confirming both sides match.
 - [ ] Missing/unset storage env vars do not crash server startup — resolution just returns no `audioUrl`.
 - [ ] Swapping to R2 in production requires only env-var changes (endpoint, credentials, public URL) — verified by code review, no code path branches on provider.
+- [ ] An uploaded object carries `Cache-Control: public, max-age=31536000, immutable` (verified against the MinIO object's response headers).
 
 ---
 
