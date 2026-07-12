@@ -90,7 +90,8 @@ All routes are mounted under `/api` (see `src/app.ts`); handlers live in
 | GET | `/api/stagnation/stagnant` | `shelving.ts` | List words stagnant at a given threshold |
 | POST | `/api/stagnation/reset-words` | `shelving.ts` | Reset stagnation counters for specific words |
 | POST | `/api/stagnation/reset` | `shelving.ts` | Reset all stagnation counters for a deck |
-| POST | `/api/debug-logs` | `debug-logs.ts` | Accept a batch of client debug-log snapshots |
+| POST | `/api/debug/transitions` | `debug.ts` | Assemble a replay-artifact transition slice from a list of correlation ids (armed recording) |
+| POST | `/api/debug/transitions-recent` | `debug.ts` | Assemble a transition slice from the most recent `lastN` answers, no prior recording needed (post-hoc dump) |
 | POST | `/api/test/seed` | `test-seed.ts` | Seed a scripted test scenario directly to the DB |
 | POST/DELETE | `/api/test/config/shelving` | `test-seed.ts` | Override/reset shelving config for manual testing |
 | GET/POST/DELETE | `/api/test/config/sentence` | `test-seed.ts` | Override/reset sentence config for manual testing |
@@ -147,8 +148,23 @@ baseline + ordered inputs + recorded appearance context), so it reproduces the
 exact `WordState` trajectory on any machine with no dependency on the origin
 database. A faithful session replays byte-exact (golden-master), and any
 artifact can be dropped into `src/replay/__tests__/fixtures/` to become a
-regression assertion. Recording artifacts in `srs-demo` is a separate concern
-(EP40-DS02); this app only **consumes** them.
+regression assertion. This app only **consumes** artifacts — they are produced
+in `srs-demo`:
+
+- **Armed recording** — click **Record** (dev-only, gated on `env.debugMode`),
+  play through a Learning or Review session, click **Stop & download**. Calls
+  `POST /api/debug/transitions` with the serve-ordered correlation ids and
+  downloads a `<sessionId>.json` artifact with full appearance context (pool
+  selections, serve order, recheck triggers, shelving).
+- **Post-hoc dump** — click **Dump last 100** (also dev-only) any time, with no
+  prior Record press. Every `/api/answer` already persists its transition to
+  `answer_events`, so this recovers a replayable artifact after a bug was
+  already hit. Calls `POST /api/debug/transitions-recent`; the downloaded
+  `posthoc-<uuid>.json` has an empty `appearance: []` (that context is only
+  buffered while armed) but replays byte-identically since replay only
+  consumes `inputs` + `baseline` + `thresholds`.
+
+Either artifact feeds `pnpm seed replay <artifact.json>` above.
 
 ## Testing
 
