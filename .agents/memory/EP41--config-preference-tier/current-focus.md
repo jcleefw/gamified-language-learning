@@ -3,8 +3,8 @@
 **Status**: Completed. All 7 stories (DS01 + DS02) implemented; epic plan's Overall Acceptance
 Criteria all checked off (BDD criterion satisfied via vitest — `config.test.ts` / `answer.test.ts` —
 not Gherkin `.feature` files; none authored for this epic).
-**Branch**: `feat/EP41--user-config-reference` (off `main`), not yet merged to `main`.
-**Last updated**: 20260711T014500Z
+**Branch**: `feat/EP41--user-config-reference` — merged to `main` via PR #38 (commit `0c05513`, 07-12).
+**Last updated**: 20260712
 
 ---
 
@@ -65,10 +65,35 @@ Treat these as the source of truth; do not re-derive scope.
 Real auth/login; `wordDirections` pref + direction recording (→ direction ADR, later); per-deck
 pedagogy; raw-knob tuning; opt-in recalibrate.
 
+## Adjacent ADR authored this session (NOT EP41 scope → needs its own epic)
+
+During a design discussion on this branch, a new ADR was authored — **it is not part of EP41** (EP41
+is complete). It was written here only because the discussion happened on this branch; its scope is a
+separate, future epic.
+
+- **Seeding & Replay — One Domain-Replay Tool** —
+  [`product-documentation/architecture/20260711T140330Z-engineering-seeding-replay-domain-replay-tool.md`](../../../product-documentation/architecture/20260711T140330Z-engineering-seeding-replay-domain-replay-tool.md).
+  One domain-replay tool, two scenarios (scenario-seed for manual testing · artifact-replay to
+  reproduce a bug), three sources (authored snapshot · computed FSRS scenario · replayed artifact),
+  one `@gll/db` write sink. Key decisions: extract one shared `applyAnswer` (route + replay parity by
+  construction); self-contained artifact (baseline + inputs + resolved thresholds, word-transition
+  scope); appearance recorded-as-context, seeded-RNG orchestration recompute deferred; consolidate
+  `cli-demo-db` `db-fixtures` + server `scenario-builder` under one catalogue with injected
+  target (db-path + user); `@gll/srs-fixtures` = pure core only, CLIs stay thin per-app wrappers;
+  extraction YAGNI-gated on the artifact-replay consumer.
+- Cross-referenced from **Pillar 4** of the learning-authority ADR
+  ([`20260708T125551Z-…-learning-authority-and-debug-trace.md`](../../../product-documentation/architecture/20260708T125551Z-engineering-srs-demo-learning-authority-and-debug-trace.md));
+  the recording side (Start/Stop UI, session scoping, Learning↔Review crossing) stays owned by Pillar 4,
+  not this ADR.
+
 ## Next steps
 
-Epic complete on this branch. Remaining before merge to `main`:
+EP41 itself is complete on this branch. Two independent tracks:
 
-1. Merge `feat/EP41--user-config-reference` to `main`.
-2. `gentle`/`intense` presets remain wired but unselectable (reserved names, no bundle) until a later
-   epic opens them via the difficulty ADR.
+1. **Create a new epic from the Seeding & Replay ADR** (not EP41). Natural first, unblocking story:
+   extract the shared `applyAnswer` out of the `/api/answer` route (both the live route and
+   artifact-replay depend on it). Then the `@gll/srs-fixtures` extraction + `cli-demo-db`/server seeder
+   consolidation, and the artifact-replay CLI mode.
+2. **EP41 merge** — merge `feat/EP41--user-config-reference` to `main`; `gentle`/`intense` presets
+   remain wired but unselectable (reserved names, no bundle) until a later epic opens them via the
+   difficulty ADR.

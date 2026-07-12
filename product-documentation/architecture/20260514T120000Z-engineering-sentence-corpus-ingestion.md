@@ -1,6 +1,6 @@
 # ADR: Sentence Corpus Ingestion — JSON to Engine Data Shape
 
-**Status:** Proposed
+**Status:** Accepted
 
 **Date:** 2026-05-14
 

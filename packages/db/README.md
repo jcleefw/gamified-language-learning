@@ -14,7 +14,7 @@ import {
 } from '@gll/db';
 import type {
   ILearningStore, IContentStore, IReviewStore,
-  IAnswerEventStore, AnswerEventRecord,
+  IAnswerEventStore, AnswerEventRecord, ResolvedThresholds,
 } from '@gll/db';
 ```
 
@@ -23,7 +23,7 @@ import type {
 | `SqliteLearningStore` | `ILearningStore` | Per-user word/sentence Learning state, stagnation tracking, shelving |
 | `SqliteReviewStore` | `IReviewStore` | Per-user FSRS review cards (graduated words) |
 | `SqliteContentStore` | `IContentStore` | Curriculum content (decks, words, sentences) in API-contract shape |
-| `SqliteAnswerEventStore` | `IAnswerEventStore` | Append-only per-answer transition log (`AnswerEventRecord`) |
+| `SqliteAnswerEventStore` | `IAnswerEventStore` | Append-only per-answer transition log (`AnswerEventRecord`), incl. the `ResolvedThresholds` each transition used — the config an artifact replays under |
 
 `getDb(path?)` returns a shared Drizzle client (defaults to `./data/learning-state.db`) and runs migrations via `initDb`; `closeDb()` disposes it. `schema` is the Drizzle table namespace.
 

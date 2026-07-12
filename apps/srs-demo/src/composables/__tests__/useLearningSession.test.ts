@@ -8,6 +8,7 @@ import type {
 } from '@gll/srs-engine-v2';
 import type { AppDeckPayload } from '@gll/api-contract';
 import { useLearningSession } from '../useLearningSession';
+import { useDebugRecording } from '../useDebugRecording';
 import type { ConfigType, Screen } from '../../types';
 
 // The composable's I/O is these three modules — mock them so the tests exercise
@@ -41,14 +42,6 @@ vi.mock('../useShelving', () => ({
   getShelvingConfig: (...a: any[]) => getShelvingConfig(...a),
 }));
 /* eslint-enable @typescript-eslint/no-explicit-any */
-
-vi.mock('../useQuizDebugLog', () => ({
-  logDeckStarted: vi.fn(),
-  logBatchStarted: vi.fn(),
-  logBatchQuestions: vi.fn(),
-  logBatchResult: vi.fn(),
-  clearLogs: vi.fn(),
-}));
 
 function makeWord(id: string): QuizItem {
   return {
@@ -274,5 +267,81 @@ describe('onClear', () => {
     expect(session.batchState.value).toBeNull();
     expect(session.globalRunState.value.size).toBe(0);
     expect(screen.value).toBe('select');
+  });
+});
+
+describe('correlation-id stitch (EP40-ST05b)', () => {
+  beforeEach(() => useDebugRecording().cancel());
+
+  it('passes each answered word its served correlation id when recording', async () => {
+    useDebugRecording().start('learning');
+    const { session, screen } = setup();
+    await session.initSession('d1');
+    await answerBatch(session, screen);
+
+    const cids = postAnswer.mock.calls.map((c) => (c as unknown[])[1] as string);
+    expect(cids.length).toBeGreaterThanOrEqual(2);
+    // Each answer carried a non-empty, distinct correlation id from the recorder.
+    expect(cids.every((c) => typeof c === 'string' && c.length > 0)).toBe(true);
+    expect(new Set(cids).size).toBe(cids.length);
+    // Every id posted was actually issued by the recorder, in the session's set.
+    const issued = new Set(useDebugRecording().issuedIds());
+    expect(cids.every((c) => issued.has(c))).toBe(true);
+  });
+
+  it('passes no correlation id when not recording (regression)', async () => {
+    const { session, screen } = setup();
+    await session.initSession('d1');
+    await answerBatch(session, screen);
+
+    const cids = postAnswer.mock.calls.map((c) => (c as unknown[])[1]);
+    // Not recording ⇒ currentCorrelationId() is null ⇒ no header downstream.
+    expect(cids.every((c) => c == null)).toBe(true);
+  });
+});
+
+describe('appearance channel (EP40-ST06)', () => {
+  beforeEach(() => useDebugRecording().cancel());
+
+  it('records a correlated entry per orchestration decision', async () => {
+    const rec = useDebugRecording();
+    rec.start('learning');
+    const { session, screen } = setup();
+    await session.initSession('d1');
+    await answerBatch(session, screen);
+
+    const buf = rec.appearanceBuffer();
+    const kinds = buf.map((e) => e.kind);
+    // Initial pool selection + per-served-question serves are always present.
+    expect(kinds).toContain('pool-selected');
+    expect(kinds).toContain('question-served');
+    // Every entry is well-formed: a kind, an ISO timestamp, a payload.
+    for (const e of buf) {
+      expect(typeof e.at).toBe('string');
+      expect(e.data).toBeTypeOf('object');
+    }
+    // A served question carries the correlation id that was posted for its answer.
+    const served = buf.filter((e) => e.kind === 'question-served');
+    expect(served.length).toBeGreaterThanOrEqual(2);
+    expect(served.every((e) => typeof e.correlationId === 'string')).toBe(true);
+  });
+
+  it('is read-only: recording does not change the batch outcome', async () => {
+    useDebugRecording().start('learning');
+    const { session, screen } = setup();
+    await session.initSession('d1');
+    await answerBatch(session, screen);
+    // Orchestration reaches results and persists exactly the word answers, same as
+    // the not-recording path — appearance capture is purely additive.
+    expect(screen.value).toBe('results');
+    expect(postAnswer).toHaveBeenCalledTimes(2);
+  });
+
+  it('produces no appearance events off the recording path (no cost)', async () => {
+    const rec = useDebugRecording();
+    const { session, screen } = setup();
+    await session.initSession('d1');
+    await answerBatch(session, screen);
+    expect(rec.appearanceBuffer()).toEqual([]);
   });
 });

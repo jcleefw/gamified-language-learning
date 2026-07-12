@@ -10,6 +10,10 @@
 **Epic**: Pre-EP30 (prerequisite)
 **RFC**: N/A
 
+> **Amended by** [ContentStore & Deck-Document Model ADR (2026-07-06)](20260706T125002Z-engineering-contentstore-deck-document-model.md): §3's `sentences` and `sentence_components` relational tables are superseded — content is now stored as a nested JSON document in `decks.doc` (typed `DeckDoc`, validated by `DeckDocSchema`). `deck_words` is unaffected in shape but is now derived from `doc` rather than from `sentence_components`. `schema.ts` is the source of truth for current table shapes; this ADR remains authoritative for domains it did not amend (user management, vocabulary, learner state, SRS scheduling, shelving).
+>
+> **Not yet documented here**: two event-log tables shipped post-hoc and have no ADR-level schema entry — `answer_events` (learning-phase answer log, EP37/EP40) and `review_answer_events` (review-phase answer log, EP36). Both are additive, append-only logs alongside the state tables above; neither replaces `user_word_states`/`review_cards`. (Note: an earlier audit pass referenced a third table, `review_transition_events` — it does not exist in `schema.ts` and should not be treated as shipped.)
+
 ---
 
 ## Context
@@ -111,7 +115,9 @@ CREATE TABLE IF NOT EXISTS decks (
 );
 ```
 
-#### `sentences`
+#### `sentences` ⚠ Superseded — see amendment banner above
+
+> Not built as a table. `sentences` + `sentence_components` were collapsed into `decks.doc` by the ContentStore ADR (07-06) before EP30 implementation. Kept below for historical record only.
 
 Sentences are **owned by a deck** — they are not global. A sentence belongs to exactly one deck. The full native-script text is the dedup key within a deck.
 
@@ -129,7 +135,9 @@ CREATE TABLE IF NOT EXISTS sentences (
 );
 ```
 
-#### `sentence_components`
+#### `sentence_components` ⚠ Superseded — see amendment banner above
+
+> Not built as a table. Absorbed into `decks.doc` as nested component objects (each holding a `wordId` reference). Kept below for historical record only.
 
 Each sentence breaks down into word tokens. This table captures the breakdown from the source file — one row per word-in-sentence occurrence (same word can appear multiple times).
 
@@ -146,7 +154,7 @@ CREATE TABLE IF NOT EXISTS sentence_components (
 
 #### `deck_words`
 
-Derived view of which words belong to a deck, via sentence components. This table is materialised for query efficiency — it is owned by the import process and never manually maintained.
+Derived view of which words belong to a deck. This table is materialised for query efficiency — it is owned by the import process and never manually maintained. **Amended**: source of derivation changed from `sentence_components` to `decks.doc` (ContentStore ADR, 07-06); shape and semantics below are unchanged.
 
 ```sql
 CREATE TABLE IF NOT EXISTS deck_words (

@@ -4,9 +4,33 @@ import { getDb } from '@gll/db';
 import { defaultDbPath } from '../config/db-path.js';
 import { REVIEW_SCENARIOS } from './scenario-builder.js';
 import { runSeed, type RunSeedArgs } from './run-seed.js';
+import { runReplay } from '../replay/run-replay.js';
 import { DEMO_USER_ID } from '../identity/current-user.js';
 
 const USER_ID = DEMO_USER_ID;
+
+/**
+ * Replay a captured artifact through the shared `applyAnswer` and diff against its recorded states.
+ * `--fresh` (default) uses a throwaway :memory: DB; `--existing-db` replays onto the app's DB.
+ * Prints the step table and exits non-zero on the first divergence.
+ */
+async function replayMain(rest: string[]): Promise<void> {
+  const existingDb = rest.includes('--existing-db');
+  const artifactPath = rest.find((a) => !a.startsWith('--'));
+  if (!artifactPath) {
+    console.error('Usage: seed replay <artifact.json> [--fresh | --existing-db]');
+    process.exit(1);
+  }
+
+  try {
+    const { result, table } = await runReplay({ artifactPath, existingDb, userId: USER_ID });
+    console.log(table);
+    process.exit(result.ok ? 0 : 1);
+  } catch (err) {
+    console.error(`✗ ${(err as Error).message}`);
+    process.exit(1);
+  }
+}
 
 interface CliArgs extends RunSeedArgs {
   list: boolean;
@@ -35,7 +59,15 @@ function printCatalogue(): void {
 }
 
 async function main(): Promise<void> {
-  const args = parseArgs(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+
+  // `seed replay <artifact>` — a mode alongside scenario seeding (ADR D6).
+  if (argv[0] === 'replay') {
+    await replayMain(argv.slice(1));
+    return;
+  }
+
+  const args = parseArgs(argv);
 
   if (args.list || !args.scenario) {
     printCatalogue();

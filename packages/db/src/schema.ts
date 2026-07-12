@@ -141,6 +141,7 @@ export const answer_events = sqliteTable('answer_events', {
   after_state: text('after_state').notNull(),
   graduated: integer('graduated', { mode: 'boolean' }).notNull(),
   recheck: integer('recheck', { mode: 'boolean' }).notNull().default(false),
+  resolved_thresholds: text('resolved_thresholds').notNull().default('{}'),
   created_at: text('created_at').notNull(),
 });
 

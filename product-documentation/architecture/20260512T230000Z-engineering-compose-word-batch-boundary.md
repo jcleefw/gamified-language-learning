@@ -1,6 +1,6 @@
 # ADR: `composeWordBatch` — Word-Item Boundary for Question Composers
 
-**Status:** Proposed
+**Status:** Accepted
 
 **Date:** 2026-05-12
 

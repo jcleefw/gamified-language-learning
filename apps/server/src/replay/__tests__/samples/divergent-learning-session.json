@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "meta": {
+    "createdAt": "2026-07-12T00:00:00.000Z",
+    "sessionId": "divergent-1",
+    "phase": "learning",
+    "originUserId": "demo-user"
+  },
+  "thresholds": {
+    "masteryThreshold": 2,
+    "streakThresholds": {
+      "correctStreakThreshold": 2,
+      "wrongStreakThreshold": 2,
+      "maxMastery": 2
+    }
+  },
+  "baseline": [],
+  "inputs": [
+    {
+      "correlationId": "c0",
+      "wordId": "w1",
+      "correct": true,
+      "latencyMs": 100,
+      "recheck": false,
+      "recordedAfter": {
+        "wordId": "w1",
+        "seen": 1,
+        "correct": 1,
+        "mastery": 0,
+        "correctStreak": 1,
+        "wrongStreak": 0,
+        "lapses": 0
+      }
+    },
+    {
+      "correlationId": "c1",
+      "wordId": "w1",
+      "correct": false,
+      "latencyMs": 100,
+      "recheck": false,
+      "recordedAfter": {
+        "wordId": "w1",
+        "seen": 2,
+        "correct": 1,
+        "mastery": 0,
+        "correctStreak": 0,
+        "wrongStreak": 1,
+        "lapses": 0
+      }
+    },
+    {
+      "correlationId": "c2",
+      "wordId": "w1",
+      "correct": true,
+      "latencyMs": 100,
+      "recheck": false,
+      "recordedAfter": {
+        "wordId": "w1",
+        "seen": 3,
+        "correct": 2,
+        "mastery": 99,
+        "correctStreak": 1,
+        "wrongStreak": 0,
+        "lapses": 0
+      }
+    },
+    {
+      "correlationId": "c3",
+      "wordId": "w2",
+      "correct": true,
+      "latencyMs": 100,
+      "recheck": false,
+      "recordedAfter": {
+        "wordId": "w2",
+        "seen": 1,
+        "correct": 1,
+        "mastery": 0,
+        "correctStreak": 1,
+        "wrongStreak": 0,
+        "lapses": 0
+      }
+    },
+    {
+      "correlationId": "c4",
+      "wordId": "w2",
+      "correct": true,
+      "latencyMs": 100,
+      "recheck": false,
+      "recordedAfter": {
+        "wordId": "w2",
+        "seen": 2,
+        "correct": 2,
+        "mastery": 1,
+        "correctStreak": 2,
+        "wrongStreak": 0,
+        "lapses": 0
+      }
+    },
+    {
+      "correlationId": "c5",
+      "wordId": "w2",
+      "correct": true,
+      "latencyMs": 100,
+      "recheck": false,
+      "recordedAfter": {
+        "wordId": "w2",
+        "seen": 3,
+        "correct": 3,
+        "mastery": 2,
+        "correctStreak": 3,
+        "wrongStreak": 0,
+        "lapses": 0
+      }
+    }
+  ],
+  "appearance": []
+}
