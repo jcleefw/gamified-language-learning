@@ -7,6 +7,7 @@ import { loadShelvedWords } from './composables/useShelving';
 import {
   useDebugRecording,
   shouldFinalizeOnNav,
+  crossesPhaseOrMidQuiz,
   dumpRecentAndDownload,
 } from './composables/useDebugRecording';
 import { applyTestSentenceConfig } from './composables/useTestSentenceConfig';
@@ -170,21 +171,21 @@ const activeNav = computed<'home' | 'learn' | 'review'>(() => {
 // first (same path as Exit). Review is write-on-answer — each answered card is
 // already durable — so no flush is needed there.
 async function navTo(target: 'home' | 'select' | 'review') {
-  // Nav-guard (EP40-ST08): a recording must never leak across the Learning↔Review
-  // boundary or silently drop a mid-quiz batch. Soft-confirm (Cancel default) — on
-  // Cancel we stay and keep recording; on confirm we finalize+download, then proceed.
+  // Nav-guard (EP40-ST08, generalized): a genuine product UX, not a debug-only
+  // affordance — soft-confirm (Cancel default) whenever the target crosses the
+  // Learning↔Review boundary or leaves an in-progress quiz batch, for every user.
+  // A live recording additionally finalizes on confirm so it never spans the boundary.
   const targetPhase = target === 'review' ? 'review' : 'learning';
-  const finalizeFirst = shouldFinalizeOnNav(
-    isRecording.value,
-    recorder.phase.value,
-    targetPhase,
-    screen.value === 'quiz',
-  );
-  if (finalizeFirst) {
-    const proceed = window.confirm(
-      'Finish and download the recording before leaving? Cancel to stay and keep recording.',
-    );
-    if (!proceed) return; // stay; recording continues
+  const fromPhase = activeNav.value === 'home' ? null : activeNav.value === 'review' ? 'review' : 'learning';
+  const isMidQuiz = screen.value === 'quiz';
+  const needsConfirm = crossesPhaseOrMidQuiz(fromPhase, targetPhase, isMidQuiz);
+
+  if (needsConfirm) {
+    const message = isRecording.value
+      ? 'Finish and download the recording before leaving? Cancel to stay and keep recording.'
+      : 'Leave this quiz? Your progress so far will be saved. Cancel to keep going.';
+    const proceed = window.confirm(message);
+    if (!proceed) return; // stay; recording (if any) continues
   }
 
   if (
@@ -197,6 +198,13 @@ async function navTo(target: 'home' | 'select' | 'review') {
 
   // Finalize AFTER the partial-batch flush so the artifact includes the last batch's
   // transitions (they land in answer_events via the flush's POST /api/answer calls).
+  // Independent of needsConfirm's trigger: gated only on isRecording.
+  const finalizeFirst = shouldFinalizeOnNav(
+    isRecording.value,
+    recorder.phase.value,
+    targetPhase,
+    isMidQuiz,
+  );
   if (finalizeFirst) {
     try {
       await recorder.finalizeAndDownload();

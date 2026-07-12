@@ -233,10 +233,26 @@ export function useDebugRecording(): UseDebugRecording {
 }
 
 /**
- * Whether a navigation must soft-confirm + finalize the active recording before leaving
- * (EP40-ST08). A recording is finalized rather than silently dropped when the target
- * crosses the Learning↔Review phase boundary, or when it leaves an in-progress quiz batch.
- * Not recording ⇒ never — navigation behaves exactly as before.
+ * Whether the target crosses a Learning↔Review phase boundary (relative to `fromPhase`),
+ * or leaves an in-progress quiz batch. Phase-agnostic — this is the one trigger condition
+ * shared by two independent concerns: whether the nav-confirm dialog shows (a product UX
+ * guard, applies to every user) and, separately, whether an active recording finalizes
+ * (see `shouldFinalizeOnNav`). `fromPhase: null` (e.g. the home screen) never crosses.
+ */
+export function crossesPhaseOrMidQuiz(
+  fromPhase: Phase | null,
+  targetPhase: Phase,
+  isMidQuiz: boolean,
+): boolean {
+  const crossesPhase = fromPhase !== null && fromPhase !== targetPhase;
+  return crossesPhase || isMidQuiz;
+}
+
+/**
+ * Whether a navigation must finalize the active recording before leaving (EP40-ST08). A
+ * recording is finalized rather than silently dropped/spanning the boundary on the same
+ * trigger the nav-confirm dialog uses. Not recording ⇒ never — independent of whether the
+ * (now recording-agnostic) confirm dialog shows.
  */
 export function shouldFinalizeOnNav(
   isRecording: boolean,
@@ -245,6 +261,5 @@ export function shouldFinalizeOnNav(
   isMidQuiz: boolean,
 ): boolean {
   if (!isRecording) return false;
-  const crossesPhase = recordingPhase !== null && recordingPhase !== targetPhase;
-  return crossesPhase || isMidQuiz;
+  return crossesPhaseOrMidQuiz(recordingPhase, targetPhase, isMidQuiz);
 }

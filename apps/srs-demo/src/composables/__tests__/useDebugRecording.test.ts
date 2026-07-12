@@ -3,6 +3,7 @@ import {
   useDebugRecording,
   setDownloaderForTest,
   shouldFinalizeOnNav,
+  crossesPhaseOrMidQuiz,
   dumpRecentAndDownload,
 } from '../useDebugRecording';
 
@@ -231,8 +232,28 @@ describe('dumpRecentAndDownload — post-hoc dump (EP40)', () => {
   });
 });
 
-describe('shouldFinalizeOnNav — nav-guard decision (EP40-ST08)', () => {
-  it('never finalizes when not recording (regression: nav unchanged)', () => {
+describe('crossesPhaseOrMidQuiz — nav-confirm trigger, recording-agnostic (EP40-ST08 generalized)', () => {
+  it('triggers on a Learning↔Review crossing regardless of recording', () => {
+    expect(crossesPhaseOrMidQuiz('learning', 'review', false)).toBe(true);
+    expect(crossesPhaseOrMidQuiz('review', 'learning', false)).toBe(true);
+  });
+
+  it('triggers when mid-quiz, even within the same phase', () => {
+    expect(crossesPhaseOrMidQuiz('learning', 'learning', true)).toBe(true);
+  });
+
+  it('does not trigger on a same-phase nav outside a quiz', () => {
+    expect(crossesPhaseOrMidQuiz('learning', 'learning', false)).toBe(false);
+  });
+
+  it('a null fromPhase (e.g. home) never crosses on its own', () => {
+    expect(crossesPhaseOrMidQuiz(null, 'learning', false)).toBe(false);
+    expect(crossesPhaseOrMidQuiz(null, 'review', false)).toBe(false);
+  });
+});
+
+describe('shouldFinalizeOnNav — recorder finalize decision (EP40-ST08)', () => {
+  it('never finalizes when not recording, regardless of the trigger condition', () => {
     expect(shouldFinalizeOnNav(false, 'learning', 'review', true)).toBe(false);
     expect(shouldFinalizeOnNav(false, null, 'learning', true)).toBe(false);
   });
