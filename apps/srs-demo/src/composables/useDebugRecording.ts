@@ -145,20 +145,12 @@ async function finalizeAndDownload(): Promise<'downloaded' | 'empty' | 'idle'> {
       return 'empty';
     }
 
-    const artifact: ReplayArtifact = {
-      version: 1,
-      meta: {
-        createdAt: new Date().toISOString(),
-        sessionId: sessionId.value ?? crypto.randomUUID(),
-        phase: phase.value ?? 'learning',
-        originUserId: 'demo-user', // informational; replay injects its own userId
-      },
-      thresholds: slice.thresholds,
-      baseline: slice.baseline,
-      inputs: slice.inputs,
-      appearance: [...appearance],
-    };
-    downloader(`${artifact.meta.sessionId}.json`, artifact);
+    downloadArtifact(
+      slice,
+      phase.value ?? 'learning',
+      sessionId.value ?? crypto.randomUUID(),
+      [...appearance],
+    );
     cancel();
     return 'downloaded';
   } catch (err) {
@@ -167,6 +159,59 @@ async function finalizeAndDownload(): Promise<'downloaded' | 'empty' | 'idle'> {
     state.value = 'recording';
     throw err;
   }
+}
+
+// Build the DS01 ReplayArtifact around a server transition slice and download it. Shared
+// by the armed finalize path (with buffered appearance) and the post-hoc dump (empty
+// appearance) so both emit byte-identical artifact shapes.
+function downloadArtifact(
+  slice: TransitionSlice,
+  phase: Phase,
+  sessionId: string,
+  appearanceEvents: AppearanceEvent[],
+): void {
+  const artifact: ReplayArtifact = {
+    version: 1,
+    meta: {
+      createdAt: new Date().toISOString(),
+      sessionId,
+      phase,
+      originUserId: 'demo-user', // informational; replay injects its own userId
+    },
+    thresholds: slice.thresholds,
+    baseline: slice.baseline,
+    inputs: slice.inputs,
+    appearance: appearanceEvents,
+  };
+  downloader(`${artifact.meta.sessionId}.json`, artifact);
+}
+
+/**
+ * Post-hoc dump (EP40): assemble + download a replayable artifact from the last `lastN`
+ * answers WITHOUT a prior recording. Independent of the armed-session state — every
+ * `/api/answer` already persisted its transition server-side. The artifact has an empty
+ * `appearance[]` (that context is only buffered while armed); replay parity doesn't use it.
+ * Returns 'empty' when there are no recent transitions to assemble.
+ */
+export async function dumpRecentAndDownload(
+  lastN = 100,
+): Promise<'downloaded' | 'empty'> {
+  const res = await fetch('/api/debug/transitions-recent', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lastN }),
+  });
+  if (!res.ok) throw new Error(`POST /api/debug/transitions-recent failed: ${res.status}`);
+  const body = (await res.json()) as
+    | { success: true; data: TransitionSlice }
+    | { success: false; error: { message: string } };
+  if (!body.success) throw new Error(body.error.message);
+
+  const slice = body.data;
+  if (slice.inputs.length === 0 || slice.thresholds == null) return 'empty';
+
+  downloadArtifact(slice, 'learning', `posthoc-${crypto.randomUUID()}`, []);
+  return 'downloaded';
 }
 
 const singleton: UseDebugRecording = {

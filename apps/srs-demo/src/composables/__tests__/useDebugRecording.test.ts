@@ -3,6 +3,7 @@ import {
   useDebugRecording,
   setDownloaderForTest,
   shouldFinalizeOnNav,
+  dumpRecentAndDownload,
 } from '../useDebugRecording';
 
 describe('useDebugRecording — session state & id issuance (EP40-ST05a)', () => {
@@ -146,6 +147,87 @@ describe('useDebugRecording — finalizeAndDownload (EP40-ST07b)', () => {
     expect(await rec.finalizeAndDownload()).toBe('empty');
     expect(downloadSpy).not.toHaveBeenCalled();
     expect(rec.state.value).toBe('idle');
+  });
+});
+
+describe('dumpRecentAndDownload — post-hoc dump (EP40)', () => {
+  const fetchMock = vi.fn();
+  const downloadSpy = vi.fn();
+
+  beforeEach(() => {
+    useDebugRecording().cancel();
+    fetchMock.mockReset();
+    downloadSpy.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
+    setDownloaderForTest(downloadSpy);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const slice = {
+    thresholds: {
+      masteryThreshold: 2,
+      streakThresholds: { correctStreakThreshold: 2, wrongStreakThreshold: 2, maxMastery: 2 },
+    },
+    baseline: [],
+    inputs: [
+      {
+        correlationId: '',
+        wordId: 'w1',
+        correct: true,
+        latencyMs: 0,
+        recheck: false,
+        recordedAfter: { wordId: 'w1', seen: 1, correct: 1, mastery: 0, correctStreak: 1, wrongStreak: 0, lapses: 0 },
+      },
+    ],
+  };
+
+  it('posts lastN, downloads a v1 artifact with an EMPTY appearance array', async () => {
+    let captured: unknown;
+    fetchMock.mockImplementation((url, init) => {
+      expect(url).toBe('/api/debug/transitions-recent');
+      captured = JSON.parse((init as RequestInit).body as string);
+      return Promise.resolve({ ok: true, json: async () => ({ success: true, data: slice }) });
+    });
+
+    const outcome = await dumpRecentAndDownload(50);
+    expect(outcome).toBe('downloaded');
+    expect(captured).toEqual({ lastN: 50 });
+    expect(downloadSpy).toHaveBeenCalledOnce();
+    const artifact = downloadSpy.mock.calls[0][1] as {
+      version: number;
+      appearance: unknown[];
+      meta: { phase: string; sessionId: string };
+      inputs: unknown[];
+    };
+    expect(artifact.version).toBe(1);
+    // The defining difference from an armed recording: no appearance context.
+    expect(artifact.appearance).toEqual([]);
+    expect(artifact.meta.phase).toBe('learning');
+    expect(artifact.meta.sessionId).toMatch(/^posthoc-/);
+    expect(artifact.inputs).toHaveLength(1);
+  });
+
+  it('does not touch the recorder session state (independent of arming)', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ success: true, data: slice }) });
+    const rec = useDebugRecording();
+    await dumpRecentAndDownload(10);
+    expect(rec.isRecording.value).toBe(false);
+    expect(rec.state.value).toBe('idle');
+  });
+
+  it('returns "empty" and downloads nothing when there are no recent transitions', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, data: { thresholds: null, baseline: [], inputs: [] } }),
+    });
+    expect(await dumpRecentAndDownload()).toBe('empty');
+    expect(downloadSpy).not.toHaveBeenCalled();
+  });
+
+  it('throws on a non-ok response so the caller can surface an error', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
+    await expect(dumpRecentAndDownload()).rejects.toThrow();
+    expect(downloadSpy).not.toHaveBeenCalled();
   });
 });
 
