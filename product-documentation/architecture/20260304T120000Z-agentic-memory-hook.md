@@ -1,6 +1,6 @@
 # ADR: Automated Memory Pointer via PostToolUse Hook
 
-**Status:** Proposed
+**Status:** Accepted
 
 **Date:** 2026-03-04
 

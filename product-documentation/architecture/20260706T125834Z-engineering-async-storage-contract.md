@@ -1,6 +1,6 @@
 # ADR: Async Storage Contract
 
-**Status:** Proposed
+**Status:** Accepted
 
 **Date:** 2026-07-06
 
