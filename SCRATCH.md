@@ -5,14 +5,13 @@
 - [ ] review mode - difficult mode,
 - [ ] work out a path for local / d1 to workalongside
 
-3. I want to add a few more actions items
-   a. user accounts discussion
-   b user auth discussion
-   c. adding more review mode
-
-- review difficult mode
-- review words by deck
-
+1. user accounts setup in ui
+2. user auth discussion
+3. adding more review mode
+   - review difficult mode
+   - review words by deck
 4. support to play audio in srs-demo
 5. taking app to live cloudflare environment
 6. Curation engine as package
+7. define retention metrics
+8. Question-direction recording
