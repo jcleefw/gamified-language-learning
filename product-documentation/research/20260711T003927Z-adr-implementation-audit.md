@@ -1,7 +1,7 @@
 # ADR ↔ Implementation Audit (full history, June-2026 precedence)
 
 **Created**: 20260711T003927Z
-**Updated**: 20260712 — the six ADRs flagged in §4.5/§6-item-1 have been flipped to Accepted (commit `231a9ba`); §2/§3 tables and §4.5 below reflect the current state. Also added the previously-uncited Domain-Replay Tool ADR (20260711T140330Z) to §2.
+**Updated**: 20260712T062849Z — recommended actions 1-4 completed and removed from §6 (see commit history for prior text); §6 now tracks only the retention-metric gap. §5 research-gap-docs list updated to flag the retention metric as needing its own gap doc / ADR. Earlier 07-12 update: the six ADRs flagged in §4.5/§6-item-1 flipped to Accepted (commit `231a9ba`); §2/§3 tables and §4.5 reflect current state; added the previously-uncited Domain-Replay Tool ADR (20260711T140330Z) to §2.
 **Author**: BA/PO-assisted audit (Claude)
 **Scope**: All ADRs in `product-documentation/architecture/`. Conflicts resolved in favour of the **later (post-June-2026)** ADR where they overlap, per PO instruction.
 **Purpose**: (1) verify what is built vs. decided, (2) highlight where a post-June ADR overrides a pre-June one, (3) surface documentation drift for discussion, (4) consolidate deferred/future work.
@@ -75,9 +75,9 @@ Confidence tiers used: **High** = read the logic + changelog; **Med** = symbol/t
 The 06-20 schema ADR bills itself _"the complete schema for all domains in a single authoritative document."_ It is now out of date:
 
 - It defines **`sentences` + `sentence_components`** as relational tables. The **ContentStore ADR (07-06)** collapsed these into the `decks.doc` JSON column — which is what actually ships (`schema.ts`, EP35). The 06-20 doc was never amended.
-- It is **missing three tables that now exist**: `answer_events`, `review_answer_events`, `review_transition_events` (from the packaging / debug-trace / EP40-ST05 work).
+- It is **missing two tables that now exist**: `answer_events` (EP37/EP40), `review_answer_events` (EP36). (Correction 07-12: an earlier pass here also cited `review_transition_events` — a full read of `schema.ts` confirms no such table exists; dropped.)
 
-**Precedence**: ContentStore (07-06) + later event-log work win. **Action**: add an "Amended by ContentStore ADR (07-06); event-log tables added post-hoc" banner to the 06-20 ADR, or explicitly demote it and name `schema.ts` the source of truth. _(Evidence: `schema.ts` read in full; EP35 changelog.)_
+**Precedence**: ContentStore (07-06) + later event-log work win. **Action**: ~~add an "Amended by ContentStore ADR (07-06); event-log tables added post-hoc" banner to the 06-20 ADR~~ **Done 07-12** — banner added; `schema.ts` remains the source of truth for exact current shapes. _(Evidence: `schema.ts` read in full; EP35 changelog.)_
 
 ### 4.2 API Surface ADR (03-05) diverged from the shipped contract — no reconciling ADR
 
@@ -146,17 +146,15 @@ Sourced from ADR Open Questions, the review-mode idea brief's Non-Goals/Known-Un
 - **API path versioning strategy** — deferred to a future ADR (API-surface §1).
 - **Per-deck curator config tier** — reintroduce only if genuine per-deck course-design config appears (config two-tier Neutral note).
 
-**Research gap docs on file** (not yet closed): wordId homograph scheme (`20260514…-gap-wordid-homograph-scheme.md`), seed/seeder consolidation test strategy (`20260710…`), SRS engine v2 vs FSRS gap (`202603211351000Z…`).
+**Research gap docs on file** (not yet closed): wordId homograph scheme (`20260514…-gap-wordid-homograph-scheme.md`), seed/seeder consolidation test strategy (`20260710…`), SRS engine v2 vs FSRS gap (`202603211351000Z…`). **Missing gap doc**: retention metric definition — no gap doc exists yet for the "% of learned words retained" success metric (§5); this is the audit's top remaining open item and should get one before it becomes an ADR.
 
 ---
 
 ## 6. Recommended actions (priority order)
 
-1. ~~**Flip the six "Proposed"→built ADRs to Accepted** (§4.5). Cheapest restore of doc trust. _(Doc-only.)_~~ **Done 07-12** (commit `231a9ba`).
-2. **Reconcile the Database Schema ADR (06-20)** with the document model + event tables, or demote it (§4.1). _(Doc-only.)_
-3. **Reconcile the API Surface ADR (03-05)** to the shipped envelope/namespace and mark "types-only" superseded by the ContentStore zod decision (§4.2). _(Doc-only.)_
-4. **Behavioural verification** (not done here) for the two active, invariant-bearing areas before merge: EP39 due-gate (NFR-005: a not-due card's schedule is provably unchanged after an eager answer) and EP41 config resolver (system-default ← user-override, forward-only). Run their package tests / drive the flow.
-5. **Define the retention metric** (§5) — it is the success metric of shipped review-redesign work and is still undefined.
+1. **Define the retention metric** (§5) — it is the success metric of shipped review-redesign work and is still undefined. Needs a research gap doc (see §5) before it becomes an ADR.
+
+_Items 1-4 (ADR Accepted-flip batch, Database Schema ADR reconciliation, API Surface ADR reconciliation, behavioural verification of EP39/EP41 invariants) completed 07-12 and removed from this list; see git history for details._
 
 ---
 

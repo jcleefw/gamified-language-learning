@@ -6,6 +6,15 @@
 
 **Deciders:** Solo founder
 
+> **Amended by implementation (diverged, no reconciling ADR at time of writing — noted 2026-07-12):** three of this ADR's five structural decisions do not match the shipped contract:
+> - §1 **Namespace**: decided `/api/srs/`-style domain prefixes; shipped is flat `/api/` (`/api/reviews`, `/api/answer`, `/api/config`, …) — see `apps/server/src/app.ts`.
+> - §2/§3 **Envelope**: decided `{ data, meta? }` success / `{ error }` error with no discriminant; shipped is a discriminated union `{ success: true, data } | { success: false, error }` — see `packages/api-contract/src/errors.ts`. This has been the shape since EP13; EP32 explicitly kept it as-is.
+> - §5 **`packages/api-contract` runtime deps**: decided "no runtime dependencies — types only"; the [ContentStore & Deck-Document Model ADR (2026-07-06)](20260706T125002Z-engineering-contentstore-deck-document-model.md) §4 deliberately adds `zod` as a runtime dependency for `DeckDocSchema`. This one is a conscious, ADR-recorded override — the other two are undocumented drift.
+>
+> §4 (Bearer JWT auth convention) is unaffected — auth is still unimplemented/Stage 5, so nothing to compare against yet.
+>
+> No ADR has been written to formally reconcile the namespace/envelope drift. Treat `app.ts` and `api-contract/src/errors.ts` as the source of truth for those two until one is.
+
 ---
 
 ## Context
