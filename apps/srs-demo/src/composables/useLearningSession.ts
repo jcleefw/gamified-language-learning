@@ -38,13 +38,7 @@ import {
   resetStagnationCounters,
   getShelvingConfig,
 } from './useShelving';
-import {
-  logDeckStarted,
-  logBatchStarted,
-  logBatchQuestions,
-  logBatchResult,
-  clearLogs,
-} from './useQuizDebugLog';
+import { useDebugRecording } from './useDebugRecording';
 import type { BatchSummary } from '../components/BatchResults.vue';
 import type { ConfigType, Screen } from '../types';
 
@@ -61,6 +55,14 @@ export interface UseLearningSessionDeps {
 
 export function useLearningSession(deps: UseLearningSessionDeps) {
   const { wordPool, appDecks, CONFIG, configReady, apiError, screen } = deps;
+
+  const recorder = useDebugRecording();
+
+  // Per-batch correlation ids in answer order, one per answered WORD question —
+  // captured at answer time (when both the result and the served question's cid
+  // are known) so the finish-time bulk POST can stitch each answer to the exact
+  // question that produced it. Word-only, so it aligns 1:1 with `wordResults`.
+  let wordCids: (string | null)[] = [];
 
   const hasSavedSession = ref(false);
   const deckId = ref<string | null>(null);
@@ -179,17 +181,34 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
     return allWords.filter((w) => shelvedSet.value.has(w.id));
   });
 
+  // Issue a correlation id for a served question (no-op unless recording) and
+  // record the serve as read-only appearance context. One id per served question
+  // is the finest scope the transition channel keys on.
+  function serveCorrelation(question: QuizQuestion | null): void {
+    if (!question) return;
+    const cid = recorder.nextCorrelationId();
+    recorder.recordAppearance({
+      correlationId: cid || null,
+      kind: 'question-served',
+      data:
+        question.kind === 'mcq'
+          ? { wordId: question.wordId, direction: question.direction, kind: question.kind }
+          : { sentenceId: question.sentenceId, direction: question.direction, kind: question.kind },
+    });
+  }
+
+  // Record an active-pool selection (initAdaptiveSession / post-shelving rebalance)
+  // as read-only appearance context, stitched to the current served question.
+  function recordPoolSelected(active: QuizItem[], queue: QuizItem[]): void {
+    recorder.recordAppearance({
+      correlationId: recorder.currentCorrelationId(),
+      kind: 'pool-selected',
+      data: { active: active.map((w) => w.id), queue: queue.map((w) => w.id) },
+    });
+  }
+
   function startBatch() {
     if (!sessionState.value) return;
-
-    // Log batch start with pool state, word states, and shelved status
-    logBatchStarted(
-      wordPool.value.length,
-      wordPool.value,
-      batchNum.value + 1,
-      sessionState.value.runState,
-      shelvedSet.value,
-    );
 
     // Resolve eligible sentence contexts based on word seen counts and batch spacing
     const eligibleSentences = resolveEligibleContexts(
@@ -222,8 +241,9 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
 
     batchNum.value++;
 
-    // Log questions served in this batch
-    logBatchQuestions(batchNum.value, questions, questions.length);
+    // A fresh batch consumes a fresh answer→cid stitch list (finishBatch's
+    // results are per-batch, so wordCids must be too).
+    wordCids = [];
 
     // Initialize serializable batch state
     batchState.value = initBatchState(
@@ -238,6 +258,7 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
     batchState.value = nextState;
     currentQuestion.value = question;
     questionKey.value++;
+    serveCorrelation(question);
 
     screen.value = 'quiz';
   }
@@ -255,7 +276,6 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
 
     if (isNewSession) {
       // New session: clear shelving + stagnation state
-      clearLogs();
       shelvedSet.value = new Set();
       await Promise.all([
         unshelveAll({ deckId: id }).catch(console.error),
@@ -282,8 +302,8 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
       globalRunState.value,
     );
 
-    // Log deck start with pool state, word states, and shelved status
-    logDeckStarted(words.length, words, globalRunState.value, shelvedSet.value);
+    // Appearance context: the initial active-pool selection (before any serve).
+    recordPoolSelected(sessionState.value.active, sessionState.value.queue);
 
     startBatch();
   }
@@ -360,6 +380,17 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
       sessionState.value.recheckPending,
     );
 
+    // Appearance context: a re-asked missed word is a recheck trigger, stitched to
+    // the served question that produced this answer (wordCids aligns with wordResults).
+    recheckFlags.forEach((isRecheck, i) => {
+      if (!isRecheck) return;
+      recorder.recordAppearance({
+        correlationId: wordCids[i] ?? null,
+        kind: 'recheck-triggered',
+        data: { wordId: wordResults[i].wordId },
+      });
+    });
+
     // Advance adaptive session state via the orchestrator (pools/recheck/shelving
     // stay client-side; the server owns persisted WordState).
     sessionState.value = advanceAdaptiveSession(
@@ -381,12 +412,15 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
     for (let i = 0; i < wordResults.length; i++) {
       const r = wordResults[i];
       try {
-        const authoritative = await postAnswer({
-          wordId: r.wordId,
-          correct: r.correct,
-          latencyMs: 0,
-          recheck: recheckFlags[i],
-        });
+        const authoritative = await postAnswer(
+          {
+            wordId: r.wordId,
+            correct: r.correct,
+            latencyMs: 0,
+            recheck: recheckFlags[i],
+          },
+          wordCids[i],
+        );
         confirmed.set(r.wordId, authoritative);
         sessionState.value.runState.set(r.wordId, authoritative);
       } catch (err) {
@@ -439,6 +473,13 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
         }
         decision.toShelve.forEach((id: string) => shelvedSet.value.add(id));
 
+        // Appearance context: which words were shelved this batch (read-only).
+        recorder.recordAppearance({
+          correlationId: recorder.currentCorrelationId(),
+          kind: 'shelving',
+          data: { shelved: [...decision.toShelve] },
+        });
+
         // Rebalance active pool: remove shelved words and pull new ones from queue
         const shelvingSet = new Set(decision.toShelve);
         const newActive = sessionState.value.active.filter(
@@ -462,6 +503,9 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
 
         sessionState.value.active = active;
         sessionState.value.queue = queue;
+
+        // Appearance context: the post-shelving active-pool re-selection.
+        recordPoolSelected(active, queue);
       }
     }
 
@@ -475,17 +519,6 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
 
     const correct = output.results.filter((a) => a.correct).length;
     batchScore.value = { correct, total: output.results.length };
-
-    // Log batch result and final pool state with word states and shelved status
-    logBatchResult(
-      batchNum.value,
-      correct,
-      output.results.length,
-      wordPool.value.length,
-      wordPool.value,
-      sessionState.value.runState,
-      shelvedSet.value,
-    );
 
     const deckWordMap = new Map(
       getDeckWords(deckId.value ?? '').map((w) => [w.id, w]),
@@ -508,6 +541,13 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
   function onAnswered(result: QuizResult) {
     if (!batchState.value) return;
 
+    // Stitch this answer to the served question's correlation id. Captured here,
+    // in answer order, only for WORD answers (the transition channel) — sentence
+    // answers do not hit /api/answer (ADR D4).
+    if ('wordId' in result) {
+      wordCids.push(recorder.currentCorrelationId());
+    }
+
     // Update sentence run state immediately on answer
     if ('sentenceId' in result) {
       updateSentenceRunState(
@@ -529,6 +569,7 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
       batchState.value = nextState;
       currentQuestion.value = question;
       questionKey.value++;
+      serveCorrelation(question);
     }
   }
 

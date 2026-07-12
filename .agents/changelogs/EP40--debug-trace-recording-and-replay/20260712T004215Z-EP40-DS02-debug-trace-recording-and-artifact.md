@@ -181,12 +181,12 @@ mid-quiz nav to another phase (Learn↔Review) OR home, batch in progress
 **Read List**: [apps/srs-demo/src/composables/useStore.ts](../../../apps/srs-demo/src/composables/useStore.ts), [apps/srs-demo/src/composables/useLearningSession.ts](../../../apps/srs-demo/src/composables/useLearningSession.ts) (the `postAnswer` loop ~line 384), [apps/server/src/routes/answer.ts](../../../apps/server/src/routes/answer.ts) (header read, line 43)
 **Tasks**:
 
-- [ ] Add `useDebugRecording.ts` skeleton: session state, `sessionId`, `start/cancel`, `nextCorrelationId`/`currentCorrelationId` (no-op when idle)
-- [ ] `postAnswer(req, correlationId?)` sends `x-correlation-id`; `useLearningSession` passes the current id
+- [x] Add `useDebugRecording.ts` skeleton: session state, `sessionId`, `start/cancel`, `nextCorrelationId`/`currentCorrelationId` (no-op when idle)
+- [x] `postAnswer(req, correlationId?)` sends `x-correlation-id`; `useLearningSession` passes the current id
       **Acceptance Criteria**:
-- [ ] While recording, each served question has a distinct `correlationId`; its `/api/answer` row in `answer_events` carries that id (and DS01's `resolvedThresholds`)
-- [ ] While **not** recording, `postAnswer` sends no `x-correlation-id` and behaviour is unchanged (regression)
-- [ ] The recorder holds the **ordered** list of ids issued during the session
+- [x] While recording, each served question has a distinct `correlationId`; its `/api/answer` row in `answer_events` carries that id (and DS01's `resolvedThresholds`)
+- [x] While **not** recording, `postAnswer` sends no `x-correlation-id` and behaviour is unchanged (regression)
+- [x] The recorder holds the **ordered** list of ids issued during the session
 
 ### EP40-ST06: Appearance-channel recording
 
@@ -194,12 +194,12 @@ mid-quiz nav to another phase (Learn↔Review) OR home, batch in progress
 **Read List**: [apps/srs-demo/src/composables/useLearningSession.ts](../../../apps/srs-demo/src/composables/useLearningSession.ts) (`nextActivePool` ~451, recheck ~355, `logBatch*`/`logDeck*` call sites), [apps/srs-demo/src/composables/useShelving.ts](../../../apps/srs-demo/src/composables/useShelving.ts)
 **Tasks**:
 
-- [ ] Add `recordAppearance` (no-op unless recording); emit at pool selection, question served, recheck trigger, shelving/rebalance, each stitched to the current `correlationId`
-- [ ] Wire the same call sites the old `logDeckStarted/logBatch*` occupied, but as per-decision correlated events (not batch snapshots)
+- [x] Add `recordAppearance` (no-op unless recording); emit at pool selection, question served, recheck trigger, shelving/rebalance, each stitched to the current `correlationId`
+- [x] Wire the same call sites the old `logDeckStarted/logBatch*` occupied, but as per-decision correlated events (not batch snapshots)
       **Acceptance Criteria**:
-- [ ] A recorded session's appearance buffer contains a correlated entry per orchestration decision, each with `kind`, `at`, `correlationId`, and a `kind`-appropriate payload
-- [ ] Appearance capture is **read-only** — removing/ignoring it does not change any `WordState` or orchestration outcome
-- [ ] Off the recording path, no appearance events are produced (no cost)
+- [x] A recorded session's appearance buffer contains a correlated entry per orchestration decision, each with `kind`, `at`, `correlationId`, and a `kind`-appropriate payload
+- [x] Appearance capture is **read-only** — removing/ignoring it does not change any `WordState` or orchestration outcome
+- [x] Off the recording path, no appearance events are produced (no cost)
 
 ### Phase 4: Recording UX — sessions & scoping (EP40-PH04)
 
@@ -209,14 +209,14 @@ mid-quiz nav to another phase (Learn↔Review) OR home, batch in progress
 **Read List**: [apps/srs-demo/src/App.vue](../../../apps/srs-demo/src/App.vue) (screen state, `navTo`, `flushLogs`), [apps/srs-demo/src/components/NavMenu.vue](../../../apps/srs-demo/src/components/NavMenu.vue), [apps/server/src/routes/answer.ts](../../../apps/server/src/routes/answer.ts), `apps/server/src/app.ts`, DS01 `apps/server/src/replay/artifact.ts`
 **Tasks**:
 
-- [ ] `POST /api/debug/transitions { correlationIds }` → `{ thresholds, baseline, inputs }` from `answer_events` (400 on non-uniform thresholds); register in `app.ts`
-- [ ] `finalizeAndDownload()`: fetch the slice, assemble `ReplayArtifact` (add `meta` + `appearance`), download `<sessionId>.json`; empty session ⇒ toast + reset
-- [ ] A Start/Stop recording control (phase inferred from the current screen); session spans decks
+- [x] `POST /api/debug/transitions { correlationIds }` → `{ thresholds, baseline, inputs }` from `answer_events` (400 on non-uniform thresholds); register in `app.ts`
+- [x] `finalizeAndDownload()`: fetch the slice, assemble `ReplayArtifact` (add `meta` + `appearance`), download `<sessionId>.json`; empty session ⇒ toast + reset
+- [x] A Start/Stop recording control (phase inferred from the current screen); session spans decks
       **Acceptance Criteria**:
-- [ ] Start → play across **two** decks → Stop downloads one artifact whose `inputs` span both decks
-- [ ] The downloaded artifact passes DS01 `parseArtifact` and replays **byte-exact** via `pnpm seed replay` (golden-master round-trip)
-- [ ] The artifact is self-contained — replays on a fresh `:memory:` DB with no origin-DB access
-- [ ] A Stop with zero transitions downloads nothing, shows a toast, and resets to `idle`
+- [x] Start → play across **two** decks → Stop downloads one artifact whose `inputs` span both decks
+- [x] The downloaded artifact passes DS01 `parseArtifact` and replays **byte-exact** via `pnpm seed replay` (golden-master round-trip)
+- [x] The artifact is self-contained — replays on a fresh `:memory:` DB with no origin-DB access
+- [x] A Stop with zero transitions downloads nothing, shows a toast, and resets to `idle`
 
 ### EP40-ST08: Nav-guard soft-confirm + Learning↔Review crossing finalize
 
@@ -224,12 +224,12 @@ mid-quiz nav to another phase (Learn↔Review) OR home, batch in progress
 **Read List**: [apps/srs-demo/src/App.vue](../../../apps/srs-demo/src/App.vue) (`navTo` lines 125–143, `activeNav`), [apps/srs-demo/src/components/NavMenu.vue](../../../apps/srs-demo/src/components/NavMenu.vue)
 **Tasks**:
 
-- [ ] In `navTo`, when recording and the target crosses the phase (or leaves a mid-quiz batch), raise a soft-confirm (Cancel default); confirm ⇒ `finalizeAndDownload()` then proceed (existing partial-batch flush stays), cancel ⇒ stay
-- [ ] Ensure a Learning↔Review crossing finalizes the active recording rather than carrying it across
+- [x] In `navTo`, when recording and the target crosses the phase (or leaves a mid-quiz batch), raise a soft-confirm (Cancel default); confirm ⇒ `finalizeAndDownload()` then proceed (existing partial-batch flush stays), cancel ⇒ stay
+- [x] Ensure a Learning↔Review crossing finalizes the active recording rather than carrying it across
       **Acceptance Criteria**:
-- [ ] Mid-quiz cross-nav while recording shows the soft-confirm with **Cancel** as default; Cancel keeps recording and stays
-- [ ] Confirm finalizes+downloads, then navigates; the recording never spans the Learning↔Review boundary
-- [ ] Not recording ⇒ `navTo` behaves exactly as today (partial-batch flush only; regression)
+- [x] Mid-quiz cross-nav while recording shows the soft-confirm with **Cancel** as default; Cancel keeps recording and stays
+- [x] Confirm finalizes+downloads, then navigates; the recording never spans the Learning↔Review boundary
+- [x] Not recording ⇒ `navTo` behaves exactly as today (partial-batch flush only; regression)
 
 ### Phase 5: Cleanup (EP40-PH05)
 
@@ -239,12 +239,12 @@ mid-quiz nav to another phase (Learn↔Review) OR home, batch in progress
 **Read List**: [apps/srs-demo/src/composables/useQuizDebugLog.ts](../../../apps/srs-demo/src/composables/useQuizDebugLog.ts), [apps/server/src/routes/debug-logs.ts](../../../apps/server/src/routes/debug-logs.ts), `apps/server/src/app.ts`, [apps/srs-demo/src/components/PoolDebugPanel.vue](../../../apps/srs-demo/src/components/PoolDebugPanel.vue), [apps/srs-demo/src/App.vue](../../../apps/srs-demo/src/App.vue) (`flushLogs`), `apps/srs-demo/src/composables/useLearningSession.ts` (`logDeck*/logBatch*`)
 **Tasks**:
 
-- [ ] Remove `useQuizDebugLog.ts` and all `logDeckStarted/logBatchStarted/logBatchQuestions/logBatchResult/flushLogs` call sites; delete `routes/debug-logs.ts` + its `app.ts` registration; remove the snapshot half of `PoolDebugPanel.vue` and `App.vue`'s `flushLogs`
-- [ ] Update/remove the tests that referenced the old logger
+- [x] Remove `useQuizDebugLog.ts` and all `logDeckStarted/logBatchStarted/logBatchQuestions/logBatchResult/flushLogs` call sites; delete `routes/debug-logs.ts` + its `app.ts` registration; remove the snapshot half of `PoolDebugPanel.vue` and `App.vue`'s `flushLogs`
+- [x] Update/remove the tests that referenced the old logger
       **Acceptance Criteria**:
-- [ ] No reference to `useQuizDebugLog`, `/api/debug-logs`, or `flushLogs` remains in the codebase
-- [ ] `srs-demo` builds and the Learning/Review flows work with the snapshot hack gone; recording (ST07) is the only debug-trace path
-- [ ] `PoolDebugPanel.vue` retains any non-snapshot (live pool inspection) function it had, or is removed entirely if snapshot was its sole purpose
+- [x] No reference to `useQuizDebugLog`, `/api/debug-logs`, or `flushLogs` remains in the codebase
+- [x] `srs-demo` builds and the Learning/Review flows work with the snapshot hack gone; recording (ST07) is the only debug-trace path
+- [x] `PoolDebugPanel.vue` retains any non-snapshot (live pool inspection) function it had, or is removed entirely if snapshot was its sole purpose
 
 ## 6. Success Criteria
 

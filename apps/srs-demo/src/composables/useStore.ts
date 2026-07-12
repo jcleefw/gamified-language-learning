@@ -93,11 +93,22 @@ export async function saveWordState(ws: WordState): Promise<void> {
  * Server-authoritative persistence: POST a raw answer; the server runs the
  * transition and returns the canonical WordState. Throws a typed error on
  * failure so the caller can avoid overwriting local state with a lost answer.
+ *
+ * When a debug recording is active, `correlationId` stitches this answer's
+ * authoritative transition (durable in `answer_events`) to the question that
+ * was served (EP40-ST05). Off the recording path it is falsy and no header is
+ * sent — the request is byte-identical to before.
  */
-export async function postAnswer(req: AnswerRequest): Promise<WordState> {
+export async function postAnswer(
+  req: AnswerRequest,
+  correlationId?: string | null,
+): Promise<WordState> {
   const res = await fetch('/api/answer', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(correlationId ? { 'x-correlation-id': correlationId } : {}),
+    },
     body: JSON.stringify(req),
   });
   if (!res.ok) throw new Error(`POST /api/answer failed: ${res.status}`);

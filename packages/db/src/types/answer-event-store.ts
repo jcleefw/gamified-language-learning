@@ -28,4 +28,14 @@ export interface AnswerEventRecord {
 export interface IAnswerEventStore {
   /** Append one transition record. Throws on failure (caller decides fail-open). */
   appendAnswerEvent(record: AnswerEventRecord): Promise<void>;
+
+  /**
+   * Read the transition records for the given correlation ids belonging to `userId`,
+   * in application order (answer_events insertion / id ascending). Ids with no row are
+   * simply absent from the result. Feeds the debug-trace artifact assembly (EP40-DS02).
+   */
+  getAnswerEventsByCorrelationIds(
+    userId: string,
+    correlationIds: string[],
+  ): Promise<AnswerEventRecord[]>;
 }

@@ -6,7 +6,7 @@
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
-<!-- Progress: DS01 (Phases 1–2 — shared applyAnswer core + replay tool) implemented & green. DS02 (Phases 3–5 — recording, UX, cleanup) not started. -->
+<!-- Progress: DS01 (Phases 1–2 — shared applyAnswer core + replay tool) implemented & green. DS02 (Phases 3–5 — recording, UX, cleanup) implemented & green; record→replay round-trip byte-exact. -->
 
 **Type**: Epic Plan
 **Depends on**: EP37 (learning-authority: `/api/answer` + `answer_events`), EP38/EP39 (review mode — needed for the Learning↔Review crossing)
@@ -145,10 +145,10 @@ leaks across the boundary and never loses what it had.
 - [x] `applyAnswer` is a single pure function; the `/api/answer` route and replay both call it — no second transition implementation. *(DS01-ST01)*
 - [x] An artifact is self-contained (baseline + inputs + resolved thresholds + appearance) and replays on a fresh `:memory:` DB with no dependency on the origin database. *(DS01-ST02/ST03)*
 - [x] Replay recomputes the `WordState` trajectory and reports the first divergence; for a faithful session the diff is byte-exact (golden-master). *(DS01-ST03/ST04)*
-- [ ] Recording in `srs-demo`: Start/Stop works; one correlation id stitches question → answer → transition; the appearance channel is captured as read-only context. *(DS02)*
-- [ ] A session is phase-scoped (Learning *or* Review), spans decks, and a mid-quiz cross-navigation soft-confirms and finalizes the artifact (never silently dropped). *(DS02)*
-- [~] `pnpm seed replay <artifact>` reproduces the `WordState` trajectory and the same artifact runs as a Vitest regression fixture *(replay tool done, DS01-ST04)*; reproducing a **captured** artifact end-to-end awaits recording *(DS02)*.
-- [ ] The old snapshot hack (`useQuizDebugLog`/`debug-logs.ts`/`PoolDebugPanel` snapshot) is removed. *(DS02-ST09)*
+- [x] Recording in `srs-demo`: Start/Stop works; one correlation id stitches question → answer → transition; the appearance channel is captured as read-only context. *(DS02-ST05/ST06/ST07)*
+- [x] A session is phase-scoped (Learning *or* Review), spans decks, and a mid-quiz cross-navigation soft-confirms and finalizes the artifact (never silently dropped). *(DS02-ST07/ST08)*
+- [x] `pnpm seed replay <artifact>` reproduces the `WordState` trajectory and the same artifact runs as a Vitest regression fixture; a **captured** artifact now closes the record→replay round-trip byte-exact *(DS02-ST07, `record-replay-roundtrip.test.ts`)*.
+- [x] The old snapshot hack (`useQuizDebugLog`/`debug-logs.ts` route) is removed. `PoolDebugPanel` was pure live pool-inspection (no snapshot half) and is retained. *(DS02-ST09)*
 
 ---
 

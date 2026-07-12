@@ -108,6 +108,42 @@ describe('SqliteAnswerEventStore', () => {
     expect(rows.map((r) => r.word_id)).toEqual(['a', 'b', 'c']);
   });
 
+  describe('getAnswerEventsByCorrelationIds (EP40-ST07)', () => {
+    it('returns matching rows for the user in id order, parsing JSON fields', async () => {
+      const store = new SqliteAnswerEventStore(db);
+      await store.appendAnswerEvent(record({ correlationId: 'c1', wordId: 'w1', beforeState: null }));
+      await store.appendAnswerEvent(
+        record({
+          correlationId: 'c2',
+          wordId: 'w2',
+          beforeState: { wordId: 'w2', seen: 0, correct: 0, mastery: 0, correctStreak: 0, wrongStreak: 0, lapses: 0 },
+        }),
+      );
+
+      const out = await store.getAnswerEventsByCorrelationIds('demo-user', ['c2', 'c1']);
+      // Ordered by insertion id, not the request order.
+      expect(out.map((r) => r.correlationId)).toEqual(['c1', 'c2']);
+      expect(out[0].beforeState).toBeNull();
+      expect(out[1].beforeState?.wordId).toBe('w2');
+      expect(out[1].resolvedThresholds.masteryThreshold).toBe(2);
+    });
+
+    it('scopes to the given user and ignores unknown ids', async () => {
+      const store = new SqliteAnswerEventStore(db);
+      await store.appendAnswerEvent(record({ correlationId: 'c1', userId: 'demo-user' }));
+      await store.appendAnswerEvent(record({ correlationId: 'c2', userId: 'other-user' }));
+
+      const out = await store.getAnswerEventsByCorrelationIds('demo-user', ['c1', 'c2', 'nope']);
+      expect(out.map((r) => r.correlationId)).toEqual(['c1']);
+    });
+
+    it('returns [] for an empty id list without touching the db', async () => {
+      const store = new SqliteAnswerEventStore(db);
+      await store.appendAnswerEvent(record({ correlationId: 'c1' }));
+      expect(await store.getAnswerEventsByCorrelationIds('demo-user', [])).toEqual([]);
+    });
+  });
+
   it('replay: folding updateRunState over events in id order reproduces stored afterState', async () => {
     const store = new SqliteAnswerEventStore(db);
 

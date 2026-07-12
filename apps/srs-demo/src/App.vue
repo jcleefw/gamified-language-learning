@@ -4,7 +4,7 @@ import { type QuizItem, type RunState } from '@gll/srs-engine-v2';
 import type { AppDeckPayload, GetDecksResponse } from '@gll/api-contract';
 import { loadRunState, loadConfig } from './composables/useStore';
 import { loadShelvedWords } from './composables/useShelving';
-import { flushLogs as flushDebugLogs } from './composables/useQuizDebugLog';
+import { useDebugRecording, shouldFinalizeOnNav } from './composables/useDebugRecording';
 import { applyTestSentenceConfig } from './composables/useTestSentenceConfig';
 import { env } from './env';
 import { useReviewSession } from './composables/useReviewSession';
@@ -108,6 +108,30 @@ const {
   apiError,
 });
 
+// --- Debug-trace recording (EP40-DS02) — a phase-scoped Start/Stop session that
+// stitches one correlation id per served question and, on Stop, assembles and
+// downloads a self-contained replay artifact. App.vue owns Start/Stop + finalize. ---
+const recorder = useDebugRecording();
+const isRecording = recorder.isRecording;
+
+async function onToggleRecording() {
+  if (!recorder.isRecording.value) {
+    // Phase is inferred from the current destination; home defaults to Learning
+    // (the only replayable phase — Review records the same channels as context).
+    recorder.start(activeNav.value === 'review' ? 'review' : 'learning');
+    return;
+  }
+  try {
+    const outcome = await recorder.finalizeAndDownload();
+    if (outcome === 'empty') {
+      alert('Recording stopped — no answers were recorded, so there is nothing to download.');
+    }
+  } catch {
+    apiError.value =
+      'Could not assemble the recording. Your session is still active — please check the server and try Stop again.';
+  }
+}
+
 // --- Top nav menu (EP38-ST08) ---
 // Which top-level destination the current screen belongs to (for highlighting).
 const activeNav = computed<'home' | 'learn' | 'review'>(() => {
@@ -123,6 +147,23 @@ const activeNav = computed<'home' | 'learn' | 'review'>(() => {
 // first (same path as Exit). Review is write-on-answer — each answered card is
 // already durable — so no flush is needed there.
 async function navTo(target: 'home' | 'select' | 'review') {
+  // Nav-guard (EP40-ST08): a recording must never leak across the Learning↔Review
+  // boundary or silently drop a mid-quiz batch. Soft-confirm (Cancel default) — on
+  // Cancel we stay and keep recording; on confirm we finalize+download, then proceed.
+  const targetPhase = target === 'review' ? 'review' : 'learning';
+  const finalizeFirst = shouldFinalizeOnNav(
+    isRecording.value,
+    recorder.phase.value,
+    targetPhase,
+    screen.value === 'quiz',
+  );
+  if (finalizeFirst) {
+    const proceed = window.confirm(
+      'Finish and download the recording before leaving? Cancel to stay and keep recording.',
+    );
+    if (!proceed) return; // stay; recording continues
+  }
+
   if (
     screen.value === 'quiz' &&
     batchState.value &&
@@ -130,6 +171,18 @@ async function navTo(target: 'home' | 'select' | 'review') {
   ) {
     await finishBatchAndTransition(); // persists the answered results
   }
+
+  // Finalize AFTER the partial-batch flush so the artifact includes the last batch's
+  // transitions (they land in answer_events via the flush's POST /api/answer calls).
+  if (finalizeFirst) {
+    try {
+      await recorder.finalizeAndDownload();
+    } catch {
+      apiError.value =
+        'Could not assemble the recording before navigating. Please check the server.';
+    }
+  }
+
   if (target === 'review') {
     // The review tab is a mode-selection hub (Due Review · Practice Anytime),
     // always reachable regardless of due-count — no more caught-up dead-end.
@@ -165,11 +218,6 @@ function onOverview(id: string) {
   }
   overviewDeckId.value = id;
   screen.value = 'overview';
-}
-
-async function flushLogs() {
-  await flushDebugLogs();
-  alert('Debug logs saved to manual-test-results');
 }
 
 // --- Nav destinations reached from the home dashboard / review screen ---
@@ -280,6 +328,16 @@ onMounted(async () => {
     @review="navTo('review')"
   />
 
+  <button
+    class="rec-toggle"
+    :class="{ recording: isRecording }"
+    :title="isRecording ? 'Stop recording and download the artifact' : 'Start a debug-trace recording'"
+    @click="onToggleRecording"
+  >
+    <span class="rec-dot" />
+    {{ isRecording ? 'Stop & download' : 'Record' }}
+  </button>
+
   <div v-if="apiError" class="api-error" role="alert">
     {{ apiError }}
   </div>
@@ -389,28 +447,50 @@ onMounted(async () => {
       @home="onReviewExit"
     />
   </template>
-
-  <div
-    v-if="env.debugMode && screen === 'results'"
-    style="text-align: center; padding: 16px"
-  >
-    <button
-      style="
-        padding: 8px 16px;
-        background: #6b7280;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      "
-      @click="flushLogs"
-    >
-      💾 Save Debug Logs
-    </button>
-  </div>
 </template>
 
 <style scoped>
+.rec-toggle {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #374151;
+  font-family: sans-serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+.rec-toggle .rec-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #9ca3af;
+}
+.rec-toggle.recording {
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+.rec-toggle.recording .rec-dot {
+  background: #dc2626;
+  animation: rec-pulse 1.2s ease-in-out infinite;
+}
+@keyframes rec-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
 .api-error {
   max-width: 480px;
   margin: 24px auto;
