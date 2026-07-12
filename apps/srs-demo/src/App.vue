@@ -4,7 +4,11 @@ import { type QuizItem, type RunState } from '@gll/srs-engine-v2';
 import type { AppDeckPayload, GetDecksResponse } from '@gll/api-contract';
 import { loadRunState, loadConfig } from './composables/useStore';
 import { loadShelvedWords } from './composables/useShelving';
-import { useDebugRecording, shouldFinalizeOnNav } from './composables/useDebugRecording';
+import {
+  useDebugRecording,
+  shouldFinalizeOnNav,
+  dumpRecentAndDownload,
+} from './composables/useDebugRecording';
 import { applyTestSentenceConfig } from './composables/useTestSentenceConfig';
 import { env } from './env';
 import { useReviewSession } from './composables/useReviewSession';
@@ -113,6 +117,25 @@ const {
 // downloads a self-contained replay artifact. App.vue owns Start/Stop + finalize. ---
 const recorder = useDebugRecording();
 const isRecording = recorder.isRecording;
+// Disable the toggle while a finalize is in flight. During 'finalizing' isRecording
+// is false, so without this the button re-arms to "Record" and a second click would
+// start() a new session — wiping the buffers the in-flight finalize still reads.
+const recorderBusy = computed(() => recorder.state.value === 'finalizing');
+
+// Post-hoc dump: assemble a replayable artifact from the last N answers with no prior
+// Record press (EP40). Independent of the armed session — recovers a session after a bug
+// was already hit. The dumped artifact has no appearance context (see composable).
+async function onDumpRecent() {
+  try {
+    const outcome = await dumpRecentAndDownload(100);
+    if (outcome === 'empty') {
+      alert('No recent answers to dump — learn or review a few words first.');
+    }
+  } catch {
+    apiError.value =
+      'Could not assemble the recent-answers dump. Please check the server and try again.';
+  }
+}
 
 async function onToggleRecording() {
   if (!recorder.isRecording.value) {
@@ -178,8 +201,13 @@ async function navTo(target: 'home' | 'select' | 'review') {
     try {
       await recorder.finalizeAndDownload();
     } catch {
+      // finalizeAndDownload restores state to 'recording' and rethrows on failure.
+      // Do NOT navigate: proceeding would carry the still-live recording across the
+      // Learning↔Review boundary (or out of the batch) — the exact leak this guard
+      // exists to prevent. Stay put so the tester can retry Stop.
       apiError.value =
-        'Could not assemble the recording before navigating. Please check the server.';
+        'Could not assemble the recording before navigating. Your recording is still active — please check the server and try again.';
+      return;
     }
   }
 
@@ -329,13 +357,25 @@ onMounted(async () => {
   />
 
   <button
+    v-if="env.debugMode"
     class="rec-toggle"
     :class="{ recording: isRecording }"
+    :disabled="recorderBusy"
     :title="isRecording ? 'Stop recording and download the artifact' : 'Start a debug-trace recording'"
     @click="onToggleRecording"
   >
     <span class="rec-dot" />
     {{ isRecording ? 'Stop & download' : 'Record' }}
+  </button>
+
+  <button
+    v-if="env.debugMode && !isRecording"
+    class="dump-recent"
+    :disabled="recorderBusy"
+    title="Download a replayable artifact from the last 100 answers (no prior Record needed)"
+    @click="onDumpRecent"
+  >
+    Dump last 100
   </button>
 
   <div v-if="apiError" class="api-error" role="alert">
@@ -467,6 +507,25 @@ onMounted(async () => {
   font-size: 0.85rem;
   cursor: pointer;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+.dump-recent {
+  position: fixed;
+  bottom: 60px;
+  right: 16px;
+  z-index: 50;
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #6b7280;
+  font-family: sans-serif;
+  font-size: 0.78rem;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+.dump-recent:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .rec-toggle .rec-dot {
   width: 10px;
