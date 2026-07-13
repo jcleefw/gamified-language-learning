@@ -16,6 +16,15 @@ export interface AudioStorageConfig {
   publicUrl?: string; // GLL_AUDIO_PUBLIC_URL (browser-reachable base)
 }
 
+/**
+ * True when the curator-only mutating surface (audio upload) is enabled.
+ * Default off — a mutating audio endpoint must not be reachable in a default
+ * production deploy without also flipping this flag (EP42-DS02, ST08).
+ */
+export function isCuratorMode(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.GLL_CURATOR_MODE === 'true' || env.GLL_CURATOR_MODE === '1';
+}
+
 /** Read env once. All fields optional — absence is tolerated, not fatal. */
 export function loadAudioStorageConfig(
   env: NodeJS.ProcessEnv = process.env,
