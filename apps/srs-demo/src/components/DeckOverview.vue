@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import {
   assembleBatch,
   initBatchState,
@@ -28,6 +28,7 @@ import {
 import { saveWordState } from '../composables/useStore.js';
 import { evaluateShelving } from '@gll/srs-shelving';
 import QuizCard from './QuizCard.vue';
+import AudioPlayer from './AudioPlayer.vue';
 
 const props = defineProps<{
   deck: AppDeckPayload;
@@ -48,6 +49,29 @@ const emit = defineEmits<{
 // Index of highlighted sentence (from word click); null = none
 const highlightedSentenceIndex = ref<number | null>(null);
 const sentenceRefs = ref<HTMLElement[]>([]);
+
+// EP43-DS01 ST02: the shared audio player, mounted only when the deck has
+// audioUrl (silent degrade — playback ADR §6). `defineExpose`d SegmentPlayer
+// surface, read imperatively here to drive per-sentence segment playback.
+const audioPlayer = ref<InstanceType<typeof AudioPlayer> | null>(null);
+const playingSentenceIndex = ref<number | null>(null);
+
+function onSentenceClick(idx: number) {
+  const line = props.deck.lines[idx];
+  if (line.audioStart === undefined || line.audioEnd === undefined) return;
+  if (!audioPlayer.value) return;
+  playingSentenceIndex.value = idx;
+  audioPlayer.value.playSegment(line.audioStart, line.audioEnd);
+}
+
+// Clear the "playing" affordance once the player pauses (segment end or manual
+// pause) — a subtle, non-blocking indicator (ADR §4), not gating anything.
+watch(
+  () => audioPlayer.value?.playing,
+  (isPlaying) => {
+    if (!isPlaying) playingSentenceIndex.value = null;
+  },
+);
 
 // Local shelved set — union of prop + freshly fetched for this deck
 const localShelvedSet = ref<Set<string>>(new Set(props.shelvedSet));
@@ -314,12 +338,25 @@ function finishSentenceLearning() {
     <template v-if="!sentenceLearningActive">
       <section class="overview-section">
         <h3 class="section-label">Conversation</h3>
+
+        <AudioPlayer
+          v-if="deck.audioUrl"
+          ref="audioPlayer"
+          :src="deck.audioUrl"
+          class="conversation-player"
+        />
+
         <div
           v-for="(line, idx) in deck.lines"
           :key="line.sentenceId"
           :ref="(el) => { if (el) sentenceRefs[idx] = el as HTMLElement; }"
           class="sentence-card"
-          :class="{ highlighted: highlightedSentenceIndex === idx }"
+          :class="{
+            highlighted: highlightedSentenceIndex === idx,
+            playable: line.audioStart !== undefined && line.audioEnd !== undefined,
+            'playing-sentence': playingSentenceIndex === idx,
+          }"
+          @click="onSentenceClick(idx)"
         >
           <div class="sentence-native">{{ line.native }}</div>
           <div class="sentence-english">{{ line.english }}</div>
@@ -328,7 +365,7 @@ function finishSentenceLearning() {
               v-for="word in lineWords(line.wordIds)"
               :key="word.id"
               class="word-chip"
-              @click="onWordClick(word.id)"
+              @click.stop="onWordClick(word.id)"
             >{{ word.native }}</span>
           </div>
         </div>
@@ -470,6 +507,16 @@ function finishSentenceLearning() {
 .sentence-card.highlighted {
   border-color: #2563eb;
   background: #f0f7ff;
+}
+.sentence-card.playable {
+  cursor: pointer;
+}
+.sentence-card.playing-sentence {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+.conversation-player {
+  margin-bottom: 16px;
 }
 .sentence-native {
   font-size: 1.05rem;

@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { type QuizItem, type RunState } from '@gll/srs-engine-v2';
 import type { AppDeckPayload, GetDecksResponse } from '@gll/api-contract';
 import { loadRunState, loadConfig } from './composables/useStore';
+import { resolveSentenceAudio } from './composables/useAudio';
 import { loadShelvedWords } from './composables/useShelving';
 import {
   useDebugRecording,
@@ -156,6 +157,29 @@ async function onToggleRecording() {
       'Could not assemble the recording. Your session is still active — please check the server and try Stop again.';
   }
 }
+
+// --- EP43-DS01 ST03: word-block segment audio resolution ---
+// The engine stays audio-free (playback ADR §5); App.vue holds `appDecks` and
+// resolves sentenceId → audio for the current word-block question, in both
+// Learning and Review (same QuizCard). MCQ questions resolve to undefined —
+// QuizCard renders no control (ADR §3).
+const currentQuestionAudio = computed(() => {
+  if (!currentQuestion.value || currentQuestion.value.kind !== 'word-block')
+    return undefined;
+  return (
+    resolveSentenceAudio(appDecks.value, currentQuestion.value.sentenceId) ??
+    undefined
+  );
+});
+
+const reviewQuestionAudio = computed(() => {
+  if (!reviewQuestion.value || reviewQuestion.value.kind !== 'word-block')
+    return undefined;
+  return (
+    resolveSentenceAudio(appDecks.value, reviewQuestion.value.sentenceId) ??
+    undefined
+  );
+});
 
 // --- Top nav menu (EP38-ST08) ---
 // Which top-level destination the current screen belongs to (for highlighting).
@@ -455,6 +479,7 @@ onMounted(async () => {
     :queue="queue"
     :mastered-deck="masteredDeck"
     :shelved-items="shelvedItems"
+    :audio="currentQuestionAudio"
     @answered="onAnswered"
     @exit="onExitBatch"
   />
@@ -488,6 +513,7 @@ onMounted(async () => {
       :queue="[]"
       :mastered-deck="[]"
       :feedback-dwell="true"
+      :audio="reviewQuestionAudio"
       @answered="onReviewAnswered"
       @exit="onReviewExit"
     />

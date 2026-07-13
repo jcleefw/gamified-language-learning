@@ -9,7 +9,9 @@ import type {
   QuizItem,
 } from '@gll/srs-engine-v2';
 import PoolDebugPanel from './PoolDebugPanel.vue';
+import AudioPlayer from './AudioPlayer.vue';
 import { env } from '../env';
+import type { SentenceAudio } from '../composables/useAudio';
 
 const props = defineProps<{
   question: QuizQuestion;
@@ -23,10 +25,22 @@ const props = defineProps<{
   // explicit Next (mirrors the sentence path). Default false keeps Learning's
   // emit-on-click behaviour byte-identical. Review passes true.
   feedbackDwell?: boolean;
+  // EP43-DS01 ST03: resolved only for word-block questions with a marked
+  // sentence (App.vue does the lookup — the engine stays audio-free, ADR §5).
+  // MCQ questions always receive undefined (ADR §3 — MCQ never gets audio).
+  audio?: SentenceAudio;
 }>();
 const emit = defineEmits<{ answered: [result: QuizResult]; exit: [] }>();
 
 const cheatMode = env.cheatMode;
+
+// EP43-DS01 ST03: the embedded player for the word-block sentence's segment.
+const sentenceAudioPlayer = ref<InstanceType<typeof AudioPlayer> | null>(null);
+
+function playSentenceAudio() {
+  if (!props.audio || !sentenceAudioPlayer.value) return;
+  sentenceAudioPlayer.value.playSegment(props.audio.start, props.audio.end);
+}
 
 const answered = ref(false);
 const selectedLabel = ref<string | null>(null);
@@ -247,6 +261,15 @@ watch(
             .join(' → ')
         }}
       </p>
+
+      <!-- EP43-DS01 ST03: word-block segment playback. Present only when
+           App.vue resolved audio for this sentence (silent degrade — ADR §6). -->
+      <div v-if="audio" class="sentence-audio">
+        <AudioPlayer ref="sentenceAudioPlayer" :src="audio.url" />
+        <button class="btn-play-sentence" type="button" @click="playSentenceAudio">
+          ▶ Play sentence
+        </button>
+      </div>
 
       <!-- Answer area -->
       <div
@@ -537,6 +560,25 @@ watch(
 .btn-submit:disabled {
   background: #93c5fd;
   cursor: default;
+}
+.sentence-audio {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.btn-play-sentence {
+  padding: 8px 12px;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  background: white;
+  color: #2563eb;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-play-sentence:hover {
+  background: #eff6ff;
 }
 .sentence-feedback {
   text-align: center;
