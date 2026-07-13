@@ -25,6 +25,7 @@ import HomeDashboard from './components/HomeDashboard.vue';
 import ReviewHub from './components/ReviewHub.vue';
 import ReviewSummary from './components/ReviewSummary.vue';
 import NavMenu from './components/NavMenu.vue';
+import CurateAudio from './components/CurateAudio.vue';
 import type { ConfigType, Screen } from './types';
 
 const apiError = ref<string | null>(null);
@@ -376,9 +377,24 @@ onMounted(async () => {
     Dump last 100
   </button>
 
+  <button
+    v-if="env.curatorMode && screen !== 'curate'"
+    class="curate-toggle"
+    title="Pair conversation audio with a deck (curator tooling)"
+    @click="screen = 'curate'"
+  >
+    🎙️ Curate audio
+  </button>
+
   <div v-if="apiError" class="api-error" role="alert">
     {{ apiError }}
   </div>
+
+  <CurateAudio
+    v-if="env.curatorMode && screen === 'curate'"
+    :decks="appDecks"
+    @back="screen = 'select'"
+  />
 
   <HomeDashboard
     v-if="screen === 'home'"
@@ -488,6 +504,21 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.curate-toggle {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 50;
+  padding: 8px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #374151;
+  font-family: sans-serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
 .rec-toggle {
   position: fixed;
   bottom: 16px;

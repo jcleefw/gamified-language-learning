@@ -7,7 +7,8 @@ export type Screen =
   | 'results'
   | 'overview'
   | 'review-hub'
-  | 'review';
+  | 'review'
+  | 'curate';
 
 export type ConfigType = SessionConfig & {
   maxRetryPerWord: number;

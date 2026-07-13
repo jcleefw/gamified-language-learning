@@ -8,11 +8,13 @@
 #    export the same `GLL_AUDIO_*` vars another way). The defaults there
 #    already point at this compose file's endpoint/creds/bucket.
 # 3. Seed a deck (e.g. `pnpm --filter cli-demo-db engine:import-curriculum`),
-#    then pair an audio file with it:
-#      pnpm --filter cli-demo-db curate-audio <deckId> <path/to/audio.mp3>
+#    then pair an audio file with it via the curator page (EP42-DS02): set
+#    `GLL_CURATOR_MODE=true` (server) + `VITE_CURATOR_MODE=true` (srs-demo),
+#    open the "Curate audio" page, pick the deck + a local `.mp3`, and Upload.
 #    This uploads `decks/<deckId>/audio.mp3` to the bucket AND sets
-#    `decks.audio_key` in the same run — object and row never drift.
-#    Re-running with the same deckId + file is idempotent.
+#    `decks.audio_key` in the same request — object and row never drift.
+#    Re-uploading the same deck is idempotent. (The old `curate-audio` CLI was
+#    retired in EP42-DS02 ST10; the page is now the single pairing path.)
 # 4. `GET /api/decks` (server running with the env from step 2) now returns
 #    `audioUrl` for that deck, resolving to `http://localhost:9000/gll-audio/
 #    decks/<deckId>/audio.mp3` — playable directly in a browser.

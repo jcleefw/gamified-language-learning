@@ -168,6 +168,32 @@ export async function postReviewAnswer(
   return body.data;
 }
 
+/**
+ * Curator-only (EP42-DS02, ST09): upload a deck's conversation audio via the
+ * gated server endpoint, which stores the file and writes `decks.audio_key` in
+ * one request. Resolves the server-owned key on success; throws the server's
+ * error message on failure so the page can surface it rather than fail silently.
+ */
+export async function uploadDeckAudio(deckId: string, file: File): Promise<string> {
+  const form = new FormData();
+  form.append('audio', file);
+  const res = await fetch(`/api/curation/decks/${deckId}/audio`, {
+    method: 'POST',
+    body: form,
+  });
+  const body = (await res
+    .json()
+    .catch(() => null)) as ApiResponse<{ audioKey: string }> | null;
+  if (!res.ok || !body || !body.success) {
+    throw new Error(
+      body && !body.success
+        ? body.error.message
+        : `POST /api/curation/decks/${deckId}/audio failed: ${res.status}`,
+    );
+  }
+  return body.data.audioKey;
+}
+
 export async function clearStore(): Promise<void> {
   const res = await fetch('/api/state', { method: 'DELETE' });
   if (!res.ok) throw new Error(`DELETE /api/state failed: ${res.status}`);
