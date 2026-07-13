@@ -17,8 +17,16 @@ import type { DbClient } from './types/db-client.js';
 
 type TxClient = BetterSQLite3Database<typeof schema>;
 
+// @gll/db defines the TYPE only; it never reads env. The server injects a fn
+// (see apps/server/src/storage/audio-store.ts) — tests/seed/CLI omit it and
+// get the no-op default, so no audioUrl is ever emitted for those callers.
+export type ResolveAudioUrl = (key: string | null | undefined) => string | undefined;
+
 export class SqliteContentStore implements IContentStore {
-  constructor(private readonly db: DbClient) {}
+  constructor(
+    private readonly db: DbClient,
+    private readonly resolveAudioUrl: ResolveAudioUrl = () => undefined,
+  ) {}
 
   async getDecks(): Promise<AppDeckPayload[]> {
     const deckRows = this.db.select().from(schema.decks).all();
@@ -72,7 +80,11 @@ export class SqliteContentStore implements IContentStore {
       wordIds: [...sentence.components]
         .sort((a, b) => a.position - b.position)
         .map((c) => c.wordId),
+      ...(sentence.audioStart !== undefined && { audioStart: sentence.audioStart }),
+      ...(sentence.audioEnd !== undefined && { audioEnd: sentence.audioEnd }),
     }));
+
+    const audioUrl = this.resolveAudioUrl(deck.audio_key);
 
     return {
       id: deck.id,
@@ -81,6 +93,7 @@ export class SqliteContentStore implements IContentStore {
       ...(deck.register !== null && { register: deck.register }),
       words,
       lines,
+      ...(audioUrl !== undefined && { audioUrl }),
     };
   }
 

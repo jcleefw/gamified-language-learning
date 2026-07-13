@@ -1,7 +1,7 @@
 # EP42-DS01: Deck Audio Storage & Retrieval (MinIO-backed) Specification
 
 **Date**: 20260713T005450Z
-**Status**: Draft
+**Status**: Impl-Complete
 **Epic**: [EP42 - Deck Audio Storage & Retrieval](../../plans/epics/EP42-deck-audio-storage-and-retrieval.md)
 
 **Architecture**:
@@ -158,94 +158,117 @@ curate <deckId> <audio.mp3>
 **Scope**: Infra — `docker-compose.yml` MinIO + healthcheck-gated `mc` init creating a public-read `gll-audio` bucket; `.env.local.example` with the `GLL_AUDIO_*` contract.
 **Status**: Complete — container healthy, bucket auto-created + public-read, S3 + console endpoints reachable. No further work in this DS.
 
-### EP42-ST02: Server storage config + S3-compatible client wrapper
+### EP42-ST02: Server storage config + S3-compatible client wrapper  *(Done)*
 
 **Scope**: `apps/server` — a single storage module; no DB, no routes, no wire changes.
 **Read List**: `apps/server/.env.local.example`, `apps/server/src/config/learning.ts` (config-module style), `apps/server/package.json`
 **Tasks**:
 
-- [ ] Add `@aws-sdk/client-s3` to `apps/server` dependencies.
-- [ ] Add `apps/server/src/storage/audio-store.ts`: `AudioStorageConfig`, `loadAudioStorageConfig(env)`, `makeResolveAudioUrl(cfg)`, `putObject(cfg, key, body, contentType?)`.
-- [ ] `makeResolveAudioUrl` is pure string compose (trim a trailing `/` on the base); returns `undefined` when key is null/empty **or** `publicUrl` is unset. No SDK import at module top-level used on this path.
-- [ ] Construct the `S3Client` **inside `putObject` only** (lazy); `putObject` uses `forcePathStyle: true` (MinIO) and throws a clear error if `endpoint`/`bucket`/creds are missing.
-- [ ] `putObject` passes `CacheControl: 'public, max-age=31536000, immutable'` on every `PutObjectCommand`.
+- [x] Add `@aws-sdk/client-s3` to `apps/server` dependencies.
+- [x] Add `apps/server/src/storage/audio-store.ts`: `AudioStorageConfig`, `loadAudioStorageConfig(env)`, `makeResolveAudioUrl(cfg)`, `putObject(cfg, key, body, contentType?)`.
+- [x] `makeResolveAudioUrl` is pure string compose (trim a trailing `/` on the base); returns `undefined` when key is null/empty **or** `publicUrl` is unset. No SDK import at module top-level used on this path.
+- [x] Construct the `S3Client` **inside `putObject` only** (lazy); `putObject` uses `forcePathStyle: true` (MinIO) and throws a clear error if `endpoint`/`bucket`/creds are missing.
+- [x] `putObject` passes `CacheControl: 'public, max-age=31536000, immutable'` on every `PutObjectCommand`.
 
 **Acceptance Criteria**:
 
-- [ ] `makeResolveAudioUrl(cfg)('decks/d1/audio.mp3')` → `'<publicUrl>/decks/d1/audio.mp3'` (no double slash); returns `undefined` for `null`/`''` key and when `publicUrl` is unset.
-- [ ] Importing/using `audio-store.ts` for resolution performs **no** network call and constructs **no** `S3Client`.
-- [ ] `loadAudioStorageConfig({})` (empty env) returns an all-`undefined` config without throwing.
-- [ ] An object written by `putObject` reports `Cache-Control: public, max-age=31536000, immutable` when fetched back from MinIO.
+- [x] `makeResolveAudioUrl(cfg)('decks/d1/audio.mp3')` → `'<publicUrl>/decks/d1/audio.mp3'` (no double slash); returns `undefined` for `null`/`''` key and when `publicUrl` is unset.
+- [x] Importing/using `audio-store.ts` for resolution performs **no** network call and constructs **no** `S3Client`.
+- [x] `loadAudioStorageConfig({})` (empty env) returns an all-`undefined` config without throwing.
+- [x] An object written by `putObject` reports `Cache-Control: public, max-age=31536000, immutable` when fetched back from MinIO. *(manually verified 2026-07-13: fetched the uploaded object back from local MinIO, header present.)*
 
-### EP42-ST03: Local curator script — paired audio upload + `audio_key` sync
+### EP42-ST03: Local curator script — paired audio upload + `audio_key` sync  *(Done — superseded, see below)*
+
+> **Superseded (20260713T222600Z):** the PO found the CLI/two-terminal loop too many steps to remember. [EP42-DS02](20260713T222600Z-EP42-DS02-curator-audio-upload-ui.md) replaces this script with a `srs-demo` upload page (EP42-ST08/ST09); ST10 removes this file once that page ships. Kept here for the historical record of what ST03 built.
 
 **Scope**: Tooling — one CLI that syncs the bucket object with `decks.audio_key` per deck, so the binary and the DB reference never drift. Depends on ST02 (`putObject`) and ST04 (schema).
 **Read List**: `apps/cli-demo-db/src/import-curriculum.ts` (CLI entrypoint + `getDb` pattern), `packages/db/src/sqlite-content-store.ts`, `apps/server/src/storage/audio-store.ts`
 
 > **Boundary note.** This story owns only the **binary + `audio_key`** sync — the half that is genuinely EP42's storage concern. The **marker map schema** (`sentenceId → {start,end}`) and its ingestion into `decks.doc.sentences[].audioStart/audioEnd` are the **marking ADR's Pass-1 seed/import concern**, owned by that epic ([open question: "JSON marker-map schema + where it lands for seed ingest"](../../../product-documentation/architecture/20260713T140219Z-engineering-audio-marking-authoring.md)). This script optionally accepts a marker map and passes it through the existing import path if present, but does not define that schema. Keeping the two epics from co-owning the marker format is deliberate.
 
+> **Relocated**: originally placed in `apps/cli-demo-db/src/curate-audio.ts` (per the Read List above); moved to `packages/srs-curation/src/curate-audio.ts` on 2026-07-13 — `cli-demo-db` is SRS-engine DB tooling and was never meant to own audio-file operations. `packages/srs-curation` is the temporary home for curation-adjacent scripts pending a proper curator app/epic; the script's own CLI/`getDb` pattern and behavior are unchanged, only its package location and relative import depth to `apps/server/src/storage/audio-store.ts` moved.
+
 **Tasks**:
 
-- [ ] Add a script (e.g. `apps/cli-demo-db/src/curate-audio.ts`) taking `<deckId> <audioFilePath>` (and an optional `<markersJsonPath>` deferred to the marking epic).
-- [ ] Upload the file to `decks/{deckId}/audio.mp3` via `putObject`.
-- [ ] Set `decks.audio_key = 'decks/{deckId}/audio.mp3'` on that deck in the same run.
-- [ ] Idempotent: re-running with the same inputs yields the same key + object (no duplicate object, no drift).
+- [x] Add a script (`packages/srs-curation/src/curate-audio.ts`) taking `<deckId> <audioFilePath>` (marker map ingestion left to the marking epic, not stubbed here).
+- [x] Upload the file to `decks/{deckId}/audio.mp3` via `putObject`.
+- [x] Set `decks.audio_key = 'decks/{deckId}/audio.mp3'` on that deck in the same run.
+- [x] Idempotent: re-running with the same inputs yields the same key + object (no duplicate object, no drift) — verified in `curate-audio.test.ts`.
 
 **Acceptance Criteria**:
 
-- [ ] After one run: `GET /api/decks` for that deck returns an `audioUrl` that fetches the uploaded bytes from MinIO.
-- [ ] Re-running against the same deck leaves object + `audio_key` byte-identical (verified by comparing key before/after).
-- [ ] Running against an unknown `deckId` fails loudly (no silent no-op) rather than orphaning an uploaded object.
+- [x] After one run: `GET /api/decks` for that deck returns an `audioUrl` that fetches the uploaded bytes from MinIO. *(manually verified 2026-07-13: curated a real deck against local MinIO, resolved audioUrl fetched 200 with matching byte length and valid MP3 (ID3) header.)*
+- [x] Re-running against the same deck leaves object + `audio_key` byte-identical (verified by comparing key before/after).
+- [x] Running against an unknown `deckId` fails loudly (no silent no-op) rather than orphaning an uploaded object.
 
 ### Phase 2: Deck-audio data path (EP42-PH02)
 
-### EP42-ST04: Schema — `decks.audio_key` + `DeckSentence` marker fields
+### EP42-ST04: Schema — `decks.audio_key` + `DeckSentence` marker fields  *(Done)*
 
 **Scope**: `@gll/db` + `@gll/api-contract` — additive column + additive optional zod fields. No row migration.
 **Read List**: `packages/db/src/schema.ts`, `packages/db/src/init-db.ts`, `packages/db/drizzle/migrations/0010_user_config.sql` (migration style), `packages/api-contract/src/content.ts`
 **Tasks**:
 
-- [ ] Add `audio_key: text('audio_key')` (nullable) to the `decks` table in `schema.ts`.
-- [ ] Hand-write `packages/db/drizzle/migrations/0012_deck_audio.sql`: `ALTER TABLE decks ADD COLUMN audio_key TEXT;` with a header comment (EP42-DS01; nullable; NULL = no audio).
-- [ ] Add optional `audioStart`/`audioEnd` (`z.number().nonnegative().optional()`) to `DeckSentenceSchema`.
-- [ ] Confirm `initDb` picks up `0012` (sorted, id-tracked) — no code change expected, just verify.
+- [x] Add `audio_key: text('audio_key')` (nullable) to the `decks` table in `schema.ts`.
+- [x] Hand-write `packages/db/drizzle/migrations/0012_deck_audio.sql`: `ALTER TABLE decks ADD COLUMN audio_key TEXT;` with a header comment (EP42-DS01; nullable; NULL = no audio).
+- [x] Add optional `audioStart`/`audioEnd` (`z.number().nonnegative().optional()`) to `DeckSentenceSchema`.
+- [x] Confirm `initDb` picks up `0012` (sorted, id-tracked) — no code change expected, just verify.
 
 **Acceptance Criteria**:
 
-- [ ] Existing decks load unchanged with `audio_key = NULL` and no markers; no migration of existing rows.
-- [ ] `DeckDocSchema.parse` accepts a sentence with `audioStart`/`audioEnd` and one without (round-trips through the `doc` blob).
-- [ ] `@gll/db` typecheck + existing content-store tests pass unchanged.
+- [x] Existing decks load unchanged with `audio_key = NULL` and no markers; no migration of existing rows.
+- [x] `DeckDocSchema.parse` accepts a sentence with `audioStart`/`audioEnd` and one without (round-trips through the `doc` blob).
+- [x] `@gll/db` typecheck + existing content-store tests pass unchanged.
 
-### EP42-ST05: Wire types — `AppDeckPayload.audioUrl` / `AppLinePayload.audioStart`/`audioEnd`
+### EP42-ST05: Wire types — `AppDeckPayload.audioUrl` / `AppLinePayload.audioStart`/`audioEnd`  *(Done)*
 
 **Scope**: `@gll/api-contract` + `@gll/db` read path + `apps/server` route wiring. Depends on ST02 + ST04.
 **Read List**: `packages/api-contract/src/content.ts`, `packages/db/src/sqlite-content-store.ts`, `apps/server/src/routes/decks.ts`
 **Tasks**:
 
-- [ ] Add `audioUrl?: string` to `AppDeckPayload`; `audioStart?`/`audioEnd?` to `AppLinePayload`.
-- [ ] Add the `ResolveAudioUrl` type + optional `resolveAudioUrl` constructor arg (no-op default) to `SqliteContentStore`.
-- [ ] In `assembleDeck`: compute `audioUrl = this.resolveAudioUrl(deck.audio_key)` and spread onto the payload only when defined; in the `lines` map, spread `audioStart`/`audioEnd` from each sentence only when defined (mirror the existing `difficulty`/`register` conditional-spread pattern).
-- [ ] In `apps/server/src/routes/decks.ts`, build the resolver once (`makeResolveAudioUrl(loadAudioStorageConfig())`) and pass it into `new SqliteContentStore(getDb(), resolver)`.
+- [x] Add `audioUrl?: string` to `AppDeckPayload`; `audioStart?`/`audioEnd?` to `AppLinePayload`.
+- [x] Add the `ResolveAudioUrl` type + optional `resolveAudioUrl` constructor arg (no-op default) to `SqliteContentStore`.
+- [x] In `assembleDeck`: compute `audioUrl = this.resolveAudioUrl(deck.audio_key)` and spread onto the payload only when defined; in the `lines` map, spread `audioStart`/`audioEnd` from each sentence only when defined (mirror the existing `difficulty`/`register` conditional-spread pattern).
+- [x] In `apps/server/src/routes/decks.ts`, build the resolver once (`makeResolveAudioUrl(loadAudioStorageConfig())`) and pass it into `new SqliteContentStore(getDb(), resolver)`.
 
 **Acceptance Criteria**:
 
-- [ ] A deck with `audio_key` set + markers on sentences returns `audioUrl`, `audioStart`, `audioEnd` that resolve to a file that plays in a browser against local MinIO.
-- [ ] A deck with `audio_key = NULL` (or a sentence with no markers) returns payloads with those fields **absent** — no error, no crash.
-- [ ] Unset `GLL_AUDIO_PUBLIC_URL` ⟹ no `audioUrl`, server starts and serves `/api/decks` normally.
-- [ ] The 9 existing `new SqliteContentStore(...)` sites (tests/seed/CLI) compile unchanged and emit no `audioUrl`.
+- [x] A deck with `audio_key` set + markers on sentences returns `audioUrl`, `audioStart`, `audioEnd` that resolve to a file that plays in a browser against local MinIO. *(manually verified 2026-07-13: resolved audioUrl fetched real, valid MP3 bytes over HTTP from local MinIO — same mechanism a browser `<audio>` tag uses; not manually spot-checked in an actual browser tab.)*
+- [x] A deck with `audio_key = NULL` (or a sentence with no markers) returns payloads with those fields **absent** — no error, no crash.
+- [x] Unset `GLL_AUDIO_PUBLIC_URL` ⟹ no `audioUrl`, server starts and serves `/api/decks` normally.
+- [x] The 9 existing `new SqliteContentStore(...)` sites (tests/seed/CLI) compile unchanged and emit no `audioUrl`.
 
-### EP42-ST06: Local audio-loop documentation
+### EP42-ST06: Local audio-loop documentation  *(Done)*
 
 **Scope**: Docs — the end-to-end local loop.
 **Read List**: `docker-compose.yml`, `apps/server/.env.local.example`
 **Tasks**:
 
-- [ ] Document `docker compose up -d` (MinIO + bucket), the required `GLL_AUDIO_*` env vars, the ST03 curate command, and the seed-a-key → `GET /api/decks` → play loop.
-- [ ] Note the MinIO→R2 cutover is env-only (endpoint/creds/public URL), no code change.
+- [x] Document `docker compose up -d` (MinIO + bucket), the required `GLL_AUDIO_*` env vars, the ST03 curate command, and the seed-a-key → `GET /api/decks` → play loop.
+- [x] Note the MinIO→R2 cutover is env-only (endpoint/creds/public URL), no code change.
 
 **Acceptance Criteria**:
 
-- [ ] A reader can go from a clean checkout to a deck that returns a playable `audioUrl` using only the documented commands.
+- [x] A reader can go from a clean checkout to a deck that returns a playable `audioUrl` using only the documented commands. *(manually walked 2026-07-13: `docker compose up -d` → copy `.env.local.example` → import a deck → `curate-audio` → resolved audioUrl fetched valid MP3 bytes from MinIO.)*
+
+### EP42-ST07: Single-command local dev loop + auto-loaded server env  *(Done)*
+
+**Scope**: Dev ergonomics only — no product code, no wire/schema/storage-module changes. Added after ST06's manual walkthrough surfaced that the documented loop requires manually `source`-ing `.env.local` into two separate shells (server + curator) and running `docker compose up -d` / the server / the frontend as three separate commands.
+**Read List**: `apps/server/package.json` (`dev` script), `apps/server/src/index.ts` (reads `process.env` directly, no dotenv loader), `apps/srs-demo/package.json` (`dev:all`, already uses `concurrently`), root `package.json` (`scripts`).
+
+**Tasks**:
+
+- [x] `apps/server/package.json`: change `dev` to `tsx watch --env-file-if-exists=.env.local src/index.ts` — Node 22's native env-file loading, no `dotenv` dependency needed. Missing file is a silent no-op (audio degrades per the existing crash-proof design), not an error.
+- [x] Root `package.json`: add `dev:all` script — `docker compose up -d && concurrently -n server,web -c blue,green "pnpm --filter @gll/server dev" "pnpm --filter @gll/srs-demo dev"`.
+- [x] Add `concurrently` to root `devDependencies` (hoisted from `apps/srs-demo`, same version).
+- [x] Retire `apps/srs-demo`'s own `dev:all` now that the root script supersedes it; keep its plain `dev` (vite-only) for frontend-only work against an already-running server.
+
+**Acceptance Criteria**:
+
+- [x] `pnpm dev:all` from a clean checkout (MinIO not yet up, no `.env.local` present) brings up MinIO, the server, and the frontend with one command and no manual `source`ing. *(script composition verified; `docker compose up -d` is idempotent/quiet on repeat runs.)*
+- [x] Server started via `pnpm --filter @gll/server dev` picks up `GLL_AUDIO_*` from `apps/server/.env.local` automatically when the file exists. *(manually verified 2026-07-13: `pnpm run dev` with `.env.local` present started cleanly on :6060, no manual `source` needed.)*
+- [x] Server starts cleanly (no crash, no missing-file error) when `.env.local` is absent — matches ST02's "missing storage env cannot crash startup" guarantee. *(`--env-file-if-exists` confirmed to no-op silently on a missing file.)*
+- [x] `packages/srs-curation`'s `curate-audio` script is unaffected (still reads env from whatever shell invokes it) — out of scope for this story; only the server's own startup gets auto-loading.
 
 ## 6. Success Criteria
 

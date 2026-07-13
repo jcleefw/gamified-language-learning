@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { eq } from 'drizzle-orm';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initDb, schema, SqliteContentStore } from '@gll/db';
 import type { AppDeck, AppDeckPayload, ConversationJSON, GetDecksResponse } from '@gll/api-contract';
 
@@ -130,6 +131,71 @@ describe('GET /api/decks', () => {
     const firstWordId = deck.lines[0].wordIds[0];
     const firstWord = deck.words.find((w) => w.id === firstWordId);
     expect(firstWord!.native).toBe('หิว');
+  });
+});
+
+describe('GET /api/decks — audio fields (EP42-DS01, ST05)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('emits audioUrl/audioStart/audioEnd when audio_key + markers are set and GLL_AUDIO_PUBLIC_URL is configured', async () => {
+    vi.stubEnv('GLL_AUDIO_PUBLIC_URL', 'http://localhost:9000/gll-audio');
+
+    await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
+    const deckRow = testDb.select().from(schema.decks).get()!;
+    const [firstSentence, ...restSentences] = deckRow.doc.sentences;
+
+    testDb
+      .update(schema.decks)
+      .set({
+        audio_key: `decks/${deckRow.id}/audio.mp3`,
+        doc: {
+          sentences: [{ ...firstSentence, audioStart: 0, audioEnd: 2.5 }, ...restSentences],
+        },
+      })
+      .where(eq(schema.decks.id, deckRow.id))
+      .run();
+
+    const res = await app.request('/api/decks');
+    const body = (await res.json()) as { success: true; data: GetDecksResponse };
+    const deck = body.data[0] as AppDeckPayload;
+
+    expect(deck.audioUrl).toBe(`http://localhost:9000/gll-audio/decks/${deckRow.id}/audio.mp3`);
+    const markedLine = deck.lines.find((l) => l.sentenceId === firstSentence.sentenceId)!;
+    expect(markedLine.audioStart).toBe(0);
+    expect(markedLine.audioEnd).toBe(2.5);
+  });
+
+  it('omits audioUrl and markers when audio_key/markers are absent — no error', async () => {
+    vi.stubEnv('GLL_AUDIO_PUBLIC_URL', 'http://localhost:9000/gll-audio');
+
+    await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
+    const res = await app.request('/api/decks');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { success: true; data: GetDecksResponse };
+    const deck = body.data[0] as AppDeckPayload;
+
+    expect('audioUrl' in deck).toBe(false);
+    expect(deck.lines.every((l) => !('audioStart' in l) && !('audioEnd' in l))).toBe(true);
+  });
+
+  it('omits audioUrl when GLL_AUDIO_PUBLIC_URL is unset — server still serves /api/decks normally', async () => {
+    vi.stubEnv('GLL_AUDIO_PUBLIC_URL', '');
+
+    await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
+    const deckRow = testDb.select().from(schema.decks).get()!;
+    testDb
+      .update(schema.decks)
+      .set({ audio_key: `decks/${deckRow.id}/audio.mp3` })
+      .where(eq(schema.decks.id, deckRow.id))
+      .run();
+
+    const res = await app.request('/api/decks');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { success: true; data: GetDecksResponse };
+    const deck = body.data[0] as AppDeckPayload;
+    expect('audioUrl' in deck).toBe(false);
   });
 });
 

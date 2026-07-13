@@ -1,3 +1,26 @@
+# Local audio loop (EP42-DS01, ST06) — MinIO stands in for the production
+# Cloudflare R2 bucket (S3-compatible, public-read, browser→bucket).
+#
+# 1. `docker compose up -d` — brings up `minio` (S3 API :9000, console :9001)
+#    and `minio-init`, which waits for the healthcheck then creates the
+#    public-read `gll-audio` bucket. No manual console steps.
+# 2. Copy `apps/server/.env.local.example` → `apps/server/.env.local` (or
+#    export the same `GLL_AUDIO_*` vars another way). The defaults there
+#    already point at this compose file's endpoint/creds/bucket.
+# 3. Seed a deck (e.g. `pnpm --filter cli-demo-db engine:import-curriculum`),
+#    then pair an audio file with it:
+#      pnpm --filter cli-demo-db curate-audio <deckId> <path/to/audio.mp3>
+#    This uploads `decks/<deckId>/audio.mp3` to the bucket AND sets
+#    `decks.audio_key` in the same run — object and row never drift.
+#    Re-running with the same deckId + file is idempotent.
+# 4. `GET /api/decks` (server running with the env from step 2) now returns
+#    `audioUrl` for that deck, resolving to `http://localhost:9000/gll-audio/
+#    decks/<deckId>/audio.mp3` — playable directly in a browser.
+#
+# Production cutover to R2 is env-only: swap `GLL_AUDIO_ENDPOINT`,
+# `GLL_AUDIO_ACCESS_KEY_ID`/`SECRET`, and `GLL_AUDIO_PUBLIC_URL` to the R2
+# bucket's values. No code path branches on MinIO vs. R2 — both are
+# S3-compatible with a public URL base.
 services:
   minio:
     image: minio/minio:latest

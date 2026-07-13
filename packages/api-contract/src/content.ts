@@ -79,6 +79,8 @@ export interface AppLinePayload {
   romanization: string;
   english: string;
   wordIds: string[];
+  audioStart?: number; // absent = sentence has no marker
+  audioEnd?: number;
 }
 
 export interface AppDeckPayload {
@@ -88,6 +90,7 @@ export interface AppDeckPayload {
   register?: string;
   words: AppWordPayload[];
   lines: AppLinePayload[];
+  audioUrl?: string; // absent = decks.audio_key IS NULL or public base unset
 }
 
 export type GetDecksResponse = AppDeckPayload[];
@@ -113,6 +116,8 @@ export const DeckSentenceSchema = z.object({
   romanization: z.string(),
   position: z.number().int().nonnegative(),
   components: z.array(DeckComponentSchema),
+  audioStart: z.number().nonnegative().optional(), // seconds into the deck file
+  audioEnd: z.number().nonnegative().optional(), // seconds; play stops here
 });
 export type DeckSentence = z.infer<typeof DeckSentenceSchema>;
 

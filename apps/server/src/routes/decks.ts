@@ -2,11 +2,13 @@ import { Hono } from 'hono';
 import { getDb, SqliteContentStore } from '@gll/db';
 import { ErrorCode, ConversationJSONSchema, type ApiResponse, type GetDecksResponse } from '@gll/api-contract';
 import { transformConversation } from '../transform-conversation.js';
+import { loadAudioStorageConfig, makeResolveAudioUrl } from '../storage/audio-store.js';
 
 const router = new Hono();
 
 function getStore() {
-  return new SqliteContentStore(getDb());
+  const resolveAudioUrl = makeResolveAudioUrl(loadAudioStorageConfig());
+  return new SqliteContentStore(getDb(), resolveAudioUrl);
 }
 
 router.get('/decks', async (c) => {

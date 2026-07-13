@@ -67,6 +67,7 @@ export const decks = sqliteTable('decks', {
   register: text('register'),
   created_at: text('created_at').notNull(),
   doc: text('doc', { mode: 'json' }).$type<DeckDoc>().notNull(),
+  audio_key: text('audio_key'), // nullable; e.g. 'decks/<deckId>/audio.mp3'; NULL = no audio
 });
 
 export const deck_words = sqliteTable(

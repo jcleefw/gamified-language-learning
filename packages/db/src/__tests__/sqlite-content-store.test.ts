@@ -233,3 +233,82 @@ describe('SqliteContentStore.importCurriculum', () => {
     expect(db.select().from(schema.deck_words).all()).toHaveLength(0);
   });
 });
+
+describe('SqliteContentStore audio fields (EP42-DS01, ST05)', () => {
+  let db: DbClient;
+
+  beforeEach(() => {
+    db = makeTestDb();
+  });
+
+  it('omits audioUrl when audio_key is NULL and no resolver is injected (backward-compat default)', async () => {
+    const store = new SqliteContentStore(db);
+    await store.importCurriculum([deckA]);
+
+    const [payload] = await store.getDecks();
+    expect(payload.audioUrl).toBeUndefined();
+    expect('audioUrl' in payload).toBe(false);
+  });
+
+  it('emits audioUrl from the injected resolver when audio_key is set', async () => {
+    const store = new SqliteContentStore(db);
+    await store.importCurriculum([deckA]);
+    const deckId = db.select().from(schema.decks).get()!.id;
+
+    db.update(schema.decks)
+      .set({ audio_key: `decks/${deckId}/audio.mp3` })
+      .where(eq(schema.decks.id, deckId))
+      .run();
+
+    const resolvingStore = new SqliteContentStore(db, (key) =>
+      key ? `https://cdn.example.com/${key}` : undefined,
+    );
+    const payload = await resolvingStore.getDeck(deckId);
+    expect(payload!.audioUrl).toBe(`https://cdn.example.com/decks/${deckId}/audio.mp3`);
+  });
+
+  it('omits audioUrl when audio_key is set but the resolver returns undefined (public base unset)', async () => {
+    const store = new SqliteContentStore(db);
+    await store.importCurriculum([deckA]);
+    const deckId = db.select().from(schema.decks).get()!.id;
+
+    db.update(schema.decks)
+      .set({ audio_key: `decks/${deckId}/audio.mp3` })
+      .where(eq(schema.decks.id, deckId))
+      .run();
+
+    const resolvingStore = new SqliteContentStore(db, () => undefined);
+    const payload = await resolvingStore.getDeck(deckId);
+    expect(payload!.audioUrl).toBeUndefined();
+  });
+
+  it('emits audioStart/audioEnd on lines whose sentence has markers, omits them otherwise', async () => {
+    const store = new SqliteContentStore(db);
+    await store.importCurriculum([deckA]);
+    const deck = db.select().from(schema.decks).get()!;
+    const [firstSentence, secondSentence] = [...deck.doc.sentences].sort(
+      (a, b) => a.position - b.position,
+    );
+
+    db.update(schema.decks)
+      .set({
+        doc: {
+          sentences: [
+            { ...firstSentence, audioStart: 0, audioEnd: 2.5 },
+            secondSentence, // no markers
+          ],
+        },
+      })
+      .where(eq(schema.decks.id, deck.id))
+      .run();
+
+    const payload = await store.getDeck(deck.id);
+    const markedLine = payload!.lines.find((l) => l.sentenceId === firstSentence.sentenceId)!;
+    const unmarkedLine = payload!.lines.find((l) => l.sentenceId === secondSentence.sentenceId)!;
+
+    expect(markedLine.audioStart).toBe(0);
+    expect(markedLine.audioEnd).toBe(2.5);
+    expect('audioStart' in unmarkedLine).toBe(false);
+    expect('audioEnd' in unmarkedLine).toBe(false);
+  });
+});
