@@ -55,8 +55,21 @@ async function seedDeckId(): Promise<string> {
   return testDb.select().from(schema.decks).get()!.id;
 }
 
-function audioForm(filename = 'audio.mp3', bytes = new Uint8Array([1, 2, 3])): FormData {
-  const mimeType = filename.endsWith('.m4a') ? 'audio/mp4' : 'audio/mpeg';
+// The route validates by container magic bytes, not filename. Trailing bytes
+// vary the content hash between recordings without changing the detected format.
+function mp3Bytes(tail: number[] = []): Uint8Array<ArrayBuffer> {
+  return new Uint8Array([0x49, 0x44, 0x33, ...tail]); // 'ID3' (ID3v2-tagged MP3)
+}
+function wavBytes(tail: number[] = []): Uint8Array<ArrayBuffer> {
+  // 'RIFF' <4-byte size> 'WAVE'
+  return new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x41, 0x56, 0x45, ...tail]);
+}
+
+function audioForm(
+  filename = 'audio.mp3',
+  bytes: Uint8Array<ArrayBuffer> = mp3Bytes(),
+  mimeType = 'audio/mpeg',
+): FormData {
   const form = new FormData();
   form.append('audio', new File([bytes], filename, { type: mimeType }));
   return form;
@@ -103,18 +116,19 @@ describe('POST /api/curation/decks/:deckId/audio — with curator mode on', () =
     expect(res.status).toBe(201);
     const body = (await res.json()) as { success: true; data: { audioKey: string } };
     expect(body.success).toBe(true);
-    expect(body.data.audioKey).toBe(`decks/${deckId}/audio.mp3`);
+    // Content-addressed: decks/<deckId>/<16-hex sha256>.mp3
+    expect(body.data.audioKey).toMatch(new RegExp(`^decks/${deckId}/[0-9a-f]{16}\\.mp3$`));
 
     expect(putObjectMock).toHaveBeenCalledTimes(1);
     expect(putObjectMock).toHaveBeenCalledWith(
       expect.anything(),
-      `decks/${deckId}/audio.mp3`,
+      body.data.audioKey,
       expect.anything(),
       'audio/mpeg',
     );
 
     const row = testDb.select().from(schema.decks).where(eq(schema.decks.id, deckId)).get()!;
-    expect(row.audio_key).toBe(`decks/${deckId}/audio.mp3`);
+    expect(row.audio_key).toBe(body.data.audioKey);
   });
 
   it('is idempotent — re-uploading the same deck yields the same key with no drift', async () => {
@@ -130,6 +144,19 @@ describe('POST /api/curation/decks/:deckId/audio — with curator mode on', () =
     expect(putObjectMock).toHaveBeenCalledTimes(2);
   });
 
+  it('re-recording (different bytes) mints a NEW key — never overwrites an immutable-cached URL', async () => {
+    const deckId = await seedDeckId();
+    await upload(deckId, audioForm('audio.mp3', mp3Bytes([1])));
+    const firstKey = testDb.select().from(schema.decks).where(eq(schema.decks.id, deckId)).get()!.audio_key;
+
+    await upload(deckId, audioForm('audio.mp3', mp3Bytes([2, 3, 4])));
+    const secondKey = testDb.select().from(schema.decks).where(eq(schema.decks.id, deckId)).get()!.audio_key;
+
+    // Distinct bytes ⟹ distinct content hash ⟹ distinct key/URL, so no cache
+    // (browser or CDN edge) can serve stale audio for the new recording.
+    expect(secondKey).not.toBe(firstKey);
+  });
+
   it('returns 500 and leaves audio_key untouched when putObject throws', async () => {
     putObjectMock.mockRejectedValueOnce(new Error('incomplete storage config'));
     const deckId = await seedDeckId();
@@ -141,40 +168,29 @@ describe('POST /api/curation/decks/:deckId/audio — with curator mode on', () =
     expect(row.audio_key).toBeNull();
   });
 
-  it('rejects unsupported file extensions (.wav, .flac, etc) with 400', async () => {
+  it('accepts a WAV file (RIFF/WAVE magic) and derives content type audio/wav', async () => {
     const deckId = await seedDeckId();
-    const res = await upload(deckId, audioForm('audio.wav'));
-    expect(res.status).toBe(400);
-    const body = (await res.json()) as { success: false; error: { message: string } };
-    expect(body.error.message).toContain('.mp3 or .m4a');
-    expect(putObjectMock).not.toHaveBeenCalled();
-  });
-
-  it('accepts .m4a format and derives content type audio/mp4', async () => {
-    const deckId = await seedDeckId();
-    const res = await upload(deckId, audioForm('audio.m4a'));
+    const res = await upload(deckId, audioForm('audio.wav', wavBytes(), 'audio/wav'));
 
     expect(res.status).toBe(201);
     const body = (await res.json()) as { success: true; data: { audioKey: string } };
-    expect(body.data.audioKey).toBe(`decks/${deckId}/audio.m4a`);
+    expect(body.data.audioKey).toMatch(new RegExp(`^decks/${deckId}/[0-9a-f]{16}\\.wav$`));
 
     expect(putObjectMock).toHaveBeenCalledWith(
       expect.anything(),
-      `decks/${deckId}/audio.m4a`,
+      body.data.audioKey,
       expect.anything(),
-      'audio/mp4',
+      'audio/wav',
     );
-
-    const row = testDb.select().from(schema.decks).where(eq(schema.decks.id, deckId)).get()!;
-    expect(row.audio_key).toBe(`decks/${deckId}/audio.m4a`);
   });
 
-  it('case-insensitive extension matching: .MP3 and .M4A work', async () => {
+  it('validates by content, not filename — a non-audio payload named .mp3 is rejected with 400', async () => {
     const deckId = await seedDeckId();
-    const res = await upload(deckId, audioForm('audio.MP3'));
-
-    expect(res.status).toBe(201);
-    const body = (await res.json()) as { success: true; data: { audioKey: string } };
-    expect(body.data.audioKey).toBe(`decks/${deckId}/audio.mp3`); // stored lowercase
+    // Bytes that match no supported container, despite the .mp3 filename.
+    const res = await upload(deckId, audioForm('audio.mp3', new Uint8Array([0, 1, 2, 3])));
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { success: false; error: { message: string } };
+    expect(body.error.message).toContain('MP3 or WAV');
+    expect(putObjectMock).not.toHaveBeenCalled();
   });
 });

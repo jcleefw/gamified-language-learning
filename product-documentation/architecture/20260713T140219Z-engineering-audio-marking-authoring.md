@@ -84,5 +84,5 @@ Pass 1 deliberately **serves audio locally rather than from R2** — a documente
 | Question | Owner | Target |
 | -------- | ----- | ------ |
 | JSON marker-map schema + where it lands for seed ingest | Dev | Pass-1 build |
-| `decks.audio_key` naming + local static-serving path (pass 1) | Dev | Pass-1 build |
+| ~~`decks.audio_key` naming + local static-serving path (pass 1)~~ **Resolved**: content-addressed `decks/<deckId>/<sha256>.<ext>`, `ext` ∈ {`mp3`,`wav`} by magic bytes; MinIO/R2 public-read URL base (playback ADR §7) | Dev | ✅ Pass-1 build |
 | R2 upload flow + curator auth model | Dev | Pass-2 design |

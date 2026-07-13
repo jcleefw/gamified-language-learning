@@ -55,7 +55,7 @@ async function onUpload() {
 
     <label class="field">
       <span>Audio file</span>
-      <input type="file" accept="audio/mpeg,audio/mp4,.mp3,.m4a" @change="onFileChange" />
+      <input type="file" accept="audio/mpeg,audio/wav,.mp3,.wav" @change="onFileChange" />
     </label>
 
     <button
