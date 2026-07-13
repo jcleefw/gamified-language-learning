@@ -8,10 +8,13 @@
 
 **Type**: Epic Plan
 **Depends on**: N/A (audio ADRs authored; no code dependency on another open epic)
-**Parallel with**: EP-audio-playback-ui (consumes the `audioUrl`/`audioStart`/`audioEnd` wire fields this epic emits, to actually render `<audio>` controls in `QuizCard.vue`/`DeckOverview.vue`)
+**Parallel with**: N/A
+**Successor**: [EP43 - Audio Playback & Marking UI](EP43-audio-playback-and-marking.md) — consumes the `audioUrl`/`audioStart`/`audioEnd` wire fields this epic emits: renders learner `<audio>` on `DeckOverview`/`QuizCard` (EP43-DS01) and builds the marker-authoring tool (EP43-DS02).
 **Predecessor**: N/A
 
-> **Scope update (20260713T222600Z):** the Pass-1 curator surfaces from the [Marking/Authoring ADR](../../product-documentation/architecture/20260713T140219Z-engineering-audio-marking-authoring.md) — previously tracked as a separate parallel epic — are pulled into this epic as Phase 3 (upload UI, replacing the `curate-audio` CLI — [EP42-DS02](../../changelogs/EP42--deck-audio-storage-and-retrieval/20260713T222600Z-EP42-DS02-curator-audio-upload-ui.md)) and Phase 4 (marker-authoring tool, spec to follow as EP42-DS03). Pass 2 (`apps/curator`, R2 upload-first, server-write endpoints, curator auth) stays explicitly out of scope.
+> **Scope update (20260713T222600Z):** the Pass-1 **upload UI** from the [Marking/Authoring ADR](../../product-documentation/architecture/20260713T140219Z-engineering-audio-marking-authoring.md) is pulled into this epic as Phase 3 (upload UI, replacing the `curate-audio` CLI — [EP42-DS02](../../changelogs/EP42--deck-audio-storage-and-retrieval/20260713T222600Z-EP42-DS02-curator-audio-upload-ui.md)). Pass 2 (`apps/curator`, R2 upload-first, server-write endpoints, curator auth) stays explicitly out of scope.
+>
+> **Scope update (20260713T232015Z):** EP42 **ends at DS02** (storage + curator upload). Everything that *renders audio to a learner* or *authors markers in the browser* — the former Phase 4 (marker-authoring tool, drafted as EP42-DS03) plus learner playback — moved to **[EP43](EP43-audio-playback-and-marking.md)** (DS01 = learner playback UI; DS02 = marker tool, re-homed from the EP42-DS03 draft). This keeps EP42 a coherent "storage + authoring-of-the-binary" epic and EP43 the "heard + marked" epic.
 
 ---
 
@@ -35,13 +38,13 @@ This epic builds the **full storage-to-wire path** end to end, against a **local
 - Wire additions: `AppDeckPayload.audioUrl?`, `AppLinePayload.audioStart?`/`audioEnd?`, wired into the existing `GET /api/decks` read path — absent key ⟹ absent `audioUrl`, no error.
 - A local **curator script** pairing audio + content: uploads the audio file to the bucket *and* writes `decks.audio_key` + sentence markers through the existing seed/import path in one invocation, so the bucket object and the DB row never drift apart. This is the local stand-in for what Pass 2's server-write endpoint will eventually do over HTTP.
 - Env-var contract designed so switching to R2 in production is a config change only (endpoint + credentials), never a code branch.
-- A **curator audio-upload page** (`srs-demo`, env-gated route) — pick a deck + a local audio file, upload via a new server endpoint straight to MinIO, and write `decks.audio_key` in the same request. Replaces the `curate-audio` CLI (ST03) as the normal path; the CLI is retired once this ships. *(DS02.)*
-- The **marker-authoring tool — Pass 1** (`srs-demo`, env-gated route), per the Marking/Authoring ADR: scrub the deck's (locally-served) conversation audio, set/nudge per-sentence `[start, end]` from the play-head, segment-preview a marked sentence, and export a JSON marker map (`sentenceId → {start, end}`) for the existing seed/import pipeline to ingest. No server write, no waveform, no auth beyond the route gate — matches the ADR's Pass-1 scope exactly. *(Design spec: EP42-DS03, to follow.)*
+- A **curator audio-upload page** (`srs-demo`, env-gated route) — pick a deck + a local audio file, upload via a new server endpoint straight to MinIO, and write `decks.audio_key` in the same request. Replaces the `curate-audio` CLI (ST03) as the normal path; the CLI is retired once this ships. *(DS02 — the last EP42 story.)*
 
 **Out of scope**:
 
 - **Pass 2** of the curator surfaces above: the separate `apps/curator` app, upload-first-to-R2, markers persisted through server → DB writes, and curator auth — explicitly deferred by the Marking/Authoring ADR.
-- Learner-facing playback UI — rendering `<audio>` controls, segment seek/stop, playback-rate control in `QuizCard.vue` / `DeckOverview.vue` — a separate playback-UI epic consumes the wire fields this epic emits.
+- Learner-facing playback UI — rendering `<audio>` controls, segment seek/stop, playback-rate control in `QuizCard.vue` / `DeckOverview.vue` — moved to **[EP43-DS01](EP43-audio-playback-and-marking.md)**, which consumes the wire fields this epic emits.
+- The **marker-authoring tool — Pass 1** (gated `srs-demo` route, keyboard-nudge markers, JSON marker-map export) and its **seed/import ingest** — moved to **[EP43-DS02](EP43-audio-playback-and-marking.md)** (re-homed from the EP42-DS03 draft).
 - Actual R2 account/bucket provisioning (production cutover — separate infra task).
 - `ReviewQuestionType` / engine changes — the playback ADR keeps `srs-engine-v2` audio-free; not touched here.
 - Automated marker derivation (forced alignment, silence detection), word-level markers, and audio generation (TTS) — out of scope for both marker-tool passes per the ADR/PRD.
@@ -80,27 +83,23 @@ This epic builds the **full storage-to-wire path** end to end, against a **local
 
 ### Phase 3: Curator audio-upload UI (EP42-PH03)
 
-### EP42-ST08: Server upload endpoint — audio file → MinIO + `audio_key` write
+### EP42-ST08: Server upload endpoint — audio file → MinIO + `audio_key` write  *(Done — EP42-DS02)*
 
-**Scope**: `apps/server` — a new mutating route (e.g. `POST /api/curation/decks/:deckId/audio`) that accepts a multipart file upload, calls ST02's `putObject`, and writes `decks.audio_key` in the same request — the server-side equivalent of ST03's `curateAudio`, but driven by an HTTP body instead of a local file path. Gated: returns 404 unless a curator-mode env flag is set, so the mutating endpoint isn't reachable in a default production deploy without also flipping that flag.
+**Scope**: `apps/server` — a new mutating route (`POST /api/curation/decks/:deckId/audio`) that accepts a multipart file upload, calls ST02's `putObject`, and writes `decks.audio_key` in the same request — the server-side equivalent of ST03's `curateAudio`, but driven by an HTTP body instead of a local file path. Gated: returns 404 unless `GLL_CURATOR_MODE` is set, so the mutating endpoint isn't reachable in a default production deploy without also flipping that flag.
 
-### EP42-ST09: `srs-demo` gated audio-upload page
+### EP42-ST09: `srs-demo` gated audio-upload page  *(Done — EP42-DS02; one AC pending a MinIO-up browser walkthrough)*
 
-**Scope**: `apps/srs-demo` — a new env-gated screen: pick a deck (from the decks already fetched at boot) and a local `.mp3` file, upload, and see success/failure. Calls ST08's endpoint. Gated the same way the existing debug affordances are (`env.ts` flag, dead-code-eliminated in prod builds).
+**Scope**: `apps/srs-demo` — a new env-gated screen: pick a deck (from the decks already fetched at boot) and a local `.mp3` file, upload, and see success/failure. Calls ST08's endpoint. Gated by a `VITE_CURATOR_MODE` `env.ts` flag, dead-code-eliminated in prod builds.
 
-### EP42-ST10: Retire the `curate-audio` CLI
+### EP42-ST10: Retire the `curate-audio` CLI  *(Done — EP42-DS02)*
 
-**Scope**: `packages/srs-curation` — remove `curate-audio.ts` and its test once ST08/ST09 cover the same job, so there is exactly one path to pair an audio file with a deck. Update EP42-DS01's references to ST03 to note it's superseded.
+**Scope**: `packages/srs-curation` — removed `curate-audio.ts` and its test now that ST08/ST09 cover the same job, so there is exactly one path to pair an audio file with a deck. EP42-DS01's ST03 reference + the ST06 local-loop docs updated to note the supersession is realised.
 
-### Phase 4: Marker-authoring tool — Pass 1 (EP42-PH04)
+> **Phase 4 (marker-authoring tool) moved to [EP43](EP43-audio-playback-and-marking.md).** The former EP42-ST11/ST12/ST13 are now EP43-ST04 (marker route), EP43-ST01/ST04 (shared player + speed control, built with learner playback), and EP43-ST05 (marker-map ingest). EP42 ends at Phase 3 (DS02).
 
-### EP42-ST11: `srs-demo` gated marker-authoring route
+### EP42-ST13: Marker-map ingest — `apply-markers` seed step
 
-**Scope**: `apps/srs-demo` — a new env-gated screen per the Marking/Authoring ADR §Pass 1: load a deck's sentence list + locally-served conversation audio; play/pause/scrub with a time readout; playback-rate control (1×/0.75×/0.5×, shared with the learner player); capture in/out per sentence from the play-head with keyboard-nudge fine adjustment; segment preview (play a single sentence's `[start, end]`); export a JSON marker map (`sentenceId → {start, end}`) for the seed/import pipeline. No server write, no waveform, no auth beyond the route gate. **Design spec deferred to EP42-DS03** — this story is a placeholder in the epic plan until that DS is written.
-
-### EP42-ST12: Prominent playback-speed control in the audio player
-
-**Scope**: `apps/srs-demo` — the playback-rate control (1× / 0.75× / 0.5×) is a **primary, always-visible** affordance in the audio player, not a hidden or secondary menu item. The curator relies on slow-down for precise marker placement (PRD §3, §4.1), and the same control carries to the learner player, so speed must be one tap/click away wherever audio plays — a visible segmented control or equivalent, with the current rate clearly indicated. **Design spec: EP42-DS03** (built as part of the shared audio-player component ST11 introduces).
+**Scope**: `apps/cli-demo-db` — a CLI (`apply-markers.ts`) that reads the tool's exported JSON marker map and writes each sentence's `audioStart`/`audioEnd` into `decks.doc.sentences[]` **in place, matched by `sentenceId`** (does not re-import — re-import regenerates ids and would orphan the map). Idempotent; fails loudly on an unknown deck; unknown map keys skipped-with-warning. This is the "seed/import pipeline ingests it" half of the Marking/Authoring ADR Pass 1 — a DB write through *tooling*, not a mutating server endpoint. Answers the ADR's open question "JSON marker-map schema + where it lands for seed ingest." **Design spec: [EP42-DS03](../../changelogs/EP42--deck-audio-storage-and-retrieval/20260713T230512Z-EP42-DS03-marker-authoring-tool.md).**
 
 ---
 
@@ -114,11 +113,11 @@ This epic builds the **full storage-to-wire path** end to end, against a **local
 - [ ] Missing/unset storage env vars do not crash server startup — resolution just returns no `audioUrl`.
 - [ ] Swapping to R2 in production requires only env-var changes (endpoint, credentials, public URL) — verified by code review, no code path branches on provider.
 - [ ] An uploaded object carries `Cache-Control: public, max-age=31536000, immutable` (verified against the MinIO object's response headers).
-- [ ] A curator can select a deck and a local `.mp3` file on a `srs-demo` page and, without a terminal or a script, have the file land in MinIO and `decks.audio_key` set to match — verified the same way as the ST03 loop it replaces.
-- [ ] The upload endpoint is unreachable (404) when the curator-mode flag is unset; the upload page itself is not rendered/linked when its env flag is unset.
-- [ ] The `curate-audio` CLI is removed once the upload page ships — no duplicate code path for pairing audio with a deck remains.
-- [ ] A curator can mark every sentence in a deck — set start/end, scrub, adjust with keyboard nudge, preview a segment — without leaving the browser, and export a JSON marker map the seed/import pipeline ingests.
-- [ ] The playback-speed control (1× / 0.75× / 0.5×) is a primary, always-visible affordance in the audio player, with the current rate clearly shown — reachable in one tap/click wherever audio plays.
+- [~] A curator can select a deck and a local `.mp3` file on a `srs-demo` page and, without a terminal or a script, have the file land in MinIO and `decks.audio_key` set to match — verified the same way as the ST03 loop it replaces. *(Endpoint + client covered by tests; end-to-end browser+MinIO walkthrough still pending.)*
+- [x] The upload endpoint is unreachable (404) when `GLL_CURATOR_MODE` is unset; the upload page itself is gated behind `env.curatorMode` (`VITE_CURATOR_MODE`) and DCE'd when unset.
+- [x] The `curate-audio` CLI is removed once the upload page ships — no duplicate code path for pairing audio with a deck remains.
+
+*(Learner playback and the marker-authoring tool ACs moved to [EP43](EP43-audio-playback-and-marking.md).)*
 
 ---
 
@@ -134,5 +133,4 @@ This epic builds the **full storage-to-wire path** end to end, against a **local
 1. Review and approve plan
 2. ~~Create Design Spec (DS) for ST02/ST04/ST05~~ — done, EP42-DS01.
 3. Design Spec for ST08/ST09/ST10 (upload endpoint + page + CLI retirement) — EP42-DS02.
-4. Design Spec for ST11 (marker-authoring tool, Pass 1) — EP42-DS03, to follow.
-5. Begin implementation of DS02; DS03 implementation follows once written.
+4. **EP42 is complete through DS02** (Impl-Complete). Learner playback + the marker tool moved to **[EP43](EP43-audio-playback-and-marking.md)** (DS01 / DS02) — the EP42-DS03 draft was re-homed there as EP43-DS02.

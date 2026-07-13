@@ -177,9 +177,9 @@ curate <deckId> <audio.mp3>
 - [x] `loadAudioStorageConfig({})` (empty env) returns an all-`undefined` config without throwing.
 - [x] An object written by `putObject` reports `Cache-Control: public, max-age=31536000, immutable` when fetched back from MinIO. *(manually verified 2026-07-13: fetched the uploaded object back from local MinIO, header present.)*
 
-### EP42-ST03: Local curator script — paired audio upload + `audio_key` sync  *(Done — superseded, see below)*
+### EP42-ST03: Local curator script — paired audio upload + `audio_key` sync  *(Done — superseded & removed)*
 
-> **Superseded (20260713T222600Z):** the PO found the CLI/two-terminal loop too many steps to remember. [EP42-DS02](20260713T222600Z-EP42-DS02-curator-audio-upload-ui.md) replaces this script with a `srs-demo` upload page (EP42-ST08/ST09); ST10 removes this file once that page ships. Kept here for the historical record of what ST03 built.
+> **Superseded & removed (20260713T222600Z):** the PO found the CLI/two-terminal loop too many steps to remember. [EP42-DS02](20260713T222600Z-EP42-DS02-curator-audio-upload-ui.md) replaced this script with a `srs-demo` upload page (EP42-ST08/ST09), and **ST10 has now deleted `packages/srs-curation/src/curate-audio.ts` + its test** — the gated `POST /api/curation/decks/:deckId/audio` endpoint is the single pairing path. `putObject` (ST02) lives on as that endpoint's dependency. Kept below for the historical record of what ST03 built.
 
 **Scope**: Tooling — one CLI that syncs the bucket object with `decks.audio_key` per deck, so the binary and the DB reference never drift. Depends on ST02 (`putObject`) and ST04 (schema).
 **Read List**: `apps/cli-demo-db/src/import-curriculum.ts` (CLI entrypoint + `getDb` pattern), `packages/db/src/sqlite-content-store.ts`, `apps/server/src/storage/audio-store.ts`
