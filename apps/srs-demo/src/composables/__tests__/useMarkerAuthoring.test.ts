@@ -90,6 +90,38 @@ describe('useMarkerAuthoring', () => {
     expect(a.markers.value.s1).toBeUndefined();
     expect(a.markers.value.other).toEqual({ start: null, end: null });
   });
+
+  // EP43-ST07 — marker-UX improvement: committing a sentence's out point
+  // pre-fills the next sentence's in point, so the curator doesn't have to
+  // click the same play-head position twice.
+  describe('auto-populate next start on setOut (EP43-ST07)', () => {
+    it('fills the next sentence in `order`\'s start if it is unset', () => {
+      const a = useMarkerAuthoring();
+      a.seed(['s1', 's2']);
+
+      a.setOut('s1', 2.0);
+
+      expect(a.markers.value.s2.start).toBe(2.0);
+    });
+
+    it('never overwrites a next start that was already set', () => {
+      const a = useMarkerAuthoring();
+      a.seed(['s1', 's2']);
+      a.setIn('s2', 5.0);
+
+      a.setOut('s1', 2.0);
+
+      expect(a.markers.value.s2.start).toBe(5.0);
+    });
+
+    it('is a no-op when the sentence has no next in `order`', () => {
+      const a = useMarkerAuthoring();
+      a.seed(['s1']);
+
+      expect(() => a.setOut('s1', 2.0)).not.toThrow();
+      expect(a.markers.value.s1.end).toBe(2.0);
+    });
+  });
 });
 
 /** A committed VTT with one cue for s1 — the shape fetchDeckVtt would return. */

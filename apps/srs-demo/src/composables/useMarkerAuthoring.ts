@@ -43,6 +43,7 @@ export interface MarkerAuthoring {
 
 export function useMarkerAuthoring(): MarkerAuthoring {
   const markers = ref<Record<string, MarkerDraft>>({});
+  let order: string[] = [];
 
   function seed(sentenceIds: string[], existingVtt?: string): void {
     const parsed = existingVtt ? parseVtt(existingVtt) : {};
@@ -55,6 +56,7 @@ export function useMarkerAuthoring(): MarkerAuthoring {
       };
     }
     markers.value = next;
+    order = sentenceIds;
   }
 
   function setIn(sentenceId: string, time: number): void {
@@ -62,9 +64,21 @@ export function useMarkerAuthoring(): MarkerAuthoring {
     if (draft) draft.start = quantize(Math.max(0, time));
   }
 
+  // EP43-ST07 marker-UX improvement: today's toil is clicking the same
+  // play-head point twice (sentence N's out, then N+1's in). Pre-fill N+1's
+  // start from N's committed end — but only if it's still unset, so the
+  // curator's own edits are never silently clobbered.
   function setOut(sentenceId: string, time: number): void {
     const draft = markers.value[sentenceId];
-    if (draft) draft.end = quantize(Math.max(0, time));
+    if (!draft) return;
+    const quantized = quantize(Math.max(0, time));
+    draft.end = quantized;
+
+    const nextId = order[order.indexOf(sentenceId) + 1];
+    const nextDraft = nextId ? markers.value[nextId] : undefined;
+    if (nextDraft && nextDraft.start === null) {
+      nextDraft.start = quantized;
+    }
   }
 
   function nudge(sentenceId: string, edge: 'start' | 'end', delta: number): void {

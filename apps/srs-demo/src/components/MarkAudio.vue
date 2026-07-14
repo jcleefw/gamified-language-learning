@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { AppDeckPayload } from '@gll/api-contract';
+import RegionsPlugin from 'wavesurfer.js/plugins/regions';
 import AudioPlayer from './AudioPlayer.vue';
 import {
   useMarkerAuthoring,
@@ -33,6 +34,64 @@ const audioSha256 = computed(
 const player = ref<InstanceType<typeof AudioPlayer> | null>(null);
 const authoring = useMarkerAuthoring();
 const status = ref<{ kind: 'ok' | 'error'; message: string } | null>(null);
+
+// EP43-ST07 — the waveform augments the table, it doesn't replace it: one
+// draggable Region per fully-marked sentence, two-way synced with
+// `authoring.markers` (the single source of truth). AudioPlayer.vue stays
+// curator-agnostic — it exposes the raw WaveSurfer instance but never
+// imports Regions itself; this component owns all Regions wiring.
+let regions: ReturnType<typeof RegionsPlugin.create> | null = null;
+
+watch(
+  () => player.value?.wavesurfer,
+  (ws) => {
+    if (!ws || regions) return;
+    regions = ws.registerPlugin(RegionsPlugin.create());
+    // Dragging a region calls the SAME setters the table's Set In/Out
+    // buttons call — one source of truth, no separate drag-state model.
+    // setOut may auto-populate the NEXT row's start (ST07 UX improvement).
+    regions.on('region-updated', (region) => {
+      authoring.setIn(region.id, region.start);
+      authoring.setOut(region.id, region.end);
+    });
+    regions.on('region-clicked', (region) => {
+      player.value?.playSegment(region.start, region.end);
+    });
+    syncRegions();
+  },
+);
+
+// Reconciles regions from `authoring.markers`: one Region per complete row,
+// updated via `setOptions()` (not remove+recreate, so an in-progress drag
+// isn't fought) — confirmed against the installed Regions plugin that
+// `setOptions()` never re-emits `region-updated` (it only fires from a
+// region's own drag/resize `update-end`), so this can't loop.
+function syncRegions() {
+  if (!regions) return;
+  const currentIds = new Set(Object.keys(authoring.markers.value));
+  for (const region of regions.getRegions()) {
+    if (!currentIds.has(region.id) || !authoring.isComplete(region.id)) {
+      region.remove();
+    }
+  }
+  for (const [sentenceId, draft] of Object.entries(authoring.markers.value)) {
+    if (!authoring.isComplete(sentenceId)) continue;
+    const existing = regions.getRegions().find((r) => r.id === sentenceId);
+    if (existing) {
+      existing.setOptions({ start: draft.start!, end: draft.end! });
+    } else {
+      regions.addRegion({
+        id: sentenceId,
+        start: draft.start!,
+        end: draft.end!,
+        drag: true,
+        resize: true,
+      });
+    }
+  }
+}
+
+watch(() => authoring.markers.value, syncRegions, { deep: true });
 
 async function onSelectDeck() {
   status.value = null;
@@ -133,7 +192,7 @@ function download() {
     </p>
 
     <template v-if="deck && markable">
-      <AudioPlayer ref="player" :src="deck.audioUrl!" />
+      <AudioPlayer ref="player" :src="deck.audioUrl!" :show-waveform="true" />
 
       <table class="lines">
         <thead>
