@@ -37,14 +37,17 @@ export function useSegmentPlayer(
   }
 
   function play() {
+    console.log('[AUDIO] play()', { currentTime: el.value?.currentTime });
     if (el.value) {
-      el.value.play().catch(() => {
+      el.value.play().catch((err) => {
         // Playback may fail silently (e.g., autoplay policy)
+        console.log('[AUDIO] play() rejected', err);
       });
     }
   }
 
   function pause() {
+    console.log('[AUDIO] pause()', { currentTime: el.value?.currentTime });
     if (el.value) {
       el.value.pause();
     }
@@ -59,12 +62,15 @@ export function useSegmentPlayer(
       // start and segments played from 0 instead of `t`.
       const dur = el.value.duration;
       const upper = Number.isFinite(dur) ? dur : t;
-      el.value.currentTime = Math.max(0, Math.min(t, upper));
+      const clamped = Math.max(0, Math.min(t, upper));
+      console.log('[AUDIO] seek()', { requested: t, elementDuration: dur, clamped });
+      el.value.currentTime = clamped;
     }
     clearPendingSegment();
   }
 
   function setRate(r: 1 | 0.75 | 0.5) {
+    console.log('[AUDIO] setRate()', { rate: r, hadPendingSegment: !!timeUpdateListener });
     rate.value = r;
     if (el.value) {
       el.value.playbackRate = r;
@@ -73,6 +79,7 @@ export function useSegmentPlayer(
   }
 
   function playSegment(start: number, end: number) {
+    console.log('[AUDIO] playSegment()', { start, end });
     clearPendingSegment();
     seek(start);
 
@@ -85,7 +92,10 @@ export function useSegmentPlayer(
       if (!el.value) return;
       const t = el.value.currentTime;
       if (t >= start && t < end) entered = true;
-      if (entered && t >= end) pause();
+      if (entered && t >= end) {
+        console.log('[AUDIO] playSegment() reached end, pausing', { t, start, end });
+        pause();
+      }
     };
 
     if (el.value) {
@@ -102,6 +112,14 @@ export function useSegmentPlayer(
       | (TextTrackCue & { startTime: number; endTime: number })
       | null
       | undefined;
+    console.log('[AUDIO] playCue()', {
+      sentenceId,
+      trackLoaded: !!track.value,
+      cueCount: track.value?.cues?.length ?? null,
+      found: !!cue,
+      startTime: cue?.startTime,
+      endTime: cue?.endTime,
+    });
     if (!cue) return; // no cue for this sentence ⟹ silent no-op (playback ADR §6)
     playSegment(cue.startTime, cue.endTime);
   }
@@ -118,6 +136,7 @@ export function useSegmentPlayer(
       });
       audio.addEventListener('durationchange', () => {
         duration.value = audio.duration;
+        console.log('[AUDIO] durationchange', { src: audio.src, duration: audio.duration });
       });
       audio.addEventListener('play', () => {
         playing.value = true;
@@ -139,9 +158,11 @@ export function useSegmentPlayer(
         activeCueId.value = null;
         return;
       }
+      console.log('[AUDIO] track attached', { mode: t.mode, cueCount: t.cues?.length ?? null });
       t.addEventListener('cuechange', () => {
         const active = t.activeCues;
         activeCueId.value = active && active.length > 0 ? active[0].id : null;
+        console.log('[AUDIO] cuechange', { activeCueId: activeCueId.value });
       });
     },
     { immediate: true, flush: 'post' },

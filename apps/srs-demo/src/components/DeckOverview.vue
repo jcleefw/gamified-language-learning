@@ -57,6 +57,12 @@ const audioPlayer = ref<InstanceType<typeof AudioPlayer> | null>(null);
 const playingSentenceIndex = ref<number | null>(null);
 
 function onSentenceClick(idx: number) {
+  console.log('[AUDIO] click: onSentenceClick', {
+    idx,
+    sentenceId: props.deck.lines[idx]?.sentenceId,
+    hasVttUrl: !!props.deck.vttUrl,
+    hasPlayer: !!audioPlayer.value,
+  });
   // Timing is the served VTT track: play the sentence's cue by id. No player
   // (no audioUrl) or no cue for the sentence ⟹ silent no-op (playback ADR §6).
   if (!props.deck.vttUrl || !audioPlayer.value) return;

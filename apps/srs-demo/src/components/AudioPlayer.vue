@@ -24,6 +24,15 @@ watch(
     if (el) {
       el.track.mode = 'hidden';
       track.value = el.track;
+      el.addEventListener('error', () => {
+        console.log('[AUDIO] <track> failed to load', { vttUrl: props.vttUrl });
+      });
+      el.addEventListener('load', () => {
+        console.log('[AUDIO] <track> loaded', {
+          vttUrl: props.vttUrl,
+          cueCount: el.track.cues?.length ?? null,
+        });
+      });
     } else {
       track.value = null;
     }
@@ -41,6 +50,7 @@ function formatTime(t: number): string {
 }
 
 function togglePlay() {
+  console.log('[AUDIO] click: togglePlay', { wasPlaying: player.playing.value });
   if (player.playing.value) {
     player.pause();
   } else {
@@ -50,6 +60,7 @@ function togglePlay() {
 
 function onScrub(e: Event) {
   const value = Number((e.target as HTMLInputElement).value);
+  console.log('[AUDIO] click: scrubber', { value });
   player.seek(value);
 }
 
@@ -91,7 +102,10 @@ defineExpose<SegmentPlayer>(player);
         type="button"
         class="speed-btn"
         :class="{ active: player.rate.value === r }"
-        @click="player.setRate(r)"
+        @click="
+          console.log('[AUDIO] click: speed', { rate: r });
+          player.setRate(r);
+        "
       >
         {{ r }}×
       </button>

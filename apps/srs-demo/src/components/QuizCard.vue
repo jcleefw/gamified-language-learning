@@ -39,6 +39,13 @@ const cheatMode = env.cheatMode;
 const sentenceAudioPlayer = ref<InstanceType<typeof AudioPlayer> | null>(null);
 
 function playSentenceAudio() {
+  console.log('[AUDIO] click: playSentenceAudio', {
+    hasAudio: !!props.audio,
+    hasPlayer: !!sentenceAudioPlayer.value,
+    sentenceId: props.audio?.sentenceId,
+    audioUrl: props.audio?.audioUrl,
+    vttUrl: props.audio?.vttUrl,
+  });
   if (!props.audio || !sentenceAudioPlayer.value) return;
   sentenceAudioPlayer.value.playCue(props.audio.sentenceId);
 }
