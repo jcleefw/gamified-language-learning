@@ -1,6 +1,8 @@
 # ADR: Conversation Audio — Playback Model & Data Contract
 
-**Status:** Accepted
+**Status:** Accepted (amended)
+
+**Amended by:** [Conversation Audio — Timing as WebVTT (Storage, Authoring & Playback)](20260714T123438Z-engineering-audio-timing-webvtt.md) (20260714). The runtime *consume mechanism* is revised: timing is delivered as a served WebVTT track parsed natively by the browser (`TextTrack` / `cuechange`), not read as `audioStart/audioEnd` off `sentences[]`. The playback *behaviour* (seek → play → pause-at-end, per-sentence highlight) still holds; only the source of the timing changes. Read the sections below with that amendment in mind.
 
 **Date:** 2026-07-13
 

@@ -1,6 +1,8 @@
 # ADR: Conversation Audio — Marking (Authoring) Architecture
 
-**Status:** Accepted
+**Status:** Superseded
+
+**Superseded by:** [Conversation Audio — Timing as WebVTT (Storage, Authoring & Playback)](20260714T123438Z-engineering-audio-timing-webvtt.md) (20260714). The bespoke JSON marker map, the `apply-markers` seed/import ingest, and the two-pass (Pass-1/Pass-2) build architecture below are all replaced. Timing is now WebVTT bound to the audio binary, with a single-pass gated server-write. Retained for historical context only.
 
 **Date:** 2026-07-13
 

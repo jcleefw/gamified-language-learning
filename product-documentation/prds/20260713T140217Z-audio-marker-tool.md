@@ -1,7 +1,9 @@
 # PRD: Audio Marker Tool
 
 **Date**: 20260713T140217Z
-**Status**: Draft
+**Status**: Draft — architecture revised (see note)
+
+> **Architecture update (20260714)**: The build architecture this PRD assumed (bespoke JSON marker map, `apply-markers` seed/import, pass-1 → pass-2 evolution) is **superseded** by [Conversation Audio — Timing as WebVTT](../architecture/20260714T123438Z-engineering-audio-timing-webvtt.md) and [Standalone Audio Asset Model](../architecture/20260714T123409Z-engineering-audio-asset-model.md). Timing is now WebVTT bound to the audio binary, stored on a standalone versioned `audio` entity, with a single-pass gated server-write. The *curator experience* this PRD describes (point-and-click in/out marking) still holds; the storage/ingest mechanics below do not.
 **Epic**: Audio (proposed) — first slice of Stage-7 curation, pulled forward as an audio dependency
 **Related ADR**: [Conversation Audio — Playback Model & Data Contract](../architecture/20260713T140218Z-engineering-audio-playback-model.md)
 **Related ADR**: [Conversation Audio — Marking (Authoring) Architecture](../architecture/20260713T140219Z-engineering-audio-marking-authoring.md)
