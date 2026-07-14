@@ -167,19 +167,17 @@ async function onToggleRecording() {
 const currentQuestionAudio = computed(() => {
   if (!currentQuestion.value || currentQuestion.value.kind !== 'word-block')
     return undefined;
-  return (
-    resolveSentenceAudio(appDecks.value, currentQuestion.value.sentenceId) ??
-    undefined
-  );
+  const sentenceId = currentQuestion.value.sentenceId;
+  const deckAudio = resolveSentenceAudio(appDecks.value, sentenceId);
+  return deckAudio ? { ...deckAudio, sentenceId } : undefined;
 });
 
 const reviewQuestionAudio = computed(() => {
   if (!reviewQuestion.value || reviewQuestion.value.kind !== 'word-block')
     return undefined;
-  return (
-    resolveSentenceAudio(appDecks.value, reviewQuestion.value.sentenceId) ??
-    undefined
-  );
+  const sentenceId = reviewQuestion.value.sentenceId;
+  const deckAudio = resolveSentenceAudio(appDecks.value, sentenceId);
+  return deckAudio ? { ...deckAudio, sentenceId } : undefined;
 });
 
 // --- Top nav menu (EP38-ST08) ---
@@ -287,6 +285,16 @@ function onReviewExit() {
   // leaving mid-session loses nothing. The hub is the review landing; re-entry
   // re-fetches a freshly-ordered batch (server rotates the not-due tail).
   screen.value = 'review-hub';
+}
+
+// Re-fetch the deck list so a curator write (audio upload / VTT commit) is
+// reflected without a full page reload — the audioUrl/vttUrl a screen reads come
+// from this list, which is otherwise only populated once at boot.
+async function refreshDecks(): Promise<void> {
+  const res = await fetch('/api/decks');
+  if (!res.ok) return;
+  const body = (await res.json()) as { success: true; data: GetDecksResponse };
+  appDecks.value = body.data;
 }
 
 onMounted(async () => {
@@ -427,12 +435,14 @@ onMounted(async () => {
   <CurateAudio
     v-if="env.curatorMode && screen === 'curate'"
     :decks="appDecks"
+    @uploaded="refreshDecks"
     @back="screen = 'select'"
   />
 
   <MarkAudio
     v-if="env.curatorMode && screen === 'mark'"
     :decks="appDecks"
+    @committed="refreshDecks"
     @back="screen = 'select'"
   />
 

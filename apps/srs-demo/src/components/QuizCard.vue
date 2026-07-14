@@ -11,7 +11,7 @@ import type {
 import PoolDebugPanel from './PoolDebugPanel.vue';
 import AudioPlayer from './AudioPlayer.vue';
 import { env } from '../env';
-import type { SentenceAudio } from '../composables/useAudio';
+import type { DeckAudio } from '../composables/useAudio';
 
 const props = defineProps<{
   question: QuizQuestion;
@@ -25,10 +25,11 @@ const props = defineProps<{
   // explicit Next (mirrors the sentence path). Default false keeps Learning's
   // emit-on-click behaviour byte-identical. Review passes true.
   feedbackDwell?: boolean;
-  // EP43-DS01 ST03: resolved only for word-block questions with a marked
-  // sentence (App.vue does the lookup — the engine stays audio-free, ADR §5).
+  // EP43-DS01 ST03: resolved only for word-block questions whose deck has audio
+  // + a VTT (App.vue does the lookup — the engine stays audio-free, ADR §5).
   // MCQ questions always receive undefined (ADR §3 — MCQ never gets audio).
-  audio?: SentenceAudio;
+  // The sentence's segment is played by cue id from the served VTT track.
+  audio?: DeckAudio & { sentenceId: string };
 }>();
 const emit = defineEmits<{ answered: [result: QuizResult]; exit: [] }>();
 
@@ -39,7 +40,7 @@ const sentenceAudioPlayer = ref<InstanceType<typeof AudioPlayer> | null>(null);
 
 function playSentenceAudio() {
   if (!props.audio || !sentenceAudioPlayer.value) return;
-  sentenceAudioPlayer.value.playSegment(props.audio.start, props.audio.end);
+  sentenceAudioPlayer.value.playCue(props.audio.sentenceId);
 }
 
 const answered = ref(false);
@@ -265,7 +266,7 @@ watch(
       <!-- EP43-DS01 ST03: word-block segment playback. Present only when
            App.vue resolved audio for this sentence (silent degrade — ADR §6). -->
       <div v-if="audio" class="sentence-audio">
-        <AudioPlayer ref="sentenceAudioPlayer" :src="audio.url" />
+        <AudioPlayer ref="sentenceAudioPlayer" :src="audio.audioUrl" :vtt-url="audio.vttUrl" />
         <button class="btn-play-sentence" type="button" @click="playSentenceAudio">
           ▶ Play sentence
         </button>

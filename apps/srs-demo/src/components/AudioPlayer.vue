@@ -1,15 +1,35 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useSegmentPlayer, type SegmentPlayer } from '../composables/useSegmentPlayer';
 
-// Learner-agnostic transport: one <audio>, a scrubber, an mm:ss.cs readout, and
-// a primary always-visible 1x/0.75x/0.5x speed control (playback ADR §4). No
-// deck/sentence/curator concepts — mounted unchanged by DeckOverview, QuizCard,
-// and the DS02 marker tool.
-const props = defineProps<{ src: string }>();
+// Learner-agnostic transport: one <audio>, an optional WebVTT <track>, a
+// scrubber, an mm:ss.cs readout, and a primary always-visible 1x/0.75x/0.5x
+// speed control (playback ADR §4). No deck/sentence/curator concepts — mounted
+// unchanged by DeckOverview, QuizCard, and the DS02 marker tool. When `vttUrl`
+// is given, the browser parses it as a metadata TextTrack and drives per-sentence
+// timing via cuechange (WebVTT ADR §6 Option C).
+const props = defineProps<{ src: string; vttUrl?: string }>();
 
 const audioEl = ref<HTMLAudioElement | null>(null);
-const player = useSegmentPlayer(audioEl);
+const trackEl = ref<HTMLTrackElement | null>(null);
+const track = ref<TextTrack | null>(null);
+const player = useSegmentPlayer(audioEl, track);
+
+// The <track> element exposes its parsed TextTrack via `.track`. mode='hidden'
+// makes cues fire cuechange + stay programmatically readable without rendering
+// visible captions.
+watch(
+  () => trackEl.value,
+  (el) => {
+    if (el) {
+      el.track.mode = 'hidden';
+      track.value = el.track;
+    } else {
+      track.value = null;
+    }
+  },
+  { immediate: true, flush: 'post' },
+);
 
 const RATES = [1, 0.75, 0.5] as const;
 
@@ -38,7 +58,11 @@ defineExpose<SegmentPlayer>(player);
 
 <template>
   <div class="audio-player">
-    <audio ref="audioEl" :src="props.src" preload="metadata" />
+    <!-- crossorigin: the VTT track loads from the public audio bucket (cross-origin);
+         the <track> only parses with CORS enabled on the media element. -->
+    <audio ref="audioEl" :src="props.src" preload="metadata" crossorigin="anonymous">
+      <track v-if="props.vttUrl" ref="trackEl" kind="metadata" :src="props.vttUrl" default />
+    </audio>
 
     <div class="transport">
       <button class="btn-play" type="button" @click="togglePlay">

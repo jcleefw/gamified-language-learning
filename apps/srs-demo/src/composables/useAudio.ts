@@ -1,28 +1,28 @@
 import type { AppDeckPayload } from '@gll/api-contract';
 
 // Playback ADR §5 — the engine and questions stay pure text; the Vue client
-// resolves sentenceId → audio from the deck payload it already holds.
-export interface SentenceAudio {
-  url: string;
-  start: number;
-  end: number;
+// resolves a sentence's DECK audio from the payload it already holds. Timing is
+// the served VTT track (WebVTT ADR §6): the player targets the sentence by cue
+// id via playCue(sentenceId), so we only need the deck's audioUrl + vttUrl here.
+export interface DeckAudio {
+  audioUrl: string;
+  vttUrl: string;
 }
 
 /**
- * Finds the line by sentenceId across decks; returns null unless the deck has
- * audioUrl AND the line has BOTH audioStart and audioEnd (a half-marker ⟹ null).
- * Absent ⟹ no control (playback ADR §6 silent degrade).
+ * Finds the deck containing sentenceId; returns its { audioUrl, vttUrl } only
+ * when the deck has BOTH (i.e. is segmentable). A deck with no vttUrl has no
+ * per-sentence timing ⟹ null (no control; playback ADR §6 silent degrade).
  */
 export function resolveSentenceAudio(
   decks: AppDeckPayload[],
   sentenceId: string,
-): SentenceAudio | null {
+): DeckAudio | null {
   for (const deck of decks) {
-    if (!deck.audioUrl) continue;
-    const line = deck.lines.find((l) => l.sentenceId === sentenceId);
-    if (!line) continue;
-    if (line.audioStart === undefined || line.audioEnd === undefined) return null;
-    return { url: deck.audioUrl, start: line.audioStart, end: line.audioEnd };
+    if (!deck.audioUrl || !deck.vttUrl) continue;
+    if (deck.lines.some((l) => l.sentenceId === sentenceId)) {
+      return { audioUrl: deck.audioUrl, vttUrl: deck.vttUrl };
+    }
   }
   return null;
 }

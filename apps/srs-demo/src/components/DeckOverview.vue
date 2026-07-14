@@ -57,11 +57,11 @@ const audioPlayer = ref<InstanceType<typeof AudioPlayer> | null>(null);
 const playingSentenceIndex = ref<number | null>(null);
 
 function onSentenceClick(idx: number) {
-  const line = props.deck.lines[idx];
-  if (line.audioStart === undefined || line.audioEnd === undefined) return;
-  if (!audioPlayer.value) return;
+  // Timing is the served VTT track: play the sentence's cue by id. No player
+  // (no audioUrl) or no cue for the sentence ⟹ silent no-op (playback ADR §6).
+  if (!props.deck.vttUrl || !audioPlayer.value) return;
   playingSentenceIndex.value = idx;
-  audioPlayer.value.playSegment(line.audioStart, line.audioEnd);
+  audioPlayer.value.playCue(props.deck.lines[idx].sentenceId);
 }
 
 // Clear the "playing" affordance once the player pauses (segment end or manual
@@ -343,6 +343,7 @@ function finishSentenceLearning() {
           v-if="deck.audioUrl"
           ref="audioPlayer"
           :src="deck.audioUrl"
+          :vtt-url="deck.vttUrl"
           class="conversation-player"
         />
 
@@ -353,8 +354,10 @@ function finishSentenceLearning() {
           class="sentence-card"
           :class="{
             highlighted: highlightedSentenceIndex === idx,
-            playable: line.audioStart !== undefined && line.audioEnd !== undefined,
-            'playing-sentence': playingSentenceIndex === idx,
+            playable: !!deck.vttUrl,
+            'playing-sentence':
+              playingSentenceIndex === idx ||
+              audioPlayer?.activeCueId === line.sentenceId,
           }"
           @click="onSentenceClick(idx)"
         >
