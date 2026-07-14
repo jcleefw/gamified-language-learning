@@ -16,7 +16,8 @@
     "@gll/api-contract": "workspace:*",
     "@gll/srs-engine-v2": "workspace:*",
     "@gll/srs-shelving": "workspace:*",
-    "vue": "^3.5"
+    "vue": "^3.5",
+    "wavesurfer.js": "^7.12.10"
   },
   "devDependencies": {
     "@playwright/test": "^1",

@@ -9,7 +9,8 @@ export type Screen =
   | 'review-hub'
   | 'review'
   | 'curate'
-  | 'mark';
+  | 'mark'
+  | 'ws-proto';
 
 export type ConfigType = SessionConfig & {
   maxRetryPerWord: number;

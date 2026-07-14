@@ -28,6 +28,7 @@ import ReviewSummary from './components/ReviewSummary.vue';
 import NavMenu from './components/NavMenu.vue';
 import CurateAudio from './components/CurateAudio.vue';
 import MarkAudio from './components/MarkAudio.vue';
+import PrototypeWavesurfer from './components/PrototypeWavesurfer.vue';
 import type { ConfigType, Screen } from './types';
 
 const apiError = ref<string | null>(null);
@@ -428,6 +429,16 @@ onMounted(async () => {
     🏷️ Mark audio
   </button>
 
+  <!-- EP43-BUG01 spike only — dev-only, not a real screen. -->
+  <button
+    v-if="env.debugMode && screen !== 'ws-proto'"
+    class="ws-proto-toggle"
+    title="Wavesurfer.js seek-accuracy spike (EP43-BUG01)"
+    @click="screen = 'ws-proto'"
+  >
+    🌊 WS proto
+  </button>
+
   <div v-if="apiError" class="api-error" role="alert">
     {{ apiError }}
   </div>
@@ -444,6 +455,11 @@ onMounted(async () => {
     :decks="appDecks"
     @committed="refreshDecks"
     @back="screen = 'select'"
+  />
+
+  <PrototypeWavesurfer
+    v-if="env.debugMode && screen === 'ws-proto' && appDecks.length"
+    :deck="appDecks.find((d) => d.audioUrl) ?? appDecks[0]"
   />
 
   <HomeDashboard
