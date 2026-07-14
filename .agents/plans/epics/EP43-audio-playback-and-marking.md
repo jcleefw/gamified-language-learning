@@ -1,45 +1,53 @@
-# EP43 - Audio Playback & Marking UI
+# EP43 - Audio Playback & Marking UI (WebVTT)
 
 **Created**: 20260713T232015Z
+**Redefined**: 20260714 — timing is WebVTT (not a bespoke JSON marker map); DS01 retrofits to the VTT consume path, DS02 rebuilds the marker tool as a WebVTT server-write.
 
 **Status**: Draft
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
 **Type**: Epic Plan
-**Depends on**: [EP42 - Deck Audio Storage & Retrieval](EP42-deck-audio-storage-and-retrieval.md) — consumes the wire fields EP42 emits (`AppDeckPayload.audioUrl`, `AppLinePayload.audioStart`/`audioEnd`) and the curated `decks.audio_key` binary; EP43 renders and authors against that path, it does not re-decide it.
+**Depends on**: [EP42 - Deck Audio Storage & Retrieval](EP42-deck-audio-storage-and-retrieval.md) — consumes the wire fields EP42 emits (`AppDeckPayload.audioUrl`, `AppDeckPayload.vttUrl`), the curated `audio` row (binary), and the `audio.vtt` sidecar column EP42 provides. EP43 authors the VTT and renders/consumes it; it does not re-decide storage.
 **Parallel with**: N/A
 **Predecessor**: N/A
 
-> **Provenance (20260713T232015Z):** EP42 was rescoped to end at DS02 (storage + curator upload). Everything that *renders audio to a learner* or *authors markers in the browser* was pulled out into this epic. The marker-authoring tool spec previously drafted as EP42-DS03 is **moved here verbatim (re-homed) as [EP43-DS02](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS02-marker-authoring-tool.md)**, with its shared audio-player story lifted into DS01 (where learner playback — the primitive's first mount — lives).
+> **Redefinition (20260714):** timing is now **WebVTT** ([WebVTT Timing ADR](../../product-documentation/architecture/20260714T123438Z-engineering-audio-timing-webvtt.md)), replacing the bespoke detached-JSON marker map. Two changes to the previously-shipped scope: **DS01** (learner playback) is *retrofitted* to consume a served `.vtt` via the browser's native `TextTrack`/`cuechange` (Option C) instead of reading per-line `audioStart`/`audioEnd`; **DS02** (marker authoring) is rebuilt as an **isolated VTT-in/VTT-out component** committing through a **single-pass gated server-write** (DB `audio.vtt` column + durable bucket `.vtt`), replacing the JSON export + `apply-markers` CLI seed step. The shared `AudioPlayer`/`useSegmentPlayer` primitive is kept.
 
 ---
 
 ## Problem Statement
 
-After EP42 ships, the full deck-audio data path exists and is *authored* end to end — a curator pairs a conversation binary with a deck ([EP42-DS02](../../changelogs/EP42--deck-audio-storage-and-retrieval/20260713T222600Z-EP42-DS02-curator-audio-upload-ui.md)), and `GET /api/decks` can emit `audioUrl` + per-sentence `audioStart`/`audioEnd` ([EP42-DS01](../../changelogs/EP42--deck-audio-storage-and-retrieval/20260713T005450Z-EP42-DS01-deck-audio-storage-and-retrieval.md)) — **but no learner can hear anything**: `srs-demo` has zero `<audio>` on any learning or review surface, so the wire fields go nowhere. And the markers those fields carry can still only be produced by hand-editing DB JSON — the toil the [Audio Marker Tool PRD](../../../product-documentation/prds/20260713T140217Z-audio-marker-tool.md) exists to remove.
+After EP42 ships, a deck's conversation binary is stored as a versioned `audio` row and `GET /api/decks` can emit `audioUrl` + `vttUrl` — **but no learner can hear anything** (`srs-demo` renders no `<audio>` anywhere), and **no timing exists to segment by** (the `audio.vtt` column is empty until something authors it). Producing per-sentence timing by hand-editing files is the toil the [Audio Marker Tool PRD](../../product-documentation/prds/20260713T140217Z-audio-marker-tool.md) exists to remove.
 
-Audio pronunciation is a **PO-declared beta-release blocker**. EP42 makes audio *storable and authorable*; this epic makes it *heard* and *ergonomically authorable*, closing the gap between "the data path works" and "a tester actually learns with audio."
+Audio pronunciation is a **PO-declared beta-release blocker**. EP42 makes audio *storable*; this epic makes it *heard* and *ergonomically markable*:
 
-This epic realizes the two authored ADRs' UI halves: the **playback** surfaces of the [Playback Model ADR](../../../product-documentation/architecture/20260713T140218Z-engineering-audio-playback-model.md) §3–§6, and **Pass 1** of the [Marking/Authoring ADR](../../../product-documentation/architecture/20260713T140219Z-engineering-audio-marking-authoring.md). It deliberately front-loads playback (DS01) so the shared audio-player primitive exists before the marker tool (DS02) that reuses it.
+- **Playback (DS01)** realizes the UI half of the [Playback Model ADR](../../product-documentation/architecture/20260713T140218Z-engineering-audio-playback-model.md) — but its **consume mechanism is amended to Option C** by the WebVTT ADR §6: the learner's browser attaches the served `.vtt` as a `TextTrack`, and `cuechange` (cue-ID = `sentenceId`) drives sentence highlighting + segment bounds. No per-line numbers on the wire, no server-side parse.
+- **Marking (DS02)** realizes the [WebVTT Timing ADR](../../product-documentation/architecture/20260714T123438Z-engineering-audio-timing-webvtt.md) + the marker PRD: an isolated marker component scrubs the deck's bucket-hosted audio, sets per-sentence in/out from the play-head, and **commits WebVTT through a gated server endpoint** that writes both the DB working copy (`audio.vtt`) and the durable bucket `.vtt`, hash-stamped to the binary.
+
+It front-loads playback (DS01) so the shared audio-player primitive exists before the marker tool (DS02) reuses it.
 
 ## Scope
 
 **In scope**:
 
-- A **shared audio-player primitive** (`AudioPlayer.vue` + `useSegmentPlayer`) — one `<audio>` wrapper owning the playback-ADR §4 segment behaviour (`seek → play → pause-at-end`) and a **primary, always-visible** 1× / 0.75× / 0.5× speed control. Built once, mounted on every audio surface (learner + curator). *(DS01.)*
-- **Learner playback on `DeckOverview`** — play the whole conversation; clicking a sentence seeks to its `audioStart` and plays to `audioEnd` (playback ADR §3). *(DS01.)*
-- **Learner playback on the `QuizCard` word-block question** — a control plays *that sentence's* `[audioStart, audioEnd]` segment; MCQ word questions get no audio (playback ADR §3). *(DS01.)*
-- **Silent degradation** — no `audioUrl` (or no markers) ⟹ no control rendered; the question/overview work unchanged; audio never gates answering (playback ADR §6). *(DS01.)*
-- The **marker-authoring tool — Pass 1** (`srs-demo`, env-gated route): scrub a curated deck's audio, set/nudge per-sentence `[start, end]` from the play-head, segment-preview, and **export a JSON marker map** for the seed/import pipeline — reusing DS01's `AudioPlayer`. No server write, no waveform, no auth beyond the route gate. *(DS02.)*
-- **Marker-map ingest** — an `apply-markers` seed step that writes the exported map into `decks.doc.sentences[].audioStart/audioEnd` **in place by `sentenceId`**, idempotently (the ADR's seed/import half; not a mutating endpoint). *(DS02.)*
+- A **shared audio-player primitive** (`AudioPlayer.vue` + `useSegmentPlayer`) — one `<audio>` wrapper owning `seek → play → pause-at-end` and a **primary, always-visible** 1× / 0.75× / 0.5× speed control. Extended to attach a `<track>` from `vttUrl` and expose the active cue. Built once, mounted on every audio surface (learner + curator). *(DS01.)*
+- **VTT consume (Option C)** — the browser parses the served `.vtt`; `cuechange` fires as playback crosses cue boundaries. A cue's ID is the `sentenceId`; its `[startTime, endTime]` are the segment bounds. *(DS01.)*
+- **Learner playback on `DeckOverview`** — play the whole conversation; clicking a sentence seeks to that sentence's cue and plays to its cue end; the active cue highlights the current sentence. *(DS01.)*
+- **Learner playback on the `QuizCard` word-block question** — a control plays *that sentence's* cue segment (resolved by `sentenceId`); MCQ word questions get no audio. *(DS01.)*
+- **Silent degradation** — no `vttUrl` (or no cue for a sentence) ⟹ no control rendered; the surface works unchanged; audio never gates answering. *(DS01.)*
+- The **marker-authoring tool** (`srs-demo`, env-gated route) — an **isolated, portable VTT-in/VTT-out component**: load the deck's bucket audio (+ existing VTT if present), scrub with slow-down, set/nudge per-sentence `[start,end]` from the play-head, segment-preview, and **commit as WebVTT via the gated server endpoint**. Downloadable + overwritable. *(DS02.)*
+- **Gated VTT server-write** — a curator endpoint accepts VTT upload/overwrite/download, validates the `NOTE audio-sha256` stamp against the binary, and writes **both** the `audio.vtt` DB column and the durable bucket `.vtt`. Single pass — no seed/import step. *(DS02.)*
 
 **Out of scope**:
 
-- Any storage/wire/schema/engine change — EP42 already added `decks.audio_key`, the marker fields, and the `audioUrl`/`audioStart`/`audioEnd` wire; this epic only *reads and renders* them (and writes markers via the existing doc, through tooling). `ReviewQuestionType` stays `'mcq' | 'word-block'` (playback ADR §5).
-- **Pass 2** of the marker tool — the separate `apps/curator` app, upload-first-to-R2, server→DB marker writes, curator auth (Marking/Authoring ADR Pass 2).
-- Word-level audio/markers, automated marker derivation (forced alignment / silence detection), TTS generation — out for both this epic and the marker-tool passes per the ADR/PRD.
-- iOS audio-session unlock / autoplay-policy hardening beyond a tap-to-play control — noted as a playback-ADR open question, tracked but not a blocker for the ~3-tester beta.
+- Any storage/schema change to the `audio` table itself — EP42 owns the table + `vtt` column + wire. This epic *fills, serves, and reads* the VTT.
+- **Bespoke JSON marker map + `apply-markers` CLI** — removed (superseded by the WebVTT server-write). The `DeckMarker`/`DeckMarkerMap` schemas are dropped.
+- Word-level marking UI — the cue-ID namespace *reserves* `sentenceId#wordIndex`, but no word-level authoring/highlighting UI is built.
+- Automated marker derivation (forced alignment / silence detection), TTS generation.
+- The **separate `apps/curator` app** and curator auth — the marker component *mounts* gated in `srs-demo`; a dedicated curator surface + auth are a later concern (the component is built portable so it can move there).
+- Audio-replacement approval/permission flow — deferred (asset-model ADR).
+- iOS audio-session unlock / autoplay hardening beyond tap-to-play — tracked, not a beta blocker.
 
 ---
 
@@ -47,52 +55,54 @@ This epic realizes the two authored ADRs' UI halves: the **playback** surfaces o
 
 ### Phase 1: Learner audio playback (EP43-PH01) — DS01
 
-### EP43-ST01: Shared audio-player primitive + prominent speed control
+### EP43-ST01: Shared audio-player primitive + prominent speed control + VTT track
 
-**Scope**: `apps/srs-demo` — one composable (`useSegmentPlayer`) + one presentational component (`AudioPlayer.vue`): transport, scrubber, `mm:ss.cs` readout, `seek → play → pause-at-end`, and a **primary always-visible** 1× / 0.75× / 0.5× control. Learner-agnostic so both DS01's learner surfaces and DS02's marker tool mount it unchanged. **Design spec: [EP43-DS01](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS01-learner-audio-playback-ui.md).**
+**Scope**: `apps/srs-demo` — `useSegmentPlayer` (transport, scrubber, `mm:ss.cs` readout, `seek → play → pause-at-end`, 1×/0.75×/0.5×) + `AudioPlayer.vue`. Extended for VTT: accept an optional `vttUrl`, attach it as a `<track kind="metadata">`, expose the active cue and a `playCue(sentenceId)` that seeks to the matching cue and pauses at its end. Learner-agnostic — DS01's surfaces and DS02's marker tool mount it unchanged. **Design spec: [EP43-DS01](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS01-learner-audio-playback-ui.md).**
 
-### EP43-ST02: `DeckOverview` conversation + per-sentence playback
+### EP43-ST02: `DeckOverview` conversation + per-sentence (cue-driven) playback
 
-**Scope**: `apps/srs-demo` — mount `AudioPlayer` on `DeckOverview` reading the deck's `audioUrl`; play the whole conversation, and click-a-sentence → `playSegment(audioStart, audioEnd)`. Absent `audioUrl` ⟹ no player (silent degrade). **Design spec: [EP43-DS01](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS01-learner-audio-playback-ui.md).**
+**Scope**: `apps/srs-demo` — mount `AudioPlayer(:src=deck.audioUrl :vttUrl=deck.vttUrl)`; play the whole conversation; click a sentence → `playCue(sentenceId)`; highlight the sentence whose cue is active (`cuechange`). Absent `vttUrl` ⟹ whole-file play only, no per-sentence segmenting; absent `audioUrl` ⟹ no player. **Design spec: [EP43-DS01](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS01-learner-audio-playback-ui.md).**
 
-### EP43-ST03: `QuizCard` word-block segment playback
+### EP43-ST03: `QuizCard` word-block segment playback (cue-driven)
 
-**Scope**: `apps/srs-demo` — a play-segment control on the word-block sentence question; `App.vue` resolves the current `sentenceId → { audioUrl, audioStart, audioEnd }` from the boot-time decks and passes it as an optional prop. MCQ questions get no audio; absent markers ⟹ no control. **Design spec: [EP43-DS01](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS01-learner-audio-playback-ui.md).**
+**Scope**: `apps/srs-demo` — a play-segment control on the word-block sentence question; `App.vue` resolves `{ audioUrl, vttUrl }` for the current question's deck and passes it as an optional prop; the embedded player calls `playCue(sentenceId)`. MCQ questions get no audio; no cue for the sentence ⟹ no control. **Design spec: [EP43-DS01](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS01-learner-audio-playback-ui.md).**
 
-### Phase 2: Marker-authoring tool — Pass 1 (EP43-PH02) — DS02
+### Phase 2: Marker-authoring tool — WebVTT (EP43-PH02) — DS02
 
-### EP43-ST04: `srs-demo` gated marker-authoring route
+### EP43-ST04: Isolated VTT-in/VTT-out marker component + gated route
 
-**Scope**: `apps/srs-demo` — a new `env.curatorMode`-gated screen: pick a curated deck, load its `audioUrl` via DS01's `AudioPlayer`, capture in/out per sentence from the play-head (keyboard-nudge fine adjustment), segment-preview, and export a JSON marker map (`sentenceId → {start, end}`). No server write, no waveform. **Design spec: [EP43-DS02](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS02-marker-authoring-tool.md).**
+**Scope**: `apps/srs-demo` — a `VITE_CURATOR_MODE`-gated screen mounting a self-contained marker component (salvaged from `MarkAudio.vue` + `useMarkerAuthoring.ts`, retargeted): pick a curated deck, load its `audioUrl` via DS01's `AudioPlayer` and its existing VTT if present, capture in/out per sentence from the play-head (keyboard nudge), segment-preview, and emit **WebVTT** (cue-ID = `sentenceId`, `NOTE audio-sha256` stamp). VTT-in / VTT-out at its edges — no reach into app internals. **Design spec: [EP43-DS02](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS02-marker-authoring-tool.md).**
 
-### EP43-ST05: Marker-map ingest — `apply-markers` seed step
+### EP43-ST05: Gated VTT server-write endpoint (DB `audio.vtt` + bucket `.vtt`)
 
-**Scope**: `apps/cli-demo-db` — a CLI that reads the exported map and writes each sentence's `audioStart`/`audioEnd` into `decks.doc.sentences[]` **in place, matched by `sentenceId`** (does not re-import — re-import regenerates ids and would orphan the map). Idempotent; fails loudly on an unknown deck; unknown keys skipped-with-warning. Answers the Marking/Authoring ADR's open question "JSON marker-map schema + where it lands for seed ingest." **Design spec: [EP43-DS02](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS02-marker-authoring-tool.md).**
+**Scope**: `apps/server` — a `GLL_CURATOR_MODE`-gated endpoint that accepts a VTT commit for a deck's current `audio` row: validate the hash stamp against the binary, write the `audio.vtt` DB column (live projection) **and** flush the durable bucket `.vtt` (system-of-record) via `putObject` (`text/vtt`). Supports overwrite + download. Replaces the bespoke-JSON `apply-markers` seed step. **Design spec: [EP43-DS02](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS02-marker-authoring-tool.md).**
 
 ---
 
 ## Overall Acceptance Criteria
 
-- [ ] On a curated, marked deck, a learner opening `DeckOverview` can play the whole conversation and click any sentence to hear just its `[audioStart, audioEnd]` segment, with a visible 1× / 0.75× / 0.5× speed control.
-- [ ] On a word-block question for a marked sentence, a learner can play that sentence's segment; MCQ word questions render no audio control.
-- [ ] A deck with no `audioUrl`, or a sentence with no markers, renders no audio control and works exactly as today — audio never blocks answering (playback ADR §6).
-- [ ] The speed control (1× / 0.75× / 0.5×) is a primary, always-visible affordance with the current rate clearly shown, one tap/click from wherever audio plays; it is the *same* component on learner and curator surfaces.
-- [ ] A curator can mark every sentence in a curated deck — set start/end, scrub, nudge, preview — without leaving the browser, and export a JSON marker map.
-- [ ] `apply-markers` ingests that map into `decks.doc.sentences[].audioStart/audioEnd` by `sentenceId`, idempotently, with no manual DB editing; `GET /api/decks` then surfaces the authored markers and the learner surfaces play them.
-- [ ] No storage/wire/schema/engine type changes; the marker screen + its nav button are gated by `env.curatorMode` and DCE'd from prod builds; `pnpm -r typecheck` and the suite pass.
+- [ ] On a curated deck whose current `audio` row has a VTT, a learner on `DeckOverview` can play the whole conversation and click any sentence to hear just its cue segment, with the active sentence highlighted and a visible 1×/0.75×/0.5× speed control.
+- [ ] On a word-block question for a sentence with a cue, a learner can play that sentence's segment; MCQ word questions render no audio control.
+- [ ] A deck with no `vttUrl`, or a sentence with no matching cue, renders no per-sentence control and works exactly as today — audio never blocks answering.
+- [ ] The speed control (1×/0.75×/0.5×) is a primary, always-visible affordance, the *same* component on learner and curator surfaces.
+- [ ] A curator can mark every sentence in a curated deck — set start/end, scrub, nudge, preview — without leaving the browser, and **commit as WebVTT**; the committed VTT is downloadable.
+- [ ] Committing writes **both** the `audio.vtt` DB column and the durable bucket `.vtt`; `GET /api/decks` then surfaces `vttUrl` and the learner surfaces play the authored segments — no manual DB or file editing, no `apply-markers` step.
+- [ ] The committed VTT carries `NOTE audio-sha256:<hash>` of the binary; re-uploading the audio (new `audio` row, new key) leaves the old VTT behind — never silently mismatched.
+- [ ] No schema change beyond EP42's `audio` table; the marker screen + nav are gated by `VITE_CURATOR_MODE`/`GLL_CURATOR_MODE` and DCE'd from prod builds; `pnpm -r typecheck` and the suite pass with no `DeckMarker`/`apply-markers` references.
 
 ---
 
 ## Dependencies
 
-- [EP42 - Deck Audio Storage & Retrieval](EP42-deck-audio-storage-and-retrieval.md) — provides `audioUrl`/`audioStart`/`audioEnd` on the wire, `decks.audio_key`, and the curator upload page. **Hard dependency**: no playback and no marking without a curated binary + the wire fields.
-- [Conversation Audio — Playback Model & Data Contract](../../../product-documentation/architecture/20260713T140218Z-engineering-audio-playback-model.md) — §3 surfaces, §4 segment + rate, §6 silent degrade.
-- [Conversation Audio — Marking (Authoring) Architecture](../../../product-documentation/architecture/20260713T140219Z-engineering-audio-marking-authoring.md) — Pass 1 (DS02); Pass 2 out.
-- [Audio Marker Tool PRD](../../../product-documentation/prds/20260713T140217Z-audio-marker-tool.md) — the curator experience DS02 realizes.
+- [EP42 - Deck Audio Storage & Retrieval](EP42-deck-audio-storage-and-retrieval.md) — provides the `audio` table + `vtt` column, `audioUrl`/`vttUrl` on the wire, and the curator upload page. **Hard dependency.**
+- [WebVTT Timing ADR](../../product-documentation/architecture/20260714T123438Z-engineering-audio-timing-webvtt.md) — **the governing ADR**: §1 format/cue-ID, §2 two-tier storage, §4 hash-stamp, §6 Option-C consume (DS01), §7 marker component, §8 single-pass server-write (DS02).
+- [Playback Model ADR](../../product-documentation/architecture/20260713T140218Z-engineering-audio-playback-model.md) — §3 surfaces, §4 segment + rate, §6 silent degrade **(consume mechanism amended to Option C)**.
+- [Audio Asset Model ADR](../../product-documentation/architecture/20260714T123409Z-engineering-audio-asset-model.md) — where `audio.vtt` lives.
+- [Audio Marker Tool PRD](../../product-documentation/prds/20260713T140217Z-audio-marker-tool.md) — the curator experience DS02 realizes.
+- [Marking (Authoring) ADR](../../product-documentation/architecture/20260713T140219Z-engineering-audio-marking-authoring.md) — **Superseded** by the WebVTT ADR (kept for its rejected-alternative record).
 
 ## Next Steps
 
-1. Review and approve plan.
-2. DS01 (learner playback UI — ST01/ST02/ST03) is drafted and **implemented**: [EP43-DS01](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS01-learner-audio-playback-ui.md). `useSegmentPlayer`/`AudioPlayer.vue` built (ST01); mounted on `DeckOverview` (ST02) and `QuizCard` word-block questions via `App.vue`'s `resolveSentenceAudio` (ST03). `pnpm -r typecheck` and the full `apps/srs-demo` suite (65 tests) pass.
-3. DS02 (marker-authoring tool, Pass 1 — ST04/ST05) is drafted (re-homed from EP42-DS03): [EP43-DS02](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS02-marker-authoring-tool.md).
-4. DS01 done — implement DS02 next (it reuses DS01's `AudioPlayer`).
+1. Review and approve the redefinition.
+2. DS01 (learner playback — ST01/ST02/ST03) → retrofit the shipped code to the VTT `TextTrack`/`cuechange` consume path; drop per-line `audioStart`/`audioEnd` reads.
+3. DS02 (marker authoring — ST04/ST05) → rebuild `MarkAudio.vue`/`useMarkerAuthoring.ts` as an isolated VTT-in/out component + the gated VTT server-write; drop `apply-markers.ts` + `DeckMarker`/`DeckMarkerMap`.

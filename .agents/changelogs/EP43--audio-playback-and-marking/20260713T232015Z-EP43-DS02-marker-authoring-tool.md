@@ -1,169 +1,155 @@
-# EP43-DS02: Marker-Authoring Tool — Pass 1 Specification
+# EP43-DS02: Audio Marker-Authoring Tool (WebVTT server-write) Specification
 
 **Date**: 20260713T232015Z
-**Status**: Draft
+**Redefined**: 20260714 — timing authored as **WebVTT**, committed via a **gated server-write** (DB `audio.vtt` + durable bucket `.vtt`); the bespoke JSON marker map + `apply-markers` CLI are dropped.
+**Status**: Draft (re-implementation)
 **Epic**: [EP43 - Audio Playback & Marking UI](../../plans/epics/EP43-audio-playback-and-marking.md)
 
-> **Re-homed (20260713T232015Z):** originally drafted as EP42-DS03; moved here when EP42 was rescoped to end at DS02 (storage + curator upload). The shared audio-player story that was ST12 in the draft is now [EP43-DS01 ST01](20260713T232015Z-EP43-DS01-learner-audio-playback-ui.md) (built with learner playback, the primitive's first mount); this DS **reuses** it rather than building it.
-
 **Architecture**:
-- [Conversation Audio — Marking (Authoring) Architecture](../../../product-documentation/architecture/20260713T140219Z-engineering-audio-marking-authoring.md) — Accepted. This DS builds **Pass 1** verbatim: a **gated route inside `srs-demo`** (not a new app), the tool **exports a JSON marker map** (`sentenceId → {start, end}`) that the **seed/import pipeline** ingests into `DeckDoc.sentences[].audioStart/audioEnd`, and there are **no mutating marker endpoints** (server-write graduates in Pass 2). Pass 2 (`apps/curator`, upload-first-to-R2, server→DB marker writes, curator auth) stays out.
-- [Conversation Audio — Playback Model & Data Contract](../../../product-documentation/architecture/20260713T140218Z-engineering-audio-playback-model.md) — Accepted. §4 fixes the segment-playback primitive (`currentTime = audioStart`; play; pause at `audioEnd`) and the 1× / 0.75× / 0.5× rate control, and states the marking tool **reuses the same control**. That primitive is built in [EP43-DS01](20260713T232015Z-EP43-DS01-learner-audio-playback-ui.md) (`AudioPlayer`/`useSegmentPlayer`); this DS is its second consumer.
-- [Audio Marker Tool PRD](../../../product-documentation/prds/20260713T140217Z-audio-marker-tool.md) — the curator experience §3/§4.1 this DS realizes: load sentence list + audio, scrub with slow-down, set in/out per sentence from the play-head with keyboard nudge, segment-preview, export the marker map.
+- [WebVTT Timing ADR](../../../product-documentation/architecture/20260714T123438Z-engineering-audio-timing-webvtt.md) — Accepted. **The governing ADR**: §1 format (cue-ID = `sentenceId`), §2 two-tier storage, §4 `NOTE audio-sha256` hash-stamp, §7 isolated VTT-in/out marker component, §8 single-pass gated server-write.
+- [Audio Asset Model ADR](../../../product-documentation/architecture/20260714T123409Z-engineering-audio-asset-model.md) — Accepted. The commit writes the `audio.vtt` column of the deck's **current** `audio` row.
+- [Audio Marker Tool PRD](../../../product-documentation/prds/20260713T140217Z-audio-marker-tool.md) — the curator experience realized here.
+- [Marking (Authoring) ADR](../../../product-documentation/architecture/20260713T140219Z-engineering-audio-marking-authoring.md) — **Superseded** (its Pass-1 bespoke-JSON hand-off is what this DS replaces).
 
-**Depends on**: [EP43-DS01](20260713T232015Z-EP43-DS01-learner-audio-playback-ui.md) (the shared `AudioPlayer`/`useSegmentPlayer`) + [EP42-DS01](../EP42--deck-audio-storage-and-retrieval/20260713T005450Z-EP42-DS01-deck-audio-storage-and-retrieval.md) (`audioUrl`, `DeckSentence.audioStart/audioEnd`) + [EP42-DS02](../EP42--deck-audio-storage-and-retrieval/20260713T222600Z-EP42-DS02-curator-audio-upload-ui.md) (a curated binary so `audioUrl` resolves).
+**Depends on**: [EP43-DS01](20260713T232015Z-EP43-DS01-learner-audio-playback-ui.md) (the shared `AudioPlayer`/`useSegmentPlayer` primitive) + [EP42-DS01](../EP42--deck-audio-storage-and-retrieval/20260713T005450Z-EP42-DS01-deck-audio-storage-and-retrieval.md)/[DS02](../EP42--deck-audio-storage-and-retrieval/20260713T222600Z-EP42-DS02-curator-audio-upload-ui.md) (a curated `audio` row to mark + the `audio.vtt` column).
 
 ---
 
 ## 1. Feature Overview
 
-EP42 built the storage-to-wire path and a browser page to **pair an audio binary with a deck**; EP43-DS01 makes that audio **playable** on learner surfaces via a shared `AudioPlayer`. What is still missing is the authored input the markers depend on: the **per-sentence `[start, end]` ranges** into the binary. Today they can only be produced by hand-editing DB JSON — the toil the [PRD §1](../../../product-documentation/prds/20260713T140217Z-audio-marker-tool.md) exists to remove. This DS closes the **marker** half of the marking-ADR's tracked gap.
+Playback needs per-sentence `[start,end]` into a deck's conversation binary. This DS is the **curator tool that produces those ranges — as WebVTT** — and the **gated server-write that persists them**. It replaces the superseded design's JSON marker map + `apply-markers` seed CLI with a single **VTT-in / VTT-out** flow committed straight to storage.
 
-The design is **two thin layers** — the player primitive it needs already exists (DS01) — and it decides the marking-ADR's two open questions (*the marker-map schema* and *where it lands for seed ingest*):
+Two parts, isolated:
 
-- **Marker-authoring route (ST04)** — a `srs-demo` screen gated by the existing `env.curatorMode` flag (the same gate DS02's upload page uses — both are curator-only tooling, one gate): pick a curated deck, load its `audioUrl` through **DS01's `AudioPlayer`**, scrub with slow-down, capture in/out per sentence from the play-head (with keyboard nudge), preview a sentence's segment via the player's `playSegment`, and **export a JSON marker map**. No server write, no waveform, no auth beyond the route gate — the marking-ADR's Pass-1 line exactly.
-- **Marker-map ingest (ST05)** — a small `apply-markers` step in the **existing import tooling** (`apps/cli-demo-db`, `import-curriculum`'s home) that reads the exported map and writes each sentence's `audioStart/audioEnd` into `decks.doc.sentences[]` **by `sentenceId`**, idempotently. This is the "seed/import pipeline ingests it" half of the ADR — a DB write through *tooling*, not a new mutating endpoint, so Pass 1's no-server-write constraint holds.
+- **Marker component (ST04)** — a self-contained, portable unit (`MarkAudio.vue` + `useMarkerAuthoring`), **VTT-in / VTT-out at its edges**, mounted gated in `srs-demo`. Salvages the existing capture/nudge/validity state model; swaps its I/O: `seed` now hydrates drafts from an existing **VTT** (not per-line wire numbers, which are gone), and export becomes **`buildVtt`** (not `buildMap`). Preview reuses the primitive's `playSegment(start,end)` on the draft numbers.
+- **VTT server-write (ST05)** — a gated endpoint that accepts the committed VTT for a deck, validates its `NOTE audio-sha256` stamp against the deck's current `audio` row, and writes **both** tiers: the `audio.vtt` DB column (live projection) and the durable bucket `.vtt` (system-of-record) via `putObject` (`text/vtt`, `no-cache`). Single pass — no seed/import step.
 
-**The critical boundary decision — the tool authors against the *DB `sentenceId`*, and ingest applies *in place by `sentenceId`*.** The marker map is keyed by the real `sentenceId`s the tool reads off `GET /api/decks` (`AppLinePayload.sentenceId`), and ingest matches those same ids against the deck's *already-imported* `doc.sentences[]`, updating markers in place. It does **not** re-run `importCurriculum` (which regenerates `sentenceId`s and would orphan the map). This keeps the marker map decoupled from the source-conversation JSON entirely: curate binary → author markers → apply markers, each a separate idempotent step over a deck that already exists.
+**The critical boundary — the component only speaks VTT text; it never touches app internals or the DB.** It loads a VTT string (the deck's existing timing, if any), lets the curator author, and emits a VTT string. Persistence is the endpoint's job. That keeps the component reusable (a future curator app, or learner word-level marking) — mounting in `srs-demo` is not coupling.
 
-**Audio source (ADR "local-served" → realized via EP42's MinIO seam):** the marking ADR's Pass 1 says "local-served file." EP42 built a local **MinIO** bucket standing in for R2 and resolves it to `AppDeckPayload.audioUrl` (DS01). So the tool simply loads `deck.audioUrl` — the same field the learner player reads — and in local dev that is MinIO. A deck must therefore be **curated first (EP42-DS02)** before it can be marked; the tool tells the curator so when `audioUrl` is absent, rather than presenting a dead player.
+**What is reused, not built:** the marker state model (`markers`/`seed`/`setIn`/`setOut`/`nudge`/`isComplete`/`quantize`, ±0.05/±0.01 nudge — salvaged); DS01's `AudioPlayer`/`useSegmentPlayer` (+ its retained `playSegment(start,end)` for draft preview); the `env.curatorMode` gate + boot-time decks list; `putObject` + `deriveVttKey` (EP42); the `ApiResponse`/`ErrorCode` envelope; `isCuratorMode`.
 
-**What is reused, not built:** the shared `AudioPlayer`/`useSegmentPlayer` (EP43-DS01 ST01); `AppDeckPayload.audioUrl` / `AppLinePayload.{sentenceId,native,romanization,english,audioStart,audioEnd}` (EP42 wire); the boot-time decks list in `App.vue` (no new fetch); `env.curatorMode` + the gated-button pattern (EP42-DS02 `CurateAudio`, `App.vue`); `DeckSentenceSchema.audioStart/audioEnd` (already optional on the doc); `import-curriculum`'s `getDb`/doc-parse/write pattern (ST05 ingest); the `Screen`-union + gated `v-if` nav pattern.
-
-**Not in this DS:** the shared player primitive itself (EP43-DS01 ST01); learner-facing `<audio>` on `QuizCard`/`DeckOverview` (EP43-DS01 ST02/ST03); Pass 2's `apps/curator` app, upload-first-to-R2, server→DB marker writes, or curator auth; waveform view; word-level markers; automated marker derivation; TTS; any schema/wire/engine type change (EP42 already added every field involved).
+**Not in this DS:** learner consume (EP43-DS01); audio upload (EP42-DS02); word-level cue authoring (namespace `sentenceId#wordIndex` reserved, UI not built); forced alignment / TTS; a separate `apps/curator` app + curator auth beyond the route gate; audio-replacement approval flow.
 
 ## 2. Core Requirements
 
 | Requirement | Decision | Rationale |
 | --- | --- | --- |
-| Where the tool lives | A gated route in `srs-demo` (a `'mark'` screen), **not** a new app | Marking-ADR Pass 1 §Decision — reuse the app/router/audio player for near-zero scaffolding; `apps/curator` is Pass 2 |
-| Route gate | Reuse `env.curatorMode` (`VITE_CURATOR_MODE`); the screen + its nav button render only when set; DCE'd in prod | Both curator tools share one curator-only gate (EP42-DS02 established it); a second flag would be noise |
-| Audio player | Embed EP43-DS01's `AudioPlayer(:src=deck.audioUrl)`; read `currentTime` and call `seek`/`playSegment` via its exposed surface | The playback ADR mandates one shared player; DS01 built it — this DS must not build a second |
-| Audio source | `props.deck.audioUrl` (EP42-resolved; MinIO locally, R2 in prod) — **not** a separate file input | Realizes the ADR's "local-served" via the epic's MinIO seam; same field the learner player reads → one audio path |
-| Uncurated deck (no `audioUrl`) | Tool shows "curate this deck's audio first" and disables marking; no dead player | A deck must be paired (EP42-DS02) before it can be marked; fail informative, not blank |
-| Sentence list | `props.deck.lines` in order; each row shows `native` / `romanization` / `english` | The unit markers attach to (playback ADR §1); the curator needs the text to place `[start,end]` |
-| Marker unit | Seconds, float, `≥ 0`, with `end > start` | Matches `DeckSentenceSchema.audioStart/audioEnd` (EP42) and the playback contract; zero-length/inverted rejected at export |
-| Capture in/out | "Set In" / "Set Out" buttons write the player's live `currentTime` into the focused sentence's `start` / `end` | PRD §3.4 — set from the play-head; the fast path for the bulk of markers |
-| Fine adjustment | Keyboard nudge on a focused marker field: `←/→` = ±0.05 s, `Shift+←/→` = ±0.01 s | PRD §4.1 keyboard-nudge; two granularities cover coarse vs. frame-level without a waveform |
-| Segment preview | "Preview" per sentence: `playSegment(start, end)` (seek→play→pause at end) on the embedded player | PRD §3.5 verify step; the exact playback ADR §4 primitive, from DS01 |
-| Seed existing markers | On load, pre-fill each sentence's `start/end` from the payload's `audioStart/audioEnd` when present | Editing a partially-marked deck must not lose prior work; round-trips the EP42 wire fields |
-| Export | Download a JSON marker map — `{ deckId, markers: { [sentenceId]: { start, end } } }` — only sentences with a complete valid pair are included | Marking-ADR open question answered; incomplete/invalid pairs excluded so ingest never writes a half-marker |
-| Marker persistence | **Export a JSON file** the curator moves into ingest — **no server write** | Marking-ADR Pass 1 §Decision — write path stays in seed/import; server-write is Pass 2 |
-| Ingest target | `apply-markers` writes `decks.doc.sentences[].audioStart/audioEnd` **in place, matched by `sentenceId`** — does **not** re-import | The map is keyed by DB `sentenceId`s the tool read; re-import regenerates ids and would orphan the map |
-| Ingest home | `apps/cli-demo-db` (alongside `import-curriculum`), reusing its `getDb`/doc-parse pattern | Marker apply is a curriculum-content DB write (same layer as import), **not** a binary/audio-file op (which lives in `apps/server` storage) |
-| Ingest safety | Idempotent; unknown `sentenceId`s reported + skipped; `end > start ≥ 0` validated before write; unknown deck fails loudly | Re-runnable like `curate-audio` was; a stale/foreign id never corrupts the doc or writes a bad segment |
-| Engine / schema / wire | **No change** — the tool only reads EP42's wire fields and writes EP42's existing doc fields | Playback ADR §5 keeps the engine audio-free; EP42 already added every field involved |
+| Timing format | **WebVTT** — one cue per marked sentence; cue-ID line = `sentenceId` | WebVTT ADR §1; robust, never positional |
+| Hash-stamp | VTT header `NOTE audio-sha256:<hash>` = the current `audio` row's binary hash | ADR §4; binds timing to a specific binary; drift detectable |
+| Component I/O | VTT-in (`loadVtt(text)`) / VTT-out (`buildVtt(): text`) at the edges; no app-internal reach | ADR §7; portable/reusable |
+| Seed source | Hydrate drafts by parsing the deck's existing VTT (loaded from `vttUrl`) if present; else empty | Per-line wire numbers no longer exist; fine-tune an existing track |
+| Capture / nudge | Salvaged: `setIn`/`setOut` off the play-head (quantised, clamped ≥0), keyboard nudge ±0.05 / ±0.01 | PRD §4.1; unchanged UX |
+| Validity | A cue is emitted iff both edges set and `end > start` | Same invariant, now enforced at VTT build |
+| Preview | `player.playSegment(draft.start, draft.end)` on the draft numbers | Drafts aren't committed cues yet; primitive retains `playSegment` |
+| Commit transport | Gated `PUT /api/curation/decks/:deckId/audio/vtt`, body = VTT text (`text/vtt`) | Single-pass server-write (ADR §8) |
+| Commit persistence | Validate stamp vs current row's hash → write `audio.vtt` (current row) **and** `putObject(deriveVttKey(row.key), vtt, 'text/vtt')` | Two-tier: DB projection + bucket SoR (ADR §2) |
+| Endpoint gate | `404` unless `isCuratorMode()` | Mutating surface invisible in default prod |
+| No current audio row | `404` — nothing to attach timing to | A VTT is bound to a binary (ADR §4) |
+| Stamp mismatch | `409 CONFLICT` — VTT authored against a different binary | Hard-invalidate (ADR §5); never silently mismatch |
+| Download | Client-side blob of `buildVtt()` (`{deckId}.vtt`); the committed VTT is also served at `vttUrl` | Portability (PRD §5) |
 
 ## 3. Data Structures
 
 ```typescript
-// ── ST04: exported marker map (the Pass-1 hand-off; new file, e.g.
-//          apps/cli-demo-db/data/markers/<deckId>.json) ─────────────────────────
-// Keyed by the DB sentenceId the tool read from GET /api/decks (AppLinePayload.sentenceId).
-// `start`/`end` are seconds-float; they map to audioStart/audioEnd on ingest.
-export interface DeckMarkerMap {
-  deckId: string;                                   // apply target; ingest fails if it doesn't exist
-  markers: Record<string, { start: number; end: number }>; // sentenceId → segment; end > start ≥ 0
+// ── ST04: marker state (apps/srs-demo/src/composables/useMarkerAuthoring.ts) ──
+export interface MarkerDraft { start: number | null; end: number | null }
+export interface MarkerAuthoring {
+  markers: Ref<Record<string, MarkerDraft>>;
+  /** Reset rows from the deck's sentences; hydrate any edges from an existing VTT. */
+  seed(sentenceIds: string[], existingVtt?: string): void;
+  setIn(sentenceId: string, time: number): void;
+  setOut(sentenceId: string, time: number): void;
+  nudge(sentenceId: string, edge: 'start' | 'end', delta: number): void;
+  isComplete(sentenceId: string): boolean;
+  /** Emit WebVTT: `NOTE audio-sha256:<hash>` header + one cue per complete row. */
+  buildVtt(audioSha256: string): string;
 }
-// Only sentences with a complete, valid (end > start ≥ 0) pair are emitted — a
-// sentence still being marked is simply absent, never exported as a half-marker.
 
-// ── ST04: per-sentence editing state (MarkAudio.vue, local reactive) ──────────
-interface MarkerDraft { start: number | null; end: number | null } // null = not yet set
-// markers: Record<sentenceId, MarkerDraft>, seeded on load from each line's audioStart/audioEnd.
-// A row is "complete" when start != null && end != null && end > start.
-// Export builds DeckMarkerMap from the complete rows only.
-// The screen embeds <AudioPlayer :src="deck.audioUrl" ref="player"> (EP43-DS01) and reads
-// player.currentTime for Set In/Out, calls player.playSegment(start,end) for Preview.
+// ── ST04: VTT helpers (apps/srs-demo/src/composables/vtt.ts) ──────────────────
+/** WEBVTT + `NOTE audio-sha256` + `\n<sentenceId>\n<HH:MM:SS.mmm> --> <..>\n` per cue. */
+export function buildVtt(
+  cues: { id: string; start: number; end: number }[],
+  audioSha256: string,
+): string;
+/** Parse cues back to { sentenceId: {start,end} }; ignores the NOTE header. */
+export function parseVtt(text: string): Record<string, { start: number; end: number }>;
+/** Read `NOTE audio-sha256:<hash>` from a VTT header (null if absent). */
+export function readVttHash(text: string): string | null;
 
-// ── ST05: ingest (apps/cli-demo-db/src/apply-markers.ts) ──────────────────────
-// CLI: apply-markers <path-to-marker-map.json>
-//   1. read+parse the map (zod: deckId string, markers record of {start,end}, end>start≥0)
-//   2. load decks row by deckId; parse doc (DeckDocSchema)
-//   3. for each doc.sentences[s]: if markers[s.sentenceId] present → set audioStart/audioEnd
-//      unknown map keys (no matching sentenceId) → collect + warn, do not write
-//   4. write doc back; report { matched, skippedUnknown }
-//   → idempotent: re-applying the same map yields byte-identical markers (no drift, like curate-audio)
+// ── ST05: server-write (apps/server/src/routes/curation.ts) ──────────────────
+// PUT /api/curation/decks/:deckId/audio/vtt   body: text/vtt
+//   if (!isCuratorMode()) return 404;
+//   const row = currentAudioRow(deckId);  if (!row) return 404;
+//   const vtt = await c.req.text();
+//   const keyHash = row.key.match(/\/([0-9a-f]+)\.(mp3|wav)$/)?.[1];
+//   if (readVttHash(vtt) !== keyHash) return 409;             // bound to a different binary
+//   getDb().update(audio).set({ vtt }).where(eq(audio.id, row.id)).run();  // DB projection
+//   await putObject(cfg, deriveVttKey(row.key), Buffer.from(vtt), 'text/vtt'); // bucket SoR (no-cache)
+//   return c.json({ success: true, data: { vttUrl } }, 200);
+// GET  /api/curation/decks/:deckId/audio/vtt  → the current row's audio.vtt (or 404)
+
+// ── ST05: client (apps/srs-demo, useStore.ts) ────────────────────────────────
+export async function commitDeckVtt(deckId: string, vtt: string): Promise<void>;
+export async function fetchDeckVtt(deckId: string): Promise<string | null>;
 ```
 
 ## 4. User Workflows
 
 ```
-# Curator marks a deck (browser, VITE_CURATOR_MODE set; deck already curated via EP42-DS02)
-open srs-demo → "🏷️ Mark audio" button (rendered only when env.curatorMode)
-  → pick a deck (boot-time decks list; audioUrl present ⟹ markable, absent ⟹ "curate audio first")
-  → AudioPlayer (EP43-DS01) loads deck.audioUrl (MinIO locally); scrub / play, slow to 0.75× or 0.5×
-  → per sentence row (deck.lines, in order):
-       focus row → play to the sentence's first sound → "Set In"  (start = player.currentTime)
-                 → play to its last sound            → "Set Out" (end  = player.currentTime)
-                 → nudge start/end with ←/→ (±0.05s) or Shift+←/→ (±0.01s)
-                 → "Preview" → player.playSegment(start, end): seek→play→pause at end (verify)
-  → "Export markers" → downloads { deckId, markers:{ sentenceId:{start,end} } } (complete rows only)
+# Curator marks a deck (GLL_CURATOR_MODE + VITE_CURATOR_MODE set)
+open srs-demo → "Mark audio" (env.curatorMode) → pick a curated deck
+  → AudioPlayer(:src=deck.audioUrl) loads; if deck.vttUrl, fetchDeckVtt → seed() hydrates drafts
+  → per sentence: Set In / Set Out off the play-head; ←/→ nudge ±0.05, Shift+←/→ ±0.01
+  → Preview → player.playSegment(draft.start, draft.end)
+  → Commit  → buildVtt(audioHash) → PUT /api/curation/decks/:id/audio/vtt (text/vtt)
+       server: curator? → current audio row? → stamp matches row hash? → write audio.vtt + bucket .vtt
+       → 200 → GET /api/decks now returns vttUrl; learner surfaces (DS01) play the cues
+  → Download → blob of buildVtt() as {deckId}.vtt (portability)
 
-# Ingest (terminal, seed/import — NOT a server endpoint)
-apply-markers <deckId>.json
-  → matches map keys against decks.doc.sentences[].sentenceId
-  → writes audioStart/audioEnd in place; reports matched/skipped; idempotent on re-run
-  → GET /api/decks now returns audioStart/audioEnd on those lines (EP42 read path, unchanged)
-  → EP43-DS01's learner surfaces now play them
-
-# Full deck-audio lifecycle across the epics
-EP42-DS02 curate binary → decks.audio_key set, audioUrl resolves
-EP43-DS02 author markers → JSON map           (this DS, ST04)
-EP43-DS02 apply markers  → doc.sentences[].audioStart/audioEnd  (this DS, ST05)
-EP43-DS01 learner playback → <audio> segment controls on DeckOverview + word-block
-
-# Gate / degrade paths
-VITE_CURATOR_MODE unset   → screen + "Mark audio" button DCE'd from the prod bundle
-deck has no audioUrl      → marking disabled, "curate this deck's audio first" shown (no dead player)
-sentence left unmarked    → omitted from the export (no half-marker)
-unknown sentenceId in map → apply-markers skips + warns; the doc is not corrupted
-inverted/zero-length pair → rejected at export AND re-validated at apply (never written)
+# Error paths
+GLL_CURATOR_MODE unset      → 404      no current audio row → 404 (upload audio first)
+stamp ≠ current binary hash → 409      (audio was re-uploaded after this VTT was authored)
 ```
 
 ## 5. Stories
 
-### Phase 2: Marker-authoring tool — Pass 1 (EP43-PH02)
+### EP43-ST04: Isolated VTT-in/VTT-out marker component + gated route
 
-### EP43-ST04: `srs-demo` gated marker-authoring route
-
-**Scope**: `apps/srs-demo` — one screen (`MarkAudio.vue`) + its gated nav button + `'mark'` on the `Screen` union. Embeds EP43-DS01's `AudioPlayer`. No new fetch, no server write.
-**Read List**: `apps/srs-demo/src/components/CurateAudio.vue` (the sibling curator screen — gate, deck-pick, back-nav, style to mirror), `apps/srs-demo/src/App.vue` (boot decks list, `Screen` wiring, gated-button pattern ~L381–397, `env.curatorMode`), `apps/srs-demo/src/types.ts` (`Screen` union), `apps/srs-demo/src/components/AudioPlayer.vue` (EP43-DS01 ST01 — the embedded player + its exposed `currentTime`/`seek`/`playSegment`), `packages/api-contract/src/content.ts` (`AppDeckPayload`/`AppLinePayload` — `audioUrl`, `sentenceId`, `audioStart/audioEnd`)
+**Scope**: `apps/srs-demo` — retarget `useMarkerAuthoring` I/O + `MarkAudio.vue`; add `vtt.ts` helpers; keep the gate + mount from the shipped version.
+**Read List**: current `useMarkerAuthoring.ts` + `MarkAudio.vue` (salvage), `AudioPlayer.vue` (`playSegment`), `useStore.ts` (client-fn pattern), `App.vue` (mount/gate).
 **Tasks**:
 
-- [ ] Add `'mark'` to the `Screen` union (`types.ts`); add a gated `🏷️ Mark audio` button + `<MarkAudio v-if="env.curatorMode && screen==='mark'" :decks @back>` in `App.vue`, mirroring the `CurateAudio` wiring (same `env.curatorMode` gate, `@back → 'select'`).
-- [ ] `MarkAudio.vue`: deck `<select>` from `props.decks`; if the chosen deck has no `audioUrl`, disable marking and show "Curate this deck's audio first (Curate audio →)". Otherwise mount `<AudioPlayer :src="deck.audioUrl" ref="player">`.
-- [ ] Render `deck.lines` in order; per row show `native`/`romanization`/`english` and the row's `start`/`end`. Seed the `markers` map on deck-select from each line's `audioStart`/`audioEnd`.
-- [ ] "Set In" / "Set Out" write `player.currentTime` into the focused row's `start`/`end`; keyboard nudge on a focused field (`←/→` ±0.05 s, `Shift+←/→` ±0.01 s); "Preview" calls `player.playSegment(start, end)`.
-- [ ] "Export markers": build `DeckMarkerMap` from complete valid rows only (`start!=null && end!=null && end>start`), and download it as `<deckId>.json`.
-      **Acceptance Criteria**:
-- [ ] With `VITE_CURATOR_MODE=true`, a curator selects a curated deck, sets in/out on a sentence from the play-head, previews the segment, and exports a JSON map whose keys are the deck's `sentenceId`s and whose values are the captured `{start,end}` — verified in a component test driving the flow against a stub `AudioPlayer`.
-- [ ] A deck with no `audioUrl` disables marking and points the curator to Curate audio; no dead/blank player is shown.
-- [ ] Re-opening a deck that already has markers pre-fills each row from `audioStart`/`audioEnd`; a subsequent export round-trips them unchanged.
-- [ ] A sentence with only a start (or `end ≤ start`) is excluded from the export; the export never contains a half or inverted marker.
-- [ ] With `VITE_CURATOR_MODE` unset, the screen and its button are behind `v-if="env.curatorMode"` and DCE'd from the prod build (same guarantee as `CurateAudio`).
+- [ ] Add `vtt.ts`: `buildVtt(cues, hash)`, `parseVtt(text)`, `readVttHash(text)` (unit-tested; the repo tests composables, not `.vue`).
+- [ ] `useMarkerAuthoring`: keep `markers`/`setIn`/`setOut`/`nudge`/`isComplete`/`quantize`; change `seed(sentenceIds, existingVtt?)` to hydrate from `parseVtt`; replace `buildMap` with `buildVtt(audioSha256)`. Drop the `DeckMarkerMap` import.
+- [ ] `MarkAudio.vue`: on deck select, `fetchDeckVtt(deckId)` (if `deck.vttUrl`) → `seed(sentenceIds, vtt)`; keep capture/nudge/preview UI; replace "Export markers" with **Commit** (`commitDeckVtt`) + **Download** (blob of `buildVtt`). Show commit success/`409`/error status.
+- [ ] Derive `audioSha256` for the stamp from the deck's current audio key (the tool reads it from `deck.audioUrl`'s filename hash).
 
-### EP43-ST05: Marker-map ingest — `apply-markers` seed step
+**Acceptance Criteria**:
 
-**Scope**: `apps/cli-demo-db` — one CLI (`apply-markers.ts`) that writes markers into `decks.doc.sentences[]` by `sentenceId`. No server route, no wire/schema change. The seed/import half the marking-ADR's Pass 1 requires.
-**Read List**: `apps/cli-demo-db/src/import-curriculum.ts` (`getDb`, deck-row load, `DeckDoc` parse/write pattern), `packages/api-contract/src/content.ts` (`DeckDocSchema`, `DeckSentenceSchema.audioStart/audioEnd`), `packages/db/src/schema.ts` (`decks.doc`), `packages/db/src/sqlite-content-store.ts` (how `doc` is read back / how markers surface on the wire)
+- [ ] `buildVtt`/`parseVtt` round-trip: parsing a built VTT returns the same `{sentenceId:{start,end}}` (centisecond-stable); `readVttHash` reads the `NOTE` stamp.
+- [ ] Seeding a deck whose VTT already exists pre-fills the rows from the parsed cues; a deck with no VTT starts empty.
+- [ ] Preview plays a draft `[start,end]`; the component imports no `DeckMarker`/app-internal types (grep).
+
+### EP43-ST05: Gated VTT server-write endpoint (DB `audio.vtt` + bucket `.vtt`)
+
+**Scope**: `apps/server` — add `PUT`/`GET /api/curation/decks/:deckId/audio/vtt` to `routes/curation.ts`; reuse `putObject`/`deriveVttKey`/`isCuratorMode`.
+**Read List**: `routes/curation.ts` (existing audio endpoint), `audio-store.ts` (`putObject`/`deriveVttKey`), `packages/db/src/schema.ts` (`audio`).
 **Tasks**:
 
-- [ ] Add `apps/cli-demo-db/src/apply-markers.ts` taking `<path-to-marker-map.json>`; zod-validate the map (`deckId` non-empty, `markers` record of `{start,end}` with `end > start ≥ 0`).
-- [ ] Load the `decks` row by `deckId` (fail loudly if absent — no silent no-op, mirroring `curate-audio`'s no-orphan guarantee); parse `doc` with `DeckDocSchema`.
-- [ ] For each `doc.sentences[s]`: if `markers[s.sentenceId]` exists, set `audioStart = start`, `audioEnd = end`. Collect map keys with no matching `sentenceId` and warn (do not write them anywhere); write the updated `doc` back.
-- [ ] Report a summary: `{ matched, skippedUnknown }`. Idempotent — re-running the same map produces byte-identical markers.
-      **Acceptance Criteria**:
-- [ ] After `apply-markers <map>` for a deck, `GET /api/decks` returns `audioStart`/`audioEnd` on exactly the mapped sentences (via EP42's unchanged read path); unmapped sentences keep those fields absent — verified end to end.
-- [ ] Re-running the same map is a no-op (markers byte-identical); running a map for an unknown `deckId` fails loudly; a map key with no matching `sentenceId` is skipped-with-warning and never corrupts the doc.
-- [ ] An inverted/zero-length pair that somehow reaches the file is rejected at parse (never written), matching the export-side validation — defence in depth across the hand-off.
-- [ ] No schema/wire/engine type changes; `pnpm -r typecheck` and the test suite pass.
+- [ ] `PUT`: gate on `isCuratorMode`; look up the current `audio` row (404 if none); read the VTT body; validate `readVttHash(vtt) === keyHash` (409 on mismatch); write `audio.vtt` (current row) + `putObject(deriveVttKey(row.key), vtt, 'text/vtt')`; return `200 { vttUrl }`.
+- [ ] `GET`: return the current row's `audio.vtt` as `text/vtt` (404 if none / no VTT).
+- [ ] Add `readVttHash` (shared or server-local) for the stamp check.
+
+**Acceptance Criteria**:
+
+- [ ] `GLL_CURATOR_MODE=true` + current audio row + stamp matching the row hash ⟹ `200`; `audio.vtt` is set and a `.vtt` object exists at `deriveVttKey(key)`; `GET /api/decks` then returns `vttUrl`.
+- [ ] Gate unset ⟹ `404`; no current audio row ⟹ `404`; stamp mismatch ⟹ `409` with neither tier written.
+- [ ] Re-uploading audio (new current row, new key/hash) leaves the old VTT behind — a subsequent commit for the new binary must carry the new hash or `409`s.
 
 ## 6. Success Criteria
 
-1. A curator marks a full curated deck — set in/out per sentence from the play-head, slow to 0.5×, nudge, preview — entirely in `srs-demo`, with no external audio editor and no DB hand-editing (PRD §5).
-2. Export → `apply-markers` → `GET /api/decks` surfaces the authored `audioStart`/`audioEnd`, matched by `sentenceId`, with no manual DB editing and no re-import.
-3. The tool reuses EP43-DS01's `AudioPlayer`/`useSegmentPlayer` (including the prominent speed control) — no second player is built.
-4. No server-write path for markers is introduced (marking-ADR Pass 1 holds); the marker map is keyed by DB `sentenceId` and applied in place, decoupled from the source-conversation JSON.
-5. `apply-markers` is idempotent and fails loudly on an unknown deck; half/inverted markers are rejected on both the export and apply sides.
-6. The marker screen + its nav button are gated by `env.curatorMode` and DCE'd from prod builds; no schema/wire/engine types change; `pnpm -r typecheck` and the suite pass.
+1. A curator marks a full deck in the browser — set/scrub/nudge/preview — and **commits WebVTT**; no external editor, no JSON, no `apply-markers`.
+2. Commit writes **both** the `audio.vtt` DB column and the durable bucket `.vtt`; `GET /api/decks` surfaces `vttUrl` and DS01's learner surfaces play the cues — no manual DB/file editing.
+3. The committed VTT is hash-stamped to its binary; re-uploading the audio hard-invalidates old timing (`409` on a stale commit); the VTT is downloadable.
+4. The marker component is VTT-in/VTT-out and imports no app internals — portable to a future curator surface / learner word-level marking.
+5. The endpoint is `404` unless `GLL_CURATOR_MODE`; no `DeckMarker`/`apply-markers` references remain; `pnpm -r typecheck` + suite pass.

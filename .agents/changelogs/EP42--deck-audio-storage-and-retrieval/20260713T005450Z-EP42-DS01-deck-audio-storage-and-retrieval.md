@@ -1,128 +1,105 @@
-# EP42-DS01: Deck Audio Storage & Retrieval (MinIO-backed) Specification
+# EP42-DS01: Deck Audio Storage & Retrieval (Standalone Audio Table) Specification
 
 **Date**: 20260713T005450Z
-**Status**: Impl-Complete
+**Redefined**: 20260714 — re-based on the standalone `audio` table; `decks.audio_key` + per-sentence marker fields removed; timing served as WebVTT.
+**Status**: Draft (re-implementation)
 **Epic**: [EP42 - Deck Audio Storage & Retrieval](../../plans/epics/EP42-deck-audio-storage-and-retrieval.md)
 
 **Architecture**:
-- [Conversation Audio — Playback Model & Data Contract](../../../product-documentation/architecture/20260713T140218Z-engineering-audio-playback-model.md) — Accepted. Fixes the full data path this DS implements: `decks.audio_key` → per-sentence `audioStart`/`audioEnd` → server resolves key to URL on read → `AppDeckPayload.audioUrl` / `AppLinePayload.audioStart`/`audioEnd` on the wire. This DS builds that path; it does not re-decide the contract.
-- [Conversation Audio — Marking (Authoring) Architecture](../../../product-documentation/architecture/20260713T140219Z-engineering-audio-marking-authoring.md) — Accepted. Pass 1 keeps marker persistence inside the **seed/import** pipeline (no mutating server endpoints). The ST03 curator script is the local, script-shaped stand-in for Pass 2's upload endpoint; the bucket holds only the binary, marker/`audio_key` data stays in the DB.
-- [Infrastructure Revision — Mixed-Platform Hosting](../../../product-documentation/architecture/20260712T124801Z-infra-mixed-platform-hosting.md) — Accepted. Production audio = Cloudflare R2 (S3-compatible, public URL, browser→bucket). This DS stands a local **MinIO** bucket in for R2 so that production cutover is an env change, never a code branch.
+- [Audio Asset Model ADR](../../../product-documentation/architecture/20260714T123409Z-engineering-audio-asset-model.md) — Accepted. **The table this DS builds**: a standalone, versioned `audio` entity (polymorphic owner, `is_current`, nullable `vtt`), replacing the `decks.audio_key` column.
+- [WebVTT Timing ADR](../../../product-documentation/architecture/20260714T123438Z-engineering-audio-timing-webvtt.md) — Accepted. Defines the `audio.vtt` column's contents (WebVTT, cue-ID = `sentenceId`, hash-stamp) and its two-tier storage. This DS provides the column and the *served* `vttUrl`; **authoring + consume are EP43**.
+- [Playback Model ADR](../../../product-documentation/architecture/20260713T140218Z-engineering-audio-playback-model.md) — Accepted (consume mechanism amended to Option C by the WebVTT ADR). Fixes the runtime need; this DS emits the wire fields the UI reads.
+- [Mixed-Platform Hosting ADR](../../../product-documentation/architecture/20260712T124801Z-infra-mixed-platform-hosting.md) — Accepted. Production audio = Cloudflare R2 (S3-compatible, public URL, browser→bucket). A local **MinIO** bucket stands in for R2 so cutover is env-only.
 
 ---
 
 ## 1. Feature Overview
 
-The codebase has **zero audio support**: no `audio_key` column on `decks`, no marker fields on `DeckSentence`, no `audioUrl` on the wire, and no storage backend. This DS builds the **whole storage-to-wire path** end to end against a local MinIO bucket that stands in for R2.
+The codebase has **zero audio support**. This DS builds the **whole storage-to-wire path** end to end against a local MinIO bucket standing in for R2 — but on the **standalone `audio` table**, not the rejected `decks.audio_key` column.
 
-The design turns on one boundary decision: **resolution is pure URL composition, injected as a function.** Because the bucket is public-read (browser→bucket, per the hosting ADR), turning a stored `audio_key` into a playable URL is nothing more than `${publicBase}/${key}` — no network call, no S3 client, no credentials on the read path. That lets us honour two constraints at once:
+The design keeps DS01's original architectural prize — **resolution is pure URL composition, injected as a function; `@gll/db` reads no env, constructs no S3 client on the read path** — and re-bases it on the audio table:
 
-- **`@gll/db` stays env-free.** The audio config (endpoint, bucket, public base, creds) is server-owned policy, exactly like the difficulty-preset map in [EP41-DS01](../EP41--config-preference-tier/20260711T011809Z-EP41-DS01-identity-and-preference-storage.md). It must not leak into the `@gll/db` library. So `SqliteContentStore.assembleDeck` does **not** read env — it takes an injected `resolveAudioUrl(key) → string | undefined` and calls it. The server constructs the store with a real resolver; every other caller (tests, seed, CLI) omits it and gets the no-op default → no `audioUrl`, no behaviour change.
-- **Startup never touches the SDK or credentials.** The `@aws-sdk/client-s3` client is constructed **lazily inside `putObject`** (the dev/curator write helper) only. The read path — the only thing the running server does — is string concatenation, so missing/unset storage env cannot crash startup; it just yields no `audioUrl`.
+- **Storage model (ST04)** — a standalone `audio` table. One row = one binary asset: content-addressed `key`, `format`, `size_bytes`, nullable `duration_seconds`, nullable `uploaded_by`, `created_at`, nullable **`vtt`** (the WebVTT projection; filled by EP43), polymorphic `subject_type` (**`deck`-only**) + `subject_id`, and `is_current`. Deck↔audio is 1:1-current, **versioned**: re-upload inserts a new row and demotes the prior (history retained; bytes deduped by content-address). **No `decks.audio_key` column; no `0012_deck_audio.sql`.**
+- **Storage client (ST02)** — `apps/server/src/storage/audio-store.ts`: env-driven config read once, a pure `resolveAudioUrl(key)`, a `deriveVttKey(audioKey)` helper, and a lazy dev/curator-only `putObject`. The single seam that swaps MinIO→R2.
+- **Wire (ST05)** — `audioUrl?` + `vttUrl?` on `AppDeckPayload`; the store resolves the deck's **current** `audio` row → `audioUrl = resolveAudioUrl(row.key)` and, when `row.vtt` is set, `vttUrl = resolveAudioUrl(deriveVttKey(row.key))`. **Per-sentence `audioStart`/`audioEnd` are gone from the wire and from `DeckSentence`** — timing is the served VTT track (EP43 consumes it via the browser's native `TextTrack`). `DeckMarker`/`DeckMarkerMap` are removed.
 
-Four independent layers:
+**Why VTT is served from the bucket by a derived key:** the VTT is bound to one binary (WebVTT ADR §3), so its bucket object is a sibling of the `.mp3` — `decks/{deckId}/{sha256}.vtt`. That lets `vttUrl` reuse the *same pure resolver* as `audioUrl` with no new env seam, preserving the `@gll/db`-reads-no-env boundary. The `audio.vtt` DB column is the live working/rehydrate copy + the "VTT exists?" signal (non-null ⟹ emit `vttUrl`); the bucket `.vtt` is the durable copy learners consume. VTT objects use a **revalidating** cache (`no-cache`) — unlike the immutable audio binary, a `.vtt` is overwritten in place on re-mark (same binary, improved timing).
 
-- **Schema (ST04)** — additive `decks.audio_key TEXT` (nullable) via migration `0012`; additive optional `audioStart`/`audioEnd` on `DeckSentenceSchema` (they live inside the `doc` JSON blob → no column, no migration). No existing row is touched.
-- **Storage client (ST02)** — `apps/server/src/storage/audio-store.ts`: env-driven config read once, a pure `resolveAudioUrl(key)`, and a lazy dev-only `putObject`. This is the single seam that swaps MinIO→R2.
-- **Wire (ST05)** — `audioUrl?` on `AppDeckPayload`, `audioStart?`/`audioEnd?` on `AppLinePayload`; `assembleDeck` emits them via the injected resolver + passthrough from the doc; the `/api/decks` route injects the server resolver. Absence degrades silently.
-- **Curator script (ST03)** — a CLI that uploads `decks/{deckId}/audio.mp3` **and** writes `decks.audio_key` + the sentence markers in one run, so object and row never drift.
+**What is reused, not built:** the `@gll/db` store pattern; the seed/import path (`importCurriculum`); the injected-resolver seam (DS01's original design, retargeted from a column to a row); the MinIO container + `gll-audio` bucket + `.env.local.example` (ST01, done); `putObject` + cache-header logic (ST02, done — extended for the VTT content type + cache policy).
 
-**What is reused, not built:** the `@gll/db` store pattern; the seed/import path (`SqliteContentStore.importCurriculum`); the `DeckDoc` JSON-blob column (markers ride inside it, like every other per-sentence field); the MinIO container + `gll-audio` bucket + `.env.local.example` (ST01, already done).
-
-**Not in this DS:** the marking-tool UI that *authors* markers (marking ADR's own epic); learner-facing `<audio>` playback UI; real R2 provisioning; curator auth / upload-first (Pass 2); any `ReviewQuestionType`/engine change (the engine stays audio-free).
+**Not in this DS:** VTT *authoring* (the marker tool) + the VTT *server-write* endpoint + learner *consume* — all **[EP43](../../plans/epics/EP43-audio-playback-and-marking.md)**; learner `<audio>` UI (EP43-DS01); real R2 provisioning; curator auth; audio-replacement approval flow; any `ReviewQuestionType`/engine change.
 
 ## 2. Core Requirements
 
 | Requirement | Decision | Rationale |
 | --- | --- | --- |
-| `decks.audio_key` storage | Nullable `TEXT` column on `decks` (migration `0012`); `NULL` ⟺ no audio | Additive, no migration of existing rows; matches playback ADR §1 |
-| Per-sentence markers storage | Optional `audioStart`/`audioEnd` (seconds, float, `≥ 0`) added to `DeckSentenceSchema` — inside the `doc` JSON blob | Markers are per-sentence deck content; the blob already carries every other sentence field → no column, no migration |
-| Key → URL resolution | **Pure string compose** `${GLL_AUDIO_PUBLIC_URL}/${key}`; no SDK, no network on read | Public-read bucket (browser→bucket per hosting ADR); keeps read path cheap and startup crash-proof |
-| Resolution boundary | Injected `resolveAudioUrl` fn into `SqliteContentStore`; **`@gll/db` reads no env** | Config is server-owned policy (same boundary as EP41 preset map); library must not depend on `apps/server` |
-| Default resolver | Optional constructor arg; omitted ⟹ no-op returning `undefined` | Backward-compatible with all 9 existing `new SqliteContentStore(...)` sites; tests/seed/CLI emit no `audioUrl` unchanged |
-| S3 client lifecycle | `@aws-sdk/client-s3` constructed **lazily inside `putObject`** only | Startup and the read path never touch the SDK or credentials → unset storage env cannot crash the server |
-| Storage config source | Env: `GLL_AUDIO_ENDPOINT`, `GLL_AUDIO_BUCKET`, `GLL_AUDIO_ACCESS_KEY_ID`, `GLL_AUDIO_SECRET_ACCESS_KEY`, `GLL_AUDIO_PUBLIC_URL` | Already fixed by `.env.local.example` (ST01); MinIO→R2 is an env-only change |
-| Missing `GLL_AUDIO_PUBLIC_URL` | `resolveAudioUrl` returns `undefined` for any key | Silent degrade (playback ADR §6); no `audioUrl`, no error |
-| Key naming convention | `decks/{deckId}/audio.mp3` — one conversation file per deck | Deck owns a single audio file (playback ADR §1); deck-scoped prefix is R2-portable; answers hosting-ADR open question |
-| Audio format | `mp3` | Broadest browser `<audio>` support; single format for the MVP (answers playback-ADR open question) |
-| Missing markers on a sentence | `audioStart`/`audioEnd` simply absent from that `AppLinePayload` | No playable segment for that sentence (playback ADR §1); other sentences unaffected |
-| R2 cutover | Change endpoint + creds + public URL env only; **no code path branches on provider** | Verified by code review (epic AC); MinIO and R2 are both S3-compatible + public-URL |
-| Cache policy | `putObject` sets `Cache-Control: public, max-age=31536000, immutable` on every write | Objects are never overwritten in place (playback ADR §7); safe to cache forever — cuts repeat-play egress on both MinIO and R2/its CDN |
+| Audio storage model | Standalone `audio` table (row per binary); **no `decks.audio_key`** | Asset-model ADR §1 — first-class, reusable, versioned entity |
+| Ownership | `subject_type` + `subject_id`; allowed-set = **`deck` only** | ADR §2 — enum honest to what's wired; `sentence`/`word` reserved shape, not declared |
+| Versioning | Re-upload inserts a new row, demotes prior `is_current`→0; history retained | ADR §3 — replace never clobbers; content-address dedups bytes |
+| Deck→audio resolution | Current row = `subject_type='deck' AND subject_id=deckId AND is_current=1` | 1:1-current; prior rows are history |
+| Timing column | Nullable `vtt` TEXT on `audio` (WebVTT text); filled by EP43 | ADR §5 — VTT hangs off the binary; presence ⟺ segmentable |
+| Key → URL resolution | **Pure string compose** `${GLL_AUDIO_PUBLIC_URL}/${key}`; no SDK/network on read | Public-read bucket; keeps read path cheap + startup crash-proof |
+| VTT URL | `vttUrl = resolveAudioUrl(deriveVttKey(row.key))` when `row.vtt != null`; else absent | Sibling bucket object; reuses the pure resolver — no new env seam |
+| `deriveVttKey` | `key.replace(/\.(mp3\|wav)$/, '.vtt')` → `decks/{id}/{sha256}.vtt` | One VTT per binary (WebVTT ADR §3); co-located, self-describing |
+| Resolution boundary | Injected `resolveAudioUrl` fn into `SqliteContentStore`; **`@gll/db` reads no env** | Config is server-owned policy; library must not depend on `apps/server` |
+| Per-sentence timing | **Removed** from `AppLinePayload` and `DeckSentence` | Timing is the VTT track (WebVTT ADR §6); numbers no longer on the wire |
+| `DeckMarker`/`DeckMarkerMap` | **Removed** from `@gll/api-contract` | Bespoke-JSON hand-off obsolete under VTT server-write (EP43-DS02) |
+| Missing current audio row | `audioUrl`/`vttUrl` absent from the payload | Silent degrade (playback ADR §6); no error |
+| Audio cache policy | `putObject` sets `Cache-Control: public, max-age=31536000, immutable` on binaries | Content-addressed keys never overwritten in place (playback ADR §7) |
+| VTT cache policy | `putObject` sets `Cache-Control: no-cache` for `text/vtt` objects | `.vtt` at a stable derived key IS overwritten on re-mark; must revalidate |
+| R2 cutover | Change endpoint + creds + public URL env only; no provider branch | MinIO + R2 both S3-compatible + public-URL |
 
 ## 3. Data Structures
 
 ```typescript
 // ── ST04: schema (packages/db/src/schema.ts) ─────────────────────────────────
-// Additive nullable column. NULL ⟺ deck has no audio. Migration 0012.
-export const decks = sqliteTable('decks', {
-  // ...existing id/name/language/difficulty/register/created_at/doc...
-  audio_key: text('audio_key'), // nullable; e.g. 'decks/<deckId>/audio.mp3'
+// decks: DROP audio_key. Add the standalone audio table.
+export const audio = sqliteTable('audio', {
+  id: text('id').primaryKey(),
+  subject_type: text('subject_type').notNull(),      // 'deck' only (enum honest to wiring)
+  subject_id: text('subject_id').notNull(),          // e.g. the deck id
+  key: text('key').notNull(),                        // content-addressed bucket key: decks/{id}/{sha256}.{ext}
+  format: text('format').notNull(),                  // 'mp3' | 'wav'
+  size_bytes: integer('size_bytes').notNull(),
+  duration_seconds: integer('duration_seconds'),     // nullable
+  vtt: text('vtt'),                                  // nullable WebVTT projection (EP43 fills); non-null ⟺ segmentable
+  uploaded_by: text('uploaded_by'),                  // nullable (curator/admin id; pre-auth: null)
+  is_current: integer('is_current', { mode: 'boolean' }).notNull().default(true),
+  created_at: text('created_at').notNull(),
 });
+// index on (subject_type, subject_id, is_current) for the current-row lookup.
 
-// ── ST04: markers on the sentence (packages/api-contract/src/content.ts) ─────
-// Optional, seconds-float, non-negative. Ride inside DeckDoc.doc — no column.
+// ── ST04: DeckSentence — REMOVE audioStart/audioEnd (timing is the VTT track) ─
 export const DeckSentenceSchema = z.object({
-  // ...existing sentenceId/speaker/native/english/romanization/position/components...
-  audioStart: z.number().nonnegative().optional(), // seconds into the deck file
-  audioEnd:   z.number().nonnegative().optional(),  // seconds; play stops here
+  // sentenceId/speaker/native/english/romanization/position/components …
+  // (no audioStart / audioEnd)
 });
 
-// ── ST05: wire additions (packages/api-contract/src/content.ts) ──────────────
+// ── ST05: wire (packages/api-contract/src/content.ts) ────────────────────────
 export interface AppLinePayload {
-  // ...existing sentenceId/speaker/native/romanization/english/wordIds...
-  audioStart?: number; // absent ⟺ sentence has no marker
-  audioEnd?: number;
+  // sentenceId/speaker/native/romanization/english/wordIds …
+  // (no audioStart / audioEnd)
 }
 export interface AppDeckPayload {
-  // ...existing id/topic/difficulty/register/words/lines...
-  audioUrl?: string; // absent ⟺ decks.audio_key IS NULL or public base unset
+  // id/topic/difficulty/register/words/lines …
+  audioUrl?: string; // absent ⟺ no current audio row OR public base unset
+  vttUrl?: string;   // absent ⟺ current row has no vtt OR public base unset
 }
+// REMOVE DeckMarkerSchema / DeckMarkerMapSchema entirely.
 
 // ── ST02: storage client (apps/server/src/storage/audio-store.ts) ────────────
-export interface AudioStorageConfig {
-  endpoint?: string;        // GLL_AUDIO_ENDPOINT (S3 API; used only by putObject)
-  bucket?: string;          // GLL_AUDIO_BUCKET
-  accessKeyId?: string;     // GLL_AUDIO_ACCESS_KEY_ID  (putObject only)
-  secretAccessKey?: string; // GLL_AUDIO_SECRET_ACCESS_KEY (putObject only)
-  publicUrl?: string;       // GLL_AUDIO_PUBLIC_URL (browser-reachable base)
-}
+export function makeResolveAudioUrl(cfg): (key?: string|null) => string|undefined;
+/** decks/{id}/{sha}.mp3 → decks/{id}/{sha}.vtt (one VTT per binary). */
+export function deriveVttKey(audioKey: string): string;
+export async function putObject(cfg, key, body, contentType?): Promise<void>;
+//   contentType 'text/vtt' ⟹ Cache-Control: no-cache; else immutable.
 
-/** Read env once. All fields optional — absence is tolerated, not fatal. */
-export function loadAudioStorageConfig(env = process.env): AudioStorageConfig;
-
-/** Pure compose. undefined when key is null/empty OR publicUrl is unset.
- *  No network, no SDK, no credentials — safe on every read. */
-export function makeResolveAudioUrl(
-  cfg: AudioStorageConfig,
-): (key: string | null | undefined) => string | undefined;
-// => key => cfg.publicUrl && key ? `${trimSlash(cfg.publicUrl)}/${key}` : undefined
-
-/** Dev/curator-only upload. Constructs the S3 client LAZILY here — the only
- *  place @aws-sdk/client-s3 and credentials are touched. Throws if config
- *  incomplete (called only by the ST03 script, never on the request path).
- *  Always writes Cache-Control: public, max-age=31536000, immutable — keys
- *  are never overwritten in place (playback ADR §7), so objects are safe
- *  to cache forever once written. */
-export async function putObject(
-  cfg: AudioStorageConfig,
-  key: string,
-  body: Uint8Array | Buffer,
-  contentType?: string, // default 'audio/mpeg'
-): Promise<void>;
-
-// ── ST05: injected resolver seam (packages/db/src/sqlite-content-store.ts) ───
-// @gll/db defines the TYPE only; it never reads env. The server injects a fn.
-export type ResolveAudioUrl = (key: string | null | undefined) => string | undefined;
-
-export class SqliteContentStore implements IContentStore {
-  constructor(
-    private readonly db: DbClient,
-    private readonly resolveAudioUrl: ResolveAudioUrl = () => undefined, // no-op default
-  ) {}
-  // assembleDeck: audioUrl = this.resolveAudioUrl(deck.audio_key);
-  //   spread onto payload only when defined; audioStart/audioEnd passed through
-  //   from each sentence only when defined (…(x !== undefined && { x }))
-}
+// ── ST05: store resolution (packages/db/src/sqlite-content-store.ts) ─────────
+// assembleDeck(deck):
+//   const row = currentAudioRow(deck.id);           // is_current=1, subject deck
+//   const audioUrl = row ? resolveAudioUrl(row.key) : undefined;
+//   const vttUrl   = row?.vtt != null ? resolveAudioUrl(deriveVttKey(row.key)) : undefined;
+//   spread each onto payload only when defined.
 ```
 
 ## 4. User Workflows
@@ -131,151 +108,74 @@ export class SqliteContentStore implements IContentStore {
 # Read path (server, every GET /api/decks) — pure, no network
 route → new SqliteContentStore(getDb(), makeResolveAudioUrl(cfg))
       → assembleDeck(deck)
-          audioUrl   = resolveAudioUrl(deck.audio_key)   // undefined ⟹ field omitted
-          per line:  audioStart/audioEnd from sentence   // undefined ⟹ omitted
-      → AppDeckPayload { …, audioUrl?, lines:[{ …, audioStart?, audioEnd? }] }
+          row      = current audio row for deck.id (is_current=1) | none
+          audioUrl = row ? resolveAudioUrl(row.key)               : —   (omitted if none)
+          vttUrl   = row?.vtt != null ? resolveAudioUrl(deriveVttKey(row.key)) : —
+      → AppDeckPayload { …, audioUrl?, vttUrl? }   // no per-line timing
 
 # Degrade paths (no error, no crash)
-deck.audio_key = NULL          → resolveAudioUrl(null) = undefined  → no audioUrl
-GLL_AUDIO_PUBLIC_URL unset     → resolveAudioUrl(key)  = undefined  → no audioUrl
-sentence has no markers        → audioStart/audioEnd omitted        → no segment
+no current audio row           → audioUrl/vttUrl omitted
+current row, vtt IS NULL       → audioUrl present, vttUrl omitted (whole-file play only)
+GLL_AUDIO_PUBLIC_URL unset     → both omitted
 
-# Curator loop (ST03, local, one invocation keeps object+row in sync)
-curate <deckId> <audio.mp3>
-  1. putObject(cfg, 'decks/<deckId>/audio.mp3', bytes, 'audio/mpeg')   → bucket
-  2. UPDATE decks SET audio_key='decks/<deckId>/audio.mp3' WHERE id=<deckId>
-  → re-run against same deck ⟹ same key + same object (idempotent, no drift)
-  (marker-map ingest → decks.doc.sentences[].audioStart/audioEnd is the
-   marking epic's Pass-1 seed/import concern, not owned here)
+# Upload loop (curator, EP42-DS02) — inserts an audio row, not a column write
+upload <deckId> <file>
+  1. content-address key = decks/{deckId}/{sha256}.{ext}; putObject(binary, immutable)
+  2. demote prior current row (is_current=0); INSERT audio row (is_current=1, vtt=NULL)
+  (VTT authored later via EP43-DS02's marker tool → server-write fills audio.vtt + bucket .vtt)
 ```
 
 ## 5. Stories
 
-### Phase 1: Storage backend (EP42-PH01)
+> ST01 (MinIO + bucket, done) and ST02 (storage client, done) carry over; ST02 gains `deriveVttKey` + the `text/vtt` cache branch. ST03 (curator CLI) remains superseded/removed by EP42-DS02. The former ST13 marker-map ingest is **dropped** (VTT server-write replaces it — EP43-DS02).
 
-### EP42-ST01: MinIO Docker Compose service + bucket bootstrap  *(Done)*
+### EP42-ST04: Schema — standalone `audio` table + new migration
 
-**Scope**: Infra — `docker-compose.yml` MinIO + healthcheck-gated `mc` init creating a public-read `gll-audio` bucket; `.env.local.example` with the `GLL_AUDIO_*` contract.
-**Status**: Complete — container healthy, bucket auto-created + public-read, S3 + console endpoints reachable. No further work in this DS.
-
-### EP42-ST02: Server storage config + S3-compatible client wrapper  *(Done)*
-
-**Scope**: `apps/server` — a single storage module; no DB, no routes, no wire changes.
-**Read List**: `apps/server/.env.local.example`, `apps/server/src/config/learning.ts` (config-module style), `apps/server/package.json`
+**Scope**: `@gll/db` + `@gll/api-contract` — add the `audio` table, remove `decks.audio_key`, delete `0012_deck_audio.sql`, add a fresh creating-migration, remove per-sentence marker fields + marker-map schemas.
+**Read List**: `packages/db/src/schema.ts`, `packages/db/drizzle/migrations/meta/_journal.json`, an existing hand-written migration for style, `packages/api-contract/src/content.ts`
 **Tasks**:
 
-- [x] Add `@aws-sdk/client-s3` to `apps/server` dependencies.
-- [x] Add `apps/server/src/storage/audio-store.ts`: `AudioStorageConfig`, `loadAudioStorageConfig(env)`, `makeResolveAudioUrl(cfg)`, `putObject(cfg, key, body, contentType?)`.
-- [x] `makeResolveAudioUrl` is pure string compose (trim a trailing `/` on the base); returns `undefined` when key is null/empty **or** `publicUrl` is unset. No SDK import at module top-level used on this path.
-- [x] Construct the `S3Client` **inside `putObject` only** (lazy); `putObject` uses `forcePathStyle: true` (MinIO) and throws a clear error if `endpoint`/`bucket`/creds are missing.
-- [x] `putObject` passes `CacheControl: 'public, max-age=31536000, immutable'` on every `PutObjectCommand`.
+- [ ] Add the `audio` table to `schema.ts` (fields above) + a `(subject_type, subject_id, is_current)` index; export it from `packages/db/src/index.ts`.
+- [ ] Remove `audio_key` from `decks`.
+- [ ] Delete `packages/db/drizzle/migrations/0012_deck_audio.sql`; add a new migration that `CREATE TABLE audio (…)` + the index (no `audio_key` artifact anywhere). Reconcile `meta/_journal.json` + snapshot.
+- [ ] Remove `audioStart`/`audioEnd` from `DeckSentenceSchema`; remove `DeckMarkerSchema`/`DeckMarkerMapSchema` + their exported types.
 
 **Acceptance Criteria**:
 
-- [x] `makeResolveAudioUrl(cfg)('decks/d1/audio.mp3')` → `'<publicUrl>/decks/d1/audio.mp3'` (no double slash); returns `undefined` for `null`/`''` key and when `publicUrl` is unset.
-- [x] Importing/using `audio-store.ts` for resolution performs **no** network call and constructs **no** `S3Client`.
-- [x] `loadAudioStorageConfig({})` (empty env) returns an all-`undefined` config without throwing.
-- [x] An object written by `putObject` reports `Cache-Control: public, max-age=31536000, immutable` when fetched back from MinIO. *(manually verified 2026-07-13: fetched the uploaded object back from local MinIO, header present.)*
+- [ ] `grep -r audio_key` and `grep -r DeckMarker` over `packages/` return nothing; no `0012_deck_audio.sql` exists.
+- [ ] A fresh `initDb` creates the `audio` table; existing decks load unchanged (no audio rows ⟹ no audioUrl).
+- [ ] `@gll/db` + `@gll/api-contract` typecheck; content-store tests updated + green.
 
-### EP42-ST03: Local curator script — paired audio upload + `audio_key` sync  *(Done — superseded & removed)*
+### EP42-ST05: Wire — `audioUrl`/`vttUrl` from the current `audio` row
 
-> **Superseded & removed (20260713T222600Z):** the PO found the CLI/two-terminal loop too many steps to remember. [EP42-DS02](20260713T222600Z-EP42-DS02-curator-audio-upload-ui.md) replaced this script with a `srs-demo` upload page (EP42-ST08/ST09), and **ST10 has now deleted `packages/srs-curation/src/curate-audio.ts` + its test** — the gated `POST /api/curation/decks/:deckId/audio` endpoint is the single pairing path. `putObject` (ST02) lives on as that endpoint's dependency. Kept below for the historical record of what ST03 built.
-
-**Scope**: Tooling — one CLI that syncs the bucket object with `decks.audio_key` per deck, so the binary and the DB reference never drift. Depends on ST02 (`putObject`) and ST04 (schema).
-**Read List**: `apps/cli-demo-db/src/import-curriculum.ts` (CLI entrypoint + `getDb` pattern), `packages/db/src/sqlite-content-store.ts`, `apps/server/src/storage/audio-store.ts`
-
-> **Boundary note.** This story owns only the **binary + `audio_key`** sync — the half that is genuinely EP42's storage concern. The **marker map schema** (`sentenceId → {start,end}`) and its ingestion into `decks.doc.sentences[].audioStart/audioEnd` are the **marking ADR's Pass-1 seed/import concern**, owned by that epic ([open question: "JSON marker-map schema + where it lands for seed ingest"](../../../product-documentation/architecture/20260713T140219Z-engineering-audio-marking-authoring.md)). This script optionally accepts a marker map and passes it through the existing import path if present, but does not define that schema. Keeping the two epics from co-owning the marker format is deliberate.
-
-> **Relocated**: originally placed in `apps/cli-demo-db/src/curate-audio.ts` (per the Read List above); moved to `packages/srs-curation/src/curate-audio.ts` on 2026-07-13 — `cli-demo-db` is SRS-engine DB tooling and was never meant to own audio-file operations. `packages/srs-curation` is the temporary home for curation-adjacent scripts pending a proper curator app/epic; the script's own CLI/`getDb` pattern and behavior are unchanged, only its package location and relative import depth to `apps/server/src/storage/audio-store.ts` moved.
-
+**Scope**: `@gll/api-contract` + `@gll/db` read path + `apps/server` route wiring.
+**Read List**: `packages/api-contract/src/content.ts`, `packages/db/src/sqlite-content-store.ts`, `apps/server/src/routes/decks.ts`, `apps/server/src/storage/audio-store.ts`
 **Tasks**:
 
-- [x] Add a script (`packages/srs-curation/src/curate-audio.ts`) taking `<deckId> <audioFilePath>` (marker map ingestion left to the marking epic, not stubbed here).
-- [x] Upload the file to `decks/{deckId}/audio.mp3` via `putObject`.
-- [x] Set `decks.audio_key = 'decks/{deckId}/audio.mp3'` on that deck in the same run.
-- [x] Idempotent: re-running with the same inputs yields the same key + object (no duplicate object, no drift) — verified in `curate-audio.test.ts`.
+- [ ] Add `audioUrl?`/`vttUrl?` to `AppDeckPayload` (per-line timing already removed in ST04).
+- [ ] In `assembleDeck`: look up the current `audio` row for the deck; compute `audioUrl`/`vttUrl` via the injected resolver + `deriveVttKey`; spread only when defined.
+- [ ] Add `deriveVttKey` to `audio-store.ts`; make `putObject` set `no-cache` for `text/vtt`, `immutable` otherwise.
+- [ ] Route wiring (`decks.ts`) already builds the resolver — no change beyond the store's new lookup.
 
 **Acceptance Criteria**:
 
-- [x] After one run: `GET /api/decks` for that deck returns an `audioUrl` that fetches the uploaded bytes from MinIO. *(manually verified 2026-07-13: curated a real deck against local MinIO, resolved audioUrl fetched 200 with matching byte length and valid MP3 (ID3) header.)*
-- [x] Re-running against the same deck leaves object + `audio_key` byte-identical (verified by comparing key before/after).
-- [x] Running against an unknown `deckId` fails loudly (no silent no-op) rather than orphaning an uploaded object.
+- [ ] A deck with a current audio row (no VTT) returns `audioUrl`, no `vttUrl`; with a VTT set, returns both, and `vttUrl` fetches the bucket `.vtt`.
+- [ ] A deck with no current audio row returns neither; unset `GLL_AUDIO_PUBLIC_URL` ⟹ neither; server serves `/api/decks` normally in all cases.
+- [ ] No `audioStart`/`audioEnd` appear on any payload; existing `SqliteContentStore` call sites compile unchanged (no-op resolver default).
 
-### Phase 2: Deck-audio data path (EP42-PH02)
+### EP42-ST06: Local audio-loop documentation
 
-### EP42-ST04: Schema — `decks.audio_key` + `DeckSentence` marker fields  *(Done)*
-
-**Scope**: `@gll/db` + `@gll/api-contract` — additive column + additive optional zod fields. No row migration.
-**Read List**: `packages/db/src/schema.ts`, `packages/db/src/init-db.ts`, `packages/db/drizzle/migrations/0010_user_config.sql` (migration style), `packages/api-contract/src/content.ts`
-**Tasks**:
-
-- [x] Add `audio_key: text('audio_key')` (nullable) to the `decks` table in `schema.ts`.
-- [x] Hand-write `packages/db/drizzle/migrations/0012_deck_audio.sql`: `ALTER TABLE decks ADD COLUMN audio_key TEXT;` with a header comment (EP42-DS01; nullable; NULL = no audio).
-- [x] Add optional `audioStart`/`audioEnd` (`z.number().nonnegative().optional()`) to `DeckSentenceSchema`.
-- [x] Confirm `initDb` picks up `0012` (sorted, id-tracked) — no code change expected, just verify.
+**Scope**: Docs — `docker compose up`, `GLL_AUDIO_*` env, the upload-a-binary → resolve → play loop (row-based; VTT authored in EP43); MinIO→R2 is env-only.
 
 **Acceptance Criteria**:
 
-- [x] Existing decks load unchanged with `audio_key = NULL` and no markers; no migration of existing rows.
-- [x] `DeckDocSchema.parse` accepts a sentence with `audioStart`/`audioEnd` and one without (round-trips through the `doc` blob).
-- [x] `@gll/db` typecheck + existing content-store tests pass unchanged.
-
-### EP42-ST05: Wire types — `AppDeckPayload.audioUrl` / `AppLinePayload.audioStart`/`audioEnd`  *(Done)*
-
-**Scope**: `@gll/api-contract` + `@gll/db` read path + `apps/server` route wiring. Depends on ST02 + ST04.
-**Read List**: `packages/api-contract/src/content.ts`, `packages/db/src/sqlite-content-store.ts`, `apps/server/src/routes/decks.ts`
-**Tasks**:
-
-- [x] Add `audioUrl?: string` to `AppDeckPayload`; `audioStart?`/`audioEnd?` to `AppLinePayload`.
-- [x] Add the `ResolveAudioUrl` type + optional `resolveAudioUrl` constructor arg (no-op default) to `SqliteContentStore`.
-- [x] In `assembleDeck`: compute `audioUrl = this.resolveAudioUrl(deck.audio_key)` and spread onto the payload only when defined; in the `lines` map, spread `audioStart`/`audioEnd` from each sentence only when defined (mirror the existing `difficulty`/`register` conditional-spread pattern).
-- [x] In `apps/server/src/routes/decks.ts`, build the resolver once (`makeResolveAudioUrl(loadAudioStorageConfig())`) and pass it into `new SqliteContentStore(getDb(), resolver)`.
-
-**Acceptance Criteria**:
-
-- [x] A deck with `audio_key` set + markers on sentences returns `audioUrl`, `audioStart`, `audioEnd` that resolve to a file that plays in a browser against local MinIO. *(manually verified 2026-07-13: resolved audioUrl fetched real, valid MP3 bytes over HTTP from local MinIO — same mechanism a browser `<audio>` tag uses; not manually spot-checked in an actual browser tab.)*
-- [x] A deck with `audio_key = NULL` (or a sentence with no markers) returns payloads with those fields **absent** — no error, no crash.
-- [x] Unset `GLL_AUDIO_PUBLIC_URL` ⟹ no `audioUrl`, server starts and serves `/api/decks` normally.
-- [x] The 9 existing `new SqliteContentStore(...)` sites (tests/seed/CLI) compile unchanged and emit no `audioUrl`.
-
-### EP42-ST06: Local audio-loop documentation  *(Done)*
-
-**Scope**: Docs — the end-to-end local loop.
-**Read List**: `docker-compose.yml`, `apps/server/.env.local.example`
-**Tasks**:
-
-- [x] Document `docker compose up -d` (MinIO + bucket), the required `GLL_AUDIO_*` env vars, the ST03 curate command, and the seed-a-key → `GET /api/decks` → play loop.
-- [x] Note the MinIO→R2 cutover is env-only (endpoint/creds/public URL), no code change.
-
-**Acceptance Criteria**:
-
-- [x] A reader can go from a clean checkout to a deck that returns a playable `audioUrl` using only the documented commands. *(manually walked 2026-07-13: `docker compose up -d` → copy `.env.local.example` → import a deck → `curate-audio` → resolved audioUrl fetched valid MP3 bytes from MinIO.)*
-
-### EP42-ST07: Single-command local dev loop + auto-loaded server env  *(Done)*
-
-**Scope**: Dev ergonomics only — no product code, no wire/schema/storage-module changes. Added after ST06's manual walkthrough surfaced that the documented loop requires manually `source`-ing `.env.local` into two separate shells (server + curator) and running `docker compose up -d` / the server / the frontend as three separate commands.
-**Read List**: `apps/server/package.json` (`dev` script), `apps/server/src/index.ts` (reads `process.env` directly, no dotenv loader), `apps/srs-demo/package.json` (`dev:all`, already uses `concurrently`), root `package.json` (`scripts`).
-
-**Tasks**:
-
-- [x] `apps/server/package.json`: change `dev` to `tsx watch --env-file-if-exists=.env.local src/index.ts` — Node 22's native env-file loading, no `dotenv` dependency needed. Missing file is a silent no-op (audio degrades per the existing crash-proof design), not an error.
-- [x] Root `package.json`: add `dev:all` script — `docker compose up -d && concurrently -n server,web -c blue,green "pnpm --filter @gll/server dev" "pnpm --filter @gll/srs-demo dev"`.
-- [x] Add `concurrently` to root `devDependencies` (hoisted from `apps/srs-demo`, same version).
-- [x] Retire `apps/srs-demo`'s own `dev:all` now that the root script supersedes it; keep its plain `dev` (vite-only) for frontend-only work against an already-running server.
-
-**Acceptance Criteria**:
-
-- [x] `pnpm dev:all` from a clean checkout (MinIO not yet up, no `.env.local` present) brings up MinIO, the server, and the frontend with one command and no manual `source`ing. *(script composition verified; `docker compose up -d` is idempotent/quiet on repeat runs.)*
-- [x] Server started via `pnpm --filter @gll/server dev` picks up `GLL_AUDIO_*` from `apps/server/.env.local` automatically when the file exists. *(manually verified 2026-07-13: `pnpm run dev` with `.env.local` present started cleanly on :6060, no manual `source` needed.)*
-- [x] Server starts cleanly (no crash, no missing-file error) when `.env.local` is absent — matches ST02's "missing storage env cannot crash startup" guarantee. *(`--env-file-if-exists` confirmed to no-op silently on a missing file.)*
-- [x] `packages/srs-curation`'s `curate-audio` script is unaffected (still reads env from whatever shell invokes it) — out of scope for this story; only the server's own startup gets auto-loading.
+- [ ] A reader goes from clean checkout to a deck returning a playable `audioUrl` using only documented commands.
 
 ## 6. Success Criteria
 
-1. `decks.audio_key` and `DeckSentence.audioStart`/`audioEnd` exist additively; existing rows load with no migration.
-2. `GET /api/decks` emits `audioUrl`/`audioStart`/`audioEnd` when present and omits them (no error) when absent — including when storage env is unset.
-3. Key→URL resolution is pure string compose in a server-owned module; `@gll/db` reads no env and the read path constructs no S3 client.
-4. The curator script keeps bucket object and DB row in sync in one idempotent run.
-5. MinIO→R2 is an env-only change — no code path branches on provider (verified by code review).
-6. All existing `SqliteContentStore` call sites are backward-compatible; no type errors; existing tests pass unchanged.
-7. Every uploaded object carries `Cache-Control: public, max-age=31536000, immutable`.
+1. Audio is a standalone, versioned `audio` table; **no `decks.audio_key` column and no `0012` migration exist**; re-upload retains history via `is_current`.
+2. `GET /api/decks` emits `audioUrl`/`vttUrl` from the current row when present, omits them silently when absent (including unset storage env). No per-line timing on the wire.
+3. `vttUrl` is the bucket `.vtt` at the key derived from the audio key; the `audio.vtt` DB column is the live/rehydrate copy + presence signal.
+4. Resolution stays pure string compose in a server-owned module; `@gll/db` reads no env; the read path constructs no S3 client.
+5. Audio objects carry `immutable`; VTT objects carry `no-cache`.
+6. MinIO→R2 is env-only (no provider branch); `pnpm -r typecheck` + suite pass with no `audio_key`/`DeckMarker` references.

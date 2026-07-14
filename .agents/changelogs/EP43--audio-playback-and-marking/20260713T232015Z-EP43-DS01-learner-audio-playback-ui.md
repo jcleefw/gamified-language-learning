@@ -1,169 +1,179 @@
-# EP43-DS01: Learner Audio Playback UI Specification
+# EP43-DS01: Learner Audio Playback UI (WebVTT consume) Specification
 
 **Date**: 20260713T232015Z
-**Status**: Completed (20260714)
+**Redefined**: 20260714 — consume timing from a served `.vtt` via the browser's native `TextTrack`/`cuechange` (Option C), not per-line `audioStart`/`audioEnd`.
+**Status**: Draft (retrofit; DS01 v1 shipped against per-line numbers)
 **Epic**: [EP43 - Audio Playback & Marking UI](../../plans/epics/EP43-audio-playback-and-marking.md)
 
 **Architecture**:
-- [Conversation Audio — Playback Model & Data Contract](../../../product-documentation/architecture/20260713T140218Z-engineering-audio-playback-model.md) — Accepted. This DS is the **runtime UI half** of that ADR: §3 (two surfaces — `DeckOverview` whole-conversation + per-sentence seek; `QuizCard` word-block segment; MCQ gets none), §4 (one `<audio>` per surface, `currentTime = audioStart` → play → pause at `audioEnd`; a 1× / 0.75× / 0.5× rate control), §5 (the engine stays audio-free — the Vue client resolves `sentenceId → (audioUrl, audioStart, audioEnd)` from the payload it already holds), §6 (missing audio degrades silently, never gates answering).
-- [Marking/Authoring ADR](../../../product-documentation/architecture/20260713T140219Z-engineering-audio-marking-authoring.md) — Accepted. The playback-rate control this DS builds is the one the ADR says the marker tool reuses; DS01 builds the shared primitive, [EP43-DS02](20260713T232015Z-EP43-DS02-marker-authoring-tool.md) is its second consumer.
+- [WebVTT Timing ADR](../../../product-documentation/architecture/20260714T123438Z-engineering-audio-timing-webvtt.md) — Accepted. **§6 Option C governs this DS's consume path**: the browser attaches the served `.vtt` as a `TextTrack`; `cuechange` (cue-ID = `sentenceId`) drives sentence highlighting + segment bounds. No per-line numbers, no server-side parse.
+- [Playback Model ADR](../../../product-documentation/architecture/20260713T140218Z-engineering-audio-playback-model.md) — Accepted (consume mechanism amended to Option C). §3 two surfaces, §4 one `<audio>`/surface + rate control, §5 engine stays audio-free, §6 silent degrade.
 
-**Depends on**: [EP42-DS01](../EP42--deck-audio-storage-and-retrieval/20260713T005450Z-EP42-DS01-deck-audio-storage-and-retrieval.md) (the `audioUrl`/`audioStart`/`audioEnd` wire fields) + [EP42-DS02](../EP42--deck-audio-storage-and-retrieval/20260713T222600Z-EP42-DS02-curator-audio-upload-ui.md) (a curated binary so `audioUrl` resolves).
+**Depends on**: [EP42-DS01](../EP42--deck-audio-storage-and-retrieval/20260713T005450Z-EP42-DS01-deck-audio-storage-and-retrieval.md) (`audioUrl`/`vttUrl` wire fields) + [EP42-DS02](../EP42--deck-audio-storage-and-retrieval/20260713T222600Z-EP42-DS02-curator-audio-upload-ui.md) (a curated binary) + a VTT authored by [EP43-DS02](20260713T232015Z-EP43-DS02-marker-authoring-tool.md).
 
 ---
 
 ## 1. Feature Overview
 
-EP42 emits everything a learner needs to hear audio — `AppDeckPayload.audioUrl` and per-line `audioStart`/`audioEnd` on `GET /api/decks` — but `srs-demo` renders **no `<audio>` anywhere**, so the fields are dead on arrival. This DS mounts audio on the two learner surfaces the playback ADR §3 fixes, reading those existing fields and **degrading silently** when they're absent.
+EP42 emits `AppDeckPayload.audioUrl` + `vttUrl` on `GET /api/decks`, but `srs-demo` renders **no `<audio>` anywhere**. This DS mounts audio on the two learner surfaces the playback ADR §3 fixes — and sources **all per-sentence timing from the served VTT track**, not from wire numbers (which no longer exist).
 
-The design is a **primitive + two thin mounts**, and it turns on the playback ADR §5 boundary — *the engine and the questions stay pure text; the Vue client resolves audio from the deck payload it already holds*:
+The design is a **primitive + two thin mounts**, turning on two boundaries:
 
-- **Shared player primitive (ST01)** — `useSegmentPlayer` (a composable owning the one non-trivial behaviour: `seek(start) → play → pause exactly at end`) + `AudioPlayer.vue` (transport, scrubber, `mm:ss.cs` readout, and a **primary always-visible** 1× / 0.75× / 0.5× control). It knows nothing about decks, sentences, or curation — just an audio `src` and segments. This is the single component the ADR mandates be shared across surfaces; the marker tool (DS02) is its third mount.
-- **`DeckOverview` mount (ST02)** — the overview already receives the whole `AppDeckPayload` as `:deck`, so it has `audioUrl` + `lines[].audioStart/audioEnd` directly. Mount `AudioPlayer` for whole-conversation play; wire each sentence row's click to `playSegment(audioStart, audioEnd)`. No new data flow.
-- **`QuizCard` word-block mount (ST03)** — `QuizCard` receives only a pure `SentenceQuestion` (`sentenceId`, `tiles`), never audio (ADR §5). So `App.vue` — which holds the boot-time `appDecks` — resolves the current question's `sentenceId → { audioUrl, audioStart, audioEnd }` and passes it as an **optional prop**. Present + marked ⟹ a play-segment control; absent ⟹ nothing. MCQ word questions never get audio.
+- **Timing is a browser concern (WebVTT ADR §6).** The `AudioPlayer` attaches `vttUrl` as a `<track kind="metadata">`. The browser parses it; `cuechange` fires as the play-head crosses cue boundaries; a cue's ID is the `sentenceId` and its `[startTime, endTime]` are the segment bounds. We compute no "which sentence is playing" — the subtitle engine does.
+- **Audio stays out of the engine (playback ADR §5).** `QuizQuestion`/`SentenceQuestion` gain no audio field; `ReviewQuestionType` stays `'mcq' | 'word-block'`. The Vue layer resolves a sentence's *deck* audio (`audioUrl` + `vttUrl`) from the `appDecks` payload it already holds and asks the player to `playCue(sentenceId)`.
 
-**The critical boundary decision — audio is resolved in the Vue layer from `appDecks`, never threaded through the engine.** `QuizQuestion`/`SentenceQuestion` gain no URL field; `ReviewQuestionType` stays `'mcq' | 'word-block'`. A tiny `resolveSentenceAudio(appDecks, sentenceId)` helper does the lookup where the payload already lives (`App.vue`), keeping the ADR §5 "engine audio-free" invariant intact and this DS a pure additive-UI change.
+Three parts:
 
-**Silent degradation is a first-class requirement, not an afterthought** (ADR §6): every mount is behind a "has audio?" guard. No `audioUrl`, no markers, or unset storage env (⟹ no `audioUrl` from EP42's crash-proof read path) all resolve to *no control rendered* — the overview and quiz behave exactly as today. Audio never blocks answering.
+- **Shared player primitive (ST01)** — `useSegmentPlayer` (transport: `play`/`pause`/`seek`/`setRate`, a `timeupdate` auto-pause, `mm:ss.cs` readout) + `AudioPlayer.vue` (one `<audio>` + optional `<track :src=vttUrl>`, scrubber, a **primary always-visible** 1×/0.75×/0.5× control). New for VTT: `playCue(sentenceId)` (find the cue by id, seek to `startTime`, play, pause at `endTime`) and `activeCueId` (the current cue's id, from `cuechange`). Knows nothing about decks — just `src`, `vttUrl`, and cue ids. DS02's marker tool is its third mount.
+- **`DeckOverview` mount (ST02)** — mount `AudioPlayer(:src=deck.audioUrl :vttUrl=deck.vttUrl)`; ▶ plays the whole conversation; clicking a sentence row → `playCue(sentenceId)`; the row whose cue is `activeCueId` gets a "playing" highlight. Absent `vttUrl` ⟹ whole-file play only (rows not click-to-segment); absent `audioUrl` ⟹ no player.
+- **`QuizCard` word-block mount (ST03)** — `App.vue` resolves the current question's `sentenceId` → its deck's `{ audioUrl, vttUrl }` and passes it as an optional prop; present ⟹ a "▶ Play sentence" control calling `playCue(sentenceId)`. MCQ never gets audio.
 
-**What is reused, not built:** `AppDeckPayload.audioUrl` / `AppLinePayload.{sentenceId,audioStart,audioEnd}` (EP42 wire); the boot-time `appDecks` list in `App.vue`; `DeckOverview`'s existing per-sentence rendering + `:deck` prop; `QuizCard`'s `SentenceQuestion` word-block branch; the scoped-style + `defineProps`/`defineEmits` idiom throughout `srs-demo`.
+**Silent degradation stays first-class (playback ADR §6):** no `audioUrl` ⟹ no player; no `vttUrl` ⟹ no per-sentence segmenting; a `sentenceId` with no matching cue ⟹ `playCue` no-ops (no control shown when we can't know a cue exists is handled by the "deck has vttUrl" guard — a missing cue simply does nothing, never errors). Audio never gates answering.
 
-**Not in this DS:** the marker-authoring tool + marker ingest (EP43-DS02); any storage/wire/schema change (EP42 owns all of it); Pass 2 curator/R2 concerns; word-level audio; MCQ-question audio (ADR §3 excludes it); iOS session-unlock hardening beyond tap-to-play (playback-ADR open question, tracked not built).
+**What is reused, not built:** `AppDeckPayload.audioUrl`/`vttUrl` (EP42 wire); the boot-time `appDecks` in `App.vue`; `DeckOverview`'s per-sentence rendering + `:deck` prop; `QuizCard`'s `SentenceQuestion` word-block branch; the scoped-style + `defineProps`/`defineExpose` idiom.
+
+**Not in this DS:** the marker tool + VTT server-write (EP43-DS02); any storage/wire/schema change (EP42 owns it); word-level cue highlighting (namespace reserved, not built); MCQ audio; iOS session-unlock hardening beyond tap-to-play.
 
 ## 2. Core Requirements
 
 | Requirement | Decision | Rationale |
 | --- | --- | --- |
-| Player primitive | One `AudioPlayer.vue` wrapping a single `<audio>`, backed by `useSegmentPlayer`; learner-agnostic | Playback ADR §4 "one `<audio>` element per surface"; the ADR mandates one shared component across learner + curator |
-| Segment playback | `playSegment(start,end)`: `seek(start)` → play → pause when `currentTime >= end` (a `timeupdate` listener cleared on pause/seek/rate-change) | Playback ADR §4 primitive; the auto-pause must not survive a scrub/seek away |
-| Speed control | Segmented `[1× \| 0.75× \| 0.5×]`, **primary + always visible**, active rate highlighted; sets `audio.playbackRate` | Playback ADR §4 + PRD; learners slow audio to hear pronunciation — one tap away, same control the curator uses |
-| Audio resolution | Vue-layer `resolveSentenceAudio(appDecks, sentenceId) → { audioUrl, audioStart, audioEnd } \| null`; **no engine/question type change** | Playback ADR §5 — engine + questions stay pure text; the client resolves from the payload it holds |
-| `DeckOverview` audio | Mount `AudioPlayer(:src=deck.audioUrl)`; whole-conversation play + click-sentence → `playSegment(line.audioStart, line.audioEnd)` | Playback ADR §3 surface 1; the overview already holds the full `AppDeckPayload` |
-| `QuizCard` audio | Optional `audio?: { url; start; end }` prop; when present on a word-block question, render a play-segment control | Playback ADR §3 surface 2; keeps `QuizCard` dumb — `App.vue` does the resolution |
-| MCQ audio | None — the control renders only for `kind === 'word-block'` with resolved audio | Playback ADR §3 "MCQ word questions get no audio" (word-level audio deferred) |
-| Missing audio | No `audioUrl`, no markers, or unset storage env ⟹ **no control rendered**, surfaces unchanged, answering unaffected | Playback ADR §6 silent degrade; audio is an adornment, never a gate |
-| Partial markers | A sentence with only one of `audioStart`/`audioEnd` ⟹ treated as no segment (no control) | A half-marker has no valid `[start,end]`; safer than playing to the file end |
-| Review vs. Learning | The word-block control is identical in Learning and Review (same `QuizCard`) | `QuizCard` is the shared quiz component; audio is a per-sentence adornment, not phase-specific |
-| Engine / wire / schema | **No change** — read-only consumption of EP42's fields | This DS is additive UI only; EP42 already added every field |
+| Player primitive | One `AudioPlayer.vue` wrapping one `<audio>` + optional `<track kind="metadata" :src=vttUrl>`, backed by `useSegmentPlayer`; learner-agnostic | Playback ADR §4; ADR mandates one shared component across surfaces |
+| Timing source | The served VTT `TextTrack` — cues keyed by `sentenceId` | WebVTT ADR §6 Option C; browser parses, no wire numbers, no server parse |
+| Segment playback | `playCue(sentenceId)`: find the cue by id in `track.cues`, `seek(cue.startTime)` → play → pause at `cue.endTime` (a `timeupdate` listener cleared on pause/seek/rate-change) | ADR §4 primitive re-sourced to cues; auto-pause must not survive a scrub-away |
+| Active sentence | `activeCueId` updated on the track's `cuechange` (first active cue's id) | Browser subtitle engine drives highlight; no manual `currentTime ∈ [s,e]` compute |
+| Track mode | `track.mode = 'hidden'` (metadata; cues fire `cuechange` without rendering captions) | We want cue events + programmatic access, not visible subtitles |
+| Speed control | Segmented `[1× | 0.75× | 0.5×]`, primary + always visible; sets `audio.playbackRate` | Playback ADR §4 + PRD; same control the curator uses |
+| Audio resolution | Vue-layer `resolveSentenceAudio(appDecks, sentenceId) → { audioUrl, vttUrl } | null`; **no engine/question change** | Playback ADR §5; deck-level audio, sentence targeting via `playCue` |
+| `DeckOverview` audio | `AudioPlayer(:src=deck.audioUrl :vttUrl=deck.vttUrl)`; click sentence → `playCue(sentenceId)`; highlight `activeCueId` | Playback ADR §3 surface 1 |
+| `QuizCard` audio | Optional `audio?: { audioUrl; vttUrl; sentenceId }` prop; word-block + present ⟹ a play-segment control → `playCue(sentenceId)` | Playback ADR §3 surface 2; `QuizCard` stays dumb |
+| MCQ audio | None — control renders only for `kind === 'word-block'` with resolved deck audio | Playback ADR §3 |
+| Missing audio | No `audioUrl` ⟹ no player; no `vttUrl` ⟹ no per-sentence segmenting; no cue ⟹ `playCue` no-ops | Playback ADR §6 silent degrade |
+| Engine / wire / schema | **No change** — read-only consumption of EP42's `audioUrl`/`vttUrl` | Additive UI only |
 
 ## 3. Data Structures
 
 ```typescript
 // ── ST01: segment-player primitive (apps/srs-demo/src/composables/useSegmentPlayer.ts)
-// Owns seek→play→pause-at-end (playback ADR §4). No deck/sentence concepts.
 export interface SegmentPlayer {
-  currentTime: Ref<number>;      // live play-head, seconds
-  duration: Ref<number>;         // total, seconds (scrubber max)
+  currentTime: Ref<number>;
+  duration: Ref<number>;
   playing: Ref<boolean>;
-  rate: Ref<1 | 0.75 | 0.5>;     // playbackRate
-  play(): void;                  // whole-file play from currentTime
+  rate: Ref<1 | 0.75 | 0.5>;
+  activeCueId: Ref<string | null>;   // from the track's cuechange (first active cue id)
+  play(): void;
   pause(): void;
   seek(t: number): void;
   setRate(r: 1 | 0.75 | 0.5): void;
-  /** seek(start), play, pause when currentTime >= end. Clears any prior auto-pause. */
-  playSegment(start: number, end: number): void;
+  /** Find the cue whose id === sentenceId; seek to its startTime, play,
+   *  pause when currentTime >= its endTime. No-op if the cue is absent. */
+  playCue(sentenceId: string): void;
 }
-export function useSegmentPlayer(el: Ref<HTMLAudioElement | null>): SegmentPlayer;
+export function useSegmentPlayer(
+  el: Ref<HTMLAudioElement | null>,
+  track: Ref<TextTrack | null>,   // the metadata track once loaded
+): SegmentPlayer;
 
-// ── ST01: AudioPlayer.vue — transport + prominent speed control ───────────────
-// <AudioPlayer :src="audioUrl" ref="player" />  // wraps one <audio>, exposes SegmentPlayer
-// Renders play/pause, a scrubber bound to currentTime/duration, a mm:ss.cs readout,
-// and a PRIMARY always-visible segmented [1× | 0.75× | 0.5×] control (active rate highlighted).
-// defineExpose(): the SegmentPlayer surface so a parent can call playSegment()/seek() imperatively.
+// ── ST01: AudioPlayer.vue ─────────────────────────────────────────────────────
+// <AudioPlayer :src="audioUrl" :vttUrl="vttUrl" ref="player" />
+//   renders <audio :src><track v-if="vttUrl" kind="metadata" :src="vttUrl" default></audio>,
+//   sets the loaded track's mode='hidden', wires cuechange → activeCueId,
+//   play/pause, scrubber (currentTime/duration), mm:ss.cs readout, and a PRIMARY
+//   always-visible segmented [1×|0.75×|0.5×] control. defineExpose(SegmentPlayer).
 
-// ── ST03: Vue-layer audio resolution (apps/srs-demo, e.g. composables/useAudio.ts) ──
-// Engine stays audio-free (playback ADR §5); resolve from the payload App.vue already holds.
-export interface SentenceAudio { url: string; start: number; end: number }
+// ── ST03: Vue-layer audio resolution (apps/srs-demo/src/composables/useAudio.ts) ──
+export interface DeckAudio { audioUrl: string; vttUrl: string }
+// Finds the deck containing sentenceId; returns { audioUrl, vttUrl } only when the
+// deck has BOTH (segmentable). Absent vttUrl ⟹ null (no per-sentence control).
 export function resolveSentenceAudio(
   decks: AppDeckPayload[],
   sentenceId: string,
-): SentenceAudio | null;
-// Finds the line by sentenceId across decks; returns null unless the deck has audioUrl
-// AND the line has BOTH audioStart and audioEnd (a half-marker ⟹ null). Absent ⟹ no control.
+): DeckAudio | null;
 
 // ── ST03: QuizCard optional prop (apps/srs-demo/src/components/QuizCard.vue) ──
-// defineProps<{ …existing…; audio?: SentenceAudio }>();
-// Rendered only when props.question.kind === 'word-block' && props.audio — a "▶ Play sentence"
-// control calling the embedded AudioPlayer's playSegment(props.audio.start, props.audio.end).
+// defineProps<{ …existing…; audio?: { audioUrl: string; vttUrl: string; sentenceId: string } }>();
+// Rendered only when question.kind === 'word-block' && props.audio — a "▶ Play sentence"
+// control calling the embedded AudioPlayer's playCue(props.audio.sentenceId).
 ```
 
 ## 4. User Workflows
 
 ```
-# DeckOverview (learner, curated+marked deck)
-open a deck's overview → AudioPlayer mounted on deck.audioUrl
-  → ▶ Play          → plays the whole conversation from currentTime
-  → click sentence  → playSegment(line.audioStart, line.audioEnd)  (seek→play→pause at end)
+# DeckOverview (learner, curated + VTT-marked deck)
+open overview → AudioPlayer(:src=deck.audioUrl :vttUrl=deck.vttUrl)
+  → ▶ Play          → whole conversation from currentTime
+  → click sentence  → playCue(sentenceId)  (find cue → seek→play→pause at cue end)
+  → active cue      → cuechange → activeCueId → highlight that sentence row
   → speed [0.5×]    → audio.playbackRate = 0.5, persists across plays
-  (deck.audioUrl absent → no player rendered; overview identical to today)
+  (deck.audioUrl absent → no player; deck.vttUrl absent → whole-file play only, rows not click-to-segment)
 
 # QuizCard word-block question (Learning or Review)
-question served (kind='word-block', sentenceId=S)
+question (kind='word-block', sentenceId=S)
   App.vue: audio = resolveSentenceAudio(appDecks, S)   // null ⟹ no control
-  → if audio: "▶ Play sentence" → playSegment(audio.start, audio.end)
+  → if audio: "▶ Play sentence" → playCue(S)
   → MCQ question → never any audio control
-  (sentence unmarked, or deck uncurated → audio=null → no control; answering unaffected)
 
-# Degrade matrix (playback ADR §6 — none is an error)
-deck.audioUrl absent          → no player on overview; audio=null in quiz
-line has no markers           → sentence not clickable-to-play; quiz control absent
-line half-marked (start only)  → treated as no segment → no control
-GLL_AUDIO_PUBLIC_URL unset     → EP42 emits no audioUrl → same as "absent" everywhere
+# Degrade matrix (none is an error)
+deck.audioUrl absent        → no player / no quiz control
+deck.vttUrl absent          → whole-file play only; no per-sentence segmenting
+cue for S absent            → playCue no-ops
+GLL_AUDIO_PUBLIC_URL unset  → EP42 emits no audioUrl/vttUrl → same as absent everywhere
 ```
 
 ## 5. Stories
 
-### Phase 1: Learner audio playback (EP43-PH01)
+### EP43-ST01: Shared audio-player primitive + speed control + VTT track  *(retrofit)*
 
-### EP43-ST01: Shared audio-player primitive + prominent speed control *(Done)*
-
-**Scope**: `apps/srs-demo` — one composable (`useSegmentPlayer`) + one presentational component (`AudioPlayer.vue`). No surface wiring here; ST02/ST03 mount it. Built first because both mounts and DS02 embed it.
-**Read List**: `apps/srs-demo/src/components/QuizCard.vue` (component/style idiom, `defineExpose` if used), `apps/srs-demo/src/composables/useStore.ts` (composable idiom), `product-documentation/architecture/20260713T140218Z-engineering-audio-playback-model.md` (§4 segment + rate contract)
+**Scope**: `apps/srs-demo` — extend `useSegmentPlayer`/`AudioPlayer.vue` from `playSegment(start,end)` to a `<track>`-driven `playCue(sentenceId)` + `activeCueId`. No surface wiring here.
+**Read List**: existing `useSegmentPlayer.ts`/`AudioPlayer.vue`, `QuizCard.vue` (idiom), WebVTT ADR §6.
 **Tasks**:
 
-- [x] Add `useSegmentPlayer(el)`: wraps one `<audio>` ref; exposes `currentTime`/`duration`/`playing`/`rate` refs and `play`/`pause`/`seek`/`setRate`/`playSegment`. `playSegment(start,end)` seeks to `start`, plays, and pauses on a `timeupdate` when `currentTime >= end`; the listener is torn down on `pause`/`seek`/`setRate` so a stale auto-pause never fires after the user scrubs away.
-- [x] Add `AudioPlayer.vue` (`:src`): one `<audio :src>`; play/pause; a scrubber bound to `currentTime`/`duration`; a `mm:ss.cs` readout; a **primary, always-visible** segmented `[1× | 0.75× | 0.5×]` control with the active rate clearly highlighted.
-- [x] `defineExpose` the `SegmentPlayer` surface so a parent reads `currentTime`/`duration` and calls `seek`/`playSegment` imperatively.
-- [x] Keep it learner-agnostic — no deck/sentence/curator concepts — so ST02, ST03, and DS02 mount it unchanged.
-      **Acceptance Criteria**:
-- [x] `playSegment(1.0, 2.0)` seeks to 1.0 s, plays, and pauses within one frame of 2.0 s — not earlier, not past — verified with a mocked `HTMLAudioElement` (`currentTime`/`play`/`pause`/`timeupdate`). (`useSegmentPlayer.test.ts`)
-- [x] The speed control shows all three rates at once with the active one distinguished; clicking `0.5×` sets `audio.playbackRate = 0.5` and it persists across play/pause. (`useSegmentPlayer.test.ts`)
-- [x] Seeking or changing rate mid-segment disarms the pending auto-pause (no "pauses at the old end after I scrub away"). (`useSegmentPlayer.test.ts`)
-- [x] A grep confirms `AudioPlayer.vue`/`useSegmentPlayer.ts` import nothing deck/sentence/curator-specific.
+- [ ] `AudioPlayer.vue`: render an optional `<track kind="metadata" :src="vttUrl" default>`; on load set `track.mode='hidden'`; expose the `TextTrack` to `useSegmentPlayer`.
+- [ ] `useSegmentPlayer(el, track)`: keep transport/rate/scrubber/`mm:ss.cs`; add `activeCueId` (from `cuechange`) and `playCue(sentenceId)` (cue lookup by id → seek→play→pause at `endTime`; tear down the auto-pause on pause/seek/setRate).
+- [ ] Keep it learner-agnostic (no deck/sentence/curator concepts beyond a cue id) so ST02/ST03 + DS02 mount it unchanged.
 
-### EP43-ST02: `DeckOverview` conversation + per-sentence playback *(Done)*
+**Acceptance Criteria**:
 
-**Scope**: `apps/srs-demo` — mount `AudioPlayer` on `DeckOverview` and wire sentence clicks to segment play. No new data flow (the overview already holds `:deck`).
-**Read List**: `apps/srs-demo/src/components/DeckOverview.vue` (its `:deck` prop, `deck.lines` rendering L318+, existing sentence-click handlers), `apps/srs-demo/src/components/AudioPlayer.vue` (ST01), `packages/api-contract/src/content.ts` (`AppDeckPayload.audioUrl`, `AppLinePayload.audioStart/audioEnd`)
+- [ ] `playCue('S1')` seeks to S1's cue start, plays, and pauses within one frame of its end (mocked `HTMLAudioElement` + a fake `TextTrack`/cues).
+- [ ] `cuechange` to S2's cue sets `activeCueId='S2'`.
+- [ ] Speed control shows all three rates, active highlighted; `0.5×` sets `playbackRate` and persists; seeking/rate-change disarms a pending auto-pause.
+- [ ] A grep confirms `AudioPlayer.vue`/`useSegmentPlayer.ts` import nothing deck/curator-specific.
+
+### EP43-ST02: `DeckOverview` conversation + cue-driven per-sentence playback  *(retrofit)*
+
+**Scope**: `apps/srs-demo` — mount `AudioPlayer` with `vttUrl`; wire clicks to `playCue`; highlight `activeCueId`.
+**Read List**: `DeckOverview.vue` (`:deck`, sentence rendering + click handlers), `AudioPlayer.vue`, `packages/api-contract/src/content.ts` (`audioUrl`/`vttUrl`).
 **Tasks**:
 
-- [x] When `deck.audioUrl` is present, render `<AudioPlayer :src="deck.audioUrl">` at the top of the overview; when absent, render nothing (no empty player).
-- [x] Make each sentence row a play affordance: on click, if the line has both `audioStart` and `audioEnd`, call the player's `playSegment(audioStart, audioEnd)`; otherwise the row keeps its current (non-audio) behaviour.
-- [x] Show a subtle "playing" affordance on the active sentence (optional, non-blocking) driven by the player's `currentTime` within `[audioStart, audioEnd]`.
-      **Acceptance Criteria**:
-- [x] On a curated, marked deck: ▶ plays the whole conversation; clicking a marked sentence plays just its `[audioStart, audioEnd]` and stops at the end; the speed control slows playback. (verified by code inspection + `useSegmentPlayer` logic tests — no jsdom/vue-test-utils in this repo for a mounted-component test.)
-- [x] A deck with `audioUrl` absent renders the overview exactly as today — no player, no regressions to sentence rendering/clicks. (`v-if="deck.audioUrl"` guard; **not** verified by an automated component test — no component-test harness exists in `apps/srs-demo`.)
-- [x] Clicking an unmarked sentence does not start audio and does not error. (`onSentenceClick` early-returns when `audioStart`/`audioEnd` is undefined.)
+- [ ] `deck.audioUrl` present ⟹ render `<AudioPlayer :src :vttUrl>`; absent ⟹ nothing.
+- [ ] Sentence click → `playCue(sentenceId)` when `deck.vttUrl` present; else keep current non-audio behaviour.
+- [ ] Highlight the row whose `sentenceId === activeCueId`.
 
-### EP43-ST03: `QuizCard` word-block segment playback *(Done)*
+**Acceptance Criteria**:
 
-**Scope**: `apps/srs-demo` — an optional `audio` prop on `QuizCard`, a play-segment control on the word-block branch, and the `App.vue`-side resolution from `appDecks`. Engine untouched.
-**Read List**: `apps/srs-demo/src/components/QuizCard.vue` (word-block branch L95+/L171+, `SentenceQuestion` usage, `defineProps`), `apps/srs-demo/src/App.vue` (`appDecks`, `currentQuestion`/`reviewQuestion`, how `QuizCard` is passed `:question`), `packages/api-contract/src/content.ts` (payload fields)
+- [ ] Curated+VTT deck: ▶ plays whole conversation; clicking a sentence plays just its cue and stops at cue end; speed slows it; the active sentence highlights.
+- [ ] `audioUrl` absent ⟹ overview identical to today. `vttUrl` absent ⟹ whole-file play works, sentence clicks don't segment, no error.
+
+### EP43-ST03: `QuizCard` word-block segment playback  *(retrofit)*
+
+**Scope**: `apps/srs-demo` — optional `audio` prop, a word-block play control, `App.vue` resolution from `appDecks`. Engine untouched.
+**Read List**: `QuizCard.vue` (word-block branch, `defineProps`), `App.vue` (`appDecks`, current/review question), `useAudio.ts`.
 **Tasks**:
 
-- [x] Add `resolveSentenceAudio(decks, sentenceId)` (a small `useAudio.ts` composable): find the line across `appDecks`; return `{ url, start, end }` only when the deck has `audioUrl` **and** the line has both markers; else `null`.
-- [x] In `App.vue`, compute the audio for the current word-block question (Learning and Review paths) and pass it as `:audio` to `QuizCard`; MCQ questions pass nothing.
-- [x] In `QuizCard`, add `audio?: SentenceAudio`; render a "▶ Play sentence" control only when `question.kind === 'word-block' && audio`; it drives an embedded `AudioPlayer`/`playSegment(audio.start, audio.end)`.
-- [x] Ensure the control never renders on MCQ questions and never gates answering (audio is an adornment).
-      **Acceptance Criteria**:
-- [x] A word-block question for a marked sentence shows a play control that plays exactly `[audioStart, audioEnd]`; the same works in Review (same `QuizCard`, both mounts pass `:audio`). (verified by code inspection — no component-test harness in this repo.)
-- [x] An MCQ question renders no audio control; a word-block question whose sentence is unmarked or whose deck is uncurated renders no control. (`v-if="audio"` guard on the word-block branch, fed by `resolveSentenceAudio`; **not** verified by an automated component-mount test — no jsdom/vue-test-utils in `apps/srs-demo`.)
-- [x] `resolveSentenceAudio` returns `null` for a half-marked line and for a `sentenceId` absent from `appDecks`; no engine/question type changed (`ReviewQuestionType` still `'mcq' | 'word-block'`). (`useAudio.test.ts`, 5 cases; verified by `pnpm -r typecheck`.)
+- [ ] `resolveSentenceAudio(decks, sentenceId)` → the sentence's deck `{ audioUrl, vttUrl }` when both present, else `null`.
+- [ ] `App.vue`: compute audio for the current word-block question (Learning + Review), pass `{ audioUrl, vttUrl, sentenceId }` as `:audio`; MCQ passes nothing.
+- [ ] `QuizCard`: `audio?` prop; render "▶ Play sentence" only for `word-block` + `audio`; drives an embedded `AudioPlayer`/`playCue(sentenceId)`.
+
+**Acceptance Criteria**:
+
+- [ ] A word-block question for a deck with a VTT shows a play control that plays that sentence's cue; same in Review.
+- [ ] MCQ renders no control; a word-block question whose deck has no `vttUrl` renders no control.
+- [ ] `resolveSentenceAudio` returns `null` for a deck without `vttUrl` and for an unknown `sentenceId`; `ReviewQuestionType` unchanged.
 
 ## 6. Success Criteria
 
-1. A learner on a curated, marked deck hears the whole conversation and any single sentence's segment on `DeckOverview`, and a single sentence's segment on the word-block question — with a primary, always-visible 1× / 0.75× / 0.5× speed control on every surface.
-2. Audio is resolved entirely in the Vue layer from `appDecks`; the engine, `QuizQuestion`/`SentenceQuestion`, and `ReviewQuestionType` are unchanged (playback ADR §5).
-3. Every missing-audio path (no `audioUrl`, no/half markers, unset storage env) renders no control and leaves the surface behaving exactly as today — audio never gates answering (playback ADR §6).
+1. A learner on a curated + VTT-marked deck hears the whole conversation and any single sentence's cue segment on `DeckOverview`, and a single sentence's cue on the word-block question — with a primary 1×/0.75×/0.5× speed control everywhere.
+2. All per-sentence timing comes from the served VTT via the browser's `TextTrack`/`cuechange`; **no per-line numbers on the wire**, no server parse; the engine + question types are unchanged (playback ADR §5).
+3. Every missing-audio path (no `audioUrl`, no `vttUrl`, no cue, unset storage env) degrades silently; audio never gates answering (playback ADR §6).
 4. `AudioPlayer`/`useSegmentPlayer` are learner-agnostic and reused unchanged by EP43-DS02's marker tool.
-5. No storage/wire/schema/engine type change; `pnpm -r typecheck` and the test suite pass.
+5. No storage/wire/schema/engine change; `pnpm -r typecheck` + suite pass.
