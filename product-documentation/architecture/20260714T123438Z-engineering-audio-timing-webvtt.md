@@ -1,6 +1,8 @@
 # ADR: Conversation Audio — Timing as WebVTT (Storage, Authoring & Playback)
 
-**Status:** Accepted
+**Status:** Accepted (amended)
+
+**Amended by:** [Conversation Audio — wavesurfer.js Playback Engine](20260714T234735Z-engineering-audio-wavesurfer-pivot.md) (20260714). §6's claim that the browser's native `TextTrack`/`cuechange` drives segment-stop/highlight no longer holds once the player is wavesurfer.js's `WebAudio` backend (audio decoded/played outside the native `<audio>` element). The format/storage/cue-ID/hash-stamp decisions here (§1–§5, §7–§8) are unaffected; only the consume-mechanism detail in §6 is superseded.
 
 **Date:** 2026-07-14
 

@@ -2,7 +2,7 @@
 
 **Status:** Superseded
 
-**Superseded by:** [Conversation Audio — Timing as WebVTT (Storage, Authoring & Playback)](20260714T123438Z-engineering-audio-timing-webvtt.md) (20260714). The bespoke JSON marker map, the `apply-markers` seed/import ingest, and the two-pass (Pass-1/Pass-2) build architecture below are all replaced. Timing is now WebVTT bound to the audio binary, with a single-pass gated server-write. Retained for historical context only.
+**Superseded by:** [Conversation Audio — Timing as WebVTT (Storage, Authoring & Playback)](20260714T123438Z-engineering-audio-timing-webvtt.md) (20260714). The bespoke JSON marker map, the `apply-markers` seed/import ingest, and the two-pass (Pass-1/Pass-2) build architecture below are all replaced. Timing is now WebVTT bound to the audio binary, with a single-pass gated server-write. Retained for historical context only. **Also amended by:** [Conversation Audio — wavesurfer.js Playback Engine](20260714T234735Z-engineering-audio-wavesurfer-pivot.md) (20260714) — the blind scrub-and-nudge marking UI referenced throughout is replaced by a wavesurfer.js waveform + Regions-plugin interface.
 
 **Date:** 2026-07-13
 

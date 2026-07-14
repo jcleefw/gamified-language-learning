@@ -2,7 +2,7 @@
 
 **Status:** Accepted (amended)
 
-**Amended by:** [Conversation Audio — Timing as WebVTT (Storage, Authoring & Playback)](20260714T123438Z-engineering-audio-timing-webvtt.md) (20260714). The runtime *consume mechanism* is revised: timing is delivered as a served WebVTT track parsed natively by the browser (`TextTrack` / `cuechange`), not read as `audioStart/audioEnd` off `sentences[]`. The playback *behaviour* (seek → play → pause-at-end, per-sentence highlight) still holds; only the source of the timing changes. Read the sections below with that amendment in mind.
+**Amended by:** [Conversation Audio — Timing as WebVTT (Storage, Authoring & Playback)](20260714T123438Z-engineering-audio-timing-webvtt.md) (20260714). The runtime *consume mechanism* is revised: timing is delivered as a served WebVTT track parsed natively by the browser (`TextTrack` / `cuechange`), not read as `audioStart/audioEnd` off `sentences[]`. The playback *behaviour* (seek → play → pause-at-end, per-sentence highlight) still holds; only the source of the timing changes. Read the sections below with that amendment in mind. **Further amended by:** [Conversation Audio — wavesurfer.js Playback Engine](20260714T234735Z-engineering-audio-wavesurfer-pivot.md) (20260714). §4's native `<audio>` element is replaced by a wavesurfer.js (`WebAudio` backend) player, fixing a real seek/stop-precision defect (EP43-BUG01); playback *behaviour* is unchanged.
 
 **Date:** 2026-07-13
 

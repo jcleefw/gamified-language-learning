@@ -2,8 +2,9 @@
 
 **Created**: 20260713T232015Z
 **Redefined**: 20260714 — timing is WebVTT (not a bespoke JSON marker map); DS01 retrofits to the VTT consume path, DS02 rebuilds the marker tool as a WebVTT server-write.
+**Redefined again**: 20260714 — post-DS01/DS02 ship, EP43-BUG01 forced a pivot to wavesurfer.js as the playback/marking engine (see below).
 
-**Status**: Draft
+**Status**: In Progress
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
@@ -13,6 +14,8 @@
 **Predecessor**: N/A
 
 > **Redefinition (20260714):** timing is now **WebVTT** ([WebVTT Timing ADR](../../product-documentation/architecture/20260714T123438Z-engineering-audio-timing-webvtt.md)), replacing the bespoke detached-JSON marker map. Two changes to the previously-shipped scope: **DS01** (learner playback) is *retrofitted* to consume a served `.vtt` via the browser's native `TextTrack`/`cuechange` (Option C) instead of reading per-line `audioStart`/`audioEnd`; **DS02** (marker authoring) is rebuilt as an **isolated VTT-in/VTT-out component** committing through a **single-pass gated server-write** (DB `audio.vtt` column + durable bucket `.vtt`), replacing the JSON export + `apply-markers` CLI seed step. The shared `AudioPlayer`/`useSegmentPlayer` primitive is kept.
+
+> **Redefinition (20260714, post-ship):** DS01/DS02 shipped, then **EP43-BUG01** (learner audio overshooting marked sentence boundaries, and separately the plain scrubber landing on the wrong audio content) traced to HTML5 `<audio>`'s imprecise native seek — no amount of event-driven stop logic (a `timeupdate`→`requestAnimationFrame` stopgap was tried, commit `db7a9f3`) can fix a seek that already lands wrong. A dev-only prototype (`PrototypeWavesurfer.vue`, commit `b7c51e2`) validated **wavesurfer.js** (`backend: 'WebAudio'`) as the fix: sample-accurate seek + native `stopAt()`, no polling. **Decision recorded in [wavesurfer.js Pivot ADR](../../product-documentation/architecture/20260714T234735Z-engineering-audio-wavesurfer-pivot.md):** both `AudioPlayer.vue`/`useSegmentPlayer.ts` (learner) and `MarkAudio.vue`/`useMarkerAuthoring.ts` (curator) move to wavesurfer.js — the curator surface additionally gains a rendered waveform + Regions plugin, replacing the blind scrub-and-nudge UI. The WebVTT data contract (this epic's prior redefinition) is unaffected; only the playback/authoring *engine* changes. **EP43-DS03** (not yet written) will design the implementation swap.
 
 ---
 
@@ -100,9 +103,14 @@ It front-loads playback (DS01) so the shared audio-player primitive exists befor
 - [Audio Asset Model ADR](../../product-documentation/architecture/20260714T123409Z-engineering-audio-asset-model.md) — where `audio.vtt` lives.
 - [Audio Marker Tool PRD](../../product-documentation/prds/20260713T140217Z-audio-marker-tool.md) — the curator experience DS02 realizes.
 - [Marking (Authoring) ADR](../../product-documentation/architecture/20260713T140219Z-engineering-audio-marking-authoring.md) — **Superseded** by the WebVTT ADR (kept for its rejected-alternative record).
+- [wavesurfer.js Pivot ADR](../../product-documentation/architecture/20260714T234735Z-engineering-audio-wavesurfer-pivot.md) — **the current governing ADR for the playback/marking engine**: native `<audio>` → wavesurfer.js (`WebAudio` backend) on both surfaces, Regions plugin for curator marking. Amends the Playback Model ADR §4 and the WebVTT Timing ADR §6 (consume mechanism only — format/storage/cue-ID unaffected).
 
 ## Next Steps
 
-1. Review and approve the redefinition.
-2. DS01 (learner playback — ST01/ST02/ST03) → retrofit the shipped code to the VTT `TextTrack`/`cuechange` consume path; drop per-line `audioStart`/`audioEnd` reads.
-3. DS02 (marker authoring — ST04/ST05) → rebuild `MarkAudio.vue`/`useMarkerAuthoring.ts` as an isolated VTT-in/out component + the gated VTT server-write; drop `apply-markers.ts` + `DeckMarker`/`DeckMarkerMap`.
+1. ~~Review and approve the redefinition.~~ ✅
+2. ~~DS01 (learner playback — ST01/ST02/ST03) → retrofit the shipped code to the VTT `TextTrack`/`cuechange` consume path; drop per-line `audioStart`/`audioEnd` reads.~~ ✅ Shipped, then found to need the wavesurfer pivot (below).
+3. ~~DS02 (marker authoring — ST04/ST05) → rebuild `MarkAudio.vue`/`useMarkerAuthoring.ts` as an isolated VTT-in/out component + the gated VTT server-write; drop `apply-markers.ts` + `DeckMarker`/`DeckMarkerMap`.~~ ✅ Shipped, then found to need the wavesurfer pivot (below).
+4. **EP43-BUG01** — diagnosed and stopgap-fixed (rAF polling), then root-caused to native `<audio>` seek imprecision; wavesurfer.js prototype validated. ✅
+5. **wavesurfer.js Pivot ADR** — written and accepted. ✅
+6. Write **EP43-DS03** — design spec for swapping `useSegmentPlayer.ts`/`AudioPlayer.vue` and `useMarkerAuthoring.ts`/`MarkAudio.vue` onto wavesurfer.js, including the curator waveform/Regions UI and the marker-UX auto-populate-next-start improvement. **Not started.**
+7. Implement the DS03 swap; retire `PrototypeWavesurfer.vue`; decide the fate of the EP43-BUG01 rAF stopgap (delete vs. keep as defense-in-depth).

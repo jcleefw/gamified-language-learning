@@ -1,67 +1,70 @@
-# Current Focus — EP42/EP43 Audio (redefined: audio-table + WebVTT)
+# Current Focus — EP43: wavesurfer.js pivot (post-BUG01)
 
-**Status**: **Docs redefined + code reconciled; verified green.** The `decks.audio_key` design was replaced,
-in place on this branch, by the standalone `audio` table (EP42) + WebVTT timing (EP43). Epics + all four DS specs
-rewritten; ADR/PRD cross-refs updated; all code landed. `pnpm -r typecheck` clean across 10 projects; full test
-sweep green (server 198, db 80, srs-demo 71, cli-demo-db 59, engine 212, +others). Grep-clean of
-`audio_key`/`DeckMarker`/`apply-markers` (only absence-assertions + comments remain).
-**Remaining**: (a) manual MinIO-up browser walkthrough (upload → mark → commit VTT → learner plays cues) — not
-yet run; (b) `useSegmentPlayer.test.ts` playCue/activeCueId cases (needs a mocked TextTrack) — DS01 AC gap, non-blocking.
-Nothing committed yet — changes are in the working tree.
-**Branch**: `EP42--create-bucket-for-audio` (EP42 + EP43 ride here; **neither merged to main**; reworked in place — no v2 branch).
+**Status**: EP42/EP43 (audio-table + WebVTT) shipped and committed on this branch. A real playback bug
+(EP43-BUG01) was found, diagnosed, stopgap-fixed, and root-caused deeper than the stopgap — **decision made
+to pivot the player to wavesurfer.js**. **ADR written and accepted**: [wavesurfer.js Pivot ADR](../../../product-documentation/architecture/20260714T234735Z-engineering-audio-wavesurfer-pivot.md).
+Next deliverable: **EP43-DS03** design spec (not yet written).
+**Branch**: `EP42--create-bucket-for-audio` (still unmerged to main).
 **Last updated**: 20260714
 
 ---
 
-## The redefinition (locked 20260714)
+## EP43-BUG01 — what happened, in order
 
-Two decisions drove a full rework of the audio epics **in place** on the unmerged branch:
+1. **Reported**: learner audio didn't follow WebVTT marker boundaries on deck
+   `73db8f50-a174-433b-93bf-88695038e57c` — clicking a sentence sometimes played into the next one.
+2. **Diagnosed** (full writeup: `.agents/changelogs/EP43--audio-playback-and-marking/20260714T222419Z-EP43-BUG01-audio-playback-marker-timing.md`):
+   added `[AUDIO]`-tagged logging across `useSegmentPlayer.ts`/`AudioPlayer.vue`/`QuizCard.vue`/`DeckOverview.vue`.
+   Live trace showed VTT cues and cue-lookup were correct; the actual defect was `playSegment()`'s stop-at-`end`
+   check relying solely on the native `timeupdate` event (~4Hz, irregular) — observed overshoot ranged from
+   0.22s up to 2.15s (played straight through the next marked sentence).
+3. **Stopgap fix** (commit `db7a9f3`): replaced the `timeupdate` check with `requestAnimationFrame` polling
+   (~60Hz) in `useSegmentPlayer.ts`. Cut overshoot to single-digit milliseconds.
+4. **Bigger problem surfaced**: user reported the *plain scrubber* (dragging, unrelated to markers) also lands
+   on the wrong audio content — an rAF-based JS check can't fix a seek that already lands in the wrong place.
+   Root cause: HTML5 `<audio>`'s native WAV seeking is imprecise for this deck's file, independent of our stop
+   logic entirely.
+5. **wavesurfer.js prototype** (commit `b7c51e2`, dev-only behind `env.debugMode`, "WS proto" nav button →
+   `PrototypeWavesurfer.vue`): validated that wavesurfer.js's `backend: 'WebAudio'` (decodes to an `AudioBuffer`,
+   plays via `AudioBufferSourceNode`, sample-accurate seek + a native `stopAt()` — no polling at all) fixes
+   **both** symptoms. Confirmed live against the same deck after two prototype-only bugs were fixed (missing
+   `backend: 'WebAudio'` — default is `'MediaElement'`, i.e. the same native `<audio>` under the hood; and a
+   `region-out` handler that paused on *any* region's exit, not just the one being played).
 
-1. **Storage model**: `decks.audio_key` column → **standalone, versioned `audio` table** (asset-model ADR). No `audio_key`,
-   no `0012_deck_audio.sql`. Deck↔audio 1:1-current, `is_current` versioning, nullable `vtt` column, polymorphic
-   `subject_type` (**deck-only**).
-2. **Timing**: bespoke detached-JSON marker map → **WebVTT**, bound to the binary (WebVTT ADR). Served from the bucket;
-   consumed by the browser's native `TextTrack`/`cuechange` (Option C). **No per-line `audioStart`/`audioEnd` on the wire.**
+**Decision**: pivot the real player (`useSegmentPlayer.ts`/`AudioPlayer.vue`) and the curator marking tool
+(`useMarkerAuthoring.ts`/`MarkAudio.vue`) to wavesurfer.js. Package size measured: core ~12KB gzip,
+core+Regions plugin ~17KB gzip (vs. Howler's ~8KB, which was considered and rejected — see below).
 
-### Epic split (no EP44 — asset model folded into EP42)
+## Why wavesurfer over Howler (considered and rejected)
 
-- **EP42** = deck audio *storage & retrieval* on the `audio` table. Keeps the still-relevant code (MinIO/R2 substrate,
-  content-addressed keys, magic-byte check, immutable cache, curator upload endpoint + page, env→R2 contract);
-  removes `audio_key`/`0012`/per-line timing/`DeckMarker`. Emits `audioUrl` + `vttUrl` on `GET /api/decks`.
-- **EP43** = *playback & marking*. **DS01** retrofits learner playback to the VTT `TextTrack`/`cuechange` consume path
-  (`playCue(sentenceId)`, `activeCueId`), dropping per-line number reads. **DS02** rebuilds the marker tool as an
-  isolated **VTT-in/VTT-out** component committing via a **gated single-pass server-write** (DB `audio.vtt` +
-  durable bucket `.vtt`, hash-stamped). Drops the JSON export + `apply-markers`.
+Howler's `sprite` API fits pre-defined markers well and is lighter (~8KB), but has no waveform/region UI
+primitive — the curator tool would still be hand-rolled either way. wavesurfer's Regions plugin is
+purpose-built for the marking workflow (draggable start/end handles on a rendered waveform, built-in
+region playback) and can serve both surfaces with one library and mental model. The ~9KB extra gzip on the
+learner-facing player (which doesn't need a waveform) was judged an acceptable tradeoff for that.
 
-## Key design decisions baked into the specs
+## Next steps (not started — this is the recorded plan, not a commit)
 
-- **VTT served from the bucket via a derived key** (`deriveVttKey`: `…/{sha256}.mp3` → `…/{sha256}.vtt`), so
-  `vttUrl = resolveAudioUrl(deriveVttKey(row.key))` reuses DS01's pure resolver — **`@gll/db` stays env-free**.
-- **`audio.vtt` DB column** = live working/rehydrate copy + "VTT exists?" signal (non-null ⟹ emit `vttUrl`).
-  **Bucket `.vtt`** = durable SoR learners consume. VTT objects: `no-cache` (overwritable on re-mark); audio binary: `immutable`.
-- **Player primitive keeps `playSegment(start,end)`** (marker-tool draft preview) **and adds `playCue(sentenceId)`**
-  (committed cues) + `activeCueId`.
-- **Server-write stamp check**: `readVttHash(vtt)` must equal the current `audio` row's key hash → else `409`.
+1. **Write an ADR** for the pivot to wavesurfer.js (supersedes/amends the existing playback ADR's assumption
+   of native `<audio>` + `TextTrack`/`cuechange`).
+2. **Write EP43-DS03 design spec** — "implement wavesurfer.js into the codebase" — covering:
+   - **Learner view** (`AudioPlayer.vue`): media controls only, **no waveform** — replicate the current
+     play/pause/scrubber/speed-control UI/UX as-is, just backed by wavesurfer's `WebAudio` backend instead of
+     a native `<audio>` element. Playback speed must stay easy to reach (it's a primary, always-visible
+     control today — ADR §4).
+   - **Curator view** (`MarkAudio.vue`): **waveform should be visible** (via wavesurfer + Regions plugin),
+     replacing/augmenting the current blind scrub-and-nudge marking UI.
+   - **Marker UX improvement**: today the curator must click sentence N's end, then separately click
+     sentence N+1's start at the *same* point — request: auto-populate the next sentence's start from the
+     previous sentence's committed end (or a better UX than manual duplication). Needs a UX proposal in the
+     design spec, not just a code note.
+3. Only after the ADR + DS03 are written and reviewed: implement the real swap in `useSegmentPlayer.ts`/
+   `AudioPlayer.vue`/`useMarkerAuthoring.ts`/`MarkAudio.vue`, retire `PrototypeWavesurfer.vue`, and consider
+   whether the EP43-BUG01 rAF stopgap should be deleted (superseded) or left as defense-in-depth.
 
-## Code reconciliation (manifest-classified; all 55 branch files accounted for)
+## Reference
 
-- **DROP**: `apps/cli-demo-db/src/apply-markers.ts`; `DeckMarker`/`DeckMarkerMap` in `api-contract/src/content.ts`;
-  `packages/db/drizzle/migrations/0012_deck_audio.sql`; per-line `audioStart`/`audioEnd` (wire + `DeckSentence`).
-- **REWRITE**: `db/src/schema.ts` (audio table + new migration); `sqlite-content-store.ts` (current-row resolution);
-  `content.ts` (drop markers, add `vttUrl`); `curation.ts` (upload → audio-row insert; + VTT server-write endpoint);
-  `audio-store.ts` (+`deriveVttKey`, `text/vtt` cache branch); `useMarkerAuthoring.ts` + `MarkAudio.vue` (VTT-in/out);
-  `useSegmentPlayer.ts` + `AudioPlayer.vue` (`<track>`/`playCue`/`activeCueId`); `useAudio.ts`, `DeckOverview.vue`,
-  `QuizCard.vue`, `App.vue` (cue-driven); tests across db/server/srs-demo.
-- **KEEP**: MinIO `docker-compose.yml`, `CurateAudio.vue` + upload flow, `putObject`/gating, curator env flags.
-
-## Open follow-ups (from the ADRs, not yet decided)
-
-1. **Option-C premise** — confirm nothing but the playback screen needs timestamps as data.
-2. **Audio-replacement approval/permission flow** — provisional "admin approves"; own discussion.
-3. **`subject_type` enum surface** — ship `deck` only; widen to `sentence`/`word` when built.
-
-## Immediate next steps
-
-1. Finish the code reconciliation in dependency order: schema+migration → api-contract → server → srs-demo.
-2. Verify: `pnpm -r typecheck` + test suites; grep clean for `audio_key`/`DeckMarker`/`apply-markers`.
-3. Manual: MinIO-up browser walkthrough (upload → mark → commit VTT → learner plays cues).
+- Prototype: `apps/srs-demo/src/components/PrototypeWavesurfer.vue`, reached via the "🌊 WS proto" button
+  (shows only under `env.debugMode`, i.e. any `pnpm dev` run) — `screen = 'ws-proto'` in `App.vue`/`types.ts`.
+- BUG report: `.agents/changelogs/EP43--audio-playback-and-marking/20260714T222419Z-EP43-BUG01-audio-playback-marker-timing.md`.
+- wavesurfer.js version pinned: `7.12.10` (`apps/srs-demo/package.json`).
