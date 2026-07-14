@@ -1,10 +1,12 @@
 import { ref, type Ref } from 'vue';
-import type { AppLinePayload, DeckMarkerMap } from '@gll/api-contract';
+import { buildVtt as buildVttText, parseVtt } from '@gll/api-contract';
 
 // EP43-DS02 ST04 — the marker-authoring state, extracted from the view so the
-// capture / seed / validity / export logic is unit-testable without a DOM (the
+// capture / seed / validity / VTT-emit logic is unit-testable without a DOM (the
 // repo tests composables, not .vue files). MarkAudio.vue is the thin shell that
-// wires the shared AudioPlayer's live `currentTime` into these operations.
+// wires the shared AudioPlayer's live `currentTime` into these operations. The
+// component is VTT-in / VTT-out at its edges (WebVTT ADR §7): it hydrates from an
+// existing VTT and emits a VTT bound to the audio binary by a sha256 stamp.
 
 /** A row's in/out draft; `null` = that edge is not yet captured. */
 export interface MarkerDraft {
@@ -18,7 +20,7 @@ export const NUDGE_FINE = 0.01;
 
 // Markers are seconds-float; capture off the play-head and repeated nudges both
 // accumulate binary-float noise. Quantise to the centisecond the readout shows
-// so an exported/round-tripped marker is stable and byte-identical on re-apply.
+// so an emitted/round-tripped marker is stable.
 function quantize(t: number): number {
   return Math.round(t * 100) / 100;
 }
@@ -26,8 +28,8 @@ function quantize(t: number): number {
 export interface MarkerAuthoring {
   /** sentenceId → draft; reactive so the view rows stay live. */
   markers: Ref<Record<string, MarkerDraft>>;
-  /** Reset every row from the deck's lines, pre-filling any existing markers. */
-  seed(lines: AppLinePayload[]): void;
+  /** Reset every row from the deck's sentence ids, hydrating any existing VTT cues. */
+  seed(sentenceIds: string[], existingVtt?: string): void;
   /** Capture the play-head into a row's in/out (quantised, clamped ≥ 0). */
   setIn(sentenceId: string, time: number): void;
   setOut(sentenceId: string, time: number): void;
@@ -35,19 +37,21 @@ export interface MarkerAuthoring {
   nudge(sentenceId: string, edge: 'start' | 'end', delta: number): void;
   /** A row is exportable iff both edges are set and `end > start`. */
   isComplete(sentenceId: string): boolean;
-  /** Build the hand-off map from the complete, valid rows only. */
-  buildMap(deckId: string): DeckMarkerMap;
+  /** Emit WebVTT (cue-ID = sentenceId, `NOTE audio-sha256` stamp) from complete rows only. */
+  buildVtt(audioSha256: string): string;
 }
 
 export function useMarkerAuthoring(): MarkerAuthoring {
   const markers = ref<Record<string, MarkerDraft>>({});
 
-  function seed(lines: AppLinePayload[]): void {
+  function seed(sentenceIds: string[], existingVtt?: string): void {
+    const parsed = existingVtt ? parseVtt(existingVtt) : {};
     const next: Record<string, MarkerDraft> = {};
-    for (const line of lines) {
-      next[line.sentenceId] = {
-        start: line.audioStart ?? null,
-        end: line.audioEnd ?? null,
+    for (const sentenceId of sentenceIds) {
+      const cue = parsed[sentenceId];
+      next[sentenceId] = {
+        start: cue ? quantize(cue.start) : null,
+        end: cue ? quantize(cue.end) : null,
       };
     }
     markers.value = next;
@@ -79,15 +83,12 @@ export function useMarkerAuthoring(): MarkerAuthoring {
     );
   }
 
-  function buildMap(deckId: string): DeckMarkerMap {
-    const out: DeckMarkerMap['markers'] = {};
-    for (const [sentenceId, draft] of Object.entries(markers.value)) {
-      if (draft.start !== null && draft.end !== null && draft.end > draft.start) {
-        out[sentenceId] = { start: draft.start, end: draft.end };
-      }
-    }
-    return { deckId, markers: out };
+  function buildVtt(audioSha256: string): string {
+    const cues = Object.entries(markers.value)
+      .filter(([, d]) => d.start !== null && d.end !== null && d.end > d.start)
+      .map(([id, d]) => ({ id, start: d.start!, end: d.end! }));
+    return buildVttText(cues, audioSha256);
   }
 
-  return { markers, seed, setIn, setOut, nudge, isComplete, buildMap };
+  return { markers, seed, setIn, setOut, nudge, isComplete, buildVtt };
 }

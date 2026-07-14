@@ -2,7 +2,7 @@
 
 **Date**: 20260713T140217Z
 **Status**: Draft (revised 20260714 — realigned to the WebVTT + standalone-audio ADRs)
-**Epic**: EP43 — Audio Playback & Marking (re-scoped DS02); depends on the audio-asset-model storage work (proposed EP44).
+**Epic**: EP43 — Audio Playback & Marking (re-scoped DS02); depends on the audio-asset-model storage work in the redefined EP42 (the standalone `audio` table).
 
 **Related ADR**: [Conversation Audio — Timing as WebVTT (Storage, Authoring & Playback)](../architecture/20260714T123438Z-engineering-audio-timing-webvtt.md) — *the governing ADR for this tool.*
 **Related ADR**: [Conversation Audio — Standalone Audio Asset Model & Versioning](../architecture/20260714T123409Z-engineering-audio-asset-model.md) — where the VTT is stored.

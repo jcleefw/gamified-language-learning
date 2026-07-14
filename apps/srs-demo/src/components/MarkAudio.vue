@@ -7,15 +7,16 @@ import {
   NUDGE_COARSE,
   NUDGE_FINE,
 } from '../composables/useMarkerAuthoring';
+import { commitDeckVtt, fetchDeckVtt } from '../composables/useStore';
 
 // EP43-DS02 ST04 — curator marker-authoring screen. Env-gated by env.curatorMode
 // in App.vue (same gate as CurateAudio); never in a production build. Reuses the
-// boot-time decks list and EP43-DS01's shared AudioPlayer — no new fetch, no
-// server write. Capture per-sentence [start,end] off the play-head, nudge with
-// the keyboard, preview via the player's playSegment, then export a JSON marker
-// map that `apply-markers` (ST05) ingests into decks.doc.sentences[].
+// boot-time decks list and EP43-DS01's shared AudioPlayer. Capture per-sentence
+// [start,end] off the play-head, nudge with the keyboard, preview via the
+// player's playSegment, then COMMIT as WebVTT through the gated server endpoint
+// (writes the audio.vtt DB column + the durable bucket .vtt). VTT-in / VTT-out.
 const props = defineProps<{ decks: AppDeckPayload[] }>();
-const emit = defineEmits<{ back: [] }>();
+const emit = defineEmits<{ back: []; committed: [] }>();
 
 const selectedDeckId = ref<string>('');
 const deck = computed(
@@ -23,19 +24,33 @@ const deck = computed(
 );
 const markable = computed(() => !!deck.value?.audioUrl);
 
+// The VTT is stamped with the audio binary's content hash (WebVTT ADR §4). The
+// hash is the stem of the content-addressed audio key, readable from audioUrl.
+const audioSha256 = computed(
+  () => deck.value?.audioUrl?.match(/\/([0-9a-f]+)\.(?:mp3|wav)$/)?.[1] ?? '',
+);
+
 const player = ref<InstanceType<typeof AudioPlayer> | null>(null);
 const authoring = useMarkerAuthoring();
+const status = ref<{ kind: 'ok' | 'error'; message: string } | null>(null);
 
-function onSelectDeck() {
-  authoring.seed(deck.value?.lines ?? []);
+async function onSelectDeck() {
+  status.value = null;
+  const d = deck.value;
+  if (!d) return;
+  const sentenceIds = d.lines.map((l) => l.sentenceId);
+  // Hydrate from an existing committed VTT so the curator fine-tunes rather than
+  // re-marks from scratch.
+  const existing = d.vttUrl ? await fetchDeckVtt(d.id).catch(() => null) : null;
+  authoring.seed(sentenceIds, existing ?? undefined);
 }
 
 function setIn(sentenceId: string) {
-  if (player.value) authoring.setIn(sentenceId, player.value.currentTime.value);
+  if (player.value) authoring.setIn(sentenceId, player.value.currentTime);
 }
 
 function setOut(sentenceId: string) {
-  if (player.value) authoring.setOut(sentenceId, player.value.currentTime.value);
+  if (player.value) authoring.setOut(sentenceId, player.value.currentTime);
 }
 
 // Keyboard nudge on a focused marker field (PRD §4.1): ←/→ ±0.05s, Shift+←/→
@@ -45,6 +60,14 @@ function onNudge(sentenceId: string, edge: 'start' | 'end', e: KeyboardEvent) {
   e.preventDefault();
   const step = e.shiftKey ? NUDGE_FINE : NUDGE_COARSE;
   authoring.nudge(sentenceId, edge, e.key === 'ArrowRight' ? step : -step);
+}
+
+function reset() {
+  if (!deck.value) return;
+  // Discards uncommitted work — confirm before clearing every captured marker.
+  if (!window.confirm('Clear all markers for this deck? Uncommitted changes are lost.')) return;
+  authoring.seed(deck.value.lines.map((l) => l.sentenceId));
+  status.value = null;
 }
 
 function preview(sentenceId: string) {
@@ -58,16 +81,28 @@ function fmt(v: number | null): string {
   return v === null ? '—' : v.toFixed(2);
 }
 
-function exportMarkers() {
+async function commit() {
   if (!deck.value) return;
-  const map = authoring.buildMap(deck.value.id);
-  const blob = new Blob([JSON.stringify(map, null, 2)], {
-    type: 'application/json',
-  });
+  status.value = null;
+  const vtt = authoring.buildVtt(audioSha256.value);
+  try {
+    await commitDeckVtt(deck.value.id, vtt);
+    status.value = { kind: 'ok', message: '✓ Committed — learners now hear these segments.' };
+    // Refresh App.vue's deck list so the new vttUrl propagates without reload.
+    emit('committed');
+  } catch (e) {
+    status.value = { kind: 'error', message: (e as Error).message };
+  }
+}
+
+function download() {
+  if (!deck.value) return;
+  const vtt = authoring.buildVtt(audioSha256.value);
+  const blob = new Blob([vtt], { type: 'text/vtt' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${deck.value.id}.json`;
+  a.download = `${deck.value.id}.vtt`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -79,7 +114,8 @@ function exportMarkers() {
     <h1>Mark Deck Audio</h1>
     <p class="hint">
       Capture each sentence's <code>[start, end]</code> from the play-head, then
-      export a marker map for <code>apply-markers</code> to ingest.
+      <strong>commit</strong> — the timing is saved as a WebVTT track bound to
+      this deck's audio and served to learners.
     </p>
 
     <label class="field">
@@ -150,7 +186,20 @@ function exportMarkers() {
         </tbody>
       </table>
 
-      <button class="btn-primary" @click="exportMarkers">Export markers</button>
+      <div class="actions">
+        <button class="btn-primary" @click="commit">Commit</button>
+        <button class="btn-sm" @click="download">Download .vtt</button>
+        <button class="btn-sm btn-reset" @click="reset">Reset</button>
+      </div>
+
+      <p
+        v-if="status"
+        class="status"
+        :class="status.kind === 'error' ? 'error' : 'ok'"
+        role="status"
+      >
+        {{ status.message }}
+      </p>
     </template>
   </div>
 </template>
@@ -241,6 +290,16 @@ function exportMarkers() {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.btn-reset {
+  margin-left: auto;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
 .btn-primary {
   padding: 10px 18px;
   border: none;
@@ -259,5 +318,9 @@ function exportMarkers() {
 .status.error {
   background: #fef2f2;
   color: #991b1b;
+}
+.status.ok {
+  background: #f0fdf4;
+  color: #166534;
 }
 </style>
