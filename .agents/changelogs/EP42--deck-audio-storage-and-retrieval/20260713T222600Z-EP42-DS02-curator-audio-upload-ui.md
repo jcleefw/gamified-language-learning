@@ -17,8 +17,8 @@ DS01 built the storage-to-wire path on the `audio` table. This DS gives the cura
 
 Three thin layers:
 
-- **Server endpoint (ST08)** — `POST /api/curation/decks/:deckId/audio`, multipart file in. Sniffs the format from magic bytes (MP3/WAV only — never the client filename), derives a content-addressed key `decks/{deckId}/{sha256}.{ext}`, `putObject`s the binary (immutable cache), then **demotes the deck's current `audio` row and inserts a new one** (`is_current=1`, `vtt=NULL`) in the same request. **Gated**: `404` unless `GLL_CURATOR_MODE`.
-- **Upload page (ST09)** — an `srs-demo` screen gated by `VITE_CURATOR_MODE` (DCE'd in prod): pick a deck from the boot-time list, pick a local `.mp3`/`.wav`, upload, see success/failure. *(Done — unchanged; only the endpoint's persistence semantics moved.)*
+- **Server endpoint (ST08)** — `POST /api/curation/decks/:deckId/audio`, multipart file in. Sniffs the format from magic bytes (MP3/WAV only — never the client filename), derives a content-addressed key `decks/{deckId}/{sha256}.{ext}`, `putObject`s the binary (immutable cache), then **demotes the deck's current `audio` row and inserts a new one** (`is_current=1`, `vtt=NULL`) in the same request. **Gated**: `404` unless `GLL_CURATION_MODE`.
+- **Upload page (ST09)** — an `srs-demo` screen gated by `VITE_CURATION_MODE` (DCE'd in prod): pick a deck from the boot-time list, pick a local `.mp3`/`.wav`, upload, see success/failure. *(Done — unchanged; only the endpoint's persistence semantics moved.)*
 - **CLI retirement (ST10)** — one pairing path (the page). *(Done.)*
 
 **The critical boundary decision — the endpoint writes the *binary + an audio row*, nothing in `decks.doc` and no VTT.** Marker/VTT authoring is EP43-DS02's gated VTT server-write. Upload leaves `audio.vtt` NULL; the deck plays whole-file until a VTT is authored.
@@ -37,17 +37,17 @@ Three thin layers:
 | Persistence | **Demote** current `audio` row (`is_current=0`) then **INSERT** new row (`subject_type='deck'`, `subject_id=deckId`, `key`, `format`, `size_bytes`, `is_current=1`, `vtt=NULL`, `created_at`, `uploaded_by=NULL`) — one transaction | Asset-model ADR §3 versioning; upload never clobbers prior audio/VTT |
 | Ordering | `putObject` **before** the row write | A failed upload leaves the DB untouched (no half-paired deck) |
 | Unknown `deckId` | `404 NOT_FOUND`, no `putObject` | Fail loudly, never orphan an object |
-| Endpoint gate | `404` unless `isCuratorMode()` (`GLL_CURATOR_MODE` truthy) | Mutating endpoint invisible in default prod; `404` not `403` (don't advertise) |
+| Endpoint gate | `404` unless `isCurationMode()` (`GLL_CURATION_MODE` truthy) | Mutating endpoint invisible in default prod; `404` not `403` (don't advertise) |
 | Incomplete storage env | `putObject` throws → `500 INTERNAL_ERROR` | Curator dev tool; clear error, not silent degrade |
 | Missing/empty file, bad format | `400 BAD_REQUEST`, no upload | Distinct from 404 (deck) / 500 (storage) |
-| Page gate | `env.curatorMode` (`VITE_CURATOR_MODE`); page + nav DCE'd in prod | Same pattern as `debugMode` |
+| Page gate | `env.curationMode` (`VITE_CURATION_MODE`); page + nav DCE'd in prod | Same pattern as `debugMode` |
 
 ## 3. Data Structures
 
 ```typescript
 // ── ST08: route handler shape (apps/server/src/routes/curation.ts) ───────────
 // router.post('/curation/decks/:deckId/audio', async (c) => {
-//   if (!isCuratorMode()) return c.notFound();
+//   if (!isCurationMode()) return c.notFound();
 //   const deck = getDb()…decks where id=deckId;  if (!deck) return 404;
 //   const file = (await c.req.parseBody())['audio']; if (!(file instanceof File)) return 400;
 //   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -74,8 +74,8 @@ export async function uploadDeckAudio(deckId: string, file: File): Promise<strin
 ## 4. User Workflows
 
 ```
-# Curator upload (GLL_CURATOR_MODE + VITE_CURATOR_MODE set)
-open srs-demo → "Curate Audio" (rendered only when env.curatorMode)
+# Curator upload (GLL_CURATION_MODE + VITE_CURATION_MODE set)
+open srs-demo → "Curate Audio" (rendered only when env.curationMode)
   → pick deck (boot-time list) → pick .mp3/.wav → Upload
       server: curator? → deck exists? → format ok? → putObject(immutable)
               → tx: demote current audio row, insert new (is_current=1, vtt=NULL)
@@ -84,7 +84,7 @@ open srs-demo → "Curate Audio" (rendered only when env.curatorMode)
   → re-upload DIFFERENT recording ⟹ new key + new current row; old row (+ any VTT) retained as history
 
 # Gate / error paths
-GLL_CURATOR_MODE unset  → 404 (route invisible)     VITE_CURATOR_MODE unset → page DCE'd
+GLL_CURATION_MODE unset  → 404 (route invisible)     VITE_CURATION_MODE unset → page DCE'd
 unknown deckId          → 404, no object written    missing/bad file → 400
 storage env incomplete  → 500 (config error), no row written
 ```
@@ -98,23 +98,23 @@ storage env incomplete  → 500 (config error), no row written
 **Tasks**:
 
 - [ ] Replace the `decks.audio_key` update with a transaction: demote the deck's current `audio` row, insert the new current row (fields above).
-- [ ] Keep magic-byte `detectAudioFormat`, content-addressed key, `isCuratorMode` gate, deck-exists 404, `putObject`-before-write ordering.
+- [ ] Keep magic-byte `detectAudioFormat`, content-addressed key, `isCurationMode` gate, deck-exists 404, `putObject`-before-write ordering.
 
 **Acceptance Criteria**:
 
-- [ ] `GLL_CURATOR_MODE=true` + known deck + MP3/WAV ⟹ `201 { audioKey }`; a new `audio` row exists with `is_current=1`, and any prior current row is now `is_current=0`.
+- [ ] `GLL_CURATION_MODE=true` + known deck + MP3/WAV ⟹ `201 { audioKey }`; a new `audio` row exists with `is_current=1`, and any prior current row is now `is_current=0`.
 - [ ] Re-uploading identical bytes ⟹ same key, a new current row demoting the prior (history retained).
-- [ ] `GLL_CURATOR_MODE` unset ⟹ `404`; unknown deck ⟹ `404` with no `putObject`; missing/bad-format file ⟹ `400`; `putObject` throw ⟹ `500`, no row written.
+- [ ] `GLL_CURATION_MODE` unset ⟹ `404`; unknown deck ⟹ `404` with no `putObject`; missing/bad-format file ⟹ `400`; `putObject` throw ⟹ `500`, no row written.
 
 ### EP42-ST09: `srs-demo` gated audio-upload page  *(Done — carried over)*
 
-**Scope**: `apps/srs-demo` — `env.curatorMode` flag, `uploadDeckAudio` client fn, `CurateAudio.vue` screen + gated nav. Unchanged by the redefinition (the endpoint's response contract is the same `{ audioKey }`).
+**Scope**: `apps/srs-demo` — `env.curationMode` flag, `uploadDeckAudio` client fn, `CurateAudio.vue` screen + gated nav. Unchanged by the redefinition (the endpoint's response contract is the same `{ audioKey }`).
 
 **Acceptance Criteria**:
 
-- [~] With `VITE_CURATOR_MODE=true`, a curator picks a deck + local audio and sees it paired (a subsequent `GET /api/decks` returns `audioUrl`). *(Pending MinIO-up browser walkthrough; endpoint covered by `curation.test.ts`, client by `uploadDeckAudio.test.ts`.)*
+- [~] With `VITE_CURATION_MODE=true`, a curator picks a deck + local audio and sees it paired (a subsequent `GET /api/decks` returns `audioUrl`). *(Pending MinIO-up browser walkthrough; endpoint covered by `curation.test.ts`, client by `uploadDeckAudio.test.ts`.)*
 - [x] A server error surfaces its message on the page; no silent failure.
-- [x] `VITE_CURATOR_MODE` unset ⟹ page + button DCE'd.
+- [x] `VITE_CURATION_MODE` unset ⟹ page + button DCE'd.
 
 ### EP42-ST10: Retire the `curate-audio` CLI  *(Done — carried over)*
 
@@ -124,6 +124,6 @@ storage env incomplete  → 500 (config error), no row written
 
 1. A curator pairs audio with a deck entirely in the browser — pick deck + file, upload, confirm — no terminal.
 2. Upload **inserts a versioned `audio` row** (demote-then-insert), never clobbers prior audio/VTT; binary is content-addressed + magic-byte-validated.
-3. The endpoint returns `404` unless `GLL_CURATOR_MODE`; the page is DCE'd when `VITE_CURATOR_MODE` unset.
+3. The endpoint returns `404` unless `GLL_CURATION_MODE`; the page is DCE'd when `VITE_CURATION_MODE` unset.
 4. Unknown deck ⟹ `404` no orphan; bad file ⟹ `400`; storage misconfig ⟹ `500` — none writes a partial row.
 5. MinIO→R2 stays env-only; `pnpm -r typecheck` + suite pass.

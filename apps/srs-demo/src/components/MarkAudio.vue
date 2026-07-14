@@ -10,7 +10,7 @@ import {
 } from '../composables/useMarkerAuthoring';
 import { commitDeckVtt, fetchDeckVtt } from '../composables/useStore';
 
-// EP43-DS02 ST04 — curator marker-authoring screen. Env-gated by env.curatorMode
+// EP43-DS02 ST04 — curator marker-authoring screen. Env-gated by env.curationMode
 // in App.vue (same gate as CurateAudio); never in a production build. Reuses the
 // boot-time decks list and EP43-DS01's shared AudioPlayer. Capture per-sentence
 // [start,end] off the play-head, nudge with the keyboard, preview via the
@@ -192,6 +192,14 @@ function download() {
     </p>
 
     <template v-if="deck && markable">
+      <!-- EP43-ST08: action row sits directly above the waveform, right-aligned,
+           all three buttons the same fixed size regardless of label length. -->
+      <div class="actions">
+        <button class="btn-action btn-primary" @click="commit">Commit</button>
+        <button class="btn-action" @click="download">Download .vtt</button>
+        <button class="btn-action btn-reset" @click="reset">Reset</button>
+      </div>
+
       <AudioPlayer ref="player" :src="deck.audioUrl!" :show-waveform="true" />
 
       <table class="lines">
@@ -244,12 +252,6 @@ function download() {
           </tr>
         </tbody>
       </table>
-
-      <div class="actions">
-        <button class="btn-primary" @click="commit">Commit</button>
-        <button class="btn-sm" @click="download">Download .vtt</button>
-        <button class="btn-sm btn-reset" @click="reset">Reset</button>
-      </div>
 
       <p
         v-if="status"
@@ -350,23 +352,33 @@ function download() {
   cursor: not-allowed;
 }
 .btn-reset {
-  margin-left: auto;
   color: #991b1b;
   border-color: #fecaca;
 }
 .actions {
   display: flex;
+  justify-content: flex-end;
   gap: 10px;
   align-items: center;
+  margin-bottom: 12px;
 }
-.btn-primary {
-  padding: 10px 18px;
-  border: none;
+/* EP43-ST08: one fixed size for the action row regardless of label length —
+   .btn-primary/.btn-reset above only vary color, not dimensions. */
+.btn-action {
+  width: 140px;
+  padding: 10px 0;
+  border: 1px solid #d1d5db;
+  background: white;
   border-radius: 6px;
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: center;
+  cursor: pointer;
+}
+.btn-action.btn-primary {
+  border: none;
   background: #2563eb;
   color: white;
-  font: inherit;
-  cursor: pointer;
 }
 .status {
   margin-top: 16px;

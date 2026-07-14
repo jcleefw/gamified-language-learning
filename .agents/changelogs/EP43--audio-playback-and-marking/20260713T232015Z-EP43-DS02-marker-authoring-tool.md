@@ -26,7 +26,7 @@ Two parts, isolated:
 
 **The critical boundary — the component only speaks VTT text; it never touches app internals or the DB.** It loads a VTT string (the deck's existing timing, if any), lets the curator author, and emits a VTT string. Persistence is the endpoint's job. That keeps the component reusable (a future curator app, or learner word-level marking) — mounting in `srs-demo` is not coupling.
 
-**What is reused, not built:** the marker state model (`markers`/`seed`/`setIn`/`setOut`/`nudge`/`isComplete`/`quantize`, ±0.05/±0.01 nudge — salvaged); DS01's `AudioPlayer`/`useSegmentPlayer` (+ its retained `playSegment(start,end)` for draft preview); the `env.curatorMode` gate + boot-time decks list; `putObject` + `deriveVttKey` (EP42); the `ApiResponse`/`ErrorCode` envelope; `isCuratorMode`.
+**What is reused, not built:** the marker state model (`markers`/`seed`/`setIn`/`setOut`/`nudge`/`isComplete`/`quantize`, ±0.05/±0.01 nudge — salvaged); DS01's `AudioPlayer`/`useSegmentPlayer` (+ its retained `playSegment(start,end)` for draft preview); the `env.curationMode` gate + boot-time decks list; `putObject` + `deriveVttKey` (EP42); the `ApiResponse`/`ErrorCode` envelope; `isCurationMode`.
 
 **Not in this DS:** learner consume (EP43-DS01); audio upload (EP42-DS02); word-level cue authoring (namespace `sentenceId#wordIndex` reserved, UI not built); forced alignment / TTS; a separate `apps/curator` app + curator auth beyond the route gate; audio-replacement approval flow.
 
@@ -43,7 +43,7 @@ Two parts, isolated:
 | Preview | `player.playSegment(draft.start, draft.end)` on the draft numbers | Drafts aren't committed cues yet; primitive retains `playSegment` |
 | Commit transport | Gated `PUT /api/curation/decks/:deckId/audio/vtt`, body = VTT text (`text/vtt`) | Single-pass server-write (ADR §8) |
 | Commit persistence | Validate stamp vs current row's hash → write `audio.vtt` (current row) **and** `putObject(deriveVttKey(row.key), vtt, 'text/vtt')` | Two-tier: DB projection + bucket SoR (ADR §2) |
-| Endpoint gate | `404` unless `isCuratorMode()` | Mutating surface invisible in default prod |
+| Endpoint gate | `404` unless `isCurationMode()` | Mutating surface invisible in default prod |
 | No current audio row | `404` — nothing to attach timing to | A VTT is bound to a binary (ADR §4) |
 | Stamp mismatch | `409 CONFLICT` — VTT authored against a different binary | Hard-invalidate (ADR §5); never silently mismatch |
 | Download | Client-side blob of `buildVtt()` (`{deckId}.vtt`); the committed VTT is also served at `vttUrl` | Portability (PRD §5) |
@@ -78,7 +78,7 @@ export function readVttHash(text: string): string | null;
 
 // ── ST05: server-write (apps/server/src/routes/curation.ts) ──────────────────
 // PUT /api/curation/decks/:deckId/audio/vtt   body: text/vtt
-//   if (!isCuratorMode()) return 404;
+//   if (!isCurationMode()) return 404;
 //   const row = currentAudioRow(deckId);  if (!row) return 404;
 //   const vtt = await c.req.text();
 //   const keyHash = row.key.match(/\/([0-9a-f]+)\.(mp3|wav)$/)?.[1];
@@ -96,8 +96,8 @@ export async function fetchDeckVtt(deckId: string): Promise<string | null>;
 ## 4. User Workflows
 
 ```
-# Curator marks a deck (GLL_CURATOR_MODE + VITE_CURATOR_MODE set)
-open srs-demo → "Mark audio" (env.curatorMode) → pick a curated deck
+# Curator marks a deck (GLL_CURATION_MODE + VITE_CURATION_MODE set)
+open srs-demo → "Mark audio" (env.curationMode) → pick a curated deck
   → AudioPlayer(:src=deck.audioUrl) loads; if deck.vttUrl, fetchDeckVtt → seed() hydrates drafts
   → per sentence: Set In / Set Out off the play-head; ←/→ nudge ±0.05, Shift+←/→ ±0.01
   → Preview → player.playSegment(draft.start, draft.end)
@@ -107,7 +107,7 @@ open srs-demo → "Mark audio" (env.curatorMode) → pick a curated deck
   → Download → blob of buildVtt() as {deckId}.vtt (portability)
 
 # Error paths
-GLL_CURATOR_MODE unset      → 404      no current audio row → 404 (upload audio first)
+GLL_CURATION_MODE unset      → 404      no current audio row → 404 (upload audio first)
 stamp ≠ current binary hash → 409      (audio was re-uploaded after this VTT was authored)
 ```
 
@@ -132,17 +132,17 @@ stamp ≠ current binary hash → 409      (audio was re-uploaded after this VTT
 
 ### EP43-ST05: Gated VTT server-write endpoint (DB `audio.vtt` + bucket `.vtt`)
 
-**Scope**: `apps/server` — add `PUT`/`GET /api/curation/decks/:deckId/audio/vtt` to `routes/curation.ts`; reuse `putObject`/`deriveVttKey`/`isCuratorMode`.
+**Scope**: `apps/server` — add `PUT`/`GET /api/curation/decks/:deckId/audio/vtt` to `routes/curation.ts`; reuse `putObject`/`deriveVttKey`/`isCurationMode`.
 **Read List**: `routes/curation.ts` (existing audio endpoint), `audio-store.ts` (`putObject`/`deriveVttKey`), `packages/db/src/schema.ts` (`audio`).
 **Tasks**:
 
-- [ ] `PUT`: gate on `isCuratorMode`; look up the current `audio` row (404 if none); read the VTT body; validate `readVttHash(vtt) === keyHash` (409 on mismatch); write `audio.vtt` (current row) + `putObject(deriveVttKey(row.key), vtt, 'text/vtt')`; return `200 { vttUrl }`.
+- [ ] `PUT`: gate on `isCurationMode`; look up the current `audio` row (404 if none); read the VTT body; validate `readVttHash(vtt) === keyHash` (409 on mismatch); write `audio.vtt` (current row) + `putObject(deriveVttKey(row.key), vtt, 'text/vtt')`; return `200 { vttUrl }`.
 - [ ] `GET`: return the current row's `audio.vtt` as `text/vtt` (404 if none / no VTT).
 - [ ] Add `readVttHash` (shared or server-local) for the stamp check.
 
 **Acceptance Criteria**:
 
-- [ ] `GLL_CURATOR_MODE=true` + current audio row + stamp matching the row hash ⟹ `200`; `audio.vtt` is set and a `.vtt` object exists at `deriveVttKey(key)`; `GET /api/decks` then returns `vttUrl`.
+- [ ] `GLL_CURATION_MODE=true` + current audio row + stamp matching the row hash ⟹ `200`; `audio.vtt` is set and a `.vtt` object exists at `deriveVttKey(key)`; `GET /api/decks` then returns `vttUrl`.
 - [ ] Gate unset ⟹ `404`; no current audio row ⟹ `404`; stamp mismatch ⟹ `409` with neither tier written.
 - [ ] Re-uploading audio (new current row, new key/hash) leaves the old VTT behind — a subsequent commit for the new binary must carry the new hash or `409`s.
 
@@ -152,4 +152,4 @@ stamp ≠ current binary hash → 409      (audio was re-uploaded after this VTT
 2. Commit writes **both** the `audio.vtt` DB column and the durable bucket `.vtt`; `GET /api/decks` surfaces `vttUrl` and DS01's learner surfaces play the cues — no manual DB/file editing.
 3. The committed VTT is hash-stamped to its binary; re-uploading the audio hard-invalidates old timing (`409` on a stale commit); the VTT is downloadable.
 4. The marker component is VTT-in/VTT-out and imports no app internals — portable to a future curator surface / learner word-level marking.
-5. The endpoint is `404` unless `GLL_CURATOR_MODE`; no `DeckMarker`/`apply-markers` references remain; `pnpm -r typecheck` + suite pass.
+5. The endpoint is `404` unless `GLL_CURATION_MODE`; no `DeckMarker`/`apply-markers` references remain; `pnpm -r typecheck` + suite pass.

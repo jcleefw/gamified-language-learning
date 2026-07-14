@@ -9,7 +9,7 @@
 #    already point at this compose file's endpoint/creds/bucket.
 # 3. Seed a deck (e.g. `pnpm --filter cli-demo-db engine:import-curriculum`),
 #    then pair an audio file with it via the curator page (EP42-DS02): set
-#    `GLL_CURATOR_MODE=true` (server) + `VITE_CURATOR_MODE=true` (srs-demo),
+#    `GLL_CURATION_MODE=true` (server) + `VITE_CURATION_MODE=true` (srs-demo),
 #    open the "Curate audio" page, pick the deck + a local `.mp3` or `.wav`
 #    (validated by magic bytes, not filename), and Upload. This uploads
 #    `decks/<deckId>/<sha256>.<ext>` (content-addressed key) to the bucket AND

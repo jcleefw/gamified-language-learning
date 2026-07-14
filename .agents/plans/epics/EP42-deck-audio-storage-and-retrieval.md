@@ -42,7 +42,7 @@ This epic builds the **full storage-to-wire path** end to end against a **local 
 - Server-side storage config (env-driven: endpoint, bucket, credentials, public URL base) and a thin S3-compatible client wrapper resolving the current `audio` row's key → a playable URL, and composing the `.vtt` URL.
 - Long-lived cache headers on binary upload (`Cache-Control: public, max-age=31536000, immutable`) — content-addressed keys are never overwritten in place, so once written they are safe to cache forever.
 - **Wire additions**: `AppDeckPayload.audioUrl?` (resolved from the current `audio` row) and `AppDeckPayload.vttUrl?` (the served timing track), wired into `GET /api/decks`. No current `audio` row ⟹ both absent, no error. **Per-sentence `audioStart`/`audioEnd` are NOT on the wire** — timing is the VTT track (EP43 consumes it via the browser's native `TextTrack`).
-- A **curator audio-upload page** (`srs-demo`, env-gated) + its **server endpoint** (`POST /api/curation/decks/:deckId/audio`) — pick a deck + a local audio file, upload straight to MinIO under a content-addressed key, and insert the `audio` row (current) in the same request. Gated by `GLL_CURATOR_MODE` (server) / `VITE_CURATOR_MODE` (client). *(DS02 — carried over; row-write replaces the `audio_key` write.)*
+- A **curator audio-upload page** (`srs-demo`, env-gated) + its **server endpoint** (`POST /api/curation/decks/:deckId/audio`) — pick a deck + a local audio file, upload straight to MinIO under a content-addressed key, and insert the `audio` row (current) in the same request. Gated by `GLL_CURATION_MODE` (server) / `VITE_CURATION_MODE` (client). *(DS02 — carried over; row-write replaces the `audio_key` write.)*
 - Env-var contract so switching to R2 in production is a config change only (endpoint + credentials + public URL), never a code branch.
 
 **Out of scope**:
@@ -88,11 +88,11 @@ This epic builds the **full storage-to-wire path** end to end against a **local 
 
 ### EP42-ST08: Server upload endpoint — audio file → MinIO + `audio` row write  *(carried over; row-write replaces `audio_key`)*
 
-**Scope**: `apps/server` — `POST /api/curation/decks/:deckId/audio`: multipart file in, magic-byte format check (MP3/WAV only), content-addressed key (`decks/{deckId}/{sha256}.{ext}`), `putObject`, then **insert an `audio` row** (subject_type=`deck`, subject_id=deckId, is_current=1, prior current row demoted) in the same request. Gated: 404 unless `GLL_CURATOR_MODE`.
+**Scope**: `apps/server` — `POST /api/curation/decks/:deckId/audio`: multipart file in, magic-byte format check (MP3/WAV only), content-addressed key (`decks/{deckId}/{sha256}.{ext}`), `putObject`, then **insert an `audio` row** (subject_type=`deck`, subject_id=deckId, is_current=1, prior current row demoted) in the same request. Gated: 404 unless `GLL_CURATION_MODE`.
 
 ### EP42-ST09: `srs-demo` gated audio-upload page  *(Done — carried over)*
 
-**Scope**: `apps/srs-demo` — env-gated screen: pick a deck + a local `.mp3`/`.wav`, upload, see success/failure. Calls ST08. Gated by `VITE_CURATOR_MODE`, DCE'd in prod builds. (Existing `CurateAudio.vue` — unchanged beyond the endpoint's row-write semantics.)
+**Scope**: `apps/srs-demo` — env-gated screen: pick a deck + a local `.mp3`/`.wav`, upload, see success/failure. Calls ST08. Gated by `VITE_CURATION_MODE`, DCE'd in prod builds. (Existing `CurateAudio.vue` — unchanged beyond the endpoint's row-write semantics.)
 
 ### EP42-ST10: Retire the `curate-audio` CLI  *(Done — carried over)*
 
@@ -113,7 +113,7 @@ This epic builds the **full storage-to-wire path** end to end against a **local 
 - [ ] Swapping to R2 in production requires only env-var changes — verified by code review, no provider branch.
 - [ ] An uploaded binary carries `Cache-Control: public, max-age=31536000, immutable`.
 - [ ] A curator can select a deck + a local audio file on a `srs-demo` page and, without a terminal, have the file land in MinIO and a current `audio` row written to match.
-- [ ] The upload endpoint is unreachable (404) when `GLL_CURATOR_MODE` is unset; the page is gated behind `VITE_CURATOR_MODE` and DCE'd when unset.
+- [ ] The upload endpoint is unreachable (404) when `GLL_CURATION_MODE` is unset; the page is gated behind `VITE_CURATION_MODE` and DCE'd when unset.
 - [ ] `pnpm -r typecheck` and the suite pass with no reference to `audio_key`, `DeckMarker`, or per-line `audioStart`/`audioEnd`.
 
 *(Learner playback, VTT authoring, and VTT consume ACs live in [EP43](EP43-audio-playback-and-marking.md).)*

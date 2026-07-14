@@ -14,7 +14,7 @@ vi.mock('@gll/db', async (importOriginal) => {
   return { ...orig, getDb: () => testDb };
 });
 
-// Keep isCuratorMode / loadAudioStorageConfig real; stub only the S3 write.
+// Keep isCurationMode / loadAudioStorageConfig real; stub only the S3 write.
 const putObjectMock = vi.fn(async () => undefined);
 vi.mock('../storage/audio-store.js', async (importOriginal) => {
   const orig = await importOriginal<typeof import('../storage/audio-store.js')>();
@@ -92,7 +92,7 @@ function currentAudio(deckId: string) {
 }
 
 describe('POST /api/curation/decks/:deckId/audio — curator gate', () => {
-  it('returns 404 and does not upload when GLL_CURATOR_MODE is unset', async () => {
+  it('returns 404 and does not upload when GLL_CURATION_MODE is unset', async () => {
     const deckId = await seedDeckId();
     const res = await upload(deckId, audioForm());
     expect(res.status).toBe(404);
@@ -102,7 +102,7 @@ describe('POST /api/curation/decks/:deckId/audio — curator gate', () => {
 
 describe('POST /api/curation/decks/:deckId/audio — with curator mode on', () => {
   beforeEach(() => {
-    vi.stubEnv('GLL_CURATOR_MODE', 'true');
+    vi.stubEnv('GLL_CURATION_MODE', 'true');
   });
 
   it('returns 404 for an unknown deckId and does not upload (no orphaned object)', async () => {
@@ -237,14 +237,14 @@ describe('PUT /api/curation/decks/:deckId/audio/vtt — WebVTT server-write (EP4
     );
   }
 
-  it('returns 404 when GLL_CURATOR_MODE is unset', async () => {
+  it('returns 404 when GLL_CURATION_MODE is unset', async () => {
     const deckId = await seedDeckId();
     const res = await putVtt(deckId, 'WEBVTT\n');
     expect(res.status).toBe(404);
   });
 
   describe('with curator mode on', () => {
-    beforeEach(() => vi.stubEnv('GLL_CURATOR_MODE', 'true'));
+    beforeEach(() => vi.stubEnv('GLL_CURATION_MODE', 'true'));
 
     it('404s when the deck has no current audio', async () => {
       const deckId = await seedDeckId();

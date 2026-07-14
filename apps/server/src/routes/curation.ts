@@ -5,7 +5,7 @@ import { getDb, schema } from '@gll/db';
 import { ErrorCode, readVttHash, type ApiResponse } from '@gll/api-contract';
 import {
   deriveVttKey,
-  isCuratorMode,
+  isCurationMode,
   loadAudioStorageConfig,
   putObject,
 } from '../storage/audio-store.js';
@@ -54,10 +54,10 @@ function keyHash(key: string): string | null {
  * invariant (identical bytes ⟹ same key). Persistence is the asset-model ADR's
  * versioning: demote the deck's current `audio` row and insert a new current one
  * (vtt=NULL) — a re-record never clobbers prior audio/VTT. Gated behind
- * GLL_CURATOR_MODE: when unset the route 404s.
+ * GLL_CURATION_MODE: when unset the route 404s.
  */
 router.post('/curation/decks/:deckId/audio', async (c) => {
-  if (!isCuratorMode()) {
+  if (!isCurationMode()) {
     return c.notFound();
   }
 
@@ -161,10 +161,10 @@ function currentAudioRow(deckId: string) {
  * Single-pass server-write (WebVTT ADR §8): validate the `NOTE audio-sha256`
  * stamp against the current binary, then write BOTH tiers — the `audio.vtt` DB
  * column (live projection) and the durable bucket `.vtt` (system-of-record).
- * Gated behind GLL_CURATOR_MODE.
+ * Gated behind GLL_CURATION_MODE.
  */
 router.put('/curation/decks/:deckId/audio/vtt', async (c) => {
-  if (!isCuratorMode()) {
+  if (!isCurationMode()) {
     return c.notFound();
   }
 
@@ -209,7 +209,7 @@ router.put('/curation/decks/:deckId/audio/vtt', async (c) => {
 
 /** Download the current committed VTT (curator convenience). */
 router.get('/curation/decks/:deckId/audio/vtt', async (c) => {
-  if (!isCuratorMode()) {
+  if (!isCurationMode()) {
     return c.notFound();
   }
   const row = currentAudioRow(c.req.param('deckId'));

@@ -1,16 +1,19 @@
 <script setup lang="ts">
 defineProps<{
   // Which top-level destination is active: highlights the matching item.
-  active: 'home' | 'learn' | 'review';
+  active: 'home' | 'learn' | 'review' | 'curation';
   // Review unlock gate (any word mastered) — reused from App.vue (ST05).
   reviewUnlocked: boolean;
   // Due-card count for the Review badge; null when unknown (not fetched).
   dueCount: number | null;
   // True when the due-count fetch failed — show a dash rather than a false 0.
   badgeError: boolean;
+  // EP43-ST08: the Curation tab replaces the old floating curator toggle
+  // buttons — same env.curationMode gate, now surfaced as a nav destination.
+  curationMode: boolean;
 }>();
 
-const emit = defineEmits<{ home: []; learn: []; review: [] }>();
+const emit = defineEmits<{ home: []; learn: []; review: []; curation: [] }>();
 </script>
 
 <template>
@@ -54,6 +57,15 @@ const emit = defineEmits<{ home: []; learn: []; review: [] }>();
             >—</span
           >
           <span v-else class="nav-lock">🔒</span>
+        </button>
+      </li>
+      <li v-if="curationMode">
+        <button
+          class="nav-item"
+          :class="{ active: active === 'curation' }"
+          @click="emit('curation')"
+        >
+          Curation
         </button>
       </li>
     </ul>

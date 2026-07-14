@@ -21,8 +21,8 @@ export interface AudioStorageConfig {
  * Default off — a mutating audio endpoint must not be reachable in a default
  * production deploy without also flipping this flag (EP42-DS02, ST08).
  */
-export function isCuratorMode(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.GLL_CURATOR_MODE === 'true' || env.GLL_CURATOR_MODE === '1';
+export function isCurationMode(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.GLL_CURATION_MODE === 'true' || env.GLL_CURATION_MODE === '1';
 }
 
 /** Read env once. All fields optional — absence is tolerated, not fatal. */

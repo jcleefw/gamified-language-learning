@@ -183,10 +183,16 @@ const reviewQuestionAudio = computed(() => {
 
 // --- Top nav menu (EP38-ST08) ---
 // Which top-level destination the current screen belongs to (for highlighting).
-const activeNav = computed<'home' | 'learn' | 'review'>(() => {
+const activeNav = computed<'home' | 'learn' | 'review' | 'curation'>(() => {
   if (screen.value === 'home') return 'home';
   if (screen.value === 'review-hub' || screen.value === 'review')
     return 'review';
+  if (
+    screen.value === 'curation' ||
+    screen.value === 'curate' ||
+    screen.value === 'mark'
+  )
+    return 'curation';
   return 'learn'; // 'select' | 'quiz' | 'results' | 'overview'
 });
 
@@ -384,9 +390,11 @@ onMounted(async () => {
     :review-unlocked="reviewUnlocked"
     :due-count="dueReviewCount"
     :badge-error="badgeError"
+    :curation-mode="env.curationMode"
     @home="navTo('home')"
     @learn="navTo('select')"
     @review="navTo('review')"
+    @curation="screen = 'curation'"
   />
 
   <button
@@ -411,24 +419,6 @@ onMounted(async () => {
     Dump last 100
   </button>
 
-  <button
-    v-if="env.curatorMode && screen !== 'curate'"
-    class="curate-toggle"
-    title="Pair conversation audio with a deck (curator tooling)"
-    @click="screen = 'curate'"
-  >
-    🎙️ Curate audio
-  </button>
-
-  <button
-    v-if="env.curatorMode && screen !== 'mark'"
-    class="mark-toggle"
-    title="Mark per-sentence audio segments for a deck (curator tooling)"
-    @click="screen = 'mark'"
-  >
-    🏷️ Mark audio
-  </button>
-
   <!-- EP43-BUG01 spike only — dev-only, not a real screen. -->
   <button
     v-if="env.debugMode && screen !== 'ws-proto'"
@@ -443,18 +433,38 @@ onMounted(async () => {
     {{ apiError }}
   </div>
 
+  <!-- EP43-ST08: curation landing — the "Curation" nav tab's default target,
+       replacing the two fixed-position floating toggle buttons. Styled to
+       match HomeDashboard.vue's mode-card pattern. -->
+  <div v-if="env.curationMode && screen === 'curation'" class="curation-landing">
+    <h1>Curation</h1>
+    <p class="subtitle">Choose a curator tool.</p>
+
+    <div class="mode-cards">
+      <button class="mode-card" @click="screen = 'curate'">
+        <span class="mode-title">🎙️ Curate audio</span>
+        <span class="mode-desc">Pair a conversation audio file with a deck.</span>
+      </button>
+
+      <button class="mode-card" @click="screen = 'mark'">
+        <span class="mode-title">🏷️ Mark audio</span>
+        <span class="mode-desc">Mark per-sentence audio segments for a deck.</span>
+      </button>
+    </div>
+  </div>
+
   <CurateAudio
-    v-if="env.curatorMode && screen === 'curate'"
+    v-if="env.curationMode && screen === 'curate'"
     :decks="appDecks"
     @uploaded="refreshDecks"
-    @back="screen = 'select'"
+    @back="screen = 'curation'"
   />
 
   <MarkAudio
-    v-if="env.curatorMode && screen === 'mark'"
+    v-if="env.curationMode && screen === 'mark'"
     :decks="appDecks"
     @committed="refreshDecks"
-    @back="screen = 'select'"
+    @back="screen = 'curation'"
   />
 
   <PrototypeWavesurfer
@@ -572,24 +582,51 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.curate-toggle,
-.mark-toggle {
-  position: fixed;
-  bottom: 16px;
-  left: 16px;
-  z-index: 50;
-  padding: 8px 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #374151;
+.curation-landing {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 0 16px;
   font-family: sans-serif;
-  font-size: 0.85rem;
-  cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
-.mark-toggle {
-  bottom: 56px;
+.curation-landing h1 {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+}
+.curation-landing .subtitle {
+  color: #6b7280;
+  margin: 0 0 24px;
+}
+.curation-landing .mode-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.curation-landing .mode-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+.curation-landing .mode-card:hover {
+  border-color: #2563eb;
+  background: #f0f7ff;
+}
+.curation-landing .mode-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+.curation-landing .mode-desc {
+  color: #6b7280;
+  font-size: 0.9rem;
 }
 .rec-toggle {
   position: fixed;

@@ -74,11 +74,29 @@ It front-loads playback (DS01) so the shared audio-player primitive exists befor
 
 ### EP43-ST04: Isolated VTT-in/VTT-out marker component + gated route
 
-**Scope**: `apps/srs-demo` — a `VITE_CURATOR_MODE`-gated screen mounting a self-contained marker component (salvaged from `MarkAudio.vue` + `useMarkerAuthoring.ts`, retargeted): pick a curated deck, load its `audioUrl` via DS01's `AudioPlayer` and its existing VTT if present, capture in/out per sentence from the play-head (keyboard nudge), segment-preview, and emit **WebVTT** (cue-ID = `sentenceId`, `NOTE audio-sha256` stamp). VTT-in / VTT-out at its edges — no reach into app internals. **Design spec: [EP43-DS02](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS02-marker-authoring-tool.md).**
+**Scope**: `apps/srs-demo` — a `VITE_CURATION_MODE`-gated screen mounting a self-contained marker component (salvaged from `MarkAudio.vue` + `useMarkerAuthoring.ts`, retargeted): pick a curated deck, load its `audioUrl` via DS01's `AudioPlayer` and its existing VTT if present, capture in/out per sentence from the play-head (keyboard nudge), segment-preview, and emit **WebVTT** (cue-ID = `sentenceId`, `NOTE audio-sha256` stamp). VTT-in / VTT-out at its edges — no reach into app internals. **Design spec: [EP43-DS02](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS02-marker-authoring-tool.md).**
 
 ### EP43-ST05: Gated VTT server-write endpoint (DB `audio.vtt` + bucket `.vtt`)
 
-**Scope**: `apps/server` — a `GLL_CURATOR_MODE`-gated endpoint that accepts a VTT commit for a deck's current `audio` row: validate the hash stamp against the binary, write the `audio.vtt` DB column (live projection) **and** flush the durable bucket `.vtt` (system-of-record) via `putObject` (`text/vtt`). Supports overwrite + download. Replaces the bespoke-JSON `apply-markers` seed step. **Design spec: [EP43-DS02](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS02-marker-authoring-tool.md).**
+**Scope**: `apps/server` — a `GLL_CURATION_MODE`-gated endpoint that accepts a VTT commit for a deck's current `audio` row: validate the hash stamp against the binary, write the `audio.vtt` DB column (live projection) **and** flush the durable bucket `.vtt` (system-of-record) via `putObject` (`text/vtt`). Supports overwrite + download. Replaces the bespoke-JSON `apply-markers` seed step. **Design spec: [EP43-DS02](../../changelogs/EP43--audio-playback-and-marking/20260713T232015Z-EP43-DS02-marker-authoring-tool.md).**
+
+### Phase 3: wavesurfer.js implementation swap (EP43-PH03) — DS03
+
+### EP43-ST06: Learner audio-player primitive on wavesurfer.js (WebAudio backend)
+
+**Scope**: `apps/srs-demo` — swap `useSegmentPlayer.ts`/`AudioPlayer.vue` internals from a native `<audio>` element to a `WaveSurfer` (`backend: 'WebAudio'`) instance; the public `SegmentPlayer` contract is unchanged. **Design spec: [EP43-DS03](../../changelogs/EP43--audio-playback-and-marking/20260715T000417Z-EP43-DS03-wavesurfer-implementation-swap.md).**
+
+### EP43-ST07: Curator waveform + Regions plugin + auto-populate-next-start
+
+**Scope**: `apps/srs-demo` — `MarkAudio.vue` gains a visible waveform with draggable Regions two-way synced to the marker table; `useMarkerAuthoring.ts` gains an auto-populate rule (committing a sentence's out point pre-fills the next sentence's unset start). **Design spec: [EP43-DS03](../../changelogs/EP43--audio-playback-and-marking/20260715T000417Z-EP43-DS03-wavesurfer-implementation-swap.md).**
+
+### EP43-ST08: Curation nav tab + action-bar layout cleanup
+
+**Scope**: `apps/srs-demo` — replace the fixed-position floating "Curate audio"/"Mark audio" toggle buttons with a `Curation` tab in `NavMenu.vue` (gated by `env.curationMode`, renamed from `curationMode`, same visual treatment as Home/Learn/Review); move `MarkAudio.vue`'s Commit/Download/Reset action row to sit directly above the wavesurfer player, right-aligned, with uniform button sizing. Layout/navigation only — no change to playback, marking, or VTT commit logic. **Design spec: [EP43-DS03](../../changelogs/EP43--audio-playback-and-marking/20260715T000417Z-EP43-DS03-wavesurfer-implementation-swap.md).**
+
+### EP43-ST09: Retire the wavesurfer prototype and the superseded rAF stopgap
+
+**Scope**: `apps/srs-demo` — delete `PrototypeWavesurfer.vue` and its dev-only nav entry; confirm the EP43-BUG01 rAF polling loop is gone. **Design spec: [EP43-DS03](../../changelogs/EP43--audio-playback-and-marking/20260715T000417Z-EP43-DS03-wavesurfer-implementation-swap.md).**
 
 ---
 
@@ -91,7 +109,7 @@ It front-loads playback (DS01) so the shared audio-player primitive exists befor
 - [ ] A curator can mark every sentence in a curated deck — set start/end, scrub, nudge, preview — without leaving the browser, and **commit as WebVTT**; the committed VTT is downloadable.
 - [ ] Committing writes **both** the `audio.vtt` DB column and the durable bucket `.vtt`; `GET /api/decks` then surfaces `vttUrl` and the learner surfaces play the authored segments — no manual DB or file editing, no `apply-markers` step.
 - [ ] The committed VTT carries `NOTE audio-sha256:<hash>` of the binary; re-uploading the audio (new `audio` row, new key) leaves the old VTT behind — never silently mismatched.
-- [ ] No schema change beyond EP42's `audio` table; the marker screen + nav are gated by `VITE_CURATOR_MODE`/`GLL_CURATOR_MODE` and DCE'd from prod builds; `pnpm -r typecheck` and the suite pass with no `DeckMarker`/`apply-markers` references.
+- [ ] No schema change beyond EP42's `audio` table; the marker screen + nav are gated by `VITE_CURATION_MODE`/`GLL_CURATION_MODE` and DCE'd from prod builds; `pnpm -r typecheck` and the suite pass with no `DeckMarker`/`apply-markers` references.
 
 ---
 

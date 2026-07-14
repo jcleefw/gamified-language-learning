@@ -8,6 +8,7 @@ export type Screen =
   | 'overview'
   | 'review-hub'
   | 'review'
+  | 'curation'
   | 'curate'
   | 'mark'
   | 'ws-proto';

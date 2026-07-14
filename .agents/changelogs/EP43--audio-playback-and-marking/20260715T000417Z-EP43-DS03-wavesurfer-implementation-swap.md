@@ -24,7 +24,7 @@ Two surfaces, one shared engine change:
 
 Boundary preserved from DS01/DS02: `AudioPlayer.vue` stays curator-agnostic. It exposes the raw `WaveSurfer` instance (for `MarkAudio.vue` to register the Regions plugin on) but never imports or knows about Regions/markers itself.
 
-**What is reused, not rebuilt:** the `SegmentPlayer` interface and its consumers (`DeckOverview.vue`, `QuizCard.vue`); the marker state model (`markers`/`setIn`/`nudge`/`isComplete`/`quantize`, ±0.05/±0.01 nudge); `buildVtt`/`parseVtt` (`@gll/api-contract`); `commitDeckVtt`/`fetchDeckVtt`; the `env.curatorMode`/`GLL_CURATOR_MODE` gates; `wavesurfer.js@7.12.10` + its Regions plugin (already a dependency, validated by the prototype).
+**What is reused, not rebuilt:** the `SegmentPlayer` interface and its consumers (`DeckOverview.vue`, `QuizCard.vue`); the marker state model (`markers`/`setIn`/`nudge`/`isComplete`/`quantize`, ±0.05/±0.01 nudge); `buildVtt`/`parseVtt` (`@gll/api-contract`); `commitDeckVtt`/`fetchDeckVtt`; the `env.curationMode`/`GLL_CURATION_MODE` gates; `wavesurfer.js@7.12.10` + its Regions plugin (already a dependency, validated by the prototype).
 
 **Not in this DS:** any change to the WebVTT format, storage, hash-stamp, or server-write endpoint (WebVTT Timing ADR, DS02 ST05 — untouched); the server-side VTT round-trip; word-level marking; a dedicated `apps/curator` app.
 
@@ -171,29 +171,51 @@ region-updated fires from a PROGRAMMATIC setOptions() (not user drag) → would 
 
 Manually tested and confirmed by PO (deck `73db8f50-a174-433b-93bf-88695038e57c`, commit `10959f2`).
 
-### EP43-ST07: Curator waveform + Regions plugin + auto-populate-next-start
+### EP43-ST07: Curator waveform + Regions plugin + auto-populate-next-start *(Done)*
 
 **Scope**: `apps/srs-demo` — `MarkAudio.vue` mounts `AudioPlayer` with `showWaveform`, registers the Regions plugin on the exposed instance, and two-way syncs regions with `authoring.markers`; `useMarkerAuthoring.ts` gains the auto-populate rule.
 **Read List**: current `MarkAudio.vue`, `useMarkerAuthoring.ts`, `PrototypeWavesurfer.vue` (Regions registration + the `region-out` pitfall already documented there), `useMarkerAuthoring.test.ts`.
 **Tasks**:
 
-- [ ] `MarkAudio.vue`: `<AudioPlayer ref="player" :src="deck.audioUrl!" :show-waveform="true" />`; on mount, `registerPlugin(RegionsPlugin.create())` on `player.value.wavesurfer`.
-- [ ] `useMarkerAuthoring.seed(sentenceIds, existingVtt?)`: also store `sentenceIds` as the row order used by the auto-populate lookup.
-- [ ] `useMarkerAuthoring.setOut`: after setting this row's end, look up the next id in `order`; if its `start === null`, set it to the same quantised time.
-- [ ] Region reconciliation: a `watch(authoring.markers, …, { deep: true })` that adds/updates/removes one `Region` per row keyed on `isComplete`, using `region.setOptions()` for updates (not remove+recreate).
-- [ ] `region-updated` handler calls `authoring.setIn`/`setOut` with the region's post-drag `start`/`end` — the same setters the table buttons use.
-- [ ] Clicking a region previews it (`player.value.playSegment(region.start, region.end)`).
-- [ ] Keep the existing table (Set In/Out buttons, keyboard nudge, Preview, Commit, Download, Reset) working unchanged alongside the waveform.
+- [x] `MarkAudio.vue`: `<AudioPlayer ref="player" :src="deck.audioUrl!" :show-waveform="true" />`; on mount, `registerPlugin(RegionsPlugin.create())` on `player.value.wavesurfer`.
+- [x] `useMarkerAuthoring.seed(sentenceIds, existingVtt?)`: also store `sentenceIds` as the row order used by the auto-populate lookup.
+- [x] `useMarkerAuthoring.setOut`: after setting this row's end, look up the next id in `order`; if its `start === null`, set it to the same quantised time.
+- [x] Region reconciliation: a `watch(authoring.markers, …, { deep: true })` that adds/updates/removes one `Region` per row keyed on `isComplete`, using `region.setOptions()` for updates (not remove+recreate).
+- [x] `region-updated` handler calls `authoring.setIn`/`setOut` with the region's post-drag `start`/`end` — the same setters the table buttons use.
+- [x] Clicking a region previews it (`player.value.playSegment(region.start, region.end)`).
+- [x] Keep the existing table (Set In/Out buttons, keyboard nudge, Preview, Commit, Download, Reset) working unchanged alongside the waveform.
 
 **Acceptance Criteria**:
 
-- [ ] Marking sentence N's out point (button or drag) with sentence N+1's start currently unset auto-fills N+1's start to the same time; if N+1's start was already set, it is left untouched.
-- [ ] Dragging a region's handle updates the corresponding table row's in/out values; editing a row's in/out via button+nudge updates (not recreates) that row's region.
-- [ ] Programmatically updating a region via `setOptions()` does **not** re-fire `region-updated` (verified against the installed `wavesurfer.js@7.12.10` Regions plugin) — no sync loop.
-- [ ] Seeding a deck with an existing VTT draws a region for every already-complete row before any interaction.
-- [ ] `useMarkerAuthoring`'s auto-populate behaviour is covered by a unit test with no DOM/wavesurfer dependency.
+- [x] Marking sentence N's out point (button or drag) with sentence N+1's start currently unset auto-fills N+1's start to the same time; if N+1's start was already set, it is left untouched.
+- [x] Dragging a region's handle updates the corresponding table row's in/out values; editing a row's in/out via button+nudge updates (not recreates) that row's region.
+- [x] Programmatically updating a region via `setOptions()` does **not** re-fire `region-updated` (verified against the installed `wavesurfer.js@7.12.10` Regions plugin) — no sync loop.
+- [x] Seeding a deck with an existing VTT draws a region for every already-complete row before any interaction.
+- [x] `useMarkerAuthoring`'s auto-populate behaviour is covered by a unit test with no DOM/wavesurfer dependency.
 
-### EP43-ST08: Retire the wavesurfer prototype and the superseded rAF stopgap
+Manually tested and confirmed by PO (commit `9fbadca`).
+
+### EP43-ST08: Curation nav tab + action-bar layout cleanup
+
+**Scope**: `apps/srs-demo` — `NavMenu.vue`/`App.vue`/`types.ts` gain a nav-tab entry point for curator tooling, replacing the two fixed-position floating toggle buttons (`.curate-toggle`/`.mark-toggle`, `App.vue:414-430`); `MarkAudio.vue`'s action row (`Commit`/`Download .vtt`/`Reset`, currently rendered *below* the marker table at `MarkAudio.vue:248-251`) moves to sit directly above the `AudioPlayer`/waveform, right-aligned, with uniform button sizing. Purely a navigation/layout change — no change to `SegmentPlayer`, `useMarkerAuthoring`, Regions wiring, or the VTT commit flow (ST06/ST07/ST09 untouched). Renames the frontend gate from `env.curationMode`/`VITE_CURATION_MODE` to `env.curationMode`/`VITE_CURATION_MODE` throughout `apps/srs-demo` (server-side `GLL_CURATION_MODE` is a separate, unrelated flag — out of scope).
+**Read List**: `App.vue` (nav rendering ~L381-463, `.curate-toggle`/`.mark-toggle` styles ~L575-593, `screen`/`activeNav` state), `NavMenu.vue` (existing `active`/`emit` pattern for Home/Learn/Review), `types.ts` (`screen` union), `env.ts` (`curationMode`/`VITE_CURATION_MODE`), `MarkAudio.vue` (`.actions` row ~L248-251 and its `.btn-primary`/`.btn-sm` styles), `CurateAudio.vue` (`.btn-primary` style — no waveform on this surface, so no action-bar move needed here).
+**Tasks**:
+
+- [ ] `env.ts`: rename `curationMode` → `curationMode`, reading `VITE_CURATION_MODE` instead of `VITE_CURATION_MODE`; update all call sites (`App.vue`, `CurateAudio.vue`, `MarkAudio.vue`) and the `.env`/docs references.
+- [ ] `NavMenu.vue`: add a `curation` entry to the nav-item list, gated by an `env.curationMode` prop passed down from `App.vue` (mirrors the existing `reviewUnlocked` gating pattern); emits a `curation` event.
+- [ ] `App.vue`: remove the two fixed-position `.curate-toggle`/`.mark-toggle` buttons and their styles; clicking the new nav tab routes to a curation landing area that lets the curator pick between "Curate audio" (`CurateAudio.vue`) and "Mark audio" (`MarkAudio.vue`) — reuse the existing `screen === 'curate' | 'mark'` values, add a `screen === 'curation'` landing state (or sub-nav) as the tab's default target.
+- [ ] `types.ts`: extend the `screen` union with the new landing state if one is introduced.
+- [ ] `MarkAudio.vue`: move the `.actions` div (Commit/Download/Reset) to render immediately above the `<AudioPlayer>` mount; add `justify-content: flex-end` (or equivalent float-right layout) and a shared button-size class so all three buttons render at the same width/height regardless of label length.
+- [ ] Confirm `CurateAudio.vue` needs no equivalent action-bar move (it has no wavesurfer player) — a single primary button only.
+
+**Acceptance Criteria**:
+
+- [ ] No fixed/floating "Curate audio" or "Mark audio" buttons remain anywhere in the viewport; both screens are reachable only via the new "Curation" nav tab (visible only when `env.curationMode` is true, matching today's gating).
+- [ ] The nav tab follows the same active/inactive visual treatment as Home/Learn/Review (`NavMenu.vue`'s existing `.nav-item`/`.active` styling), including under `env.curationMode = false` (tab absent, no layout shift).
+- [ ] On `MarkAudio.vue`, Commit/Download/Reset render as a single row directly above the waveform, right-aligned, each button the same fixed size (grep/visual check: no `.btn-primary`/`.btn-sm` size divergence in that row).
+- [ ] `pnpm -r typecheck` and the existing `MarkAudio`/`NavMenu`/`App` test suites pass with no regressions to gating; grep confirms no remaining `curationMode`/`VITE_CURATION_MODE` references in `apps/srs-demo`.
+
+### EP43-ST09: Retire the wavesurfer prototype and the superseded rAF stopgap
 
 **Scope**: `apps/srs-demo` — delete now-redundant dev-only/diagnostic code once ST06/ST07 land.
 **Read List**: `App.vue`/`types.ts` (`'ws-proto'` screen + `env.debugMode` nav entry), `PrototypeWavesurfer.vue`.
