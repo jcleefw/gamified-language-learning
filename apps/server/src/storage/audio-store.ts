@@ -43,6 +43,15 @@ function trimTrailingSlash(url: string): string {
 }
 
 /**
+ * The VTT for a binary lives beside it in the bucket, sharing the
+ * content-addressed stem (WebVTT ADR §3 — one VTT per binary). Mirrors
+ * `deriveVttKey` in @gll/db's sqlite-content-store (the reader).
+ */
+export function deriveVttKey(audioKey: string): string {
+  return audioKey.replace(/\.(mp3|wav)$/, '.vtt');
+}
+
+/**
  * Pure compose. `undefined` when key is null/empty OR publicUrl is unset.
  * No network, no SDK, no credentials — safe on every read.
  */
@@ -86,13 +95,21 @@ export async function putObject(
     region: 'us-east-1', // MinIO ignores region; SDK requires one to be set
   });
 
+  // Audio binaries are content-addressed and never overwritten in place → cache
+  // forever (immutable). A .vtt lives at a stable derived key and IS overwritten
+  // on re-mark (same binary, improved timing) → it must revalidate (no-cache).
+  const cacheControl =
+    contentType === 'text/vtt'
+      ? 'no-cache'
+      : 'public, max-age=31536000, immutable';
+
   await client.send(
     new PutObjectCommand({
       Bucket: cfg.bucket,
       Key: key,
       Body: body,
       ContentType: contentType,
-      CacheControl: 'public, max-age=31536000, immutable',
+      CacheControl: cacheControl,
     }),
   );
 }

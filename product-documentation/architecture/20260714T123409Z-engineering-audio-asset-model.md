@@ -6,7 +6,7 @@
 
 **Deciders:** PO (solo founder)
 
-**Epic:** EP43 (decided during EP43-DS02 pivot); **implemented by** a storage epic (proposed EP44) that revises EP42 — see Decision.
+**Epic:** EP43 (decided during EP43-DS02 pivot); **implemented by** the redefined EP42, which builds the standalone `audio` table from the start (no separate EP44) — see Decision.
 
 **Scope:** How audio is *modeled and persisted* as a data entity — the table shape that holds a binary's identity, ownership, timing sidecar, and version history. This is the **substrate** the [WebVTT timing ADR](20260714T123438Z-engineering-audio-timing-webvtt.md) sits on. It does **not** decide the timing *format* or the runtime consume path (that ADR does).
 
@@ -22,7 +22,7 @@ EP42 modeled a deck's audio as a single `decks.audio_key` **column** — one bin
 - **Replacing audio should not destroy history.** Because binaries live in the bucket content-addressed (a re-upload is a *new key*, not an overwrite), the previous audio — and its timing — still exist; the model should retain them, not clobber a single column.
 - **Timing (VTT) must hang off the binary, not the deck.** The paired WebVTT ADR keys timing to a specific audio binary; that timing therefore belongs on the audio record, not smeared across the deck or its sentences.
 
-**EP42 is not merged to main.** So this is adopted by **revising EP42 in place** to introduce the audio table from the start — *not* by shipping a migration that adds `audio_key` and a later one that drops it. No throwaway migration reaches main.
+**EP42 is not merged to main.** So this is adopted by **redefining EP42** to introduce the audio table from the start — *not* by shipping a migration that adds `audio_key` and a later one that drops it. The `audio_key` column, its migration, and per-sentence timing fields are removed, not layered over. No throwaway migration reaches main; the asset-model work is EP42's, not a separate epic.
 
 ## Decision
 
@@ -42,7 +42,7 @@ EP42 modeled a deck's audio as a single `decks.audio_key` **column** — one bin
 - Audio is never locked to deck context; sentence/word/crowdsourced audio slot in via `subject_type` with no structural rework.
 - Replacing audio retains full history (binary + timing) instead of clobbering a single column.
 - Timing (VTT) has a natural, binary-adjacent home, keeping the WebVTT ADR's "travels with the binary" invariant honest.
-- Adopted by revising unmerged EP42 — no migrate-then-drop noise in main's history.
+- Adopted by redefining unmerged EP42 — no migrate-then-drop noise in main's history.
 
 **Negative:**
 

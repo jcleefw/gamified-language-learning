@@ -22,6 +22,14 @@ type TxClient = BetterSQLite3Database<typeof schema>;
 // get the no-op default, so no audioUrl is ever emitted for those callers.
 export type ResolveAudioUrl = (key: string | null | undefined) => string | undefined;
 
+// One VTT per binary (WebVTT ADR §3): the .vtt lives beside the .mp3/.wav in the
+// bucket, sharing the content-addressed stem. Pure string op — kept in @gll/db so
+// the store derives the vtt key without a second injected resolver. Mirrors
+// `deriveVttKey` in apps/server/src/storage/audio-store.ts (used by the writer).
+export function deriveVttKey(audioKey: string): string {
+  return audioKey.replace(/\.(mp3|wav)$/, '.vtt');
+}
+
 export class SqliteContentStore implements IContentStore {
   constructor(
     private readonly db: DbClient,
@@ -80,11 +88,28 @@ export class SqliteContentStore implements IContentStore {
       wordIds: [...sentence.components]
         .sort((a, b) => a.position - b.position)
         .map((c) => c.wordId),
-      ...(sentence.audioStart !== undefined && { audioStart: sentence.audioStart }),
-      ...(sentence.audioEnd !== undefined && { audioEnd: sentence.audioEnd }),
     }));
 
-    const audioUrl = this.resolveAudioUrl(deck.audio_key);
+    // The deck's current audio asset (is_current=1). audioUrl resolves its
+    // binary key; vttUrl resolves the sibling .vtt key ONLY when the row has a
+    // vtt (segmentable) — timing travels as the served WebVTT track, not on the
+    // wire per sentence. Both use the same pure resolver (no env in @gll/db).
+    const audioRow = this.db
+      .select()
+      .from(schema.audio)
+      .where(
+        and(
+          eq(schema.audio.subject_type, 'deck'),
+          eq(schema.audio.subject_id, deck.id),
+          eq(schema.audio.is_current, true),
+        ),
+      )
+      .get();
+    const audioUrl = audioRow ? this.resolveAudioUrl(audioRow.key) : undefined;
+    const vttUrl =
+      audioRow && audioRow.vtt != null
+        ? this.resolveAudioUrl(deriveVttKey(audioRow.key))
+        : undefined;
 
     return {
       id: deck.id,
@@ -92,8 +117,9 @@ export class SqliteContentStore implements IContentStore {
       ...(deck.difficulty !== null && { difficulty: deck.difficulty }),
       ...(deck.register !== null && { register: deck.register }),
       words,
-      lines,
       ...(audioUrl !== undefined && { audioUrl }),
+      ...(vttUrl !== undefined && { vttUrl }),
+      lines,
     };
   }
 

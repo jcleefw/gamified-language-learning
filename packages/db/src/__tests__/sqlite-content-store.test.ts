@@ -234,81 +234,118 @@ describe('SqliteContentStore.importCurriculum', () => {
   });
 });
 
-describe('SqliteContentStore audio fields (EP42-DS01, ST05)', () => {
+describe('SqliteContentStore audio asset resolution (EP42-DS01, ST05)', () => {
   let db: DbClient;
 
   beforeEach(() => {
     db = makeTestDb();
   });
 
-  it('omits audioUrl when audio_key is NULL and no resolver is injected (backward-compat default)', async () => {
+  /** Insert a current audio row for a deck; returns its content-addressed key. */
+  function addAudio(
+    deckId: string,
+    opts: { vtt?: string | null; current?: boolean } = {},
+  ): string {
+    const key = `decks/${deckId}/deadbeefcafef00d.mp3`;
+    db.insert(schema.audio)
+      .values({
+        id: `aud-${deckId}-${Math.random().toString(36).slice(2)}`,
+        subject_type: 'deck',
+        subject_id: deckId,
+        key,
+        format: 'mp3',
+        size_bytes: 1024,
+        duration_seconds: null,
+        vtt: opts.vtt ?? null,
+        uploaded_by: null,
+        is_current: opts.current ?? true,
+        created_at: new Date().toISOString(),
+      })
+      .run();
+    return key;
+  }
+
+  it('omits audioUrl/vttUrl when the deck has no audio row (backward-compat default)', async () => {
     const store = new SqliteContentStore(db);
     await store.importCurriculum([deckA]);
 
     const [payload] = await store.getDecks();
-    expect(payload.audioUrl).toBeUndefined();
     expect('audioUrl' in payload).toBe(false);
+    expect('vttUrl' in payload).toBe(false);
   });
 
-  it('emits audioUrl from the injected resolver when audio_key is set', async () => {
+  it('emits audioUrl from the current audio row via the injected resolver', async () => {
     const store = new SqliteContentStore(db);
     await store.importCurriculum([deckA]);
     const deckId = db.select().from(schema.decks).get()!.id;
+    const key = addAudio(deckId);
 
-    db.update(schema.decks)
-      .set({ audio_key: `decks/${deckId}/audio.mp3` })
-      .where(eq(schema.decks.id, deckId))
-      .run();
-
-    const resolvingStore = new SqliteContentStore(db, (key) =>
-      key ? `https://cdn.example.com/${key}` : undefined,
+    const resolvingStore = new SqliteContentStore(db, (k) =>
+      k ? `https://cdn.example.com/${k}` : undefined,
     );
     const payload = await resolvingStore.getDeck(deckId);
-    expect(payload!.audioUrl).toBe(`https://cdn.example.com/decks/${deckId}/audio.mp3`);
+    expect(payload!.audioUrl).toBe(`https://cdn.example.com/${key}`);
+    // vtt is NULL ⟹ no vttUrl
+    expect('vttUrl' in payload!).toBe(false);
   });
 
-  it('omits audioUrl when audio_key is set but the resolver returns undefined (public base unset)', async () => {
+  it('emits vttUrl (sibling .vtt key) only when the current row has a vtt', async () => {
     const store = new SqliteContentStore(db);
     await store.importCurriculum([deckA]);
     const deckId = db.select().from(schema.decks).get()!.id;
+    addAudio(deckId, { vtt: 'WEBVTT\n\nNOTE audio-sha256:deadbeefcafef00d\n' });
 
-    db.update(schema.decks)
-      .set({ audio_key: `decks/${deckId}/audio.mp3` })
-      .where(eq(schema.decks.id, deckId))
+    const resolvingStore = new SqliteContentStore(db, (k) =>
+      k ? `https://cdn.example.com/${k}` : undefined,
+    );
+    const payload = await resolvingStore.getDeck(deckId);
+    expect(payload!.audioUrl).toBe(`https://cdn.example.com/decks/${deckId}/deadbeefcafef00d.mp3`);
+    expect(payload!.vttUrl).toBe(`https://cdn.example.com/decks/${deckId}/deadbeefcafef00d.vtt`);
+  });
+
+  it('resolves only the current row, ignoring demoted history', async () => {
+    const store = new SqliteContentStore(db);
+    await store.importCurriculum([deckA]);
+    const deckId = db.select().from(schema.decks).get()!.id;
+    // A demoted historical row + the current one.
+    db.insert(schema.audio)
+      .values({
+        id: `aud-old-${deckId}`,
+        subject_type: 'deck',
+        subject_id: deckId,
+        key: `decks/${deckId}/0000000000000000.mp3`,
+        format: 'mp3',
+        size_bytes: 512,
+        is_current: false,
+        created_at: new Date().toISOString(),
+      })
       .run();
+    const currentKey = addAudio(deckId, { current: true });
+
+    const resolvingStore = new SqliteContentStore(db, (k) => (k ? `https://cdn/${k}` : undefined));
+    const payload = await resolvingStore.getDeck(deckId);
+    expect(payload!.audioUrl).toBe(`https://cdn/${currentKey}`);
+  });
+
+  it('omits audioUrl when a resolver returns undefined (public base unset)', async () => {
+    const store = new SqliteContentStore(db);
+    await store.importCurriculum([deckA]);
+    const deckId = db.select().from(schema.decks).get()!.id;
+    addAudio(deckId, { vtt: 'WEBVTT\n' });
 
     const resolvingStore = new SqliteContentStore(db, () => undefined);
     const payload = await resolvingStore.getDeck(deckId);
-    expect(payload!.audioUrl).toBeUndefined();
+    expect('audioUrl' in payload!).toBe(false);
+    expect('vttUrl' in payload!).toBe(false);
   });
 
-  it('emits audioStart/audioEnd on lines whose sentence has markers, omits them otherwise', async () => {
+  it('never emits per-line audioStart/audioEnd (timing is the VTT track)', async () => {
     const store = new SqliteContentStore(db);
     await store.importCurriculum([deckA]);
-    const deck = db.select().from(schema.decks).get()!;
-    const [firstSentence, secondSentence] = [...deck.doc.sentences].sort(
-      (a, b) => a.position - b.position,
-    );
-
-    db.update(schema.decks)
-      .set({
-        doc: {
-          sentences: [
-            { ...firstSentence, audioStart: 0, audioEnd: 2.5 },
-            secondSentence, // no markers
-          ],
-        },
-      })
-      .where(eq(schema.decks.id, deck.id))
-      .run();
-
-    const payload = await store.getDeck(deck.id);
-    const markedLine = payload!.lines.find((l) => l.sentenceId === firstSentence.sentenceId)!;
-    const unmarkedLine = payload!.lines.find((l) => l.sentenceId === secondSentence.sentenceId)!;
-
-    expect(markedLine.audioStart).toBe(0);
-    expect(markedLine.audioEnd).toBe(2.5);
-    expect('audioStart' in unmarkedLine).toBe(false);
-    expect('audioEnd' in unmarkedLine).toBe(false);
+    const payload = await store.getDeck(db.select().from(schema.decks).get()!.id);
+    for (const line of payload!.lines) {
+      expect('audioStart' in line).toBe(false);
+      expect('audioEnd' in line).toBe(false);
+    }
   });
 });

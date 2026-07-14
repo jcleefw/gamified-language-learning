@@ -139,35 +139,59 @@ describe('GET /api/decks — audio fields (EP42-DS01, ST05)', () => {
     vi.unstubAllEnvs();
   });
 
-  it('emits audioUrl/audioStart/audioEnd when audio_key + markers are set and GLL_AUDIO_PUBLIC_URL is configured', async () => {
+  /** Insert a current audio row for a deck; returns the content hash used in its key. */
+  function addAudio(deckId: string, vtt: string | null): string {
+    const hash = 'deadbeefcafef00d';
+    testDb
+      .insert(schema.audio)
+      .values({
+        id: `aud-${deckId}`,
+        subject_type: 'deck',
+        subject_id: deckId,
+        key: `decks/${deckId}/${hash}.mp3`,
+        format: 'mp3',
+        size_bytes: 2048,
+        vtt,
+        is_current: true,
+        created_at: new Date().toISOString(),
+      })
+      .run();
+    return hash;
+  }
+
+  it('emits audioUrl + vttUrl when a current audio row with a vtt exists and GLL_AUDIO_PUBLIC_URL is set', async () => {
     vi.stubEnv('GLL_AUDIO_PUBLIC_URL', 'http://localhost:9000/gll-audio');
 
     await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
     const deckRow = testDb.select().from(schema.decks).get()!;
-    const [firstSentence, ...restSentences] = deckRow.doc.sentences;
-
-    testDb
-      .update(schema.decks)
-      .set({
-        audio_key: `decks/${deckRow.id}/audio.mp3`,
-        doc: {
-          sentences: [{ ...firstSentence, audioStart: 0, audioEnd: 2.5 }, ...restSentences],
-        },
-      })
-      .where(eq(schema.decks.id, deckRow.id))
-      .run();
+    const hash = addAudio(deckRow.id, 'WEBVTT\n\nNOTE audio-sha256:deadbeefcafef00d\n');
 
     const res = await app.request('/api/decks');
     const body = (await res.json()) as { success: true; data: GetDecksResponse };
     const deck = body.data[0] as AppDeckPayload;
 
-    expect(deck.audioUrl).toBe(`http://localhost:9000/gll-audio/decks/${deckRow.id}/audio.mp3`);
-    const markedLine = deck.lines.find((l) => l.sentenceId === firstSentence.sentenceId)!;
-    expect(markedLine.audioStart).toBe(0);
-    expect(markedLine.audioEnd).toBe(2.5);
+    expect(deck.audioUrl).toBe(`http://localhost:9000/gll-audio/decks/${deckRow.id}/${hash}.mp3`);
+    expect(deck.vttUrl).toBe(`http://localhost:9000/gll-audio/decks/${deckRow.id}/${hash}.vtt`);
+    // No per-line timing on the wire — timing is the VTT track.
+    expect(deck.lines.every((l) => !('audioStart' in l) && !('audioEnd' in l))).toBe(true);
   });
 
-  it('omits audioUrl and markers when audio_key/markers are absent — no error', async () => {
+  it('emits audioUrl but omits vttUrl when the current row has no vtt', async () => {
+    vi.stubEnv('GLL_AUDIO_PUBLIC_URL', 'http://localhost:9000/gll-audio');
+
+    await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
+    const deckRow = testDb.select().from(schema.decks).get()!;
+    addAudio(deckRow.id, null);
+
+    const res = await app.request('/api/decks');
+    const body = (await res.json()) as { success: true; data: GetDecksResponse };
+    const deck = body.data[0] as AppDeckPayload;
+
+    expect(deck.audioUrl).toBeDefined();
+    expect('vttUrl' in deck).toBe(false);
+  });
+
+  it('omits audioUrl/vttUrl when the deck has no audio row — no error', async () => {
     vi.stubEnv('GLL_AUDIO_PUBLIC_URL', 'http://localhost:9000/gll-audio');
 
     await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
@@ -177,6 +201,7 @@ describe('GET /api/decks — audio fields (EP42-DS01, ST05)', () => {
     const deck = body.data[0] as AppDeckPayload;
 
     expect('audioUrl' in deck).toBe(false);
+    expect('vttUrl' in deck).toBe(false);
     expect(deck.lines.every((l) => !('audioStart' in l) && !('audioEnd' in l))).toBe(true);
   });
 
@@ -185,17 +210,14 @@ describe('GET /api/decks — audio fields (EP42-DS01, ST05)', () => {
 
     await new SqliteContentStore(testDb).importCurriculum([singleDeck]);
     const deckRow = testDb.select().from(schema.decks).get()!;
-    testDb
-      .update(schema.decks)
-      .set({ audio_key: `decks/${deckRow.id}/audio.mp3` })
-      .where(eq(schema.decks.id, deckRow.id))
-      .run();
+    addAudio(deckRow.id, 'WEBVTT\n');
 
     const res = await app.request('/api/decks');
     expect(res.status).toBe(200);
     const body = (await res.json()) as { success: true; data: GetDecksResponse };
     const deck = body.data[0] as AppDeckPayload;
     expect('audioUrl' in deck).toBe(false);
+    expect('vttUrl' in deck).toBe(false);
   });
 });
 

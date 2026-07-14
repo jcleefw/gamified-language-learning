@@ -79,8 +79,8 @@ export interface AppLinePayload {
   romanization: string;
   english: string;
   wordIds: string[];
-  audioStart?: number; // absent = sentence has no marker
-  audioEnd?: number;
+  // No per-line timing: timing is the served WebVTT track (EP43 consumes it via
+  // the browser's TextTrack, cue-ID = sentenceId).
 }
 
 export interface AppDeckPayload {
@@ -90,7 +90,8 @@ export interface AppDeckPayload {
   register?: string;
   words: AppWordPayload[];
   lines: AppLinePayload[];
-  audioUrl?: string; // absent = decks.audio_key IS NULL or public base unset
+  audioUrl?: string; // absent = no current audio row OR public base unset
+  vttUrl?: string; // absent = current audio row has no vtt OR public base unset
 }
 
 export type GetDecksResponse = AppDeckPayload[];
@@ -116,8 +117,8 @@ export const DeckSentenceSchema = z.object({
   romanization: z.string(),
   position: z.number().int().nonnegative(),
   components: z.array(DeckComponentSchema),
-  audioStart: z.number().nonnegative().optional(), // seconds into the deck file
-  audioEnd: z.number().nonnegative().optional(), // seconds; play stops here
+  // No audioStart/audioEnd: per-sentence timing is the WebVTT track bound to the
+  // deck's audio binary (WebVTT ADR), not a field on the sentence.
 });
 export type DeckSentence = z.infer<typeof DeckSentenceSchema>;
 
@@ -125,27 +126,3 @@ export const DeckDocSchema = z.object({
   sentences: z.array(DeckSentenceSchema),
 });
 export type DeckDoc = z.infer<typeof DeckDocSchema>;
-
-// ── Marker-authoring hand-off (EP43-DS02) ─────────────────────────────────────
-// The Pass-1 marker map: the marker tool (ST04) exports it, `apply-markers`
-// (ST05) ingests it. NOT a wire type — it is the file the curator moves between
-// the browser tool and the seed/import step. Keyed by the DB `sentenceId` the
-// tool read from GET /api/decks; `start`/`end` are seconds-float and land on
-// `DeckSentence.audioStart/audioEnd` in place, matched by `sentenceId`. Only
-// complete, valid (`end > start ≥ 0`) pairs are ever emitted or accepted — the
-// same invariant is enforced on both sides of the hand-off (defence in depth).
-export const DeckMarkerSchema = z
-  .object({
-    start: z.number().nonnegative(),
-    end: z.number().nonnegative(),
-  })
-  .refine((m) => m.end > m.start, {
-    message: 'marker end must be greater than start',
-  });
-export type DeckMarker = z.infer<typeof DeckMarkerSchema>;
-
-export const DeckMarkerMapSchema = z.object({
-  deckId: z.string().min(1),
-  markers: z.record(z.string().min(1), DeckMarkerSchema),
-});
-export type DeckMarkerMap = z.infer<typeof DeckMarkerMapSchema>;
