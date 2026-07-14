@@ -27,6 +27,7 @@ import ReviewHub from './components/ReviewHub.vue';
 import ReviewSummary from './components/ReviewSummary.vue';
 import NavMenu from './components/NavMenu.vue';
 import CurateAudio from './components/CurateAudio.vue';
+import MarkAudio from './components/MarkAudio.vue';
 import type { ConfigType, Screen } from './types';
 
 const apiError = ref<string | null>(null);
@@ -410,12 +411,27 @@ onMounted(async () => {
     🎙️ Curate audio
   </button>
 
+  <button
+    v-if="env.curatorMode && screen !== 'mark'"
+    class="mark-toggle"
+    title="Mark per-sentence audio segments for a deck (curator tooling)"
+    @click="screen = 'mark'"
+  >
+    🏷️ Mark audio
+  </button>
+
   <div v-if="apiError" class="api-error" role="alert">
     {{ apiError }}
   </div>
 
   <CurateAudio
     v-if="env.curatorMode && screen === 'curate'"
+    :decks="appDecks"
+    @back="screen = 'select'"
+  />
+
+  <MarkAudio
+    v-if="env.curatorMode && screen === 'mark'"
     :decks="appDecks"
     @back="screen = 'select'"
   />
@@ -530,7 +546,8 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.curate-toggle {
+.curate-toggle,
+.mark-toggle {
   position: fixed;
   bottom: 16px;
   left: 16px;
@@ -544,6 +561,9 @@ onMounted(async () => {
   font-size: 0.85rem;
   cursor: pointer;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+.mark-toggle {
+  bottom: 56px;
 }
 .rec-toggle {
   position: fixed;
