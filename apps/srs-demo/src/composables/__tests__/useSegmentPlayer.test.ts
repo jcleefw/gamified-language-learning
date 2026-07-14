@@ -1,6 +1,37 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { ref } from 'vue';
 import { useSegmentPlayer } from '../useSegmentPlayer';
+
+/**
+ * playSegment's stop-at-end watcher polls via requestAnimationFrame (EP43-BUG01
+ * — a `timeupdate`-driven check fired too sparsely/irregularly to reliably
+ * catch a segment crossing its `end`). This stub gives tests explicit control
+ * over "one frame elapsed" without depending on real animation-frame timing.
+ */
+function stubRaf() {
+  let nextId = 1;
+  const callbacks = new Map<number, FrameRequestCallback>();
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+    const id = nextId++;
+    callbacks.set(id, cb);
+    return id;
+  });
+  vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+    callbacks.delete(id);
+  });
+  return {
+    /** Runs every callback currently scheduled, as if one frame elapsed. */
+    tick(time = 0) {
+      const scheduled = Array.from(callbacks.values());
+      callbacks.clear();
+      for (const cb of scheduled) cb(time);
+    },
+  };
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 /**
  * A minimal fake HTMLAudioElement: enough surface for useSegmentPlayer to
@@ -44,6 +75,7 @@ type FakeAudio = ReturnType<typeof makeFakeAudio>;
 
 describe('useSegmentPlayer — segment playback (playback ADR §4)', () => {
   it('playSegment seeks to start, plays, and pauses within one frame of end', () => {
+    const raf = stubRaf();
     const audio = makeFakeAudio();
     const el = ref(audio as unknown as HTMLAudioElement);
     const player = useSegmentPlayer(el);
@@ -54,14 +86,14 @@ describe('useSegmentPlayer — segment playback (playback ADR §4)', () => {
     expect(audio.play).toHaveBeenCalledOnce();
     expect(audio.paused).toBe(false);
 
-    // Simulate timeupdate ticks approaching but not reaching the end.
+    // Simulate animation frames approaching but not reaching the end.
     audio.currentTime = 1.5;
-    audio.fire('timeupdate');
+    raf.tick();
     expect(audio.pause).not.toHaveBeenCalled();
 
     // Reaches end.
     audio.currentTime = 2.0;
-    audio.fire('timeupdate');
+    raf.tick();
     expect(audio.pause).toHaveBeenCalledOnce();
     expect(audio.paused).toBe(true);
   });
@@ -82,6 +114,7 @@ describe('useSegmentPlayer — segment playback (playback ADR §4)', () => {
   });
 
   it('seeking or changing rate mid-segment disarms the pending auto-pause', () => {
+    const raf = stubRaf();
     const audio = makeFakeAudio();
     const el = ref(audio as unknown as HTMLAudioElement);
     const player = useSegmentPlayer(el);
@@ -92,14 +125,15 @@ describe('useSegmentPlayer — segment playback (playback ADR §4)', () => {
     player.seek(5.0);
     (audio.pause as ReturnType<typeof vi.fn>).mockClear();
 
-    // Even if currentTime later reaches the old "end", the stale listener
-    // must not fire — it was torn down by seek().
+    // Even if currentTime later reaches the old "end", the stale watcher
+    // must not fire — its rAF loop was cancelled by seek().
     audio.currentTime = 2.0;
-    audio.fire('timeupdate');
+    raf.tick();
     expect(audio.pause).not.toHaveBeenCalled();
   });
 
   it('changing rate mid-segment also disarms the pending auto-pause', () => {
+    const raf = stubRaf();
     const audio = makeFakeAudio();
     const el = ref(audio as unknown as HTMLAudioElement);
     const player = useSegmentPlayer(el);
@@ -109,7 +143,7 @@ describe('useSegmentPlayer — segment playback (playback ADR §4)', () => {
     (audio.pause as ReturnType<typeof vi.fn>).mockClear();
 
     audio.currentTime = 2.0;
-    audio.fire('timeupdate');
+    raf.tick();
     expect(audio.pause).not.toHaveBeenCalled();
   });
 });

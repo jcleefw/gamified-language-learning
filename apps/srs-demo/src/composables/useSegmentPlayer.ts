@@ -27,13 +27,17 @@ export function useSegmentPlayer(
   const rate = ref<1 | 0.75 | 0.5>(1);
   const activeCueId = ref<string | null>(null);
 
-  let timeUpdateListener: (() => void) | null = null;
+  // Cancels the in-flight segment's stop-watcher (see playSegment). Not a
+  // `timeupdate` listener: `timeupdate` fires too sparsely/irregularly (spec
+  // "roughly 4Hz", worse in practice for some WAV encodings) to reliably catch
+  // a segment crossing its `end` — observed overshoot ranged from a fraction
+  // of a second to multiple seconds, occasionally running through the next
+  // marker entirely (EP43-BUG01). A rAF poll checks every displayed frame instead.
+  let cancelPendingSegment: (() => void) | null = null;
 
   function clearPendingSegment() {
-    if (timeUpdateListener && el.value) {
-      el.value.removeEventListener('timeupdate', timeUpdateListener);
-    }
-    timeUpdateListener = null;
+    cancelPendingSegment?.();
+    cancelPendingSegment = null;
   }
 
   function play() {
@@ -70,7 +74,7 @@ export function useSegmentPlayer(
   }
 
   function setRate(r: 1 | 0.75 | 0.5) {
-    console.log('[AUDIO] setRate()', { rate: r, hadPendingSegment: !!timeUpdateListener });
+    console.log('[AUDIO] setRate()', { rate: r, hadPendingSegment: !!cancelPendingSegment });
     rate.value = r;
     if (el.value) {
       el.value.playbackRate = r;
@@ -83,24 +87,34 @@ export function useSegmentPlayer(
     clearPendingSegment();
     seek(start);
 
-    // A `timeupdate` can fire while the seek is still in flight, with the element
-    // still at its OLD position. If that old position is past `end` we'd pause
-    // instantly; if we never confirm we reached the window we might not stop at
-    // all. So only arm the stop once playback has actually entered [start, end).
+    // The seek above may still be in flight when polling starts, with the
+    // element still at its OLD position. If that old position is past `end`
+    // we'd pause instantly; if we never confirm we reached the window we
+    // might not stop at all. So only arm the stop once playback has actually
+    // entered [start, end). Polled every animation frame (~60Hz) rather than
+    // via `timeupdate` (~4Hz and irregular) so the stop can't drift past a
+    // subsequent marker's entire range before catching up (EP43-BUG01).
     let entered = false;
-    timeUpdateListener = () => {
+    let rafId: number | null = null;
+
+    function tick() {
       if (!el.value) return;
       const t = el.value.currentTime;
       if (t >= start && t < end) entered = true;
       if (entered && t >= end) {
         console.log('[AUDIO] playSegment() reached end, pausing', { t, start, end });
         pause();
+        return;
       }
+      rafId = requestAnimationFrame(tick);
+    }
+
+    cancelPendingSegment = () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = null;
     };
 
-    if (el.value) {
-      el.value.addEventListener('timeupdate', timeUpdateListener);
-    }
+    rafId = requestAnimationFrame(tick);
 
     play();
   }
