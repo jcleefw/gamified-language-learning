@@ -94,7 +94,7 @@ It front-loads playback (DS01) so the shared audio-player primitive exists befor
 
 **Scope**: `apps/srs-demo` — replace the fixed-position floating "Curate audio"/"Mark audio" toggle buttons with a `Curation` tab in `NavMenu.vue` (gated by `env.curationMode`, renamed from `curationMode`, same visual treatment as Home/Learn/Review); move `MarkAudio.vue`'s Commit/Download/Reset action row to sit directly above the wavesurfer player, right-aligned, with uniform button sizing. Layout/navigation only — no change to playback, marking, or VTT commit logic. **Design spec: [EP43-DS03](../../changelogs/EP43--audio-playback-and-marking/20260715T000417Z-EP43-DS03-wavesurfer-implementation-swap.md).**
 
-### EP43-ST09: Retire the wavesurfer prototype and the superseded rAF stopgap
+### EP43-ST09: Retire the wavesurfer prototype and the superseded rAF stopgap *(Done)*
 
 **Scope**: `apps/srs-demo` — delete `PrototypeWavesurfer.vue` and its dev-only nav entry; confirm the EP43-BUG01 rAF polling loop is gone. **Design spec: [EP43-DS03](../../changelogs/EP43--audio-playback-and-marking/20260715T000417Z-EP43-DS03-wavesurfer-implementation-swap.md).**
 
