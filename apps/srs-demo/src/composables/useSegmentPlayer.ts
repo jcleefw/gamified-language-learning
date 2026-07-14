@@ -1,4 +1,6 @@
-import { ref, watch, type Ref } from 'vue';
+import { ref, shallowRef, watch, type Ref } from 'vue';
+import WaveSurfer from 'wavesurfer.js';
+import { parseVtt } from '@gll/api-contract';
 
 export interface SegmentPlayer {
   currentTime: Ref<number>;
@@ -17,170 +19,110 @@ export interface SegmentPlayer {
   playCue(sentenceId: string): void;
 }
 
+interface Cue {
+  id: string;
+  start: number;
+  end: number;
+}
+
 export function useSegmentPlayer(
-  el: Ref<HTMLAudioElement | null>,
-  track: Ref<TextTrack | null> = ref(null),
-): SegmentPlayer {
+  container: Ref<HTMLElement | null>,
+  src: Ref<string>,
+  vttUrl?: Ref<string | undefined>,
+): SegmentPlayer & { wavesurfer: Ref<WaveSurfer | null> } {
   const currentTime = ref<number>(0);
   const duration = ref<number>(0);
   const playing = ref<boolean>(false);
   const rate = ref<1 | 0.75 | 0.5>(1);
   const activeCueId = ref<string | null>(null);
-
-  // Cancels the in-flight segment's stop-watcher (see playSegment). Not a
-  // `timeupdate` listener: `timeupdate` fires too sparsely/irregularly (spec
-  // "roughly 4Hz", worse in practice for some WAV encodings) to reliably catch
-  // a segment crossing its `end` — observed overshoot ranged from a fraction
-  // of a second to multiple seconds, occasionally running through the next
-  // marker entirely (EP43-BUG01). A rAF poll checks every displayed frame instead.
-  let cancelPendingSegment: (() => void) | null = null;
-
-  function clearPendingSegment() {
-    cancelPendingSegment?.();
-    cancelPendingSegment = null;
-  }
+  const wavesurfer = shallowRef<WaveSurfer | null>(null);
+  const cues = ref<Cue[]>([]);
 
   function play() {
-    console.log('[AUDIO] play()', { currentTime: el.value?.currentTime });
-    if (el.value) {
-      el.value.play().catch((err) => {
-        // Playback may fail silently (e.g., autoplay policy)
-        console.log('[AUDIO] play() rejected', err);
-      });
-    }
+    wavesurfer.value?.play();
   }
 
   function pause() {
-    console.log('[AUDIO] pause()', { currentTime: el.value?.currentTime });
-    if (el.value) {
-      el.value.pause();
-    }
-    clearPendingSegment();
+    wavesurfer.value?.pause();
   }
 
   function seek(t: number) {
-    if (el.value) {
-      // Only clamp to duration when it's a finite number. For WAV (and any file
-      // the browser can't measure up front) `duration` is NaN/Infinity — the old
-      // `duration || 0` collapsed that to 0, so every seek landed at the file
-      // start and segments played from 0 instead of `t`.
-      const dur = el.value.duration;
-      const upper = Number.isFinite(dur) ? dur : t;
-      const clamped = Math.max(0, Math.min(t, upper));
-      console.log('[AUDIO] seek()', { requested: t, elementDuration: dur, clamped });
-      el.value.currentTime = clamped;
-    }
-    clearPendingSegment();
+    wavesurfer.value?.setTime(t);
   }
 
   function setRate(r: 1 | 0.75 | 0.5) {
-    console.log('[AUDIO] setRate()', { rate: r, hadPendingSegment: !!cancelPendingSegment });
     rate.value = r;
-    if (el.value) {
-      el.value.playbackRate = r;
-    }
-    clearPendingSegment();
+    wavesurfer.value?.setPlaybackRate(r, true);
   }
 
+  // wavesurfer's WebAudio backend schedules its own precise stop
+  // (WebAudioPlayer.stopAt(end), Web-Audio-clock-scheduled) — no polling
+  // needed (EP43-BUG01 is fixed structurally by the backend, not by a
+  // tighter poll interval; see the wavesurfer.js Pivot ADR).
   function playSegment(start: number, end: number) {
-    console.log('[AUDIO] playSegment()', { start, end });
-    clearPendingSegment();
-    seek(start);
-
-    // The seek above may still be in flight when polling starts, with the
-    // element still at its OLD position. If that old position is past `end`
-    // we'd pause instantly; if we never confirm we reached the window we
-    // might not stop at all. So only arm the stop once playback has actually
-    // entered [start, end). Polled every animation frame (~60Hz) rather than
-    // via `timeupdate` (~4Hz and irregular) so the stop can't drift past a
-    // subsequent marker's entire range before catching up (EP43-BUG01).
-    let entered = false;
-    let rafId: number | null = null;
-
-    function tick() {
-      if (!el.value) return;
-      const t = el.value.currentTime;
-      if (t >= start && t < end) entered = true;
-      if (entered && t >= end) {
-        console.log('[AUDIO] playSegment() reached end, pausing', { t, start, end });
-        pause();
-        return;
-      }
-      rafId = requestAnimationFrame(tick);
-    }
-
-    cancelPendingSegment = () => {
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      rafId = null;
-    };
-
-    rafId = requestAnimationFrame(tick);
-
-    play();
+    wavesurfer.value?.play(start, end);
   }
 
-  // Timing is the served WebVTT track (WebVTT ADR §6). A cue's id is its
-  // sentenceId; playing a sentence is playing its cue's [startTime, endTime].
+  // Timing is the served WebVTT track (WebVTT ADR §6, amended by the
+  // wavesurfer.js Pivot ADR §2: parsed manually since there's no <audio>
+  // element for a native <track> to attach to).
   function playCue(sentenceId: string) {
-    const cue = track.value?.cues?.getCueById(sentenceId) as
-      | (TextTrackCue & { startTime: number; endTime: number })
-      | null
-      | undefined;
-    console.log('[AUDIO] playCue()', {
-      sentenceId,
-      trackLoaded: !!track.value,
-      cueCount: track.value?.cues?.length ?? null,
-      found: !!cue,
-      startTime: cue?.startTime,
-      endTime: cue?.endTime,
-    });
+    const cue = cues.value.find((c) => c.id === sentenceId);
     if (!cue) return; // no cue for this sentence ⟹ silent no-op (playback ADR §6)
-    playSegment(cue.startTime, cue.endTime);
+    playSegment(cue.start, cue.end);
   }
 
-  // Bind local state to the audio element as soon as it mounts (or re-mounts,
-  // since `el` can flip across a v-if). `immediate: true` covers the case where
-  // the ref is already set by the time this composable runs.
   watch(
-    () => el.value,
-    (audio) => {
-      if (!audio) return;
-      audio.addEventListener('timeupdate', () => {
-        currentTime.value = audio.currentTime;
+    () => container.value,
+    (el) => {
+      if (!el || wavesurfer.value) return;
+      const ws = WaveSurfer.create({
+        container: el,
+        url: src.value,
+        backend: 'WebAudio',
       });
-      audio.addEventListener('durationchange', () => {
-        duration.value = audio.duration;
-        console.log('[AUDIO] durationchange', { src: audio.src, duration: audio.duration });
+      wavesurfer.value = ws;
+
+      ws.on('ready', () => {
+        duration.value = ws.getDuration();
       });
-      audio.addEventListener('play', () => {
+      ws.on('timeupdate', (t: number) => {
+        currentTime.value = t;
+        const active = cues.value.find((c) => t >= c.start && t < c.end);
+        activeCueId.value = active?.id ?? null;
+      });
+      ws.on('play', () => {
         playing.value = true;
       });
-      audio.addEventListener('pause', () => {
+      ws.on('pause', () => {
         playing.value = false;
       });
-      audio.playbackRate = rate.value;
     },
     { immediate: true, flush: 'post' },
   );
 
-  // The browser's subtitle engine drives "which sentence is playing" — we read
-  // the first active cue's id on each cuechange, no manual currentTime math.
   watch(
-    () => track.value,
-    (t) => {
-      if (!t) {
-        activeCueId.value = null;
-        return;
-      }
-      console.log('[AUDIO] track attached', { mode: t.mode, cueCount: t.cues?.length ?? null });
-      t.addEventListener('cuechange', () => {
-        const active = t.activeCues;
-        activeCueId.value = active && active.length > 0 ? active[0].id : null;
-        console.log('[AUDIO] cuechange', { activeCueId: activeCueId.value });
-      });
+    () => src.value,
+    (newSrc) => {
+      wavesurfer.value?.load(newSrc);
     },
-    { immediate: true, flush: 'post' },
   );
+
+  if (vttUrl) {
+    watch(
+      () => vttUrl.value,
+      async (url) => {
+        if (!url) {
+          cues.value = [];
+          return;
+        }
+        const text = await fetch(url).then((r) => r.text());
+        const parsed = parseVtt(text);
+        cues.value = Object.entries(parsed).map(([id, { start, end }]) => ({ id, start, end }));
+      },
+      { immediate: true },
+    );
+  }
 
   return {
     currentTime,
@@ -188,6 +130,7 @@ export function useSegmentPlayer(
     playing,
     rate,
     activeCueId,
+    wavesurfer,
     play,
     pause,
     seek,

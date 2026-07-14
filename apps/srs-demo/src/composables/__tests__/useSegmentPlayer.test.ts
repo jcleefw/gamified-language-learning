@@ -1,149 +1,202 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ref } from 'vue';
 import { useSegmentPlayer } from '../useSegmentPlayer';
 
 /**
- * playSegment's stop-at-end watcher polls via requestAnimationFrame (EP43-BUG01
- * — a `timeupdate`-driven check fired too sparsely/irregularly to reliably
- * catch a segment crossing its `end`). This stub gives tests explicit control
- * over "one frame elapsed" without depending on real animation-frame timing.
+ * Fake WaveSurfer instance: enough surface for useSegmentPlayer to drive
+ * playback and dispatch the events it listens to. `WaveSurfer.create` is
+ * mocked to always return the same instance so a test can grab it via
+ * `getLastInstance()` and dispatch events / assert calls.
  */
-function stubRaf() {
-  let nextId = 1;
-  const callbacks = new Map<number, FrameRequestCallback>();
-  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-    const id = nextId++;
-    callbacks.set(id, cb);
-    return id;
-  });
-  vi.stubGlobal('cancelAnimationFrame', (id: number) => {
-    callbacks.delete(id);
-  });
-  return {
-    /** Runs every callback currently scheduled, as if one frame elapsed. */
-    tick(time = 0) {
-      const scheduled = Array.from(callbacks.values());
-      callbacks.clear();
-      for (const cb of scheduled) cb(time);
+function makeFakeWaveSurfer() {
+  const listeners: Record<string, Array<(...args: unknown[]) => void>> = {};
+  const instance = {
+    currentTime: 0,
+    duration: 0,
+    on: vi.fn((type: string, cb: (...args: unknown[]) => void) => {
+      (listeners[type] ??= []).push(cb);
+    }),
+    play: vi.fn(async (..._args: [start?: number, end?: number]) => {}),
+    pause: vi.fn(),
+    setTime: vi.fn((t: number) => {
+      instance.currentTime = t;
+    }),
+    setPlaybackRate: vi.fn(),
+    getDuration: vi.fn(() => instance.duration),
+    getCurrentTime: vi.fn(() => instance.currentTime),
+    load: vi.fn(),
+    destroy: vi.fn(),
+    fire(type: string, ...args: unknown[]) {
+      for (const l of listeners[type] ?? []) l(...args);
     },
   };
+  return instance;
 }
+
+type FakeWaveSurfer = ReturnType<typeof makeFakeWaveSurfer>;
+
+let lastInstance: FakeWaveSurfer | null = null;
+const createMock = vi.fn((..._args: unknown[]) => {
+  lastInstance = makeFakeWaveSurfer();
+  return lastInstance;
+});
+
+vi.mock('wavesurfer.js', () => ({
+  default: { create: (...args: unknown[]) => createMock(...args) },
+}));
+
+vi.mock('@gll/api-contract', () => ({
+  parseVtt: (text: string) => JSON.parse(text) as Record<string, { start: number; end: number }>,
+}));
+
+async function flushPromises() {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function stubFetch(vttResponse: Record<string, { start: number; end: number }>) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({ text: async () => JSON.stringify(vttResponse) })),
+  );
+}
+
+beforeEach(() => {
+  lastInstance = null;
+  createMock.mockClear();
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.clearAllMocks();
 });
 
-/**
- * A minimal fake HTMLAudioElement: enough surface for useSegmentPlayer to
- * drive playback, expose currentTime, and dispatch 'timeupdate'/'play'/'pause'
- * to registered listeners. Real <audio> element behaviour (actual decoding,
- * real time progression) is out of scope for a unit test — the ADR's segment
- * contract (seek→play→pause-at-end) is what's under test here.
- */
-function makeFakeAudio() {
-  const listeners: Record<string, Array<() => void>> = {};
-  const audio = {
-    currentTime: 0,
-    duration: 100,
-    playbackRate: 1,
-    paused: true,
-    addEventListener(type: string, cb: () => void) {
-      (listeners[type] ??= []).push(cb);
-    },
-    removeEventListener(type: string, cb: () => void) {
-      listeners[type] = (listeners[type] ?? []).filter((l) => l !== cb);
-    },
-    play: vi.fn(async function (this: typeof audio) {
-      this.paused = false;
-      fire('play');
-    }),
-    pause: vi.fn(function (this: typeof audio) {
-      this.paused = true;
-      fire('pause');
-    }),
-    fire(type: string) {
-      for (const l of listeners[type] ?? []) l();
-    },
-  };
-  function fire(type: string) {
-    audio.fire(type);
-  }
-  return audio;
-}
+describe('useSegmentPlayer — wavesurfer.js backend (wavesurfer.js Pivot ADR)', () => {
+  it('creates a WaveSurfer instance with the WebAudio backend once the container mounts', () => {
+    const container = ref<HTMLElement | null>({} as HTMLElement);
+    const src = ref('https://example.com/audio.wav');
+    useSegmentPlayer(container, src);
 
-type FakeAudio = ReturnType<typeof makeFakeAudio>;
-
-describe('useSegmentPlayer — segment playback (playback ADR §4)', () => {
-  it('playSegment seeks to start, plays, and pauses within one frame of end', () => {
-    const raf = stubRaf();
-    const audio = makeFakeAudio();
-    const el = ref(audio as unknown as HTMLAudioElement);
-    const player = useSegmentPlayer(el);
-
-    player.playSegment(1.0, 2.0);
-
-    expect(audio.currentTime).toBe(1.0);
-    expect(audio.play).toHaveBeenCalledOnce();
-    expect(audio.paused).toBe(false);
-
-    // Simulate animation frames approaching but not reaching the end.
-    audio.currentTime = 1.5;
-    raf.tick();
-    expect(audio.pause).not.toHaveBeenCalled();
-
-    // Reaches end.
-    audio.currentTime = 2.0;
-    raf.tick();
-    expect(audio.pause).toHaveBeenCalledOnce();
-    expect(audio.paused).toBe(true);
+    expect(createMock).toHaveBeenCalledOnce();
+    const args = createMock.mock.calls[0][0] as Record<string, unknown>;
+    expect(args.backend).toBe('WebAudio');
+    expect(args.container).toBe(container.value);
+    expect(args.url).toBe(src.value);
   });
 
-  it('the active rate persists across play/pause and speed control sets playbackRate', () => {
-    const audio = makeFakeAudio();
-    const el = ref(audio as unknown as HTMLAudioElement);
-    const player = useSegmentPlayer(el);
-
-    player.setRate(0.5);
-    expect(audio.playbackRate).toBe(0.5);
-    expect(player.rate.value).toBe(0.5);
+  it('play/pause delegate to the wavesurfer instance', () => {
+    const container = ref<HTMLElement | null>({} as HTMLElement);
+    const src = ref('https://example.com/audio.wav');
+    const player = useSegmentPlayer(container, src);
 
     player.play();
+    expect(lastInstance!.play).toHaveBeenCalledWith();
+
     player.pause();
-    expect(player.rate.value).toBe(0.5);
-    expect(audio.playbackRate).toBe(0.5);
+    expect(lastInstance!.pause).toHaveBeenCalledOnce();
   });
 
-  it('seeking or changing rate mid-segment disarms the pending auto-pause', () => {
-    const raf = stubRaf();
-    const audio = makeFakeAudio();
-    const el = ref(audio as unknown as HTMLAudioElement);
-    const player = useSegmentPlayer(el);
+  it('seek calls ws.setTime', () => {
+    const container = ref<HTMLElement | null>({} as HTMLElement);
+    const src = ref('https://example.com/audio.wav');
+    const player = useSegmentPlayer(container, src);
 
-    player.playSegment(1.0, 2.0);
-
-    // Scrub away mid-segment.
-    player.seek(5.0);
-    (audio.pause as ReturnType<typeof vi.fn>).mockClear();
-
-    // Even if currentTime later reaches the old "end", the stale watcher
-    // must not fire — its rAF loop was cancelled by seek().
-    audio.currentTime = 2.0;
-    raf.tick();
-    expect(audio.pause).not.toHaveBeenCalled();
+    player.seek(5.5);
+    expect(lastInstance!.setTime).toHaveBeenCalledWith(5.5);
   });
 
-  it('changing rate mid-segment also disarms the pending auto-pause', () => {
-    const raf = stubRaf();
-    const audio = makeFakeAudio();
-    const el = ref(audio as unknown as HTMLAudioElement);
-    const player = useSegmentPlayer(el);
+  it('setRate calls ws.setPlaybackRate with preservePitch=true and updates rate', () => {
+    const container = ref<HTMLElement | null>({} as HTMLElement);
+    const src = ref('https://example.com/audio.wav');
+    const player = useSegmentPlayer(container, src);
 
-    player.playSegment(1.0, 2.0);
     player.setRate(0.75);
-    (audio.pause as ReturnType<typeof vi.fn>).mockClear();
+    expect(lastInstance!.setPlaybackRate).toHaveBeenCalledWith(0.75, true);
+    expect(player.rate.value).toBe(0.75);
+  });
 
-    audio.currentTime = 2.0;
-    raf.tick();
-    expect(audio.pause).not.toHaveBeenCalled();
+  it('playSegment calls ws.play(start, end) with no polling', () => {
+    const container = ref<HTMLElement | null>({} as HTMLElement);
+    const src = ref('https://example.com/audio.wav');
+    const player = useSegmentPlayer(container, src);
+
+    player.playSegment(1.0, 2.0);
+    expect(lastInstance!.play).toHaveBeenCalledWith(1.0, 2.0);
+  });
+
+  it('playCue resolves the sentence id via parsed VTT cues and plays that segment', async () => {
+    stubFetch({ S1: { start: 1.0, end: 2.0 }, S2: { start: 2.0, end: 3.5 } });
+    const container = ref<HTMLElement | null>({} as HTMLElement);
+    const src = ref('https://example.com/audio.wav');
+    const vttUrl = ref<string | undefined>('https://example.com/deck.vtt');
+    const player = useSegmentPlayer(container, src, vttUrl);
+
+    // cues load asynchronously (fetch + parseVtt)
+    await flushPromises();
+
+    player.playCue('S2');
+    expect(lastInstance!.play).toHaveBeenCalledWith(2.0, 3.5);
+  });
+
+  it('playCue no-ops silently for an unknown sentence id', async () => {
+    stubFetch({ S1: { start: 1.0, end: 2.0 } });
+    const container = ref<HTMLElement | null>({} as HTMLElement);
+    const src = ref('https://example.com/audio.wav');
+    const vttUrl = ref<string | undefined>('https://example.com/deck.vtt');
+    const player = useSegmentPlayer(container, src, vttUrl);
+
+    await flushPromises();
+
+    player.playCue('unknown');
+    expect(lastInstance!.play).not.toHaveBeenCalled();
+  });
+
+  it('currentTime/duration/playing update from wavesurfer events', () => {
+    const container = ref<HTMLElement | null>({} as HTMLElement);
+    const src = ref('https://example.com/audio.wav');
+    const player = useSegmentPlayer(container, src);
+
+    lastInstance!.duration = 42;
+    lastInstance!.fire('ready');
+    expect(player.duration.value).toBe(42);
+
+    lastInstance!.fire('timeupdate', 3.14);
+    expect(player.currentTime.value).toBe(3.14);
+
+    lastInstance!.fire('play');
+    expect(player.playing.value).toBe(true);
+
+    lastInstance!.fire('pause');
+    expect(player.playing.value).toBe(false);
+  });
+
+  it('activeCueId reflects the cue containing currentTime on timeupdate, or null', async () => {
+    stubFetch({ S1: { start: 0, end: 2 }, S2: { start: 2, end: 4 } });
+    const container = ref<HTMLElement | null>({} as HTMLElement);
+    const src = ref('https://example.com/audio.wav');
+    const vttUrl = ref<string | undefined>('https://example.com/deck.vtt');
+    const player = useSegmentPlayer(container, src, vttUrl);
+
+    await flushPromises();
+
+    lastInstance!.fire('timeupdate', 1.0);
+    expect(player.activeCueId.value).toBe('S1');
+
+    lastInstance!.fire('timeupdate', 2.5);
+    expect(player.activeCueId.value).toBe('S2');
+
+    lastInstance!.fire('timeupdate', 10);
+    expect(player.activeCueId.value).toBeNull();
+  });
+
+  it('changing src loads the new source into the existing wavesurfer instance', async () => {
+    const container = ref<HTMLElement | null>({} as HTMLElement);
+    const src = ref('https://example.com/a.wav');
+    useSegmentPlayer(container, src);
+
+    src.value = 'https://example.com/b.wav';
+    await Promise.resolve();
+
+    expect(lastInstance!.load).toHaveBeenCalledWith('https://example.com/b.wav');
+    expect(createMock).toHaveBeenCalledOnce();
   });
 });

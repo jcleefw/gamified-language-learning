@@ -1,44 +1,20 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, toRef } from 'vue';
 import { useSegmentPlayer, type SegmentPlayer } from '../composables/useSegmentPlayer';
 
-// Learner-agnostic transport: one <audio>, an optional WebVTT <track>, a
+// Learner-agnostic transport: a wavesurfer.js (WebAudio backend) instance, a
 // scrubber, an mm:ss.cs readout, and a primary always-visible 1x/0.75x/0.5x
-// speed control (playback ADR §4). No deck/sentence/curator concepts — mounted
-// unchanged by DeckOverview, QuizCard, and the DS02 marker tool. When `vttUrl`
-// is given, the browser parses it as a metadata TextTrack and drives per-sentence
-// timing via cuechange (WebVTT ADR §6 Option C).
-const props = defineProps<{ src: string; vttUrl?: string }>();
+// speed control (playback ADR §4, amended by the wavesurfer.js Pivot ADR).
+// No deck/sentence/curator concepts — mounted unchanged by DeckOverview,
+// QuizCard, and the DS02 marker tool. `showWaveform` controls whether the
+// waveform is visually rendered; the container itself is always mounted
+// since wavesurfer needs one to run its decode/playback engine.
+const props = withDefaults(defineProps<{ src: string; vttUrl?: string; showWaveform?: boolean }>(), {
+  showWaveform: false,
+});
 
-const audioEl = ref<HTMLAudioElement | null>(null);
-const trackEl = ref<HTMLTrackElement | null>(null);
-const track = ref<TextTrack | null>(null);
-const player = useSegmentPlayer(audioEl, track);
-
-// The <track> element exposes its parsed TextTrack via `.track`. mode='hidden'
-// makes cues fire cuechange + stay programmatically readable without rendering
-// visible captions.
-watch(
-  () => trackEl.value,
-  (el) => {
-    if (el) {
-      el.track.mode = 'hidden';
-      track.value = el.track;
-      el.addEventListener('error', () => {
-        console.log('[AUDIO] <track> failed to load', { vttUrl: props.vttUrl });
-      });
-      el.addEventListener('load', () => {
-        console.log('[AUDIO] <track> loaded', {
-          vttUrl: props.vttUrl,
-          cueCount: el.track.cues?.length ?? null,
-        });
-      });
-    } else {
-      track.value = null;
-    }
-  },
-  { immediate: true, flush: 'post' },
-);
+const waveformEl = ref<HTMLDivElement | null>(null);
+const player = useSegmentPlayer(waveformEl, toRef(props, 'src'), toRef(props, 'vttUrl'));
 
 const RATES = [1, 0.75, 0.5] as const;
 
@@ -50,7 +26,6 @@ function formatTime(t: number): string {
 }
 
 function togglePlay() {
-  console.log('[AUDIO] click: togglePlay', { wasPlaying: player.playing.value });
   if (player.playing.value) {
     player.pause();
   } else {
@@ -60,20 +35,15 @@ function togglePlay() {
 
 function onScrub(e: Event) {
   const value = Number((e.target as HTMLInputElement).value);
-  console.log('[AUDIO] click: scrubber', { value });
   player.seek(value);
 }
 
-defineExpose<SegmentPlayer>(player);
+defineExpose<SegmentPlayer & { wavesurfer: typeof player.wavesurfer }>(player);
 </script>
 
 <template>
   <div class="audio-player">
-    <!-- crossorigin: the VTT track loads from the public audio bucket (cross-origin);
-         the <track> only parses with CORS enabled on the media element. -->
-    <audio ref="audioEl" :src="props.src" preload="metadata" crossorigin="anonymous">
-      <track v-if="props.vttUrl" ref="trackEl" kind="metadata" :src="props.vttUrl" default />
-    </audio>
+    <div ref="waveformEl" class="waveform-container" :class="{ visible: props.showWaveform }"></div>
 
     <div class="transport">
       <button class="btn-play" type="button" @click="togglePlay">
@@ -102,10 +72,7 @@ defineExpose<SegmentPlayer>(player);
         type="button"
         class="speed-btn"
         :class="{ active: player.rate.value === r }"
-        @click="
-          console.log('[AUDIO] click: speed', { rate: r });
-          player.setRate(r);
-        "
+        @click="player.setRate(r)"
       >
         {{ r }}×
       </button>
@@ -122,6 +89,17 @@ defineExpose<SegmentPlayer>(player);
   border: 1px solid #d1d5db;
   border-radius: 8px;
   background: #f9fafb;
+}
+
+.waveform-container {
+  height: 0;
+  overflow: hidden;
+}
+
+.waveform-container.visible {
+  height: 80px;
+  overflow: visible;
+  margin-bottom: 8px;
 }
 
 .transport {
