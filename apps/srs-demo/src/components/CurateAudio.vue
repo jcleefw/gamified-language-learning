@@ -7,7 +7,7 @@ import { uploadDeckAudio } from '../composables/useStore';
 // App.vue — never rendered in a production build. Reuses the decks already
 // fetched at boot; pairs a local .mp3 with a deck via the gated server endpoint.
 const props = defineProps<{ decks: AppDeckPayload[] }>();
-const emit = defineEmits<{ back: [] }>();
+const emit = defineEmits<{ back: []; uploaded: [] }>();
 
 const selectedDeckId = ref<string>('');
 const selectedFile = ref<File | null>(null);
@@ -26,6 +26,8 @@ async function onUpload() {
   try {
     const key = await uploadDeckAudio(selectedDeckId.value, selectedFile.value);
     status.value = { kind: 'ok', message: `✓ Paired: ${key}` };
+    // Refresh App.vue's deck list so the new audioUrl propagates without reload.
+    emit('uploaded');
   } catch (err) {
     status.value = { kind: 'error', message: (err as Error).message };
   } finally {
@@ -40,7 +42,7 @@ async function onUpload() {
     <h1>Curate Deck Audio</h1>
     <p class="hint">
       Pair a conversation <code>.mp3</code> with a deck. The file is stored and
-      <code>decks.audio_key</code> is written in one step.
+      a current <code>audio</code> row is written in one step.
     </p>
 
     <label class="field">

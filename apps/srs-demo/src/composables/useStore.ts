@@ -170,8 +170,8 @@ export async function postReviewAnswer(
 
 /**
  * Curator-only (EP42-DS02, ST09): upload a deck's conversation audio via the
- * gated server endpoint, which stores the file and writes `decks.audio_key` in
- * one request. Resolves the server-owned key on success; throws the server's
+ * gated server endpoint, which stores the file and inserts a current `audio` row
+ * in one request. Resolves the server-owned key on success; throws the server's
  * error message on failure so the page can surface it rather than fail silently.
  */
 export async function uploadDeckAudio(deckId: string, file: File): Promise<string> {
@@ -192,6 +192,35 @@ export async function uploadDeckAudio(deckId: string, file: File): Promise<strin
     );
   }
   return body.data.audioKey;
+}
+
+/**
+ * Curator-only (EP43-DS02, ST05): commit a deck's WebVTT timing via the gated
+ * server-write endpoint, which validates the audio-sha256 stamp and writes the
+ * `audio.vtt` DB column + the durable bucket `.vtt`. Throws the server error
+ * (e.g. 409 stamp mismatch, 404 no current audio) so the tool can surface it.
+ */
+export async function commitDeckVtt(deckId: string, vtt: string): Promise<void> {
+  const res = await fetch(`/api/curation/decks/${deckId}/audio/vtt`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'text/vtt' },
+    body: vtt,
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as ApiResponse<unknown> | null;
+    throw new Error(
+      body && !body.success
+        ? body.error.message
+        : `PUT /api/curation/decks/${deckId}/audio/vtt failed: ${res.status}`,
+    );
+  }
+}
+
+/** Curator-only: fetch a deck's current committed VTT (for fine-tuning), or null. */
+export async function fetchDeckVtt(deckId: string): Promise<string | null> {
+  const res = await fetch(`/api/curation/decks/${deckId}/audio/vtt`);
+  if (!res.ok) return null;
+  return res.text();
 }
 
 export async function clearStore(): Promise<void> {
