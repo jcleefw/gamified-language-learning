@@ -1,0 +1,62 @@
+# Local audio loop (EP42-DS01, ST06) — MinIO stands in for the production
+# Cloudflare R2 bucket (S3-compatible, public-read, browser→bucket).
+#
+# 1. `docker compose up -d` — brings up `minio` (S3 API :9000, console :9001)
+#    and `minio-init`, which waits for the healthcheck then creates the
+#    public-read `gll-audio` bucket. No manual console steps.
+# 2. Copy `apps/server/.env.local.example` → `apps/server/.env.local` (or
+#    export the same `GLL_AUDIO_*` vars another way). The defaults there
+#    already point at this compose file's endpoint/creds/bucket.
+# 3. Seed a deck (e.g. `pnpm --filter cli-demo-db engine:import-curriculum`),
+#    then pair an audio file with it via the curator page (EP42-DS02): set
+#    `GLL_CURATION_MODE=true` (server) + `VITE_CURATION_MODE=true` (srs-demo),
+#    open the "Curate audio" page, pick the deck + a local `.mp3` or `.wav`
+#    (validated by magic bytes, not filename), and Upload. This uploads
+#    `decks/<deckId>/<sha256>.<ext>` (content-addressed key) to the bucket AND
+#    sets `decks.audio_key` in the same request — object and row never drift.
+#    Re-uploading the identical file is a no-op (same hash → same key); a new
+#    recording mints a new key, never overwriting an immutable-cached URL. (The
+#    old `curate-audio` CLI was retired in EP42-DS02 ST10; the page is now the
+#    single pairing path.)
+# 4. `GET /api/decks` (server running with the env from step 2) now returns
+#    `audioUrl` for that deck, resolving to `http://localhost:9000/gll-audio/
+#    decks/<deckId>/<sha256>.<ext>` — playable directly in a browser.
+#
+# Production cutover to R2 is env-only: swap `GLL_AUDIO_ENDPOINT`,
+# `GLL_AUDIO_ACCESS_KEY_ID`/`SECRET`, and `GLL_AUDIO_PUBLIC_URL` to the R2
+# bucket's values. No code path branches on MinIO vs. R2 — both are
+# S3-compatible with a public URL base.
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: gll-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: gll-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/gll-audio &&
+      mc anonymous set download local/gll-audio
+      "
+
+volumes:
+  minio-data:

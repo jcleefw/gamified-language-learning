@@ -1,5 +1,3 @@
-// ── Raw curator upload format ─────────────────────────────────────────────────
-
 import { z } from 'zod';
 
 // Guard 1 — untrusted curator upload (mirrors the ConversationJSON interface)
@@ -79,6 +77,8 @@ export interface AppLinePayload {
   romanization: string;
   english: string;
   wordIds: string[];
+  // No per-line timing: timing is the served WebVTT track (EP43 consumes it via
+  // the browser's TextTrack, cue-ID = sentenceId).
 }
 
 export interface AppDeckPayload {
@@ -88,6 +88,8 @@ export interface AppDeckPayload {
   register?: string;
   words: AppWordPayload[];
   lines: AppLinePayload[];
+  audioUrl?: string; // absent = no current audio row OR public base unset
+  vttUrl?: string; // absent = current audio row has no vtt OR public base unset
 }
 
 export type GetDecksResponse = AppDeckPayload[];
@@ -113,6 +115,8 @@ export const DeckSentenceSchema = z.object({
   romanization: z.string(),
   position: z.number().int().nonnegative(),
   components: z.array(DeckComponentSchema),
+  // No audioStart/audioEnd: per-sentence timing is the WebVTT track bound to the
+  // deck's audio binary (WebVTT ADR), not a field on the sentence.
 });
 export type DeckSentence = z.infer<typeof DeckSentenceSchema>;
 

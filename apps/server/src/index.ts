@@ -1,3 +1,4 @@
+import './env.js';
 import path from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { serve } from '@hono/node-server';

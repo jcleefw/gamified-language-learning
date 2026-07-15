@@ -9,7 +9,9 @@ import type {
   QuizItem,
 } from '@gll/srs-engine-v2';
 import PoolDebugPanel from './PoolDebugPanel.vue';
+import AudioPlayer from './AudioPlayer.vue';
 import { env } from '../env';
+import type { DeckAudio } from '../composables/useAudio';
 
 const props = defineProps<{
   question: QuizQuestion;
@@ -23,10 +25,28 @@ const props = defineProps<{
   // explicit Next (mirrors the sentence path). Default false keeps Learning's
   // emit-on-click behaviour byte-identical. Review passes true.
   feedbackDwell?: boolean;
+  // Audio for word-block sentence segment, only populated when deck has audio + VTT.
+  // MCQ questions always receive undefined. App.vue does the lookup to keep the engine audio-free.
+  // The segment is played by cue id from the served VTT track.
+  audio?: DeckAudio & { sentenceId: string };
 }>();
 const emit = defineEmits<{ answered: [result: QuizResult]; exit: [] }>();
 
 const cheatMode = env.cheatMode;
+
+const sentenceAudioPlayer = ref<InstanceType<typeof AudioPlayer> | null>(null);
+
+function playSentenceAudio() {
+  console.log('[AUDIO] click: playSentenceAudio', {
+    hasAudio: !!props.audio,
+    hasPlayer: !!sentenceAudioPlayer.value,
+    sentenceId: props.audio?.sentenceId,
+    audioUrl: props.audio?.audioUrl,
+    vttUrl: props.audio?.vttUrl,
+  });
+  if (!props.audio || !sentenceAudioPlayer.value) return;
+  sentenceAudioPlayer.value.playCue(props.audio.sentenceId);
+}
 
 const answered = ref(false);
 const selectedLabel = ref<string | null>(null);
@@ -247,6 +267,15 @@ watch(
             .join(' → ')
         }}
       </p>
+
+      <!-- EP43-DS01 ST03: word-block segment playback. Present only when
+           App.vue resolved audio for this sentence (silent degrade — ADR §6). -->
+      <div v-if="audio" class="sentence-audio">
+        <AudioPlayer ref="sentenceAudioPlayer" :src="audio.audioUrl" :vtt-url="audio.vttUrl" />
+        <button class="btn-play-sentence" type="button" @click="playSentenceAudio">
+          ▶ Play sentence
+        </button>
+      </div>
 
       <!-- Answer area -->
       <div
@@ -537,6 +566,25 @@ watch(
 .btn-submit:disabled {
   background: #93c5fd;
   cursor: default;
+}
+.sentence-audio {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.btn-play-sentence {
+  padding: 8px 12px;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  background: white;
+  color: #2563eb;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-play-sentence:hover {
+  background: #eff6ff;
 }
 .sentence-feedback {
   text-align: center;

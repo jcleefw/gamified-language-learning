@@ -19,6 +19,7 @@ export type {
 } from './types/user-config-store';
 export { SqliteLearningStore } from './sqlite-learning-store';
 export { SqliteContentStore } from './sqlite-content-store';
+export type { ResolveAudioUrl } from './sqlite-content-store';
 export { SqliteReviewStore } from './sqlite-review-store';
 export { SqliteAnswerEventStore } from './sqlite-answer-event-store';
 export { SqliteReviewAnswerEventStore } from './sqlite-review-answer-event-store';

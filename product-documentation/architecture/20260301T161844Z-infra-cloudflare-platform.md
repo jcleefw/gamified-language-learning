@@ -1,6 +1,6 @@
 # ADR: Infrastructure — Cloudflare Platform & Local Development
 
-**Status:** Accepted
+**Status:** Accepted — **Superseded in part (platform / database / compute-runtime)** by [20260712T124801Z-infra-mixed-platform-hosting.md](20260712T124801Z-infra-mixed-platform-hosting.md) (2026-07-12). That revision keeps the **R2-for-audio** decision below but replaces the all-Cloudflare topology: D1 + Workers + Pages are **rejected** in favour of a GCP always-free e2-micro VM running the existing Node/Hono + `better-sqlite3` SQLite, with R2 attached as a standalone (S3-API) audio bucket. Sections here on CI/CD, local-dev emulation, and three-role RBAC are not carried forward for the MVP. Treat the newer ADR as precedent where they overlap.
 
 **Date:** 2026-03-01
 

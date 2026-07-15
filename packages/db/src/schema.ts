@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, primaryKey, unique } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, primaryKey, unique, index } from 'drizzle-orm/sqlite-core';
 import type { DeckDoc } from '@gll/api-contract';
 
 // ---------------------------------------------------------------------------
@@ -68,6 +68,36 @@ export const decks = sqliteTable('decks', {
   created_at: text('created_at').notNull(),
   doc: text('doc', { mode: 'json' }).$type<DeckDoc>().notNull(),
 });
+
+// Standalone, versioned audio asset (EP42 — asset-model ADR). One row = one
+// binary: content-addressed `key`, format/size/duration metadata, and a nullable
+// `vtt` WebVTT timing sidecar (filled by EP43). Polymorphic owner via
+// `subject_type` ('deck' only; 'sentence'/'word' reserved) + `subject_id`.
+// Deck↔audio is 1:1-current: re-upload inserts a new row and demotes the prior
+// via `is_current` (history retained; bytes deduped by content-address).
+export const audio = sqliteTable(
+  'audio',
+  {
+    id: text('id').primaryKey(),
+    subject_type: text('subject_type').notNull(), // 'deck' only for now
+    subject_id: text('subject_id').notNull(),
+    key: text('key').notNull(), // decks/{id}/{sha256}.{ext}
+    format: text('format').notNull(), // 'mp3' | 'wav'
+    size_bytes: integer('size_bytes').notNull(),
+    duration_seconds: integer('duration_seconds'), // nullable
+    vtt: text('vtt'), // nullable WebVTT projection; non-null ⟺ segmentable
+    uploaded_by: text('uploaded_by'), // nullable (curator/admin id; pre-auth: null)
+    is_current: integer('is_current', { mode: 'boolean' }).notNull().default(true),
+    created_at: text('created_at').notNull(),
+  },
+  (table) => [
+    index('audio_subject_current_idx').on(
+      table.subject_type,
+      table.subject_id,
+      table.is_current,
+    ),
+  ],
+);
 
 export const deck_words = sqliteTable(
   'deck_words',

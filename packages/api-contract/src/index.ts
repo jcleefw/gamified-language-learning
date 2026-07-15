@@ -3,3 +3,4 @@ export * from './srs.js';
 export * from './auth.js';
 export * from './curation.js';
 export * from './content.js';
+export * from './vtt.js';

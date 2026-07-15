@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { type QuizItem, type RunState } from '@gll/srs-engine-v2';
 import type { AppDeckPayload, GetDecksResponse } from '@gll/api-contract';
 import { loadRunState, loadConfig } from './composables/useStore';
+import { resolveSentenceAudio } from './composables/useAudio';
 import { loadShelvedWords } from './composables/useShelving';
 import {
   useDebugRecording,
@@ -25,6 +26,8 @@ import HomeDashboard from './components/HomeDashboard.vue';
 import ReviewHub from './components/ReviewHub.vue';
 import ReviewSummary from './components/ReviewSummary.vue';
 import NavMenu from './components/NavMenu.vue';
+import CurateAudio from './components/CurateAudio.vue';
+import MarkAudio from './components/MarkAudio.vue';
 import type { ConfigType, Screen } from './types';
 
 const apiError = ref<string | null>(null);
@@ -156,12 +159,39 @@ async function onToggleRecording() {
   }
 }
 
+// --- EP43-DS01 ST03: word-block segment audio resolution ---
+// The engine stays audio-free (playback ADR §5); App.vue holds `appDecks` and
+// resolves sentenceId → audio for the current word-block question, in both
+// Learning and Review (same QuizCard). MCQ questions resolve to undefined —
+// QuizCard renders no control (ADR §3).
+const currentQuestionAudio = computed(() => {
+  if (!currentQuestion.value || currentQuestion.value.kind !== 'word-block')
+    return undefined;
+  const sentenceId = currentQuestion.value.sentenceId;
+  const deckAudio = resolveSentenceAudio(appDecks.value, sentenceId);
+  return deckAudio ? { ...deckAudio, sentenceId } : undefined;
+});
+
+const reviewQuestionAudio = computed(() => {
+  if (!reviewQuestion.value || reviewQuestion.value.kind !== 'word-block')
+    return undefined;
+  const sentenceId = reviewQuestion.value.sentenceId;
+  const deckAudio = resolveSentenceAudio(appDecks.value, sentenceId);
+  return deckAudio ? { ...deckAudio, sentenceId } : undefined;
+});
+
 // --- Top nav menu (EP38-ST08) ---
 // Which top-level destination the current screen belongs to (for highlighting).
-const activeNav = computed<'home' | 'learn' | 'review'>(() => {
+const activeNav = computed<'home' | 'learn' | 'review' | 'curation'>(() => {
   if (screen.value === 'home') return 'home';
   if (screen.value === 'review-hub' || screen.value === 'review')
     return 'review';
+  if (
+    screen.value === 'curation' ||
+    screen.value === 'curate' ||
+    screen.value === 'mark'
+  )
+    return 'curation';
   return 'learn'; // 'select' | 'quiz' | 'results' | 'overview'
 });
 
@@ -263,6 +293,16 @@ function onReviewExit() {
   screen.value = 'review-hub';
 }
 
+// Re-fetch the deck list so a curator write (audio upload / VTT commit) is
+// reflected without a full page reload — the audioUrl/vttUrl a screen reads come
+// from this list, which is otherwise only populated once at boot.
+async function refreshDecks(): Promise<void> {
+  const res = await fetch('/api/decks');
+  if (!res.ok) return;
+  const body = (await res.json()) as { success: true; data: GetDecksResponse };
+  appDecks.value = body.data;
+}
+
 onMounted(async () => {
   // Fetch decks from API first — required before any other initialisation
   try {
@@ -349,9 +389,11 @@ onMounted(async () => {
     :review-unlocked="reviewUnlocked"
     :due-count="dueReviewCount"
     :badge-error="badgeError"
+    :curation-mode="env.curationMode"
     @home="navTo('home')"
     @learn="navTo('select')"
     @review="navTo('review')"
+    @curation="screen = 'curation'"
   />
 
   <button
@@ -379,6 +421,40 @@ onMounted(async () => {
   <div v-if="apiError" class="api-error" role="alert">
     {{ apiError }}
   </div>
+
+  <!-- EP43-ST08: curation landing — the "Curation" nav tab's default target,
+       replacing the two fixed-position floating toggle buttons. Styled to
+       match HomeDashboard.vue's mode-card pattern. -->
+  <div v-if="env.curationMode && screen === 'curation'" class="curation-landing">
+    <h1>Curation</h1>
+    <p class="subtitle">Choose a curator tool.</p>
+
+    <div class="mode-cards">
+      <button class="mode-card" @click="screen = 'curate'">
+        <span class="mode-title">🎙️ Curate audio</span>
+        <span class="mode-desc">Pair a conversation audio file with a deck.</span>
+      </button>
+
+      <button class="mode-card" @click="screen = 'mark'">
+        <span class="mode-title">🏷️ Mark audio</span>
+        <span class="mode-desc">Mark per-sentence audio segments for a deck.</span>
+      </button>
+    </div>
+  </div>
+
+  <CurateAudio
+    v-if="env.curationMode && screen === 'curate'"
+    :decks="appDecks"
+    @uploaded="refreshDecks"
+    @back="screen = 'curation'"
+  />
+
+  <MarkAudio
+    v-if="env.curationMode && screen === 'mark'"
+    :decks="appDecks"
+    @committed="refreshDecks"
+    @back="screen = 'curation'"
+  />
 
   <HomeDashboard
     v-if="screen === 'home'"
@@ -439,6 +515,7 @@ onMounted(async () => {
     :queue="queue"
     :mastered-deck="masteredDeck"
     :shelved-items="shelvedItems"
+    :audio="currentQuestionAudio"
     @answered="onAnswered"
     @exit="onExitBatch"
   />
@@ -472,6 +549,7 @@ onMounted(async () => {
       :queue="[]"
       :mastered-deck="[]"
       :feedback-dwell="true"
+      :audio="reviewQuestionAudio"
       @answered="onReviewAnswered"
       @exit="onReviewExit"
     />
@@ -488,6 +566,52 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.curation-landing {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 0 16px;
+  font-family: sans-serif;
+}
+.curation-landing h1 {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+}
+.curation-landing .subtitle {
+  color: #6b7280;
+  margin: 0 0 24px;
+}
+.curation-landing .mode-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.curation-landing .mode-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+.curation-landing .mode-card:hover {
+  border-color: #2563eb;
+  background: #f0f7ff;
+}
+.curation-landing .mode-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+.curation-landing .mode-desc {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
 .rec-toggle {
   position: fixed;
   bottom: 16px;

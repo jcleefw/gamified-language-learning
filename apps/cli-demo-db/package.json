@@ -25,6 +25,7 @@
     "@gll/srs-review": "workspace:*",
     "@gll/srs-shelving": "workspace:*",
     "better-sqlite3": "^12.11.1",
+    "dotenv": "^16.4.5",
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
