@@ -5,7 +5,7 @@ import { mockDecks } from '../../../data/mock/mock-decks.js';
 import { runAdaptiveLoop } from '../../../demo/learning-io.js';
 import {
   CorrectAutoAnswerStrategy,
-  WeightedAccuracyAutoAnswerStrategy,
+  DeterministicAccuracyAutoAnswerStrategy,
   RandomAutoAnswerStrategy,
 } from '../../../demo/auto-answer-strategy.js';
 import { isMastered } from '../../types/word-state.js';
@@ -28,8 +28,8 @@ const streakThresholds = {
 describe('Auto Mode Scenarios', () => {
   it('perfect scenario: CorrectAutoAnswerStrategy reaches 100% accuracy', async () => {
     const deck = mockDecks[0];
-    const deckWords = deck.wordIds.flatMap(id => {
-      const w = wordPool.find(word => word.id === id);
+    const deckWords = deck.wordIds.flatMap((id) => {
+      const w = wordPool.find((word) => word.id === id);
       return w !== undefined ? [w] : [];
     });
     const words = [
@@ -62,10 +62,10 @@ describe('Auto Mode Scenarios', () => {
     }
   });
 
-  it('realistic scenario: WeightedAccuracyAutoAnswerStrategy(0.8) completes with ~80% accuracy', async () => {
+  it('realistic scenario: DeterministicAccuracyAutoAnswerStrategy(0.8) completes with exactly 80% accuracy', async () => {
     const deck = mockDecks[0];
-    const deckWords = deck.wordIds.flatMap(id => {
-      const w = wordPool.find(word => word.id === id);
+    const deckWords = deck.wordIds.flatMap((id) => {
+      const w = wordPool.find((word) => word.id === id);
       return w !== undefined ? [w] : [];
     });
     const words = [
@@ -73,7 +73,7 @@ describe('Auto Mode Scenarios', () => {
       ...mockConsonants.slice(0, config.foundationalWordsCount),
     ];
 
-    const strategy = new WeightedAccuracyAutoAnswerStrategy(0.8);
+    const strategy = new DeterministicAccuracyAutoAnswerStrategy(0.8);
     const { runState } = await runAdaptiveLoop(
       words,
       wordPool,
@@ -99,15 +99,15 @@ describe('Auto Mode Scenarios', () => {
     }
 
     const accuracy = totalSeen > 0 ? totalCorrect / totalSeen : 0;
-    // Allow ±15% variance from target 80%
-    expect(accuracy).toBeGreaterThan(0.65);
-    expect(accuracy).toBeLessThan(0.95);
+    // Deterministic strategy achieves ~80% accuracy (within ±5% due to small sample size)
+    expect(accuracy).toBeGreaterThanOrEqual(0.75);
+    expect(accuracy).toBeLessThanOrEqual(0.85);
   });
 
   it('edge case scenario: RandomAutoAnswerStrategy completes without crashing', async () => {
     const deck = mockDecks[0];
-    const deckWords = deck.wordIds.flatMap(id => {
-      const w = wordPool.find(word => word.id === id);
+    const deckWords = deck.wordIds.flatMap((id) => {
+      const w = wordPool.find((word) => word.id === id);
       return w !== undefined ? [w] : [];
     });
     const words = [
@@ -144,8 +144,8 @@ describe('Auto Mode Scenarios', () => {
 
   it('determinism: Same input with shuffle: false produces identical results', async () => {
     const deck = mockDecks[0];
-    const deckWords = deck.wordIds.flatMap(id => {
-      const w = wordPool.find(word => word.id === id);
+    const deckWords = deck.wordIds.flatMap((id) => {
+      const w = wordPool.find((word) => word.id === id);
       return w !== undefined ? [w] : [];
     });
     const words = [
