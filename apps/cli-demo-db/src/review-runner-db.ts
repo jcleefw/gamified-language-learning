@@ -1,3 +1,4 @@
+import './env.js';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'node:path';
 import { mkdirSync } from 'node:fs';

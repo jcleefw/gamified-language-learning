@@ -1,3 +1,4 @@
+import './env.js';
 import { createInterface } from 'node:readline/promises';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';

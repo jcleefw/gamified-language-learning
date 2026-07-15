@@ -10,7 +10,7 @@
     }
   },
   "scripts": {
-    "dev": "tsx watch --env-file-if-exists=.env.local src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "seed": "tsx src/seed/cli.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
@@ -26,6 +26,7 @@
     "@gll/srs-review": "workspace:*",
     "@gll/srs-shelving": "workspace:*",
     "@hono/node-server": "^1",
+    "dotenv": "^16.4.5",
     "drizzle-orm": "^0.45.2",
     "hono": "^4",
     "zod": "^4.4.3"
