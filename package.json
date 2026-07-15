@@ -29,5 +29,6 @@
     "vitest": "^3"
   },
   "dependencies": {
+    "vue-router": "^4.6.4"
   }
 }
