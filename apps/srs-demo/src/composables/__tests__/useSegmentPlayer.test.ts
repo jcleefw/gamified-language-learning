@@ -16,7 +16,7 @@ function makeFakeWaveSurfer() {
     on: vi.fn((type: string, cb: (...args: unknown[]) => void) => {
       (listeners[type] ??= []).push(cb);
     }),
-    play: vi.fn(async (..._args: [start?: number, end?: number]) => {}),
+    play: vi.fn(async () => {}),
     pause: vi.fn(),
     setTime: vi.fn((t: number) => {
       instance.currentTime = t;
@@ -36,7 +36,8 @@ function makeFakeWaveSurfer() {
 type FakeWaveSurfer = ReturnType<typeof makeFakeWaveSurfer>;
 
 let lastInstance: FakeWaveSurfer | null = null;
-const createMock = vi.fn((..._args: unknown[]) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const createMock = vi.fn((config: unknown) => {
   lastInstance = makeFakeWaveSurfer();
   return lastInstance;
 });

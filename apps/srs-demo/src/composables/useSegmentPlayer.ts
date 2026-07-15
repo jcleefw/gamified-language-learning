@@ -39,7 +39,7 @@ export function useSegmentPlayer(
   const cues = ref<Cue[]>([]);
 
   function play() {
-    wavesurfer.value?.play();
+    void wavesurfer.value?.play();
   }
 
   function pause() {
@@ -60,7 +60,7 @@ export function useSegmentPlayer(
   // needed (EP43-BUG01 is fixed structurally by the backend, not by a
   // tighter poll interval; see the wavesurfer.js Pivot ADR).
   function playSegment(start: number, end: number) {
-    wavesurfer.value?.play(start, end);
+    void wavesurfer.value?.play(start, end);
   }
 
   // Timing is the served WebVTT track (WebVTT ADR §6, amended by the
@@ -104,7 +104,7 @@ export function useSegmentPlayer(
   watch(
     () => src.value,
     (newSrc) => {
-      wavesurfer.value?.load(newSrc);
+      void wavesurfer.value?.load(newSrc);
     },
   );
 

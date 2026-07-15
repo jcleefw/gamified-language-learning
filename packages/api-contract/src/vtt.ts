@@ -17,7 +17,7 @@ export function secondsToVttTime(t: number): string {
   const m = Math.floor((ms % 3_600_000) / 60_000);
   const s = Math.floor((ms % 60_000) / 1000);
   const millis = ms % 1000;
-  const pad = (n: number, w = 2) => String(n).padStart(w, '0');
+  const pad = (n: number, w = 2): string => String(n).padStart(w, '0');
   return `${pad(h)}:${pad(m)}:${pad(s)}.${pad(millis, 3)}`;
 }
 

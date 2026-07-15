@@ -1,5 +1,3 @@
-// ── Raw curator upload format ─────────────────────────────────────────────────
-
 import { z } from 'zod';
 
 // Guard 1 — untrusted curator upload (mirrors the ConversationJSON interface)

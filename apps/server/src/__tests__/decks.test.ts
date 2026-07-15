@@ -1,6 +1,5 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { eq } from 'drizzle-orm';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initDb, schema, SqliteContentStore } from '@gll/db';
 import type { AppDeck, AppDeckPayload, ConversationJSON, GetDecksResponse } from '@gll/api-contract';
