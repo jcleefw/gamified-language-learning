@@ -95,13 +95,13 @@ Introduce **Vue Router** to handle URL-to-component mapping declaratively. Each 
 
 ### Phase 1: Router Setup (EP44-PH01)
 
-#### EP44-ST01: Install Vue Router 4 & scaffold src/router.ts
+#### EP44-ST01: Install Vue Router 4 & scaffold src/router.ts *(Done — see [EP44-DS01](../../changelogs/EP44--app-vue-router/20260715T231051Z-EP44-DS01-app-router-setup.md) ST01 for the authoritative, code-grounded spec/AC this was verified against — 10 routes, not 9)*
 
 **Acceptance Criteria**:
-- Vue Router 4 added to `package.json`
-- `src/router.ts` created with all 9 routes defined (see Scope)
-- Routes use lazy-loaded imports (code-split per page)
-- Router instantiated and exported, ready to be added to app
+- [x] Vue Router 4 added to `package.json`
+- [x] `src/router.ts` created with all 10 routes defined (see [EP44-DS01](../../changelogs/EP44--app-vue-router/20260715T231051Z-EP44-DS01-app-router-setup.md))
+- [x] Routes use lazy-loaded imports (code-split per page)
+- [x] Router instantiated and exported, ready to be added to app
 
 **Tasks**:
 1. `npm install vue-router@4`
@@ -112,16 +112,16 @@ Introduce **Vue Router** to handle URL-to-component mapping declaratively. Each 
 
 ---
 
-#### EP44-ST02: Refactor App.vue to use RouterView
+#### EP44-ST02: Refactor App.vue to use RouterView *(Done — see [EP44-DS01](../../changelogs/EP44--app-vue-router/20260715T231051Z-EP44-DS01-app-router-setup.md) ST02 for the authoritative spec/AC and implementation notes)*
 
 **Acceptance Criteria**:
-- App.vue script reduced from 384 to ~60 lines
-- NavMenu stays (unchanged)
-- All screen v-if branches replaced with `<RouterView />`
-- Session state remains in `useLearningSession()` and `useReviewSession()` composables
-- Navigation calls `router.push()` instead of `screen.value = ...`
-- Route guards added for: mid-quiz confirmation, recording finalization
-- App.vue tests pass (or updated if they exist)
+- [x] App.vue script reduced from 384 lines — **not to ~60**; landed at ~240 (retained boot hydration + debug-recording handlers + rationale comments; no routing logic remains — see DS01 ST02 notes)
+- [x] NavMenu stays (unchanged)
+- [x] All screen v-if branches replaced with `<RouterView />`
+- [x] Session state remains in `useLearningSession()` and `useReviewSession()` composables
+- [x] Navigation calls `router.push()` instead of `screen.value = ...`
+- [x] Route guards added for: mid-quiz confirmation, recording finalization (in `src/router-guards.ts`)
+- [x] `vue-tsc --noEmit` clean, 109/109 tests passing (verified 20260716)
 
 **Tasks**:
 1. Replace `import { screen, ... } from App.vue` with `import { useRouter } from 'vue-router'`
@@ -141,13 +141,13 @@ Introduce **Vue Router** to handle URL-to-component mapping declaratively. Each 
 
 ### Phase 2: View Component Stubs (EP44-PH02)
 
-#### EP44-ST03: Create view component stubs
+#### EP44-ST03: Create view component stubs *(Done)*
 
 **Acceptance Criteria**:
-- 9 view components created under `src/views/`
-- Each is a stub that imports the corresponding screen component and passes props
-- Props match what App.vue currently passes
-- No logic in stubs yet (forwarding only)
+- [x] 9 view components created under `src/views/` (10 — `ResultsPage` also needed, for `App.vue`'s pre-refactor `results` screen)
+- [x] Each is a stub that imports the corresponding screen component and passes props
+- [x] Props match what App.vue currently passes
+- [x] No logic in stubs yet (forwarding, plus the navigation glue App.vue's inline handlers used to own, and deep-link session/mode entry — see [EP44-DS01](../../changelogs/EP44--app-vue-router/20260715T231051Z-EP44-DS01-app-router-setup.md) for the authoritative, code-grounded ST03 spec this was actually verified against)
 
 **Example**:
 ```vue
@@ -175,11 +175,13 @@ const navigateToReview = () => router.push('/review')
 ```
 
 **Tasks**:
-1. Create `src/views/` directory
-2. Create stub for each of 9 routes
-3. Import App.vue's composables into each view
-4. Pass props and wire events to the underlying component
-5. Test that each route renders the correct component
+1. [x] Create `src/views/` directory
+2. [x] Create stub for each of 9 routes (10, see AC note above)
+3. [x] Import App.vue's composables into each view — via `inject()` against the keys `App.vue` provides, not by re-instantiating the composables
+4. [x] Pass props and wire events to the underlying component
+5. [x] Test that each route renders the correct component — 109 tests passing, `vue-tsc --noEmit` clean
+
+**Notes for follow-on work**: see [EP44-DS01](../../changelogs/EP44--app-vue-router/20260715T231051Z-EP44-DS01-app-router-setup.md)'s ST03 implementation notes for the full detail (the `CurationLanding.vue` extraction, the `ReviewSessionPage`/`QuizPage` deep-link entry points, the auto-unref footgun found and fixed, and the pre-existing `AudioPlayer`/`WaveSurfer` test noise deferred to EP45+).
 
 ---
 
