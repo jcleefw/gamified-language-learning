@@ -12,6 +12,12 @@ import {
 
 const router = new Hono();
 
+/** Check if bytes at offset match the given ASCII signature. */
+function matchesSignature(bytes: Uint8Array, offset: number, signature: string): boolean {
+  if (bytes.length < offset + signature.length) return false;
+  return String.fromCharCode(...bytes.slice(offset, offset + signature.length)) === signature;
+}
+
 /**
  * Sniffs the actual container/codec from the file's magic bytes rather than
  * trusting the client-supplied filename extension. This exists because a
@@ -22,15 +28,12 @@ const router = new Hono();
  * every mainstream browser's `<audio>` element with no codec ambiguity.
  */
 function detectAudioFormat(bytes: Uint8Array): 'wav' | 'mp3' | null {
-  if (
-    bytes.length >= 12 &&
-    bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 && // 'RIFF'
-    bytes[8] === 0x57 && bytes[9] === 0x41 && bytes[10] === 0x56 && bytes[11] === 0x45 // 'WAVE'
-  ) {
+  // WAV: RIFF header (offset 0) + WAVE signature (offset 8)
+  if (matchesSignature(bytes, 0, 'RIFF') && matchesSignature(bytes, 8, 'WAVE')) {
     return 'wav';
   }
-  // ID3v2 tag prefix
-  if (bytes.length >= 3 && bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) {
+  // MP3: ID3v2 tag prefix
+  if (matchesSignature(bytes, 0, 'ID3')) {
     return 'mp3';
   }
   // MPEG frame sync (11 set bits): covers ID3-less MP3 files
@@ -40,7 +43,7 @@ function detectAudioFormat(bytes: Uint8Array): 'wav' | 'mp3' | null {
   return null;
 }
 
-/** The content-address hash embedded in a key `decks/{id}/{hash}.{ext}`. */
+/** Extract the content-address hash from a key like `decks/{id}/{hash}.{ext}`. */
 function keyHash(key: string): string | null {
   return key.match(/\/([0-9a-f]+)\.(?:mp3|wav)$/)?.[1] ?? null;
 }
@@ -141,7 +144,7 @@ router.post('/curation/decks/:deckId/audio', async (c) => {
   return c.json(body, 201);
 });
 
-/** The deck's current audio row (is_current=1), or undefined. */
+/** Fetch the current (is_current=true) audio record for a deck, or undefined if none exists. */
 function currentAudioRow(deckId: string) {
   return getDb()
     .select()
