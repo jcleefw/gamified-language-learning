@@ -48,17 +48,31 @@ describe('ReviewHubPage', () => {
     expect(hub.props('reviewUnlocked')).toBe(true);
   });
 
-  it('navigates to review session when due entry succeeds, stays when it does not', async () => {
+  it('navigates to review session with ?mode=due when due entry succeeds, stays when it does not', async () => {
     onReview.mockResolvedValueOnce('entered');
     const wrapper = mountReviewHubPage();
     await wrapper.findComponent(ReviewHub).vm.$emit('due');
     await Promise.resolve();
-    expect(push).toHaveBeenCalledWith({ name: ROUTE_NAMES.REVIEW_SESSION });
+    expect(push).toHaveBeenCalledWith({
+      name: ROUTE_NAMES.REVIEW_SESSION,
+      query: { mode: 'due' },
+    });
 
     push.mockClear();
     onAnytimeReview.mockResolvedValueOnce('stayed');
     await wrapper.findComponent(ReviewHub).vm.$emit('anytime');
     await Promise.resolve();
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it('navigates to review session with ?mode=anytime when anytime entry succeeds', async () => {
+    onAnytimeReview.mockResolvedValueOnce('entered');
+    const wrapper = mountReviewHubPage();
+    await wrapper.findComponent(ReviewHub).vm.$emit('anytime');
+    await Promise.resolve();
+    expect(push).toHaveBeenCalledWith({
+      name: ROUTE_NAMES.REVIEW_SESSION,
+      query: { mode: 'anytime' },
+    });
   });
 });

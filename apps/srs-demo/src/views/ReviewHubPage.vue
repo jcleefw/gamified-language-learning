@@ -20,11 +20,13 @@ const router = useRouter();
 
 async function goDue() {
   const outcome = await reviewSession.onReview();
-  if (outcome === 'entered') router.push({ name: ROUTE_NAMES.REVIEW_SESSION });
+  if (outcome === 'entered')
+    router.push({ name: ROUTE_NAMES.REVIEW_SESSION, query: { mode: 'due' } });
 }
 
 async function goAnytime() {
   const outcome = await reviewSession.onAnytimeReview();
-  if (outcome === 'entered') router.push({ name: ROUTE_NAMES.REVIEW_SESSION });
+  if (outcome === 'entered')
+    router.push({ name: ROUTE_NAMES.REVIEW_SESSION, query: { mode: 'anytime' } });
 }
 </script>
