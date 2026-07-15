@@ -1,11 +1,14 @@
 # Current Focus — EP43: wavesurfer.js pivot (post-BUG01)
 
-**Status**: EP42/EP43 (audio-table + WebVTT) shipped and committed on this branch. A real playback bug
-(EP43-BUG01) was found, diagnosed, stopgap-fixed, and root-caused deeper than the stopgap — **decision made
-to pivot the player to wavesurfer.js**. **ADR written and accepted**: [wavesurfer.js Pivot ADR](../../../product-documentation/architecture/20260714T234735Z-engineering-audio-wavesurfer-pivot.md).
-Next deliverable: **EP43-DS03** design spec (not yet written).
+**Status**: EP42/EP43 (audio-table + WebVTT) shipped and committed on this branch. EP43-BUG01 was found,
+diagnosed, stopgap-fixed, and root-caused deeper than the stopgap — decision made to pivot the player to
+wavesurfer.js. [wavesurfer.js Pivot ADR](../../../product-documentation/architecture/20260714T234735Z-engineering-audio-wavesurfer-pivot.md)
+accepted; [EP43-DS03](../../changelogs/EP43--audio-playback-and-marking/20260715T000417Z-EP43-DS03-wavesurfer-implementation-swap.md)
+written and **shipped** — all four stories done: ST06 (`10959f2`), ST07 (`9fbadca`), ST08 (`6a5548e`),
+ST09 (`532669e`, retired `PrototypeWavesurfer.vue` + confirmed the rAF stopgap gone).
+Remaining: re-verify the epic's Overall Acceptance Criteria end-to-end, then close EP43.
 **Branch**: `EP42--create-bucket-for-audio` (still unmerged to main).
-**Last updated**: 20260714
+**Last updated**: 20260715
 
 ---
 
