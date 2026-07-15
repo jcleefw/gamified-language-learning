@@ -69,6 +69,14 @@
 
 - **Use clear, descriptive class names.** BEM-like naming (`card`, `card-title`, `card--active`) is clearer than utility classes alone. Tailwind-style utilities are OK for layout (flexbox, spacing) but not for semantic styling (colors, typography) unique to this component.
 
+## Routing
+
+- Screens are routes, not `v-if` branches. Every top-level screen gets an entry in `src/router.ts`; never reintroduce a `screen` ref / manual show-hide state for navigation.
+- Route names live in `src/routeNames.ts` (`ROUTE_NAMES`) — reference the constant, never a raw string literal, so a rename is a one-file change.
+- Navigation guard logic (redirects, confirmation dialogs, cross-phase side effects) belongs in `src/router-guards.ts`, not inline in a component's click handler.
+- Session/quiz state is never passed through route params or query beyond identifiers (`:deckId`, `?mode=`) — it stays in composables, shared via `provide`/`inject` from `App.vue`, so it survives route transitions.
+- Every route component is lazy-loaded (`() => import('./views/...')`); don't switch a route to a static import.
+
 ## File Organization
 
 - **Components:** `src/components/` — UI components that render.

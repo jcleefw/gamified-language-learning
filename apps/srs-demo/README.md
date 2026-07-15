@@ -190,6 +190,44 @@ Note: `reviewCards` inserts directly into `review_cards`, bypassing the graduati
 > scenarios above let you observe both states without waiting; for a fully hand-authored equivalent,
 > combine `wordStates` (mastery ≥ 2) with `reviewCards` `naturalDue: true` in a `/api/test/seed` call.
 
+## Routing architecture
+
+Vue Router 4 owns URL-to-screen mapping. App.vue is a layout shell (nav + `<RouterView />`); it holds no screen-selection state.
+
+| Path | Route name | View |
+| --- | --- | --- |
+| `/` | `home` | `HomePage.vue` |
+| `/learn/select` | `select` | `DeckSelectPage.vue` |
+| `/learn/quiz/:deckId` | `quiz` | `QuizPage.vue` |
+| `/learn/results` | `results` | `ResultsPage.vue` |
+| `/learn/overview/:deckId` | `overview` | `OverviewPage.vue` |
+| `/review` | `review-hub` | `ReviewHubPage.vue` |
+| `/review/session` | `review` | `ReviewSessionPage.vue` (`?mode=due\|anytime`) |
+| `/curation` | `curation` | `CurationLandingPage.vue` |
+| `/curation/curate` | `curate` | `CurateAudioPage.vue` |
+| `/curation/mark` | `mark` | `MarkAudioPage.vue` |
+
+Route names are centralized in `src/routeNames.ts` (`ROUTE_NAMES`) so `router.ts` and `router-guards.ts` can both reference them without an import cycle. Every route is lazy-loaded (`() => import('./views/...')`) for per-page code-splitting.
+
+### Adding a route
+
+1. Add a name to `ROUTE_NAMES` in `src/routeNames.ts`.
+2. Add a `RouteRecordRaw` entry in `src/router.ts` with a lazy `component` import.
+3. Create the view under `src/views/`, forwarding to the existing screen component via composable `inject()` (see any existing view for the pattern).
+4. If the route needs a guard condition (curation-only, mid-quiz confirmation, etc.), extend `src/router-guards.ts` rather than adding logic inline in the view.
+
+### Where session state lives
+
+Routes carry no session state in params beyond identifiers (`:deckId`, `?mode=`). Learning/review progress lives in composables (`useLearningSession()`, `useReviewSession()`, `useDebugRecording()`), instantiated once and shared via `provide`/`inject` from `App.vue` — this is why views `inject()` composable state rather than re-calling the composable, and why navigating between routes never loses in-progress quiz/review state.
+
+### Navigation guards
+
+`src/router-guards.ts` registers a single `router.beforeEach` that: redirects `curationOnly` routes to `/` when `env.curationMode` is off, confirms before leaving a quiz mid-batch (flushing the batch first), and finalizes any active debug recording on cross-phase navigation. Internal navigations triggered by composables (not the nav menu) call `markInternalNavigation()` first to skip the guard — see the comments in that file for why.
+
+See the [Vue Router docs](https://router.vuejs.org/) for guard/lazy-loading patterns beyond what's used here.
+
+> Individual page/component refactoring (the screens themselves) is out of scope for this routing epic — see EP45+.
+
 ## Other commands
 
 ```bash

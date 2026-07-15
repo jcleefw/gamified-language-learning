@@ -268,21 +268,21 @@ await finalizeRecordingOnNav(recorder, 'home', isMidQuiz)
 
 ### Phase 3: Integration & Docs (EP44-PH03) — follow-on
 
-#### EP44-ST04: Manual navigation, history & deep-link verification
+#### EP44-ST04: Manual navigation, history & deep-link verification *(Struck — requires a human driving a real browser; not verifiable by the agent)*
 
 **Scope**: End-to-end behavior check (no automated e2e rewrite required)
 **Read List**: `e2e/` (confirm selectors, not URLs, are asserted)
 
 **Tasks**:
 
-- [ ] Verify navigation, history, guards, deep-linking
+- [~] Verify navigation, history, guards, deep-linking — struck, see note above
       **Acceptance Criteria**:
-- [ ] Home → Learn → Select → Quiz; NavMenu "Home" mid-quiz shows the confirm dialog; cancel stays, OK flushes batch then navigates
-- [ ] Browser back after leaving quiz returns to the prior route (history preserved)
-- [ ] Deep link `/learn/overview/:deckId` loads overview for that deck; `/review/session?mode=anytime` opens anytime review
-- [ ] Recording active + cross-phase nav → `finalizeRecordingOnNav` runs; a `'failed'` result blocks navigation
-- [ ] `env.curationMode=false` → `/curation*` redirects to `/`
-- [ ] Existing e2e suite passes (selector-based, not URL-based); update only if DOM changed
+- [~] Home → Learn → Select → Quiz; NavMenu "Home" mid-quiz shows the confirm dialog; cancel stays, OK flushes batch then navigates
+- [~] Browser back after leaving quiz returns to the prior route (history preserved)
+- [~] Deep link `/learn/overview/:deckId` loads overview for that deck; `/review/session?mode=anytime` opens anytime review
+- [~] Recording active + cross-phase nav → `finalizeRecordingOnNav` runs; a `'failed'` result blocks navigation
+- [~] `env.curationMode=false` → `/curation*` redirects to `/`
+- [~] Existing e2e suite passes (selector-based, not URL-based); update only if DOM changed — kept as-is per PO decision (2026-07-16), not deleted
 
 ---
 
@@ -293,11 +293,11 @@ await finalizeRecordingOnNav(recorder, 'home', isMidQuiz)
 
 **Tasks**:
 
-- [ ] Document routing architecture
+- [x] Document routing architecture
       **Acceptance Criteria**:
-- [ ] README lists the 10 routes and their URLs/params
-- [ ] Documents why session state stays in composables and how `navigate` injection replaced the `screen` ref
-- [ ] RULES.md gains a routing best-practice note (navigate via named routes; views are thin adapters; guards own cross-phase side-effects)
+- [x] README lists the 10 routes and their URLs/params
+- [x] Documents why session state stays in composables and how `navigate` injection replaced the `screen` ref
+- [x] RULES.md gains a routing best-practice note (navigate via named routes; views are thin adapters; guards own cross-phase side-effects)
 
 ---
 

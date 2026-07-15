@@ -205,19 +205,19 @@ const navigateToReview = () => router.push('/review')
 
 ---
 
-#### EP44-ST05: Documentation
+#### EP44-ST05: Documentation *(Done)*
 
 **Acceptance Criteria**:
-- README updated with route structure
-- New dev notes on: how to add a route, how router state flows, how session composables work
-- RULES.md updated with routing best practice (if not already there)
+- [x] README updated with route structure
+- [x] New dev notes on: how to add a route, how router state flows, how session composables work
+- [x] RULES.md updated with routing best practice (if not already there)
 
 **Tasks**:
-1. Add "Routing Architecture" section to README
-2. Document the 9 routes and their purposes
-3. Explain why session state stays in composables, not Router params
-4. Link to Vue Router docs for common patterns
-5. Note: page refactoring is EP45+
+1. [x] Add "Routing Architecture" section to README
+2. [x] Document the 10 routes and their purposes (9 top-level screens + 1 curation sub-route, matching ST01's corrected count)
+3. [x] Explain why session state stays in composables, not Router params
+4. [x] Link to Vue Router docs for common patterns
+5. [x] Note: page refactoring is EP45+
 
 ---
 
