@@ -50,9 +50,6 @@ const emit = defineEmits<{
 const highlightedSentenceIndex = ref<number | null>(null);
 const sentenceRefs = ref<HTMLElement[]>([]);
 
-// EP43-DS01 ST02: the shared audio player, mounted only when the deck has
-// audioUrl (silent degrade — playback ADR §6). `defineExpose`d SegmentPlayer
-// surface, read imperatively here to drive per-sentence segment playback.
 const audioPlayer = ref<InstanceType<typeof AudioPlayer> | null>(null);
 const playingSentenceIndex = ref<number | null>(null);
 
@@ -91,7 +88,7 @@ const miniQuizCurrentQuestion = ref<QuizQuestion | null>(null);
 onMounted(async () => {
   try {
     const words = await loadShelvedWords(props.deck.id);
-    const ids = new Set(words.map(w => w.wordId));
+    const ids = new Set(words.map((w) => w.wordId));
     localShelvedSet.value = ids;
   } catch {
     // Non-fatal: fall back to prop
@@ -153,7 +150,9 @@ const miniQuizShelvedItems = computed(() => {
 
 // Words appearing in each sentence line
 function lineWords(wordIds: string[]): AppWordPayload[] {
-  return wordIds.map(id => wordById.value.get(id)).filter(Boolean) as AppWordPayload[];
+  return wordIds
+    .map((id) => wordById.value.get(id))
+    .filter(Boolean) as AppWordPayload[];
 }
 
 function onWordClick(wordId: string) {
@@ -164,7 +163,9 @@ function onWordClick(wordId: string) {
   const el = sentenceRefs.value[targetIdx];
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   // Clear highlight after 1.5s
-  setTimeout(() => { highlightedSentenceIndex.value = null; }, 1500);
+  setTimeout(() => {
+    highlightedSentenceIndex.value = null;
+  }, 1500);
 }
 
 async function onTryNow(wordId: string) {
@@ -176,7 +177,10 @@ async function onTryNow(wordId: string) {
   try {
     await Promise.all([
       unshelveWord({ deckId: props.deck.id, wordId }),
-      resetStagnationCountersForWords({ deckId: props.deck.id, wordIds: [wordId] }),
+      resetStagnationCountersForWords({
+        deckId: props.deck.id,
+        wordIds: [wordId],
+      }),
     ]);
     emit('unshelveWord', props.deck.id, wordId);
   } catch {
@@ -190,7 +194,9 @@ async function onTryNow(wordId: string) {
 function masteryDots(wordId: string): { filled: boolean }[] {
   const ws = props.runState.get(wordId);
   const mastery = ws?.mastery ?? 0;
-  return Array.from({ length: props.maxMastery }, (_, i) => ({ filled: i < mastery }));
+  return Array.from({ length: props.maxMastery }, (_, i) => ({
+    filled: i < mastery,
+  }));
 }
 
 function startSentenceLearning() {
@@ -221,10 +227,12 @@ async function loadAndStartSentenceQuiz() {
 
   // Assemble batch for this sentence's words
   const batch = assembleBatch(
-    sentenceWordIds.map((id) => {
-      const word = props.deck.words.find((w) => w.id === id);
-      return word as QuizItem;
-    }).filter(Boolean),
+    sentenceWordIds
+      .map((id) => {
+        const word = props.deck.words.find((w) => w.id === id);
+        return word as QuizItem;
+      })
+      .filter(Boolean),
     props.wordPool,
     [],
     Math.min(3, sentenceWordIds.length),
@@ -249,12 +257,17 @@ async function loadAndStartSentenceQuiz() {
 function onMiniQuizAnswered(result: QuizResult) {
   if (!miniQuizBatchState.value) return;
 
-  miniQuizBatchState.value = submitBatchResult(miniQuizBatchState.value, result);
+  miniQuizBatchState.value = submitBatchResult(
+    miniQuizBatchState.value,
+    result,
+  );
 
   if (isBatchDone(miniQuizBatchState.value)) {
     void finishMiniQuizAndProcessResults();
   } else {
-    const { question, state: nextState } = nextQuestion(miniQuizBatchState.value);
+    const { question, state: nextState } = nextQuestion(
+      miniQuizBatchState.value,
+    );
     miniQuizBatchState.value = nextState;
     miniQuizCurrentQuestion.value = question;
   }
@@ -293,7 +306,11 @@ async function finishMiniQuizAndProcessResults() {
       shelvingConfig.stagnationBatchWindow,
     ).catch(() => [] as string[]);
 
-    const decision = evaluateShelving(stagnantIds, localShelvedSet.value, shelvingConfig);
+    const decision = evaluateShelving(
+      stagnantIds,
+      localShelvedSet.value,
+      shelvingConfig,
+    );
     if (decision.toShelve.length > 0) {
       const toShelvePayload = decision.toShelve.map((id: string) => ({
         wordId: id,
@@ -304,8 +321,13 @@ async function finishMiniQuizAndProcessResults() {
         toShelve: toShelvePayload,
       });
       try {
-        await applyShelving({ deckId: props.deck.id, toShelve: toShelvePayload });
-        console.log('[SENTENCE-LEARNING-SHELVING] Successfully persisted to DB');
+        await applyShelving({
+          deckId: props.deck.id,
+          toShelve: toShelvePayload,
+        });
+        console.log(
+          '[SENTENCE-LEARNING-SHELVING] Successfully persisted to DB',
+        );
       } catch (err) {
         console.error('[SENTENCE-LEARNING-SHELVING] Failed to persist:', err);
       }
@@ -356,7 +378,11 @@ function finishSentenceLearning() {
         <div
           v-for="(line, idx) in deck.lines"
           :key="line.sentenceId"
-          :ref="(el) => { if (el) sentenceRefs[idx] = el as HTMLElement; }"
+          :ref="
+            (el) => {
+              if (el) sentenceRefs[idx] = el as HTMLElement;
+            }
+          "
           class="sentence-card"
           :class="{
             highlighted: highlightedSentenceIndex === idx,
@@ -375,7 +401,8 @@ function finishSentenceLearning() {
               :key="word.id"
               class="word-chip"
               @click.stop="onWordClick(word.id)"
-            >{{ word.native }}</span>
+              >{{ word.native }}</span
+            >
           </div>
         </div>
       </section>
@@ -395,7 +422,9 @@ function finishSentenceLearning() {
             class="word-row"
             :class="{ 'row-shelved': localShelvedSet.has(word.id) }"
           >
-            <div class="cell word-native" @click="onWordClick(word.id)">{{ word.native }}</div>
+            <div class="cell word-native" @click="onWordClick(word.id)">
+              {{ word.native }}
+            </div>
             <div class="cell">{{ word.english }}</div>
             <div class="cell">
               <span class="mastery-dots">
@@ -410,7 +439,9 @@ function finishSentenceLearning() {
             <div class="cell status-cell">
               <template v-if="localShelvedSet.has(word.id)">
                 <span class="status-shelved">Shelved</span>
-                <button class="btn-try-now" @click="onTryNow(word.id)">Try now</button>
+                <button class="btn-try-now" @click="onTryNow(word.id)">
+                  Try now
+                </button>
               </template>
               <span v-else class="status-active">Active</span>
             </div>
@@ -419,8 +450,12 @@ function finishSentenceLearning() {
       </section>
 
       <div class="overview-actions">
-        <button class="btn-sentence-learn" @click="startSentenceLearning">Learn sentence by sentence</button>
-        <button class="btn-primary" @click="emit('startQuiz', deck.id)">Start full quiz →</button>
+        <button class="btn-sentence-learn" @click="startSentenceLearning">
+          Learn sentence by sentence
+        </button>
+        <button class="btn-primary" @click="emit('startQuiz', deck.id)">
+          Start full quiz →
+        </button>
       </div>
     </template>
 
@@ -428,13 +463,19 @@ function finishSentenceLearning() {
     <template v-else>
       <div class="sentence-learning-container">
         <div class="sentence-learning-header">
-          <span class="sentence-progress">{{ currentSentenceIndex + 1 }} / {{ deck.lines.length }}</span>
+          <span class="sentence-progress"
+            >{{ currentSentenceIndex + 1 }} / {{ deck.lines.length }}</span
+          >
         </div>
 
         <section v-if="miniQuizCurrentQuestion" class="sentence-quiz-section">
           <div class="current-sentence-display">
-            <div class="sentence-native">{{ deck.lines[currentSentenceIndex].native }}</div>
-            <div class="sentence-english">{{ deck.lines[currentSentenceIndex].english }}</div>
+            <div class="sentence-native">
+              {{ deck.lines[currentSentenceIndex].native }}
+            </div>
+            <div class="sentence-english">
+              {{ deck.lines[currentSentenceIndex].english }}
+            </div>
           </div>
 
           <div class="mini-quiz-harness">
@@ -451,9 +492,7 @@ function finishSentenceLearning() {
           </div>
         </section>
 
-        <div v-else class="sentence-loading">
-          Loading next sentence...
-        </div>
+        <div v-else class="sentence-loading">Loading next sentence...</div>
 
         <div class="sentence-actions">
           <button class="btn-back-overview" @click="finishSentenceLearning">
@@ -511,7 +550,9 @@ function finishSentenceLearning() {
   border-radius: 8px;
   padding: 12px 14px;
   margin-bottom: 10px;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 .sentence-card.highlighted {
   border-color: #2563eb;
@@ -555,7 +596,10 @@ function finishSentenceLearning() {
 }
 .word-table {
   display: grid;
-  grid-template-columns: minmax(90px, auto) minmax(140px, 1fr) auto minmax(150px, auto);
+  grid-template-columns: minmax(90px, auto) minmax(140px, 1fr) auto minmax(
+      150px,
+      auto
+    );
   width: 100%;
   font-size: 0.9rem;
 }

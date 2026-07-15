@@ -1,20 +1,23 @@
 <script setup lang="ts">
 import { ref, toRef } from 'vue';
-import { useSegmentPlayer, type SegmentPlayer } from '../composables/useSegmentPlayer';
+import {
+  useSegmentPlayer,
+  type SegmentPlayer,
+} from '../composables/useSegmentPlayer';
 
-// Learner-agnostic transport: a wavesurfer.js (WebAudio backend) instance, a
-// scrubber, an mm:ss.cs readout, and a primary always-visible 1x/0.75x/0.5x
-// speed control (playback ADR §4, amended by the wavesurfer.js Pivot ADR).
-// No deck/sentence/curator concepts — mounted unchanged by DeckOverview,
-// QuizCard, and the DS02 marker tool. `showWaveform` controls whether the
-// waveform is visually rendered; the container itself is always mounted
-// since wavesurfer needs one to run its decode/playback engine.
-const props = withDefaults(defineProps<{ src: string; vttUrl?: string; showWaveform?: boolean }>(), {
-  showWaveform: false,
-});
+const props = withDefaults(
+  defineProps<{ src: string; vttUrl?: string; showWaveform?: boolean }>(),
+  {
+    showWaveform: false,
+  },
+);
 
 const waveformEl = ref<HTMLDivElement | null>(null);
-const player = useSegmentPlayer(waveformEl, toRef(props, 'src'), toRef(props, 'vttUrl'));
+const player = useSegmentPlayer(
+  waveformEl,
+  toRef(props, 'src'),
+  toRef(props, 'vttUrl'),
+);
 
 const RATES = [1, 0.75, 0.5] as const;
 
@@ -43,7 +46,11 @@ defineExpose<SegmentPlayer & { wavesurfer: typeof player.wavesurfer }>(player);
 
 <template>
   <div class="audio-player">
-    <div ref="waveformEl" class="waveform-container" :class="{ visible: props.showWaveform }"></div>
+    <div
+      ref="waveformEl"
+      class="waveform-container"
+      :class="{ visible: props.showWaveform }"
+    ></div>
 
     <div class="transport">
       <button class="btn-play" type="button" @click="togglePlay">
@@ -61,7 +68,8 @@ defineExpose<SegmentPlayer & { wavesurfer: typeof player.wavesurfer }>(player);
       />
 
       <span class="readout">
-        {{ formatTime(player.currentTime.value) }} / {{ formatTime(player.duration.value) }}
+        {{ formatTime(player.currentTime.value) }} /
+        {{ formatTime(player.duration.value) }}
       </span>
     </div>
 

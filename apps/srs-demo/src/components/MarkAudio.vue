@@ -10,11 +10,9 @@ import {
 } from '../composables/useMarkerAuthoring';
 import { commitDeckVtt, fetchDeckVtt } from '../composables/useStore';
 
-// EP43-DS02 ST04 — curator marker-authoring screen. Env-gated by env.curationMode
-// in App.vue (same gate as CurateAudio); never in a production build. Reuses the
-// boot-time decks list and EP43-DS01's shared AudioPlayer. Capture per-sentence
-// [start,end] off the play-head, nudge with the keyboard, preview via the
-// player's playSegment, then COMMIT as WebVTT through the gated server endpoint
+//  Capture per-sentence [start,end] off the play-head, nudge with the keyboard,
+//  preview via the player's playSegment, then COMMIT as WebVTT through
+// the gated server endpoint
 // (writes the audio.vtt DB column + the durable bucket .vtt). VTT-in / VTT-out.
 const props = defineProps<{ decks: AppDeckPayload[] }>();
 const emit = defineEmits<{ back: []; committed: [] }>();
@@ -35,11 +33,6 @@ const player = ref<InstanceType<typeof AudioPlayer> | null>(null);
 const authoring = useMarkerAuthoring();
 const status = ref<{ kind: 'ok' | 'error'; message: string } | null>(null);
 
-// EP43-ST07 — the waveform augments the table, it doesn't replace it: one
-// draggable Region per fully-marked sentence, two-way synced with
-// `authoring.markers` (the single source of truth). AudioPlayer.vue stays
-// curator-agnostic — it exposes the raw WaveSurfer instance but never
-// imports Regions itself; this component owns all Regions wiring.
 let regions: ReturnType<typeof RegionsPlugin.create> | null = null;
 
 watch(
@@ -124,7 +117,12 @@ function onNudge(sentenceId: string, edge: 'start' | 'end', e: KeyboardEvent) {
 function reset() {
   if (!deck.value) return;
   // Discards uncommitted work — confirm before clearing every captured marker.
-  if (!window.confirm('Clear all markers for this deck? Uncommitted changes are lost.')) return;
+  if (
+    !window.confirm(
+      'Clear all markers for this deck? Uncommitted changes are lost.',
+    )
+  )
+    return;
   authoring.seed(deck.value.lines.map((l) => l.sentenceId));
   status.value = null;
 }
@@ -146,7 +144,10 @@ async function commit() {
   const vtt = authoring.buildVtt(audioSha256.value);
   try {
     await commitDeckVtt(deck.value.id, vtt);
-    status.value = { kind: 'ok', message: '✓ Committed — learners now hear these segments.' };
+    status.value = {
+      kind: 'ok',
+      message: '✓ Committed — learners now hear these segments.',
+    };
     // Refresh App.vue's deck list so the new vttUrl propagates without reload.
     emit('committed');
   } catch (e) {
@@ -227,18 +228,26 @@ function download() {
                 class="value"
                 tabindex="0"
                 @keydown="onNudge(line.sentenceId, 'start', $event)"
-                >{{ fmt(authoring.markers.value[line.sentenceId]?.start ?? null) }}</span
+                >{{
+                  fmt(authoring.markers.value[line.sentenceId]?.start ?? null)
+                }}</span
               >
-              <button class="btn-sm" @click="setIn(line.sentenceId)">Set In</button>
+              <button class="btn-sm" @click="setIn(line.sentenceId)">
+                Set In
+              </button>
             </td>
             <td class="marker">
               <span
                 class="value"
                 tabindex="0"
                 @keydown="onNudge(line.sentenceId, 'end', $event)"
-                >{{ fmt(authoring.markers.value[line.sentenceId]?.end ?? null) }}</span
+                >{{
+                  fmt(authoring.markers.value[line.sentenceId]?.end ?? null)
+                }}</span
               >
-              <button class="btn-sm" @click="setOut(line.sentenceId)">Set Out</button>
+              <button class="btn-sm" @click="setOut(line.sentenceId)">
+                Set Out
+              </button>
             </td>
             <td>
               <button

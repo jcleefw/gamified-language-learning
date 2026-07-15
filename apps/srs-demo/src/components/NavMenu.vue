@@ -8,8 +8,7 @@ defineProps<{
   dueCount: number | null;
   // True when the due-count fetch failed — show a dash rather than a false 0.
   badgeError: boolean;
-  // EP43-ST08: the Curation tab replaces the old floating curator toggle
-  // buttons — same env.curationMode gate, now surfaced as a nav destination.
+  // Enable the Curation tab
   curationMode: boolean;
 }>();
 

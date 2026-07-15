@@ -3,9 +3,6 @@ import { ref } from 'vue';
 import type { AppDeckPayload } from '@gll/api-contract';
 import { uploadDeckAudio } from '../composables/useStore';
 
-// Curator audio-upload page (EP42-DS02, ST09). Env-gated by env.curationMode in
-// App.vue — never rendered in a production build. Reuses the decks already
-// fetched at boot; pairs a local .mp3 with a deck via the gated server endpoint.
 const props = defineProps<{ decks: AppDeckPayload[] }>();
 const emit = defineEmits<{ back: []; uploaded: [] }>();
 
@@ -57,7 +54,11 @@ async function onUpload() {
 
     <label class="field">
       <span>Audio file</span>
-      <input type="file" accept="audio/mpeg,audio/wav,.mp3,.wav" @change="onFileChange" />
+      <input
+        type="file"
+        accept="audio/mpeg,audio/wav,.mp3,.wav"
+        @change="onFileChange"
+      />
     </label>
 
     <button
