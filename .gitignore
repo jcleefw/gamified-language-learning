@@ -16,3 +16,6 @@ playwright-report/
 
 # Debug logs
 manual-test-results/
+
+
+.agents/memory/beta-release-definition-of-done.md
