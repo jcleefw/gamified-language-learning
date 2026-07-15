@@ -74,7 +74,13 @@ export function assembleBatch(
   const questions = assembleBatchQuestions(registry);
 
   if (shuffle) {
-    return questions.sort(() => Math.random() - 0.5);
+    // Fisher-Yates — a random comparator (sort(() => Math.random() - 0.5)) is not a
+    // uniform shuffle and is unspecified behaviour for Array.sort.
+    for (let i = questions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [questions[i], questions[j]] = [questions[j], questions[i]];
+    }
+    return questions;
   }
 
   return questions;
