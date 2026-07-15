@@ -43,7 +43,7 @@ const createMock = vi.fn((config: unknown) => {
 });
 
 vi.mock('wavesurfer.js', () => ({
-  default: { create: (...args: unknown[]) => createMock(...args) },
+  default: { create: (config: unknown) => createMock(config) },
 }));
 
 vi.mock('@gll/api-contract', () => ({
