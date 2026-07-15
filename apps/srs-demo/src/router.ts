@@ -1,17 +1,8 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+import { ROUTE_NAMES } from './routeNames'
+import { registerNavigationGuard } from './router-guards'
 
-export const ROUTE_NAMES = {
-  HOME: 'home',
-  DECK_SELECT: 'select',
-  QUIZ: 'quiz',
-  RESULTS: 'results',
-  OVERVIEW: 'overview',
-  REVIEW_HUB: 'review-hub',
-  REVIEW_SESSION: 'review',
-  CURATION: 'curation',
-  CURATE: 'curate',
-  MARK: 'mark',
-} as const
+export { ROUTE_NAMES }
 
 const routes: RouteRecordRaw[] = [
   {
@@ -73,3 +64,5 @@ export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
+
+registerNavigationGuard(router)
