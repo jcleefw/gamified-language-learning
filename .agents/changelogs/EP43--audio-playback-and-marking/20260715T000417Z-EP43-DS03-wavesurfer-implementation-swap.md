@@ -1,7 +1,7 @@
 # EP43-DS03: wavesurfer.js Implementation Swap (Learner Playback + Curator Marking) Specification
 
 **Date**: 20260715T000417Z
-**Status**: Accepted
+**Status**: Shipped — all four stories (ST06-ST09) done.
 **Epic**: [EP43 - Audio Playback & Marking UI](../../plans/epics/EP43-audio-playback-and-marking.md)
 
 **Architecture**:
@@ -195,39 +195,43 @@ Manually tested and confirmed by PO (deck `73db8f50-a174-433b-93bf-88695038e57c`
 
 Manually tested and confirmed by PO (commit `9fbadca`).
 
-### EP43-ST08: Curation nav tab + action-bar layout cleanup
+### EP43-ST08: Curation nav tab + action-bar layout cleanup *(Done)*
 
 **Scope**: `apps/srs-demo` — `NavMenu.vue`/`App.vue`/`types.ts` gain a nav-tab entry point for curator tooling, replacing the two fixed-position floating toggle buttons (`.curate-toggle`/`.mark-toggle`, `App.vue:414-430`); `MarkAudio.vue`'s action row (`Commit`/`Download .vtt`/`Reset`, currently rendered *below* the marker table at `MarkAudio.vue:248-251`) moves to sit directly above the `AudioPlayer`/waveform, right-aligned, with uniform button sizing. Purely a navigation/layout change — no change to `SegmentPlayer`, `useMarkerAuthoring`, Regions wiring, or the VTT commit flow (ST06/ST07/ST09 untouched). Renames the frontend gate from `env.curationMode`/`VITE_CURATION_MODE` to `env.curationMode`/`VITE_CURATION_MODE` throughout `apps/srs-demo` (server-side `GLL_CURATION_MODE` is a separate, unrelated flag — out of scope).
 **Read List**: `App.vue` (nav rendering ~L381-463, `.curate-toggle`/`.mark-toggle` styles ~L575-593, `screen`/`activeNav` state), `NavMenu.vue` (existing `active`/`emit` pattern for Home/Learn/Review), `types.ts` (`screen` union), `env.ts` (`curationMode`/`VITE_CURATION_MODE`), `MarkAudio.vue` (`.actions` row ~L248-251 and its `.btn-primary`/`.btn-sm` styles), `CurateAudio.vue` (`.btn-primary` style — no waveform on this surface, so no action-bar move needed here).
 **Tasks**:
 
-- [ ] `env.ts`: rename `curationMode` → `curationMode`, reading `VITE_CURATION_MODE` instead of `VITE_CURATION_MODE`; update all call sites (`App.vue`, `CurateAudio.vue`, `MarkAudio.vue`) and the `.env`/docs references.
-- [ ] `NavMenu.vue`: add a `curation` entry to the nav-item list, gated by an `env.curationMode` prop passed down from `App.vue` (mirrors the existing `reviewUnlocked` gating pattern); emits a `curation` event.
-- [ ] `App.vue`: remove the two fixed-position `.curate-toggle`/`.mark-toggle` buttons and their styles; clicking the new nav tab routes to a curation landing area that lets the curator pick between "Curate audio" (`CurateAudio.vue`) and "Mark audio" (`MarkAudio.vue`) — reuse the existing `screen === 'curate' | 'mark'` values, add a `screen === 'curation'` landing state (or sub-nav) as the tab's default target.
-- [ ] `types.ts`: extend the `screen` union with the new landing state if one is introduced.
-- [ ] `MarkAudio.vue`: move the `.actions` div (Commit/Download/Reset) to render immediately above the `<AudioPlayer>` mount; add `justify-content: flex-end` (or equivalent float-right layout) and a shared button-size class so all three buttons render at the same width/height regardless of label length.
-- [ ] Confirm `CurateAudio.vue` needs no equivalent action-bar move (it has no wavesurfer player) — a single primary button only.
+- [x] `env.ts`: rename `curationMode` → `curationMode`, reading `VITE_CURATION_MODE` instead of `VITE_CURATION_MODE`; update all call sites (`App.vue`, `CurateAudio.vue`, `MarkAudio.vue`) and the `.env`/docs references.
+- [x] `NavMenu.vue`: add a `curation` entry to the nav-item list, gated by an `env.curationMode` prop passed down from `App.vue` (mirrors the existing `reviewUnlocked` gating pattern); emits a `curation` event.
+- [x] `App.vue`: remove the two fixed-position `.curate-toggle`/`.mark-toggle` buttons and their styles; clicking the new nav tab routes to a curation landing area that lets the curator pick between "Curate audio" (`CurateAudio.vue`) and "Mark audio" (`MarkAudio.vue`) — reuse the existing `screen === 'curate' | 'mark'` values, add a `screen === 'curation'` landing state (or sub-nav) as the tab's default target.
+- [x] `types.ts`: extend the `screen` union with the new landing state if one is introduced.
+- [x] `MarkAudio.vue`: move the `.actions` div (Commit/Download/Reset) to render immediately above the `<AudioPlayer>` mount; add `justify-content: flex-end` (or equivalent float-right layout) and a shared button-size class so all three buttons render at the same width/height regardless of label length.
+- [x] Confirm `CurateAudio.vue` needs no equivalent action-bar move (it has no wavesurfer player) — a single primary button only.
 
 **Acceptance Criteria**:
 
-- [ ] No fixed/floating "Curate audio" or "Mark audio" buttons remain anywhere in the viewport; both screens are reachable only via the new "Curation" nav tab (visible only when `env.curationMode` is true, matching today's gating).
-- [ ] The nav tab follows the same active/inactive visual treatment as Home/Learn/Review (`NavMenu.vue`'s existing `.nav-item`/`.active` styling), including under `env.curationMode = false` (tab absent, no layout shift).
-- [ ] On `MarkAudio.vue`, Commit/Download/Reset render as a single row directly above the waveform, right-aligned, each button the same fixed size (grep/visual check: no `.btn-primary`/`.btn-sm` size divergence in that row).
-- [ ] `pnpm -r typecheck` and the existing `MarkAudio`/`NavMenu`/`App` test suites pass with no regressions to gating; grep confirms no remaining `curationMode`/`VITE_CURATION_MODE` references in `apps/srs-demo`.
+- [x] No fixed/floating "Curate audio" or "Mark audio" buttons remain anywhere in the viewport; both screens are reachable only via the new "Curation" nav tab (visible only when `env.curationMode` is true, matching today's gating).
+- [x] The nav tab follows the same active/inactive visual treatment as Home/Learn/Review (`NavMenu.vue`'s existing `.nav-item`/`.active` styling), including under `env.curationMode = false` (tab absent, no layout shift).
+- [x] On `MarkAudio.vue`, Commit/Download/Reset render as a single row directly above the waveform, right-aligned, each button the same fixed size (grep/visual check: no `.btn-primary`/`.btn-sm` size divergence in that row).
+- [x] `pnpm -r typecheck` and the existing `MarkAudio`/`NavMenu`/`App` test suites pass with no regressions to gating; grep confirms no remaining `curationMode`/`VITE_CURATION_MODE` references in `apps/srs-demo`.
 
-### EP43-ST09: Retire the wavesurfer prototype and the superseded rAF stopgap
+Shipped commit `6a5548e`.
+
+### EP43-ST09: Retire the wavesurfer prototype and the superseded rAF stopgap *(Done)*
 
 **Scope**: `apps/srs-demo` — delete now-redundant dev-only/diagnostic code once ST06/ST07 land.
 **Read List**: `App.vue`/`types.ts` (`'ws-proto'` screen + `env.debugMode` nav entry), `PrototypeWavesurfer.vue`.
 **Tasks**:
 
-- [ ] Delete `PrototypeWavesurfer.vue` and its `env.debugMode`-gated "🌊 WS proto" nav button + `'ws-proto'` screen wiring in `App.vue`/`types.ts`.
-- [ ] Confirm (via ST06's grep AC) that the EP43-BUG01 rAF polling loop is gone from `useSegmentPlayer.ts` — this story is the cleanup checkpoint, not new removal work.
+- [x] Delete `PrototypeWavesurfer.vue` and its `env.debugMode`-gated "🌊 WS proto" nav button + `'ws-proto'` screen wiring in `App.vue`/`types.ts`.
+- [x] Confirm (via ST06's grep AC) that the EP43-BUG01 rAF polling loop is gone from `useSegmentPlayer.ts` — this story is the cleanup checkpoint, not new removal work.
 
 **Acceptance Criteria**:
 
-- [ ] No references to `PrototypeWavesurfer` or `'ws-proto'` remain in `apps/srs-demo/src`.
-- [ ] `pnpm -r typecheck` passes with the prototype removed.
+- [x] No references to `PrototypeWavesurfer` or `'ws-proto'` remain in `apps/srs-demo/src`.
+- [x] `pnpm -r typecheck` passes with the prototype removed.
+
+Shipped commit `532669e`.
 
 ## 6. Success Criteria
 

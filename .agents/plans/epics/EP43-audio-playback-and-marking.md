@@ -4,7 +4,7 @@
 **Redefined**: 20260714 — timing is WebVTT (not a bespoke JSON marker map); DS01 retrofits to the VTT consume path, DS02 rebuilds the marker tool as a WebVTT server-write.
 **Redefined again**: 20260714 — post-DS01/DS02 ship, EP43-BUG01 forced a pivot to wavesurfer.js as the playback/marking engine (see below).
 
-**Status**: In Progress
+**Status**: In Progress — DS01/DS02/DS03 all shipped (ST01-ST09 done); epic remains open pending a re-check of the Overall Acceptance Criteria below against the shipped wavesurfer.js implementation.
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
@@ -82,15 +82,15 @@ It front-loads playback (DS01) so the shared audio-player primitive exists befor
 
 ### Phase 3: wavesurfer.js implementation swap (EP43-PH03) — DS03
 
-### EP43-ST06: Learner audio-player primitive on wavesurfer.js (WebAudio backend)
+### EP43-ST06: Learner audio-player primitive on wavesurfer.js (WebAudio backend) *(Done)*
 
 **Scope**: `apps/srs-demo` — swap `useSegmentPlayer.ts`/`AudioPlayer.vue` internals from a native `<audio>` element to a `WaveSurfer` (`backend: 'WebAudio'`) instance; the public `SegmentPlayer` contract is unchanged. **Design spec: [EP43-DS03](../../changelogs/EP43--audio-playback-and-marking/20260715T000417Z-EP43-DS03-wavesurfer-implementation-swap.md).**
 
-### EP43-ST07: Curator waveform + Regions plugin + auto-populate-next-start
+### EP43-ST07: Curator waveform + Regions plugin + auto-populate-next-start *(Done)*
 
 **Scope**: `apps/srs-demo` — `MarkAudio.vue` gains a visible waveform with draggable Regions two-way synced to the marker table; `useMarkerAuthoring.ts` gains an auto-populate rule (committing a sentence's out point pre-fills the next sentence's unset start). **Design spec: [EP43-DS03](../../changelogs/EP43--audio-playback-and-marking/20260715T000417Z-EP43-DS03-wavesurfer-implementation-swap.md).**
 
-### EP43-ST08: Curation nav tab + action-bar layout cleanup
+### EP43-ST08: Curation nav tab + action-bar layout cleanup *(Done)*
 
 **Scope**: `apps/srs-demo` — replace the fixed-position floating "Curate audio"/"Mark audio" toggle buttons with a `Curation` tab in `NavMenu.vue` (gated by `env.curationMode`, renamed from `curationMode`, same visual treatment as Home/Learn/Review); move `MarkAudio.vue`'s Commit/Download/Reset action row to sit directly above the wavesurfer player, right-aligned, with uniform button sizing. Layout/navigation only — no change to playback, marking, or VTT commit logic. **Design spec: [EP43-DS03](../../changelogs/EP43--audio-playback-and-marking/20260715T000417Z-EP43-DS03-wavesurfer-implementation-swap.md).**
 
@@ -130,5 +130,6 @@ It front-loads playback (DS01) so the shared audio-player primitive exists befor
 3. ~~DS02 (marker authoring — ST04/ST05) → rebuild `MarkAudio.vue`/`useMarkerAuthoring.ts` as an isolated VTT-in/out component + the gated VTT server-write; drop `apply-markers.ts` + `DeckMarker`/`DeckMarkerMap`.~~ ✅ Shipped, then found to need the wavesurfer pivot (below).
 4. **EP43-BUG01** — diagnosed and stopgap-fixed (rAF polling), then root-caused to native `<audio>` seek imprecision; wavesurfer.js prototype validated. ✅
 5. **wavesurfer.js Pivot ADR** — written and accepted. ✅
-6. Write **EP43-DS03** — design spec for swapping `useSegmentPlayer.ts`/`AudioPlayer.vue` and `useMarkerAuthoring.ts`/`MarkAudio.vue` onto wavesurfer.js, including the curator waveform/Regions UI and the marker-UX auto-populate-next-start improvement. **Not started.**
-7. Implement the DS03 swap; retire `PrototypeWavesurfer.vue`; decide the fate of the EP43-BUG01 rAF stopgap (delete vs. keep as defense-in-depth).
+6. ~~Write **EP43-DS03** — design spec for swapping `useSegmentPlayer.ts`/`AudioPlayer.vue` and `useMarkerAuthoring.ts`/`MarkAudio.vue` onto wavesurfer.js, including the curator waveform/Regions UI and the marker-UX auto-populate-next-start improvement.~~ ✅ Written and accepted.
+7. ~~Implement the DS03 swap; retire `PrototypeWavesurfer.vue`; decide the fate of the EP43-BUG01 rAF stopgap.~~ ✅ ST06 (commit `10959f2`), ST07 (commit `9fbadca`), ST08 (commit `6a5548e`), ST09 (commit `532669e`) all shipped — rAF stopgap deleted (superseded by wavesurfer's native `stopAt()`), `PrototypeWavesurfer.vue` retired.
+8. Re-verify the epic's **Overall Acceptance Criteria** end-to-end against the shipped wavesurfer.js player/marker tool, then close the epic.
