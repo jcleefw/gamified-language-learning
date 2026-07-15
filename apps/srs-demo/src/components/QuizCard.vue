@@ -25,17 +25,15 @@ const props = defineProps<{
   // explicit Next (mirrors the sentence path). Default false keeps Learning's
   // emit-on-click behaviour byte-identical. Review passes true.
   feedbackDwell?: boolean;
-  // EP43-DS01 ST03: resolved only for word-block questions whose deck has audio
-  // + a VTT (App.vue does the lookup — the engine stays audio-free, ADR §5).
-  // MCQ questions always receive undefined (ADR §3 — MCQ never gets audio).
-  // The sentence's segment is played by cue id from the served VTT track.
+  // Audio for word-block sentence segment, only populated when deck has audio + VTT.
+  // MCQ questions always receive undefined. App.vue does the lookup to keep the engine audio-free.
+  // The segment is played by cue id from the served VTT track.
   audio?: DeckAudio & { sentenceId: string };
 }>();
 const emit = defineEmits<{ answered: [result: QuizResult]; exit: [] }>();
 
 const cheatMode = env.cheatMode;
 
-// EP43-DS01 ST03: the embedded player for the word-block sentence's segment.
 const sentenceAudioPlayer = ref<InstanceType<typeof AudioPlayer> | null>(null);
 
 function playSentenceAudio() {
