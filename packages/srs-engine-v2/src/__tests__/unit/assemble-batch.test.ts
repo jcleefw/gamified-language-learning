@@ -78,4 +78,47 @@ describe('assembleBatch', () => {
     expect(extraThunk).toHaveBeenCalled();
     expect(questions.some((q) => q.kind === 'mcq' && q.wordId === 'extra-word')).toBe(true);
   });
+
+  function questionKey(q: QuizQuestion & { wordId: string; direction: string }): string {
+    return `${q.wordId}::${q.direction}`;
+  }
+
+  it('shuffle: true returns the same members as shuffle: false, only reordered', () => {
+    const active: QuizItem[] = [mockWord, mockFoundational];
+    const wordPool: QuizItem[] = [mockWord];
+    const foundationalPool: QuizItem[] = [mockFoundational];
+
+    const unshuffled = assembleBatch(active, wordPool, foundationalPool, 4, { shuffle: false });
+    const shuffled = assembleBatch(active, wordPool, foundationalPool, 4, { shuffle: true });
+
+    expect(shuffled).toHaveLength(unshuffled.length);
+    expect(
+      new Set(shuffled.map((q) => questionKey(q as QuizQuestion & { wordId: string; direction: string }))),
+    ).toEqual(
+      new Set(unshuffled.map((q) => questionKey(q as QuizQuestion & { wordId: string; direction: string }))),
+    );
+  });
+
+  it('shuffle: true reorders the batch across repeated calls (low false-negative rate)', () => {
+    const active: QuizItem[] = [mockWord, mockFoundational];
+    const wordPool: QuizItem[] = [mockWord];
+    const foundationalPool: QuizItem[] = [mockFoundational];
+
+    const orderings = new Set<string>();
+    for (let i = 0; i < 15; i++) {
+      const batch = assembleBatch(active, wordPool, foundationalPool, 4, { shuffle: true });
+      orderings.add(
+        batch
+          .map((q) => questionKey(q as QuizQuestion & { wordId: string; direction: string }))
+          .join('|'),
+      );
+    }
+    expect(orderings.size).toBeGreaterThan(1);
+  });
+
+  it('defaults to shuffle: true when options are omitted', () => {
+    const active: QuizItem[] = [mockWord, mockFoundational];
+    const questions = assembleBatch(active, [mockWord], [mockFoundational], 4);
+    expect(questions).toHaveLength(4);
+  });
 });
