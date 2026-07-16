@@ -40,9 +40,17 @@ import {
 } from './useShelving';
 import { useDebugRecording } from './useDebugRecording';
 import type { BatchSummary } from '../components/BatchResults.vue';
-import type { ConfigType, Screen } from '../types';
+import type { ConfigType } from '../types';
 
 export const LAST_DECK_KEY = 'srs-demo-last-deck';
+
+// Route params/query passed alongside a named route on navigate(); kept loose
+// (not the full RouteLocationRaw) so this composable stays router-agnostic.
+export type NavigateFn = (
+  name: string,
+  params?: Record<string, string>,
+  query?: Record<string, string>,
+) => void | Promise<void>;
 
 export interface UseLearningSessionDeps {
   wordPool: Ref<QuizItem[]>;
@@ -50,11 +58,11 @@ export interface UseLearningSessionDeps {
   CONFIG: Ref<ConfigType>;
   configReady: Ref<boolean>;
   apiError: Ref<string | null>;
-  screen: Ref<Screen>;
+  navigate: NavigateFn;
 }
 
 export function useLearningSession(deps: UseLearningSessionDeps) {
-  const { wordPool, appDecks, CONFIG, configReady, apiError, screen } = deps;
+  const { wordPool, appDecks, CONFIG, configReady, apiError, navigate } = deps;
 
   const recorder = useDebugRecording();
 
@@ -260,7 +268,7 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
     questionKey.value++;
     serveCorrelation(question);
 
-    screen.value = 'quiz';
+    void navigate('quiz', deckId.value ? { deckId: deckId.value } : undefined);
   }
 
   async function initSession(id: string, isNewSession = true) {
@@ -349,7 +357,7 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
     batchState.value = null;
     currentQuestion.value = null;
     recalculateCompletedDecks();
-    screen.value = 'select';
+    void navigate('select');
   }
 
   async function finishBatchAndTransition() {
@@ -535,7 +543,7 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
 
     recalculateCompletedDecks();
 
-    screen.value = 'results';
+    void navigate('results');
   }
 
   function onAnswered(result: QuizResult) {
@@ -575,7 +583,7 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
 
   function onExitBatch() {
     if (!batchState.value || batchState.value.results.length === 0) {
-      screen.value = 'select';
+      void navigate('select');
       return;
     }
     void finishBatchAndTransition();

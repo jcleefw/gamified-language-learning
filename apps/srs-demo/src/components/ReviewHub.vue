@@ -17,12 +17,14 @@ const emit = defineEmits<{ due: []; anytime: [] }>();
     <p class="subtitle">Choose how you want to review today.</p>
 
     <div class="mode-cards">
-      <!-- Due Review — the EP38 path; shows the due badge (mirrors HomeDashboard). -->
+      <!-- Due Review — the EP38 path; shows the due badge (mirrors HomeDashboard).
+           Disabled when dueCount is exactly 0 (nothing to review); left clickable
+           when dueCount is null/badgeError so a failed fetch can still be retried. -->
       <button
         class="mode-card due-card"
-        :class="{ locked: !reviewUnlocked }"
-        :disabled="!reviewUnlocked"
-        @click="reviewUnlocked && emit('due')"
+        :class="{ locked: !reviewUnlocked || dueCount === 0 }"
+        :disabled="!reviewUnlocked || dueCount === 0"
+        @click="reviewUnlocked && dueCount !== 0 && emit('due')"
       >
         <span class="mode-title">
           Due Review
@@ -44,6 +46,9 @@ const emit = defineEmits<{ due: []; anytime: [] }>();
           >
           <template v-else-if="badgeError"
             >Couldn't load due count — open to retry.</template
+          >
+          <template v-else-if="dueCount === 0"
+            >Nothing due right now — check back later.</template
           >
           <template v-else>Revisit words that are due.</template>
         </span>

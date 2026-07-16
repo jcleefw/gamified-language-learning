@@ -4,6 +4,7 @@ import {
 } from './compose-registry.js';
 import { composeWordBatchItems, type QuizItem } from './compose-word-batch.js';
 import { type QuizQuestion } from '../types/quiz.js';
+import { shuffle as shuffleArray } from '../utils/shuffle.js';
 
 export interface AssembleBatchOptions {
   /** If true, the final batch of questions will be shuffled. Defaults to true. */
@@ -73,9 +74,5 @@ export function assembleBatch(
 
   const questions = assembleBatchQuestions(registry);
 
-  if (shuffle) {
-    return questions.sort(() => Math.random() - 0.5);
-  }
-
-  return questions;
+  return shuffle ? shuffleArray(questions) : questions;
 }

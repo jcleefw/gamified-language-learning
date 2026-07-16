@@ -9,7 +9,7 @@ import type {
 import type { AppDeckPayload } from '@gll/api-contract';
 import { useLearningSession } from '../useLearningSession';
 import { useDebugRecording } from '../useDebugRecording';
-import type { ConfigType, Screen } from '../../types';
+import type { ConfigType } from '../../types';
 
 // The composable's I/O is these three modules — mock them so the tests exercise
 // the state-machine orchestration (pools, batch handoff, persistence revert,
@@ -95,19 +95,26 @@ function makeWordState(mastery: number): WordState {
   };
 }
 
+// `useLearningSession` no longer owns a `screen` ref — it calls the injected
+// `navigate` callback instead. Tests still want a "what screen is it on" probe,
+// so `screen` here is a ref derived from the navigate calls, mirroring what a
+// router.push-backed navigate would do to the current route name.
 function setup(runState?: RunState) {
-  const screen = ref<Screen>('home');
+  const screen = ref('home');
+  const navigate = vi.fn((name: string) => {
+    screen.value = name;
+  });
   const deps = {
     wordPool: ref<QuizItem[]>([...DECK_WORDS]),
     appDecks: ref<AppDeckPayload[]>([makeDeck()]),
     CONFIG: ref(CONFIG),
     configReady: ref(true),
     apiError: ref<string | null>(null),
-    screen,
+    navigate,
   };
   const session = useLearningSession(deps);
   if (runState) session.globalRunState.value = runState;
-  return { deps, screen, session };
+  return { deps, screen, navigate, session };
 }
 
 // The batch runs a couple of async awaits (answer replay + shelving pipeline);
@@ -161,7 +168,7 @@ beforeEach(() => {
 describe('initSession', () => {
   it('excludes already-mastered words from the session pool', async () => {
     const runState: RunState = new Map([['w1', { ...makeWordState(2), wordId: 'w1' }]]);
-    const { session, screen } = setup(runState);
+    const { session, screen, navigate } = setup(runState);
     await session.initSession('d1');
     const pooled = [
       ...session.activeItems.value.map((w) => w.id),
@@ -170,6 +177,7 @@ describe('initSession', () => {
     expect(pooled).not.toContain('w1');
     expect(pooled).toEqual(expect.arrayContaining(['w2', 'w3', 'w4']));
     expect(screen.value).toBe('quiz');
+    expect(navigate).toHaveBeenCalledWith('quiz', { deckId: 'd1' });
     expect(session.currentQuestion.value).not.toBeNull();
   });
 
