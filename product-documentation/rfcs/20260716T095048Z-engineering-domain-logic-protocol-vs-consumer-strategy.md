@@ -2,7 +2,7 @@
 
 **Created**: 2026-07-16 <!-- 20260716T095048Z -->
 
-**Status**: Proposed
+**Status**: Accepted (partial)
 
 <!-- Status: Draft | Proposed | Accepted | Rejected | Withdrawn | Shelved | Superseded -->
 
@@ -50,6 +50,12 @@ Consequences of the drift:
    **shelved word still appears as a tile inside a sentence question** — in both consumers. Nothing
    in the engine or either consumer asserts the batch-wide invariant "no shelved/excluded word
    appears in any question." A learner can shelve a word and still be quizzed on it via a sentence.
+   > **Fixed 2026-07-16 (EP26-BUG01)** — `resolveEligibleContexts` now takes `excludeIds` and both
+   > consumers pass it through; see
+   > `.agents/changelogs/EP26--srs-shelving-policy/20260716T220822Z-EP26-BUG01-shelved-word-sentence-tile-leak.md`.
+   > This closes the leak itself but is **not** a substitute for `validateBatch` below — the invariant
+   > is now satisfiable, but nothing in the engine asserts it structurally, so a future regression
+   > (e.g. a third consumer skipping this wiring) would not be caught.
 
 The root cause is a boundary that was never drawn: the engine offers primitives *and* an
 orchestrator, and nothing states which rules are **the engine's to guarantee** versus which are
@@ -82,10 +88,11 @@ Concretely:
    returning, so a malformed batch cannot leave the engine. Consumers keep their freedom to *choose*
    composers and directions, but the *result* is checked by one canonical function.
 
-3. **Give sentences a first-class, exclusion-aware path.** `resolveEligibleContexts` gains an
-   `excludeIds` parameter (or `assembleBatch` filters tiles post-hoc) so the shelving invariant is
-   satisfiable at all. This is the smallest change that makes the safety rule enforceable rather
-   than merely assertable.
+3. **Give sentences a first-class, exclusion-aware path.** ✅ **Done (EP26-BUG01, 2026-07-16).**
+   `resolveEligibleContexts` gains an `excludeIds` parameter so the shelving invariant is
+   satisfiable at all. This was the smallest change that makes the safety rule enforceable rather
+   than merely assertable — `validateBatch` (item 1) still needs to make it *enforced*, not just
+   satisfiable.
 
 4. **Leave strategy where it belongs.** Which directions to teach, how many sentences to interleave,
    foundational vs. vocabulary emphasis, shuffle-or-not — these remain consumer config
@@ -191,6 +198,33 @@ an engineering epic before a third batch consumer exists. Resolve the "wordsPerB
 sentences?" and "canonical directions" open questions with the PO first — they change what the
 validator asserts.
 
-**Decision**: {Accepted / Rejected}
-**Rationale**: {Why}
-**Next step**: {Epic EP## / ADR## / N/A}
+**Decision**: Accepted (partial) — the validator / pure-predicate form (Alternatives row 2) is
+adopted. Scope was narrowed to the two invariants that don't require importing consumer strategy
+into the engine:
+
+- ✅ **Shipped** — `validateBatch(questions, constraints): BatchValidation` in `srs-engine-v2`,
+  checking (1) no `excludeIds` member appears in any question, including as a sentence tile, and
+  (2) no duplicate question identity within a batch. See
+  `.agents/changelogs/EP23--batch-composition/20260716T225256Z-EP23-BUG01-validate-batch-integrity-check.md`.
+- ✅ **Shipped** — the exclusion-aware sentence path (Proposed Solution item 3 /
+  EP26-BUG01), making the shelving invariant satisfiable.
+- ⏸️ **Deferred** — Proposed Solution item 2, "make enforcement unavoidable" (wiring
+  `validateBatch` into `assembleBatch`'s return path). `validateBatch` ships as a callable library
+  function only; consumers are trusted, not forced, to call it. This directly reopens the "enforce
+  eagerly or offer as a check?" Open Question below, which was not resolved before shipping — the
+  looser (callable-but-optional) path was taken by default, not by decision.
+- ⏸️ **Deferred, not built** — the size-bound (`wordsPerBatch` vs. sentences) and
+  permitted-direction invariants from Proposed Solution item 1. Both require the PO to resolve
+  their respective Open Questions first; they are speculative until then.
+
+**Rationale**: The concrete, already-shipped harm (the shelved-word-in-sentence-tile leak) is
+closed at the source (EP26-BUG01) and now has a reusable regression guard (`validateBatch`). The
+remaining two invariants in the original proposal require consumer-strategy decisions (batch-size
+bound, canonical direction set) that are not yet made, so building them now would be speculative
+engine surface. Narrowing scope to what's provable today avoids that risk while still capturing the
+core "engine owns integrity" boundary this RFC argues for.
+
+**Next step**: No new epic required for the shipped portion. If/when the PO resolves the two
+open Open Questions below (size bound, canonical directions) and decides on eager vs. optional
+enforcement, extend `validateBatch` and wire it into `assembleBatch` as a follow-up story under
+EP23 (batch composition) — do not open a new epic for it.

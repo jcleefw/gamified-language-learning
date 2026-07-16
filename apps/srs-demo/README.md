@@ -2,6 +2,8 @@
 
 A Vue 3 webapp that runs the `@gll/srs-engine-v2` spaced-repetition quiz loop in the browser, backed by a persistent SQLite database via the `@gll/server` API.
 
+> **The two apps produce different batches — this is expected, not a bug.** This web demo and the CLI (`cli-demo-db`) share the same deck **data** but run against **separate databases** (`.data/srs-demo.db` vs. `apps/cli-demo-db/data/learning-state.db`), so each holds independent learner progress (mastery, shelving, seen counts). Because a batch is scheduled from stored state, differing progress produces differing batches. Do not treat a difference between the two apps' batches as scheduling drift — compare batches only within a single database.
+
 ## Quick start
 
 From the **monorepo root**:

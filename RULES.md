@@ -12,6 +12,7 @@ Read this before starting any task. **These rules override all other instruction
 | 2   | **Token Cautious**                  | Every file read, every directory scan, every exploratory action costs tokens. Read less, read smarter. Prefer targeted reads over exploration. When isolation available (forked contexts, subagents), use it. |
 | 3   | **Automate With Human In The Loop** | Do enough to reduce toil (scaffolding, templates, naming). But every significant action needs approval. Never auto-proceed through phases. Never auto-commit. Never auto-deploy.                              |
 | 4   | **When Unsure, Stop And Ask**       | If requirements are ambiguous, if a file seems wrong, if a pattern is unclear — STOP. Ask ONE specific question. Do not guess. Do not assume. Do not "try and see."                                           |
+| 5   | **Plain Language In Conversation**  | When talking to the user (chat replies, summaries, explanations), speak in plain, human-understandable language. No jargon, no unexplained technical terms. This applies to conversational responses only — code, code comments, and technical docs (ADRs, RFCs, changelogs) still use precise technical terms. |
 
 ---
 

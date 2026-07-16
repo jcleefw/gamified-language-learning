@@ -246,7 +246,7 @@ async function runBatch(
   console.log(`\n=== Batch ${String(batchNum)} ===`);
 
   const allPool = [...wordPool, ...foundationalPool];
-  const extraThunks = resolveEligibleContexts(corpus, state.runState, allPool, sentenceRunState, batchNum, LEARNING_CONFIG).map(
+  const extraThunks = resolveEligibleContexts(corpus, state.runState, allPool, sentenceRunState, batchNum, LEARNING_CONFIG, excludeIds).map(
     ({ ctx, tiles }) =>
       () =>
         composeSentenceBatch(ctx, tiles, 'th', { shuffle: !strategy }),

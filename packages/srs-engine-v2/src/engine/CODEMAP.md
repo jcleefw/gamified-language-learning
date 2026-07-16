@@ -11,6 +11,8 @@ no side effects.
 | --- | --- |
 | `compose-batch.ts` | Composes `QuizQuestion[]` from language content |
 | `session.ts` | Session state transitions — recheck, pool rotation, mastery updates |
+| `sentence-scheduling.ts` | Sentence context eligibility gating and streak/shelving state updates for sentence questions |
+| `validate-batch.ts` | Pure post-composition integrity checker for a finished batch — safety net, not a repair mechanism |
 
 ---
 
@@ -57,6 +59,26 @@ no side effects.
 
 ---
 
+## Exports — `sentence-scheduling.ts`
+
+| Export | Signature | Purpose |
+| --- | --- | --- |
+| `resolveEligibleContexts` | `(corpus, runState, allPool, sentenceRunState, batchNum, config, excludeIds?: Set<string>) → { ctx: SentenceContext; tiles: SentenceTile[] }[]` | Filters sentence contexts by word-seen threshold, active/graduation state, and batch-gap spacing; drops any context referencing an `excludeIds` member (shelved word) since its tile set can no longer satisfy `wordOrder` |
+| `updateSentenceRunState` | `(sentenceRunState, results, batchNum, config) → SentenceRunState` | Applies a batch of sentence results — streak tracking, graduation/shelving via `active` flag |
+
+---
+
+## Exports — `validate-batch.ts`
+
+| Export | Signature | Purpose |
+| --- | --- | --- |
+| `validateBatch` | `(questions: QuizQuestion[], constraints?: BatchConstraints) → BatchValidation` | Pure, non-throwing predicate over a finished batch. Rule 1: no `excludeIds` member appears as a word question or sentence tile. Rule 2: no duplicate question identity (`kind:subject:direction`) |
+| `BatchConstraints` | `interface` | `{ excludeIds?: Set<string> }` |
+| `BatchValidation` | `interface` | `{ valid: boolean; violations: BatchViolation[] }` |
+| `BatchViolation` | `type` | `{ kind: 'excluded-word', ... } \| { kind: 'duplicate-question', ... }` |
+
+---
+
 ## Unit Tests
 
 | Test file | Covers |
@@ -65,3 +87,5 @@ no side effects.
 | `src/__tests__/unit/recheck.test.ts` | `processRecheckResult`, `nextActivePool` |
 | `src/__tests__/unit/adaptive-loop.test.ts` | `nextActivePool` pool rotation |
 | `src/__tests__/unit/update-mastery-state.test.ts` | `updateMasteryState` |
+| `src/__tests__/unit/sentence-spacing.test.ts` | `resolveEligibleContexts`, `updateSentenceRunState` |
+| `src/__tests__/unit/validate-batch.test.ts` | `validateBatch` — excluded-word leak (MCQ + sentence tile), duplicate detection, combined violations |

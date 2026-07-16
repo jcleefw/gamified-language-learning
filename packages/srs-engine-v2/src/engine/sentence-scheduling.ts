@@ -13,8 +13,13 @@ export function resolveEligibleContexts(
   sentenceRunState: SentenceRunState,
   batchNum: number,
   config: { minSeenForSentence: number; sentenceBatchGap: number },
+  excludeIds?: Set<string>,
 ): { ctx: SentenceContext; tiles: SentenceTile[] }[] {
-  const poolMap = new Map(allPool.map((w) => [w.id, w]));
+  const poolMap = new Map(
+    allPool
+      .filter((w) => !excludeIds?.has(w.id))
+      .map((w) => [w.id, w]),
+  );
 
   return corpus
     .filter((ctx) => {

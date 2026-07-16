@@ -16,6 +16,8 @@ export { initBatchState, nextQuestion, submitBatchResult, finishBatch, isBatchDo
 export type { BatchOutput, BatchState } from './engine/batch-queue.js';
 export { assembleBatch } from './engine/assemble-batch.js';
 export type { AssembleBatchOptions } from './engine/assemble-batch.js';
+export { validateBatch } from './engine/validate-batch.js';
+export type { BatchConstraints, BatchValidation, BatchViolation } from './engine/validate-batch.js';
 
 // Word state
 export { updateRunState, isMastered } from './types/word-state.js';

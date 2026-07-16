@@ -226,6 +226,7 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
       sentenceRunState.value,
       batchNum.value,
       CONFIG.value.sentenceScheduling,
+      shelvedSet.value,
     );
 
     // One thunk per eligible sentence × configured direction

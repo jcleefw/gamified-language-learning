@@ -4,7 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initDb, schema, SqliteContentStore } from '@gll/db';
 import type { AppDeck } from '@gll/api-contract';
-import { buildVtt } from '@gll/api-contract';
+import { buildVtt } from '@gll/shared-utils';
 
 type TestDb = ReturnType<typeof drizzle<typeof schema>>;
 let testDb: TestDb;

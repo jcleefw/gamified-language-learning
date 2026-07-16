@@ -22,6 +22,7 @@
     "@gll/api-contract": "workspace:*",
     "@gll/db": "workspace:*",
     "@gll/logger": "workspace:*",
+    "@gll/shared-utils": "workspace:*",
     "@gll/srs-engine-v2": "workspace:*",
     "@gll/srs-review": "workspace:*",
     "@gll/srs-shelving": "workspace:*",

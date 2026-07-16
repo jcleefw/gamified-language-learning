@@ -1,6 +1,6 @@
 import { ref, shallowRef, watch, type Ref } from 'vue';
 import WaveSurfer from 'wavesurfer.js';
-import { parseVtt } from '@gll/api-contract';
+import { parseVtt } from '@gll/shared-utils';
 
 export interface SegmentPlayer {
   currentTime: Ref<number>;
