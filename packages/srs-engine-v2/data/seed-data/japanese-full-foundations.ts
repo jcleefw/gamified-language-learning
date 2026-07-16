@@ -1,4 +1,4 @@
-import { FoundationalBase } from "../../src/types/foundational";
+import { FoundationalBase } from "../../src/learn/types/foundational";
 
 export const japaneseFoundational: FoundationalBase[] = [
   // --- HIRAGANA ---

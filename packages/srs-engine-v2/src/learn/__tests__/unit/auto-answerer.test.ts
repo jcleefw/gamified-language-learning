@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { runAutoInteractive } from '../../../demo/auto-answerer.js';
+import { runAutoInteractive } from '../../../../demo/auto-answerer.js';
 import {
   CorrectAutoAnswerStrategy,
   RandomAutoAnswerStrategy,
   WeightedAccuracyAutoAnswerStrategy,
-} from '../../../demo/auto-answer-strategy.js';
+} from '../../../../demo/auto-answer-strategy.js';
 import type { MCQQuestion } from '../../types/quiz.js';
 import {
   initBatchState,

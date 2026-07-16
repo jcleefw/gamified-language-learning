@@ -1,4 +1,4 @@
-import type { MockWord } from '../../data/mock/mock-words.js';
+import type { MockWord } from '../../../data/mock/mock-words.js';
 import type { QuizChoice, QuizDirection, MCQQuestion } from '../types/quiz.js';
 import type { MockFoundational } from '../types/foundational.js';
 import { shuffle } from '../utils/shuffle.js';

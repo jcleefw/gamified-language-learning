@@ -33,7 +33,7 @@ export type { QuizQuestion, MCQQuestion, SentenceQuestion, SentenceTile, QuizCho
 export type { SentenceContext } from './types/sentence.js';
 
 // Config
-export { LANGUAGE_CONFIG } from './config/language.js';
-export type { LanguageConfig, WordJoin } from './config/language.js';
+export { LANGUAGE_CONFIG } from '../config/language.js';
+export type { LanguageConfig, WordJoin } from '../config/language.js';
 export type { MockDeck, MockLine } from './types/deck.js';
 export type { MockFoundational, ThaiFoundational, MockVowel, MockTone, ThaiFoundationalType, JapaneseFoundationalType } from './types/foundational.js';

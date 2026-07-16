@@ -1,6 +1,6 @@
 import type { SentenceContext } from '../types/sentence.js';
 import type { SentenceQuestion, SentenceTile } from '../types/quiz.js';
-import { LANGUAGE_CONFIG, type WordJoin } from '../config/language.js';
+import { LANGUAGE_CONFIG, type WordJoin } from '../../config/language.js';
 import { shuffle } from '../utils/shuffle.js';
 
 const DEFAULT_WORD_JOIN: WordJoin = 'space';

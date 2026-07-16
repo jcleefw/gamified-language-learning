@@ -1,4 +1,4 @@
-import type { MockConsonant } from '../../data/mock/mock-consonants.js';
+import type { MockConsonant } from '../../../data/mock/mock-consonants.js';
 
 export type ThaiFoundationalType = 'consonant' | 'vowel' | 'tone';
 export type JapaneseFoundationalType = 'hiragana' | 'katakana' | 'kanji';

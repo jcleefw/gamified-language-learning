@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { mockConsonants } from '../../../data/mock/mock-consonants.js';
-import { mockWords } from '../../../data/mock/mock-words.js';
-import { mockVowels } from '../../../data/mock/mock-vowels.js';
-import { mockTones } from '../../../data/mock/mock-tones.js';
+import { mockConsonants } from '../../../../data/mock/mock-consonants.js';
+import { mockWords } from '../../../../data/mock/mock-words.js';
+import { mockVowels } from '../../../../data/mock/mock-vowels.js';
+import { mockTones } from '../../../../data/mock/mock-tones.js';
 import { composeWordBatch, composeWordBatchMulti } from '../../engine/compose-word-batch.js';
 
 const consonant = mockConsonants[0]; // ก (Ko Kai, k, middle)

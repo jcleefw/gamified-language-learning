@@ -8,8 +8,8 @@ import { mockTones } from '../data/mock/mock-tones.js';
 import { wordPool } from '../data/mock/mock-word-pool.js';
 import { mockDecks } from '../data/mock/mock-decks.js';
 import { selectDeck, runAdaptiveLoop } from './learning-io.js';
-import { isMastered } from '../src/index.js';
-import type { RunState, SentenceRunState, WordState } from '../src/index.js';
+import { isMastered } from '../src/learn/index.js';
+import type { RunState, SentenceRunState, WordState } from '../src/learn/index.js';
 import {
   CorrectAutoAnswerStrategy,
 } from './auto-answer-strategy.js';

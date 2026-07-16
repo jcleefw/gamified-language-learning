@@ -1,4 +1,4 @@
-import type { ThaiConsonant, ThaiTone, ThaiVowel } from '../../src/types/foundational.js';
+import type { ThaiConsonant, ThaiTone, ThaiVowel } from '../../src/learn/types/foundational.js';
 
 export const thaiConsonants: ThaiConsonant[] = [
   // MIDDLE CLASS

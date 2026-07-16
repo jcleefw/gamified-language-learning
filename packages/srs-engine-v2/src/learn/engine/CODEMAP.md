@@ -54,7 +54,7 @@ no side effects.
 | --- | --- |
 | `QuizQuestion`, `QuizDirection`, `QuizChoice`, `QuizResult` | `../types/quiz` |
 | `MockFoundational` | `../types/foundational` |
-| `MockWord` | `../../data/mock/mock-words` |
+| `MockWord` | `../../../data/mock/mock-words` |
 | `RunState`, `StreakThresholds`, `updateRunState`, `isMastered` | `../types/word-state` |
 
 ---
