@@ -36,6 +36,7 @@ When this skill is loaded, perform a structured review. Do not edit any files.
 - Do all exported classes, and exported and non-trivial private functions have a docstring?
   - Docstrings must be human-readable (plain English, no jargon)
   - Max 80 characters per line
+- Are any comments **overloading** rather than documenting? Flag comments that narrate the refactor/story instead of the code itself — "mirrors old X", "note the asymmetry with Y", "this used to do Z", references to a specific story/epic/PR number. That belongs in the commit/PR description, not in the file. Test: would the comment still make sense to someone with no knowledge of the prior code or the diff that produced it? If not, it's overloading, not a docstring — flag it as a MINOR/NIT under Style.
 
 ## Output Format
 

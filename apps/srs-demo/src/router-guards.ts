@@ -21,9 +21,12 @@ const CURATION_NAMES: string[] = [
   ROUTE_NAMES.MARK,
 ]
 
-// Mirrors App.vue's old `activeNav` computed: which top-level nav tab a route
-// belongs to. Exported so App.vue's activeNav can derive from `route.name`
-// instead of duplicating this table.
+/**
+ * Which top-level nav tab a route belongs to.
+ *
+ * @param {unknown} name - The route's `name` (typically a `RouteLocation.name`).
+ * @returns {'home' | 'learn' | 'review' | 'curation'} The nav tab that owns this route.
+ */
 export function navTabOf(name: unknown): 'home' | 'learn' | 'review' | 'curation' {
   if (name === ROUTE_NAMES.HOME) return 'home'
   if (name === ROUTE_NAMES.REVIEW_HUB || name === ROUTE_NAMES.REVIEW_SESSION) return 'review'
@@ -31,33 +34,40 @@ export function navTabOf(name: unknown): 'home' | 'learn' | 'review' | 'curation
   return 'learn' // select | quiz | results | overview
 }
 
-// The *target* side of navTo's `targetPhase = target === 'review' ? 'review' : 'learning'`.
-// navTo only ever targeted 'home' | 'select' | 'review' (curation bypassed navTo
-// entirely — see the early return below) — every non-review target counted as 'learning'.
+/**
+ * The learning phase a navigation is heading into.
+ *
+ * @param {unknown} name - The destination route's `name`.
+ * @returns {Phase} `'review'` for review routes, `'learning'` otherwise.
+ */
 function targetPhaseOf(name: unknown): Phase {
   if (name === ROUTE_NAMES.REVIEW_HUB || name === ROUTE_NAMES.REVIEW_SESSION) return 'review'
   return 'learning'
 }
 
-// The *from* side of navTo's `fromPhase = activeNav === 'home' ? null : activeNav === 'review' ? 'review' : 'learning'`.
-// Note the asymmetry with targetPhaseOf: 'home' is null only as a *source*
-// (leaving home never counts as crossing a phase); curation-as-source falls
-// into the 'learning' bucket, same as the original ternary's else-branch.
+/**
+ * The learning phase a navigation is leaving from.
+ *
+ * @param {unknown} name - The source route's `name`.
+ * @returns {Phase | null} `null` when leaving home (no phase to cross), `'review'`
+ *   for review routes, `'learning'` otherwise.
+ */
 function fromPhaseOf(name: unknown): Phase | null {
   if (name === ROUTE_NAMES.HOME || name == null) return null
   if (name === ROUTE_NAMES.REVIEW_HUB || name === ROUTE_NAMES.REVIEW_SESSION) return 'review'
   return 'learning'
 }
 
-// Composable-internal transitions (batch start/finish, clear, exit-with-empty-batch)
-// call `navigate()` too, but they must NOT re-run the confirm/flush/finalize logic
-// below — that logic reproduces navTo, which only ever ran for NavMenu-initiated
-// clicks. Without this seam, e.g. finishing a quiz batch (quiz -> results) would
-// look identical to isMidQuiz to the guard and pop a "Leave this quiz?" confirm on
-// every normal batch completion. The `navigate` callback wired up in App.vue calls
-// `markInternalNavigation()` immediately before `router.push(...)`.
+/**
+ * Skips the next `beforeEach` guard's confirm/flush/finalize logic.
+ *
+ * Call before navigations that are internal to a composable (batch
+ * start/finish, clear, exit-with-empty-batch) so they don't trigger the
+ * "Leave this quiz?" confirmation meant only for user-initiated nav clicks.
+ */
 let skipNextGuard = false
 
+/** Marks the upcoming router navigation as internal; see `skipNextGuard`. */
 export function markInternalNavigation(): void {
   skipNextGuard = true
 }
@@ -73,9 +83,7 @@ export function registerNavigationGuard(router: Router): void {
       return true
     }
 
-    // Original navTo never guarded navigation *into* curation — the NavMenu's
-    // Curation tab flips `screen` directly, bypassing navTo. Preserved verbatim;
-    // see EP44-ST02 notes for why this (pre-existing) gap isn't closed here.
+    // Curation navigation is intentionally unguarded (no confirm/flush/finalize).
     if (CURATION_NAMES.includes(to.name as string)) return true
 
     const { session: learning, apiError } = getLearningSession()

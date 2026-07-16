@@ -71,6 +71,38 @@ word.lapseCount++;
 word.phase = 'learning';
 ```
 
+### Docstrings vs. Overloading Comments
+
+Docstrings describe current behavior for future callers. Overloading comments
+narrate the refactor/story that produced the code — that belongs in the PR
+description, not the file.
+
+**GOOD** (JSDoc, describes current behavior only):
+
+```typescript
+/**
+ * The learning phase a navigation is heading into.
+ *
+ * @param {unknown} name - The destination route's `name`.
+ * @returns {Phase} `'review'` for review routes, `'learning'` otherwise.
+ */
+function targetPhaseOf(name: unknown): Phase {
+  if (name === ROUTE_NAMES.REVIEW_HUB || name === ROUTE_NAMES.REVIEW_SESSION) return 'review';
+  return 'learning';
+}
+```
+
+**BAD** (narrates the refactor instead of documenting the function):
+
+```typescript
+// The *target* side of navTo's `targetPhase = target === 'review' ? 'review' : 'learning'`.
+// navTo only ever targeted 'home' | 'select' | 'review' (curation bypassed navTo
+// entirely — see the early return below) — every non-review target counted as 'learning'.
+function targetPhaseOf(name: unknown): Phase {
+  // ...
+}
+```
+
 ---
 
 ## 4. No Generic Patterns
