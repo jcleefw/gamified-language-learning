@@ -1,7 +1,7 @@
 # EP17-DS01: Package Merge and Sub-path Exports Specification
 
 **Date**: 20260717T083836Z
-**Status**: Draft
+**Status**: Completed
 **Epic**: [EP17 - SRS Engine Consolidation](../../plans/epics/EP17-srs-engine-consolidation.md)
 
 ---
@@ -62,63 +62,63 @@ START → move srs-shelving/src → src/shelving/ (ST01)
 
 ## 5. Stories
 
-### EP17-ST01: Fold `srs-shelving` into the engine as an internal `shelving` module
+### EP17-ST01: Fold `srs-shelving` into the engine as an internal `shelving` module *(Done)*
 
 **Scope**: Move `packages/srs-shelving/src/*` into `packages/srs-engine-v2/src/shelving/`, carry its tests over, wire up internal imports — no consumer-facing changes yet.
 **Read List**: `packages/srs-shelving/src/index.ts`, `policy.ts`, `types.ts`, `__tests__/unit/policy.test.ts`, `__tests__/unit/exports.test.ts`; `packages/srs-engine-v2/package.json`
 **Tasks**:
-- [ ] Move `types.ts`, `policy.ts`, `index.ts` to `packages/srs-engine-v2/src/shelving/`
-- [ ] Move `__tests__/unit/policy.test.ts`, `__tests__/unit/exports.test.ts` to `src/shelving/__tests__/`
-- [ ] Update any relative imports broken by the move
+- [x] Move `types.ts`, `policy.ts`, `index.ts` to `packages/srs-engine-v2/src/shelving/`
+- [x] Move `__tests__/unit/policy.test.ts`, `__tests__/unit/exports.test.ts` to `src/shelving/__tests__/`
+- [x] Update any relative imports broken by the move
 
 **Acceptance Criteria**:
-- [ ] `packages/srs-engine-v2` builds and its shelving tests pass in the new location
-- [ ] `packages/srs-shelving` is untouched (still builds standalone)
+- [x] `packages/srs-engine-v2` builds and its shelving tests pass in the new location
+- [x] `packages/srs-shelving` is untouched (still builds standalone)
 
-### EP17-ST02: Fold `srs-review` into the engine as an internal `review` module
+### EP17-ST02: Fold `srs-review` into the engine as an internal `review` module *(Done)*
 
 **Scope**: Move `packages/srs-review/src/*` into `packages/srs-engine-v2/src/review/`, carry its tests over, wire up internal imports — no consumer-facing changes yet.
 **Read List**: `packages/srs-review/src/index.ts`, `FsrsScheduler.ts`, `types.ts`, `__tests__/unit/FsrsScheduler.test.ts`, `__tests__/unit/exports.test.ts`
 **Tasks**:
-- [ ] Move `types.ts`, `FsrsScheduler.ts`, `index.ts` to `packages/srs-engine-v2/src/review/`
-- [ ] Move both test files to `src/review/__tests__/`
-- [ ] Update any relative imports broken by the move
+- [x] Move `types.ts`, `FsrsScheduler.ts`, `index.ts` to `packages/srs-engine-v2/src/review/`
+- [x] Move both test files to `src/review/__tests__/`
+- [x] Update any relative imports broken by the move
 
 **Acceptance Criteria**:
-- [ ] `packages/srs-engine-v2` builds and its review tests pass in the new location
-- [ ] `packages/srs-review` is untouched (still builds standalone)
+- [x] `packages/srs-engine-v2` builds and its review tests pass in the new location
+- [x] `packages/srs-review` is untouched (still builds standalone)
 
-### EP17-ST03: Expose per-phase sub-path exports
+### EP17-ST03: Expose per-phase sub-path exports *(Done)*
 
 **Scope**: Fold existing `src/engine/`, `src/types/`, `src/utils/` into `src/learn/`; configure the package `exports` map for `@gll/srs-engine-v2/learn`, `/shelving`, `/review` (no single barrel `index.ts`); verify each sub-path resolves and tree-shakes independently of the others.
 **Read List**: `packages/srs-engine-v2/package.json`, `src/index.ts`, `src/engine/*`, `src/types/*`, `src/utils/shuffle.ts`, `tsconfig.build.json`
 **Tasks**:
-- [ ] Move `src/engine/*`, `src/types/*`, `src/utils/*` into `src/learn/` (preserving relative structure), update internal imports
-- [ ] Create `src/learn/index.ts`, `src/shelving/index.ts`, `src/review/index.ts` barrels
-- [ ] Delete top-level `src/index.ts`
-- [ ] Update `package.json` `exports` map to the three sub-paths (leave `./data/mock/*` untouched)
+- [x] Move `src/engine/*`, `src/types/*`, `src/utils/*` into `src/learn/` (preserving relative structure), update internal imports
+- [x] Create `src/learn/index.ts`, `src/shelving/index.ts`, `src/review/index.ts` barrels
+- [x] Delete top-level `src/index.ts`
+- [x] Update `package.json` `exports` map to the three sub-paths (leave `./data/mock/*` untouched)
 
 **Acceptance Criteria**:
-- [ ] `import ... from '@gll/srs-engine-v2/learn'`, `/shelving`, `/review` each resolve correctly in a scratch test
-- [ ] No lingering import of the deleted top-level barrel anywhere in `packages/srs-engine-v2`
-- [ ] `pnpm --filter @gll/srs-engine-v2 typecheck && test` pass
+- [x] `import ... from '@gll/srs-engine-v2/learn'`, `/shelving`, `/review` each resolve correctly in a scratch test
+- [x] No lingering import of the deleted top-level barrel anywhere in `packages/srs-engine-v2`
+- [x] `pnpm --filter @gll/srs-engine-v2 typecheck && test` pass
 
-### EP17-ST08: Update remaining engine docs to whole-lifecycle scope
+### EP17-ST08: Update remaining engine docs to whole-lifecycle scope *(Done)*
 
 **Scope**: Add Shelving and Review sections to `packages/srs-engine-v2/docs/02-concepts.md` and `docs/03-walkthrough.md`, matching the structure already applied to `docs/01-stakeholder.md` and `README.md`.
 **Read List**: `packages/srs-engine-v2/docs/01-stakeholder.md`, `README.md` (already updated, use as the template), `docs/02-concepts.md`, `docs/03-walkthrough.md` (current state)
 **Tasks**:
-- [ ] Add Shelving and Review sections to `02-concepts.md`
-- [ ] Add Shelving and Review sections to `03-walkthrough.md`
+- [x] Add Shelving and Review sections to `02-concepts.md`
+- [x] Add Shelving and Review sections to `03-walkthrough.md`
 
 **Acceptance Criteria**:
-- [ ] Both docs describe Learning, Shelving, and Review as peer phases of one lifecycle
+- [x] Both docs describe Learning, Shelving, and Review as peer phases of one lifecycle
 
 ## 6. Success Criteria
 
-1. `srs-review` and `srs-shelving` logic lives inside `@gll/srs-engine-v2`, exposed via `/learn`, `/shelving`, `/review` sub-paths
-2. The old standalone `srs-review`/`srs-shelving` packages still exist and still build — this DS does not delete them
-3. No consumer has been repointed to the new sub-paths yet
-4. `packages/srs-engine-v2` docs (`02-concepts.md`, `03-walkthrough.md`) cover Learning, Shelving, and Review
-5. No change in behaviour: FSRS scheduling, shelving policy, and rating inference are bit-for-bit unchanged
-6. No type errors
+1. [x] `srs-review` and `srs-shelving` logic lives inside `@gll/srs-engine-v2`, exposed via `/learn`, `/shelving`, `/review` sub-paths
+2. [x] The old standalone `srs-review`/`srs-shelving` packages still exist and still build — this DS does not delete them
+3. [x] No consumer has been repointed to the new sub-paths yet
+4. [x] `packages/srs-engine-v2` docs (`02-concepts.md`, `03-walkthrough.md`) cover Learning, Shelving, and Review
+5. [x] No change in behaviour: FSRS scheduling, shelving policy, and rating inference are bit-for-bit unchanged
+6. [x] No type errors
