@@ -78,6 +78,8 @@ Options:
 
 This app uses its **own separate DB** (`apps/cli-demo-db/data/learning-state.db`), independent from srs-demo's DB (`.data/srs-demo.db`). Seeding here does not affect the srs-demo app.
 
+> **The two apps produce different batches — this is expected, not a bug.** This CLI and the web demo (`srs-demo`) share the same deck **data** but run against **separate databases**, so each holds independent learner progress (mastery, shelving, seen counts). Because a batch is scheduled from stored state, differing progress produces differing batches. Do not treat a difference between the two apps' batches as scheduling drift — compare batches only within a single database.
+
 ## Other commands
 
 ```bash
