@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { ShelvingConfig } from '../../types.js';
-import { evaluateShelving, unshelveAll } from '../../policy.js';
+import type { ShelvingConfig } from '../types.js';
+import { evaluateShelving, unshelveAll } from '../policy.js';
 
 const config: ShelvingConfig = {
   stagnationBatchWindow: 3,

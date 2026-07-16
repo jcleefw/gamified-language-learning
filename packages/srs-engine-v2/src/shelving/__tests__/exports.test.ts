@@ -3,7 +3,7 @@ import {
   DEFAULT_SHELVING_CONFIG,
   evaluateShelving,
   unshelveAll,
-} from '../../index.js';
+} from '../index.js';
 
 describe('Public API exports', () => {
   it('DEFAULT_SHELVING_CONFIG.stagnationBatchWindow equals 3', () => {
@@ -28,5 +28,5 @@ describe('Public API exports', () => {
 });
 
 // Compile-time type assertions — these lines must typecheck
-import type { ShelvingConfig } from '../../index.js';
+import type { ShelvingConfig } from '../index.js';
 const _config: ShelvingConfig = DEFAULT_SHELVING_CONFIG;
