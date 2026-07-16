@@ -2,7 +2,7 @@
 
 **Created**: 2026-07-15
 
-**Status**: Draft
+**Status**: Rejected
 
 <!-- Status: Draft | Proposed | Accepted | Rejected | Withdrawn | Shelved | Superseded -->
 
