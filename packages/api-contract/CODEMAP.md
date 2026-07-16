@@ -25,6 +25,9 @@ Types-only package exporting shared HTTP wire-format types for `@gll/api-contrac
 | `srs.ts`        | V2 SRS state wire types: `WordStatePayload`, `GetStateResponse`, `UpsertWordStateRequest` |
 | `auth.ts`       | Stub — auth wire types deferred                                         |
 | `curation.ts`   | Stub — curation wire types deferred                                     |
+| `content.ts`    | Deck/curriculum zod schemas                                              |
+
+WebVTT helpers previously lived here as `vtt.ts` — moved to `@gll/shared-utils` (not wire-format types; runtime code shared by `srs-demo` and `server`).
 
 ---
 

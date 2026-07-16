@@ -46,7 +46,7 @@ vi.mock('wavesurfer.js', () => ({
   default: { create: (config: unknown) => createMock(config) },
 }));
 
-vi.mock('@gll/api-contract', () => ({
+vi.mock('@gll/shared-utils', () => ({
   parseVtt: (text: string) => JSON.parse(text) as Record<string, { start: number; end: number }>,
 }));
 

@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import { createHash, randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { getDb, schema } from '@gll/db';
-import { ErrorCode, readVttHash, type ApiResponse } from '@gll/api-contract';
+import { ErrorCode, type ApiResponse } from '@gll/api-contract';
+import { readVttHash } from '@gll/shared-utils';
 import {
   deriveVttKey,
   isCurationMode,

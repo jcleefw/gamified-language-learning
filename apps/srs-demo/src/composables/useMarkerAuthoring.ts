@@ -1,5 +1,5 @@
 import { ref, type Ref } from 'vue';
-import { buildVtt as buildVttText, parseVtt } from '@gll/api-contract';
+import { buildVtt as buildVttText, parseVtt } from '@gll/shared-utils';
 
 // EP43-DS02 ST04 — the marker-authoring state, extracted from the view so the
 // capture / seed / validity / VTT-emit logic is unit-testable without a DOM (the

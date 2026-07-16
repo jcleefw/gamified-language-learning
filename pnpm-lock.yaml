@@ -97,6 +97,9 @@ importers:
       '@gll/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@gll/shared-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
       '@gll/srs-engine-v2':
         specifier: workspace:*
         version: link:../../packages/srs-engine-v2
@@ -143,6 +146,9 @@ importers:
       '@gll/api-contract':
         specifier: workspace:*
         version: link:../../packages/api-contract
+      '@gll/shared-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
       '@gll/srs-engine-v2':
         specifier: workspace:*
         version: link:../../packages/srs-engine-v2
@@ -236,6 +242,15 @@ importers:
       pino:
         specifier: ^9
         version: 9.14.0
+    devDependencies:
+      typescript:
+        specifier: ^5.7
+        version: 5.9.3
+      vitest:
+        specifier: ^3
+        version: 3.2.4(@types/node@25.5.0)(happy-dom@20.10.6)(jiti@2.6.1)(tsx@4.21.0)
+
+  packages/shared-utils:
     devDependencies:
       typescript:
         specifier: ^5.7

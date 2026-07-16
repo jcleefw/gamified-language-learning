@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseVtt, readVttHash } from '@gll/api-contract';
+import { parseVtt, readVttHash } from '@gll/shared-utils';
 import {
   useMarkerAuthoring,
   NUDGE_COARSE,
