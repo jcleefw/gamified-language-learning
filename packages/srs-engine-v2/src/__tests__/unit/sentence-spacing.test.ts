@@ -225,4 +225,48 @@ describe('Sentence Spacing and Eligibility Gates', () => {
       expect(eligibleIds).not.toContain('sent::002');
     });
   });
+
+  describe('Word-level shelving (excludeIds)', () => {
+    it('drops a sentence context when one of its words is excluded', () => {
+      const sentenceRunState: SentenceRunState = new Map();
+      sentenceRunState.set('sent::001', defaultSentenceState('sent::001'));
+      sentenceRunState.set('sent::002', defaultSentenceState('sent::002'));
+
+      const excludeIds = new Set(['th::กิน']); // a word only used in sent::001
+
+      const eligible = resolveEligibleContexts(
+        testCorpus,
+        runState,
+        allPool,
+        sentenceRunState,
+        1,
+        testConfig,
+        excludeIds,
+      );
+      const eligibleIds = eligible.map((e) => e.ctx.sentenceId);
+
+      expect(eligibleIds).not.toContain('sent::001');
+      expect(eligibleIds).toContain('sent::002');
+    });
+
+    it('keeps all sentences when excludeIds is empty or omitted', () => {
+      const sentenceRunState: SentenceRunState = new Map();
+      sentenceRunState.set('sent::001', defaultSentenceState('sent::001'));
+      sentenceRunState.set('sent::002', defaultSentenceState('sent::002'));
+
+      const eligible = resolveEligibleContexts(
+        testCorpus,
+        runState,
+        allPool,
+        sentenceRunState,
+        1,
+        testConfig,
+        new Set(),
+      );
+      const eligibleIds = eligible.map((e) => e.ctx.sentenceId);
+
+      expect(eligibleIds).toContain('sent::001');
+      expect(eligibleIds).toContain('sent::002');
+    });
+  });
 });
