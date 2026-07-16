@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { FsrsScheduler } from '../../FsrsScheduler.js';
-import type { ReviewCard, GraduationPerformance } from '../../types.js';
+import { FsrsScheduler } from '../FsrsScheduler.js';
+import type { ReviewCard, GraduationPerformance } from '../types.js';
 
 const NOW = new Date('2026-07-08T00:00:00Z');
 const perf = (o: Partial<GraduationPerformance> = {}): GraduationPerformance => ({

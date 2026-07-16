@@ -4,7 +4,7 @@ import type {
   GraduationPerformance,
   ReviewCard,
   ReviewScheduler,
-} from '../../index.js';
+} from '../index.js';
 
 describe('Public API exports', () => {
   it('ReviewRating admits all four domain ratings', () => {
