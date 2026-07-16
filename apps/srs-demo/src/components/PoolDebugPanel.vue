@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { QuizItem } from '@gll/srs-engine-v2';
+import type { QuizItem } from '@gll/srs-engine-v2/learn';
 
 defineProps<{
   activeItems: QuizItem[];

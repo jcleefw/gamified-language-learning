@@ -19,7 +19,7 @@ import { computed, inject } from 'vue';
 import type { Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { AppDeckPayload } from '@gll/api-contract';
-import type { QuizItem } from '@gll/srs-engine-v2';
+import type { QuizItem } from '@gll/srs-engine-v2/learn';
 import DeckOverview from '../components/DeckOverview.vue';
 import { ROUTE_NAMES } from '../routeNames';
 import type { useLearningSession } from '../composables/useLearningSession';

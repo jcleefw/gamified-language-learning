@@ -14,7 +14,7 @@ import {
   type BatchState,
   type WordQuizResult,
   type WordState,
-} from '@gll/srs-engine-v2';
+} from '@gll/srs-engine-v2/learn';
 import type { AppDeckPayload, AppWordPayload } from '@gll/api-contract';
 import {
   loadShelvedWords,
@@ -26,7 +26,7 @@ import {
   applyShelving,
 } from '../composables/useShelving.js';
 import { saveWordState } from '../composables/useStore.js';
-import { evaluateShelving } from '@gll/srs-shelving';
+import { evaluateShelving } from '@gll/srs-engine-v2/shelving';
 import QuizCard from './QuizCard.vue';
 import AudioPlayer from './AudioPlayer.vue';
 

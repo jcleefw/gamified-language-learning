@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ref } from 'vue';
-import type { QuizItem, RunState, WordState } from '@gll/srs-engine-v2';
+import type { QuizItem, RunState, WordState } from '@gll/srs-engine-v2/learn';
 import type { DueReviewItem } from '@gll/api-contract';
 import { useReviewSession } from '../useReviewSession';
 import type { ConfigType } from '../../types';
