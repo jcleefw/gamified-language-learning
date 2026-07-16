@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { inject, onMounted } from 'vue';
+import { inject, onMounted, ref, watch } from 'vue';
 import type { Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import QuizCard from '../components/QuizCard.vue';
@@ -37,6 +37,7 @@ import type { DeckAudio } from '../composables/useAudio';
 const reviewSession = inject<ReturnType<typeof useReviewSession>>('reviewSession')!;
 const reviewQuestionAudio =
   inject<Ref<(DeckAudio & { sentenceId: string }) | undefined>>('reviewQuestionAudio')!;
+const configReady = inject<Ref<boolean>>('configReady', ref(true));
 const route = useRoute();
 const router = useRouter();
 
@@ -47,13 +48,21 @@ function goReviewHub() {
 // Deep-link support: a direct visit (no prior ReviewHubPage click) arrives with
 // no batch started. `?mode=` picks the entry point; default 'due' matches the
 // hub's primary CTA. A 'stayed' outcome (fetch error) is surfaced via apiError
-// elsewhere — nothing further to do here but leave the batch unset.
-onMounted(async () => {
+// elsewhere — nothing further to do here but leave the batch unset. Waits for
+// `configReady` since a cold load can mount before boot config finishes.
+onMounted(() => {
   if (reviewSession.reviewBatchState.value) return;
-  if (route.query.mode === 'anytime') {
-    await reviewSession.onAnytimeReview();
-  } else {
-    await reviewSession.onReview();
-  }
+  watch(
+    configReady,
+    (ready) => {
+      if (!ready) return;
+      if (route.query.mode === 'anytime') {
+        void reviewSession.onAnytimeReview();
+      } else {
+        void reviewSession.onReview();
+      }
+    },
+    { immediate: true },
+  );
 });
 </script>
