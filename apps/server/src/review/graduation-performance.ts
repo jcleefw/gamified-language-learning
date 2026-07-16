@@ -1,10 +1,10 @@
-import type { WordState } from '@gll/srs-engine-v2';
-import type { GraduationPerformance } from '@gll/srs-review';
+import type { WordState } from '@gll/srs-engine-v2/learn';
+import type { GraduationPerformance } from '@gll/srs-engine-v2/review';
 
 /**
  * Learning WordState → Review seed input. Server-owned copy of the same mapping
  * used by cli-demo-db; parity is enforced by the PH04 golden-master test, not a
- * shared constant (behavioural glue has no clean library home — @gll/srs-review
+ * shared constant (behavioural glue has no clean library home — @gll/srs-engine-v2/review
  * never imports WordState by design).
  */
 export function toGraduationPerformance(ws: WordState): GraduationPerformance {

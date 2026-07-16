@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { initDb, schema, type ResolvedThresholds } from '@gll/db';
-import type { WordState } from '@gll/srs-engine-v2';
+import type { WordState } from '@gll/srs-engine-v2/learn';
 import type { ApiResponse } from '@gll/api-contract';
 import type { DebugTransitionsResponse } from '../routes/debug.js';
 

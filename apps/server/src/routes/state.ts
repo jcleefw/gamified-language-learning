@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { getDb, SqliteLearningStore } from '@gll/db';
 import { ErrorCode, type ApiResponse, type GetStateResponse, type UpsertWordStateRequest, type WordStatePayload } from '@gll/api-contract';
-import type { WordState } from '@gll/srs-engine-v2';
+import type { WordState } from '@gll/srs-engine-v2/learn';
 import { getCurrentUserId } from '../identity/current-user.js';
 
 const USER_ID = getCurrentUserId();

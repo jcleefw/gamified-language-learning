@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { getDb, closeDb, SqliteLearningStore, SqliteReviewStore } from '@gll/db';
-import { FsrsScheduler } from '@gll/srs-review';
+import { FsrsScheduler } from '@gll/srs-engine-v2/review';
 import { seedGraduatedReviewCards } from './seed-graduated-review-cards.js';
 import { CorrectAutoAnswerStrategy } from './auto-answer-strategy.js';
 import {
@@ -13,7 +13,7 @@ import {
 } from './db-query.js';
 import { runAdaptiveLoop } from './learning-io.js';
 import { AUTO_MODE, LEARNING_CONFIG, STREAK_THRESHOLDS } from './config.js';
-import { DEFAULT_SHELVING_CONFIG } from '@gll/srs-shelving';
+import { DEFAULT_SHELVING_CONFIG } from '@gll/srs-engine-v2/shelving';
 import type { DbClient } from './db-tools.js';
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

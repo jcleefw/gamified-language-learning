@@ -1,4 +1,4 @@
-import type { MCQQuestion } from '@gll/srs-engine-v2';
+import type { MCQQuestion } from '@gll/srs-engine-v2/learn';
 
 export interface AutoAnswerStrategy {
   selectAnswer(question: MCQQuestion): number;

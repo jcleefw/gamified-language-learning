@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { WordState } from '@gll/srs-engine-v2';
+import type { WordState } from '@gll/srs-engine-v2/learn';
 import { toGraduationPerformance } from '../graduation-performance.js';
 
 function makeWordState(overrides: Partial<WordState> = {}): WordState {

@@ -4,7 +4,7 @@ import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type BetterSqlite3 from 'better-sqlite3';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { schema, initDb, SqliteReviewStore } from '@gll/db';
-import { FsrsScheduler } from '@gll/srs-review';
+import { FsrsScheduler } from '@gll/srs-engine-v2/review';
 import { seedMockReviews } from '../seed-mock-reviews.js';
 
 const WORD_IDS = ['word:a', 'word:b', 'word:c'];

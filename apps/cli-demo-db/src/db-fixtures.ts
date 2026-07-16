@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { schema } from '@gll/db';
-import type { WordState } from '@gll/srs-engine-v2';
+import type { WordState } from '@gll/srs-engine-v2/learn';
 
 type DbClient = BetterSQLite3Database<typeof schema>;
 

@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { asc } from 'drizzle-orm';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { initDb, schema, SqliteReviewStore } from '@gll/db';
-import { FsrsScheduler, type ReviewCard } from '@gll/srs-review';
+import { FsrsScheduler, type ReviewCard } from '@gll/srs-engine-v2/review';
 import type {
   AnytimeReviewsResponse,
   ApiResponse,
