@@ -313,7 +313,33 @@ w3 and sent re-serve in the same batch (up to `maxRetryPerWord` and `maxRetryPer
 - Shelved sentences do not re-queue, even if wrong answers remain
 - Spacing rule: sentence not served in back-to-back batches (`lastBatchSeen` checked against current `batchNum`)
 
-After sentence retires (`sentenceStreak >= 3`), it moves to FSRS review scheduling (future EP).
+After sentence retires (`sentenceStreak >= 3`), it moves to FSRS review scheduling — see [Batch N: Shelving and Review](#batch-n-shelving-and-review) below.
+
+---
+
+## Batch N: Shelving and Review
+
+**Shelving — a word gets stuck.** Suppose w4 (not in the original 3-word deck; imagine a longer session) has been wrong for 3 consecutive batches with no mastery progress — the host's `stagnationBatchWindow` default. The host, not the engine, decides w4 is stagnant and calls into `@gll/srs-engine-v2/shelving`:
+
+```ts
+evaluateShelving(['th::w4'], currentlyShelved, DEFAULT_SHELVING_CONFIG)
+// currentlyShelved is empty, maxShelved is 2 → 2 slots available
+// → { toShelve: ['th::w4'], toUnshelve: [] }
+```
+
+The host removes `th::w4` from `active`, and it stops being served — the practice session keeps moving with the words that remain. `runState` for w4 is untouched; it isn't retired, just parked. A later session start calls `unshelveAll()`, and the host merges the previously-shelved IDs back into that session's initial `active`/`queue` split — w4 gets another shot, without carrying the shelving decision itself.
+
+**Review — w1 graduates from Learning.** Back in the main walkthrough, w1 reached `mastery: 5` in Batch 5 and retired from `active`. That's where Learning's job for w1 ends and Review's begins. The host derives a `GraduationPerformance` snapshot from w1's final `WordState` and hands it to `@gll/srs-engine-v2/review`:
+
+```ts
+const performance: GraduationPerformance = { correctStreak: 6, lapses: 0, correctRatio: 1.0 };
+const scheduler = new FsrsScheduler();
+const card = scheduler.seed('th::หิว', performance, new Date());
+// lapses === 0 && correctStreak >= 4 (EASY_STREAK) → seeded as 'easy'
+// → { wordId: 'th::หิว', due: <a few days out>, schedulerData: <ts-fsrs Card> }
+```
+
+The host persists `card` (its `schedulerData` is opaque — never inspected outside `FsrsScheduler`) and later, when `isDue(card, now)` is true, presents w1 for review. Whatever the learner does on that review maps to an inferred `ReviewRating`, and `scheduler.schedule(card, rating, now)` returns the next `ReviewCard` with a new `due` date — further out on a good answer, pulled back in on `again`. None of this touches `active`/`queue`/`RunState` — Review runs on its own persisted `ReviewCard`, entirely decoupled from the Learning session that produced it.
 
 ---
 
@@ -368,7 +394,7 @@ Without this reset, a word that struggled early in a long session would stay ret
 - **No state crossover**: a sentence answer never changes `WordState`; word answers never change `SentenceRunState`
 - **Shelving**: sentence marked `active=false` if it accumulates 3 wrong answers in a session, or 3 correct answers (exits)
 - **Spacing**: a sentence cannot appear in back-to-back batches (`batchNum - lastBatchSeen` must be ≥ 1)
-- **Retirement**: after correct streak reaches threshold (default: 3), the sentence moves to FSRS review (future)
+- **Retirement**: after correct streak reaches threshold (default: 3), the sentence moves to FSRS review (`src/review/`)
 
 ### Terminal condition
 
