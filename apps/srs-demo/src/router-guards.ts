@@ -86,7 +86,9 @@ export function registerNavigationGuard(router: Router): void {
     // Curation navigation is intentionally unguarded (no confirm/flush/finalize).
     if (CURATION_NAMES.includes(to.name as string)) return true
 
-    const { session: learning, apiError } = getLearningSession()
+    const registered = getLearningSession()
+    if (!registered) return true
+    const { session: learning, apiError } = registered
     const recorder = useDebugRecording()
 
     const targetPhase = targetPhaseOf(to.name)

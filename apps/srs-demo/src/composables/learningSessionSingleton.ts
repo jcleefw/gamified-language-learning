@@ -18,12 +18,13 @@ export function setLearningSession(b: LearningSessionBundle): void {
   bundle = b;
 }
 
-export function getLearningSession(): LearningSessionBundle {
-  if (!bundle) {
-    throw new Error(
-      'getLearningSession() called before App.vue registered an instance via setLearningSession()',
-    );
-  }
+/**
+ * The registered learning session bundle, if one has been set.
+ *
+ * @returns {LearningSessionBundle | null} The bundle, or `null` if
+ *   `setLearningSession()` hasn't run yet.
+ */
+export function getLearningSession(): LearningSessionBundle | null {
   return bundle;
 }
 
