@@ -23,10 +23,8 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
 MATCH="$(git -C "$ROOT" log --all --grep="compact ${EP_NUMBER}" --format='%H %s%n%b' -- 2>/dev/null || true)"
 
-echo $MATCH
-
 if [[ -z "$MATCH" ]]; then
-  echo "no match"
+  echo "undetermined"
   exit 0
 fi
 

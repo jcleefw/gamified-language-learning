@@ -8,16 +8,6 @@ fixes: EP##                          # the sealed epic/story this CORRECTS — u
 
 # <Short title of the loose work>
 
-<!--
-  A cross-cutting late-work item for a SEALED (merged) epic — see _loose/README.md.
-  Completed epics are immutable (D9): this entry REFERENCES the sealed epic, never
-  reopens or mutates it. At this item's own merge, `archive-epic` turns it into a
-  domain-keyed archive story (epic: null if it belongs to no epic) that references
-  the sealed epic via `supersedes`/`fixes`, then `git rm`s this file.
-
-  Keep it lean — verbs, current state. No file:line, no acceptance criteria.
--->
-
 ## What / Why
 
 - {What was changed and why — the essence that will become the archive `summary`.}

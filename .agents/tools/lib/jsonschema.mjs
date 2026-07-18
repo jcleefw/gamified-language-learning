@@ -1,11 +1,7 @@
 // .agents/tools/lib/jsonschema.mjs
-// Zero-dependency validator for the JSON-Schema subset used by the archive schema.
-// Provider-neutral: no npm deps (ajv et al.), so `.agents/` tooling stays self-contained.
-//
-// Supported keywords: $ref (local #/$defs/...), type (string | array of types),
-// required, properties, additionalProperties (false | schema), items, enum,
-// pattern, minLength, minimum. Anything outside this subset is ignored — keep
-// schema.json within it.
+// Zero-dependency validator for a JSON-Schema subset: $ref, type, required,
+// properties, additionalProperties, items, enum, pattern, minLength, minimum.
+// Anything outside this subset is ignored — keep schema.json within it.
 //
 // Usage (library):
 //   import { validate } from './lib/jsonschema.mjs'

@@ -1,7 +1,6 @@
 // .agents/tools/lib/archive-check.mjs
-// Implementation behind archive-check.sh. Enforces the cross-axis invariants that
-// keep the time archive and the domain KNOWLEDGE.md docs consistent (Two-Axis
-// D5/D9/D10). Runs on demand — no schedule (D10). Zero npm deps.
+// Implementation behind archive-check.sh. Enforces cross-axis invariants.
+// Zero npm deps.
 //
 // Invariants:
 //   1. index.json validates against schema.json.
