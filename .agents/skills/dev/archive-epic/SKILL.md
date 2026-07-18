@@ -34,9 +34,17 @@ Routing (paths→units), append+validate, and integrity are `domains-from-diff.s
   `--require-verified`, first confirm the epic's UAT/verification is clear and stop
   if not (D10, optional gate).
 
+## Before compacting, run the following
+1. **Backfill `compact_pr`.** scan the archive for stories with `compact_pr: null` and resolve each affected
+   epic via the `product/compact-pr-finder` skill (`.agents/tools/backfill-compact-pr-info.sh
+   <EP_NUMBER>`). This is a best-effort pass over whatever epics are currently
+   resolvable — it does not need to include this epic (its own compact commit
+   hasn't happened yet).
+
+
 ## Procedure — project track (`EP##`)
 
-1. **Guard.** Confirm you are on `main` and the epic's PR is merged. If not, stop.
+1. **Guard.** Confirm you are on `main` and the epic's PR is merged. If not, stop. unless told to violate.
 2. **Find the units.** Run against the epic's merge range:
    `.agents/tools/domains-from-diff.sh <epic-first-commit>^ <epic-merge-commit>`
    → the workspace units touched. `<non-workspace>` paths (root config, docs) have
@@ -66,12 +74,6 @@ Routing (paths→units), append+validate, and integrity are `domains-from-diff.s
      `{title, domains[], archived, notes?}`.
    - Commit the record: `git add index.json {unit}/KNOWLEDGE.md` then
      `git commit -m "docs(archive): record EP## — <title>"`.
-4. **BACKFILL prior `compact_pr` (AGN05 enhancement):** Before compacting, scan the
-   archive for stories with `compact_pr: null`, extract the merge PR number for this
-   epic (from `git log`'s merge commit message if squash-merged), and backfill all
-   prior orphaned stories:
-   `.agents/tools/archive-backfill-compact.sh <this-epic-pr-number>`
-   This records the epoch boundary when older work left active tracking.
 5. **COMPACT (self-contained commit — D10 as amended):** in a **separate** commit
    that contains *nothing but the deletion*, remove the rolled-up folder:
    `git rm -r .agents/changelogs/EP##--*/` then

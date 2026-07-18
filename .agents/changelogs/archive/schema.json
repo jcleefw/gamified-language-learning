@@ -24,7 +24,7 @@
       "additionalProperties": false,
       "required": [
         "id", "epic", "track", "title", "domain", "concern",
-        "completed", "duration", "summary", "supersedes", "fixes", "pr"
+        "completed", "duration", "summary", "supersedes", "fixes", "pr", "compact_pr"
       ],
       "properties": {
         "id": {
@@ -81,6 +81,11 @@
         "pr": {
           "type": ["integer", "null"],
           "description": "Provenance PR number — stable across squash-merge (D4). NEVER a commit SHA. Null only for agentic work with no PR (D11).",
+          "minimum": 1
+        },
+        "compact_pr": {
+          "type": ["integer", "null"],
+          "description": "PR number of the commit that compacted (deleted) this story's changelog folder — i.e. this story's OWN epic's compact commit, never the PR of whichever epic is being archived when the lookup runs (AGN05 enhancement). Null until that epic's compact commit is identified and its PR resolved.",
           "minimum": 1
         }
       }
