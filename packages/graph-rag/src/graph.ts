@@ -87,8 +87,6 @@ export class ProjectGraph {
 
   private _countByType(): Record<NodeType, number> {
     const counts: Record<NodeType, number> = {
-      story: 0,
-      epic: 0,
       domain: 0,
       concern: 0,
     };

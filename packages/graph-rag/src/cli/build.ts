@@ -23,7 +23,7 @@ function main(): void {
   const configuredRoot = rootArg ?? config.root ?? '.';
   const root = isAbsolute(configuredRoot) ? configuredRoot : join(repoRoot, configuredRoot);
 
-  console.log('🚀 Building two-axis knowledge graph');
+  console.log('🚀 Building concern-centric knowledge graph');
   console.log(`   Focus: ${config.focus.title}`);
   console.log(`   Root:  ${root}`);
   if (config.filter.tracks) console.log(`   Tracks: ${config.filter.tracks.join(', ')}`);

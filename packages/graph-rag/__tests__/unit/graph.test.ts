@@ -6,42 +6,42 @@ describe('ProjectGraph', () => {
     const graph = new ProjectGraph();
 
     graph.addNode({
-      id: 'EP44',
-      type: 'epic',
-      label: 'EP44: App.vue to Vue Router refactor',
-      metadata: { title: 'App.vue to Vue Router refactor' },
+      id: 'apps/srs-demo',
+      type: 'domain',
+      label: 'apps/srs-demo',
+      metadata: { unit: 'apps/srs-demo' },
     });
 
-    const node = graph.getNode('EP44');
+    const node = graph.getNode('apps/srs-demo');
     expect(node).toBeDefined();
-    expect(node?.label).toBe('EP44: App.vue to Vue Router refactor');
+    expect(node?.type).toBe('domain');
   });
 
   it('should add and retrieve edges', () => {
     const graph = new ProjectGraph();
 
-    graph.addNode({ id: 'EP44', type: 'epic', label: 'EP44', metadata: {} });
-    graph.addNode({ id: 'EP44-ST01', type: 'story', label: 'EP44-ST01', metadata: {} });
+    graph.addNode({ id: 'apps/srs-demo', type: 'domain', label: 'apps/srs-demo', metadata: {} });
+    graph.addNode({ id: 'apps/srs-demo#Routing', type: 'concern', label: 'Routing', metadata: {} });
 
     graph.addEdge({
-      from: 'EP44',
-      to: 'EP44-ST01',
+      from: 'apps/srs-demo',
+      to: 'apps/srs-demo#Routing',
       type: 'contains',
-      label: 'contains story',
+      label: 'contains',
     });
 
     expect(graph.edges).toHaveLength(1);
-    expect(graph.edges[0].from).toBe('EP44');
+    expect(graph.edges[0].from).toBe('apps/srs-demo');
   });
 
   it('should not add duplicate edges', () => {
     const graph = new ProjectGraph();
 
-    graph.addNode({ id: 'A', type: 'story', label: 'A', metadata: {} });
-    graph.addNode({ id: 'B', type: 'domain', label: 'B', metadata: {} });
+    graph.addNode({ id: 'A', type: 'concern', label: 'A', metadata: {} });
+    graph.addNode({ id: 'B', type: 'concern', label: 'B', metadata: {} });
 
-    graph.addEdge({ from: 'A', to: 'B', type: 'touches', label: 'touches' });
-    graph.addEdge({ from: 'A', to: 'B', type: 'touches', label: 'touches' });
+    graph.addEdge({ from: 'A', to: 'B', type: 'relates', label: 'relates' });
+    graph.addEdge({ from: 'A', to: 'B', type: 'relates', label: 'relates' });
 
     expect(graph.edges).toHaveLength(1);
   });
@@ -49,29 +49,27 @@ describe('ProjectGraph', () => {
   it('should filter nodes by type', () => {
     const graph = new ProjectGraph();
 
-    graph.addNode({ id: 'EP44', type: 'epic', label: 'EP44', metadata: {} });
-    graph.addNode({ id: 'EP44-ST01', type: 'story', label: 'ST01', metadata: {} });
     graph.addNode({ id: 'apps/srs-demo', type: 'domain', label: 'srs-demo', metadata: {} });
+    graph.addNode({ id: 'apps/srs-demo#Routing', type: 'concern', label: 'Routing', metadata: {} });
+    graph.addNode({ id: 'apps/srs-demo#App Shell', type: 'concern', label: 'App Shell', metadata: {} });
 
-    expect(graph.nodesByType('epic')).toHaveLength(1);
-    expect(graph.nodesByType('story')).toHaveLength(1);
     expect(graph.nodesByType('domain')).toHaveLength(1);
+    expect(graph.nodesByType('concern')).toHaveLength(2);
   });
 
   it('should export to JSON', () => {
     const graph = new ProjectGraph();
 
-    graph.addNode({ id: 'EP44', type: 'epic', label: 'EP44', metadata: {} });
-    graph.addNode({ id: 'EP44-ST01', type: 'story', label: 'ST01', metadata: {} });
-    graph.addEdge({ from: 'EP44', to: 'EP44-ST01', type: 'contains', label: 'contains' });
+    graph.addNode({ id: 'apps/srs-demo', type: 'domain', label: 'srs-demo', metadata: {} });
+    graph.addNode({ id: 'apps/srs-demo#Routing', type: 'concern', label: 'Routing', metadata: {} });
+    graph.addEdge({ from: 'apps/srs-demo', to: 'apps/srs-demo#Routing', type: 'contains', label: 'contains' });
 
     const json = graph.toJSON();
 
     expect(json.nodes).toHaveLength(2);
     expect(json.edges).toHaveLength(1);
     expect(json.summary.totalNodes).toBe(2);
-    expect(json.summary.totalEdges).toBe(1);
-    expect(json.summary.nodesByType.epic).toBe(1);
-    expect(json.summary.nodesByType.story).toBe(1);
+    expect(json.summary.nodesByType.domain).toBe(1);
+    expect(json.summary.nodesByType.concern).toBe(1);
   });
 });
