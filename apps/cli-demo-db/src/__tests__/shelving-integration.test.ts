@@ -5,8 +5,8 @@ import { initDb, schema, SqliteLearningStore } from '@gll/db';
 import { runAdaptiveLoop } from '../learning-io.js';
 import { StagnationAutoAnswerStrategy, CorrectAutoAnswerStrategy } from '../auto-answer-strategy.js';
 import { LEARNING_CONFIG, STREAK_THRESHOLDS } from '../config.js';
-import { DEFAULT_SHELVING_CONFIG, type ShelvingConfig } from '@gll/srs-engine-v2/shelving';
-import type { QuizItem } from '@gll/srs-engine-v2/learn';
+import { DEFAULT_SHELVING_CONFIG, type ShelvingConfig } from '@gll/srs-engine/shelving';
+import type { QuizItem } from '@gll/srs-engine/learn';
 
 // Suppress console.log per test except for debug/test logs
 beforeEach(() => {

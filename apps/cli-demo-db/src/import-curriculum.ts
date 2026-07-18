@@ -49,7 +49,7 @@ type DbClient = BetterSQLite3Database<typeof schema>;
 function loadConversations(): Conversation[] {
   const p = path.join(
     REPO_ROOT,
-    'packages/srs-engine-v2/data/samples/conversations-2026-03-08.json',
+    'packages/srs-engine/data/samples/conversations-2026-03-08.json',
   );
   return JSON.parse(readFileSync(p, 'utf-8')) as Conversation[];
 }
@@ -57,7 +57,7 @@ function loadConversations(): Conversation[] {
 async function loadFoundationalWords(): Promise<FoundationalEntry[]> {
   const p = path.join(
     REPO_ROOT,
-    'packages/srs-engine-v2/data/seed-data/thai-full-foundations.ts',
+    'packages/srs-engine/data/seed-data/thai-full-foundations.ts',
   );
   // Dynamic import works under tsx (CLI) and vite (tests)
   const mod = await import(p);
