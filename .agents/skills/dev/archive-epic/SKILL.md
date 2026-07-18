@@ -34,13 +34,18 @@ Routing (paths→units), append+validate, and integrity are `domains-from-diff.s
   `--require-verified`, first confirm the epic's UAT/verification is clear and stop
   if not (D10, optional gate).
 
-## Before compacting, run the following
-1. **Backfill `compact_pr`.** scan the archive for stories with `compact_pr: null` and resolve each affected
-   epic via the `product/compact-pr-finder` skill (`.agents/tools/backfill-compact-pr-info.sh
-   <EP_NUMBER>`). This is a best-effort pass over whatever epics are currently
-   resolvable — it does not need to include this epic (its own compact commit
-   hasn't happened yet).
-
+## Before compacting, run the following (important!!)
+1. **Scan archive for backfill candidates.** Read `.agents/changelogs/archive/index.json` and identify
+   all stories with `compact_pr: null`. Group by epic to find which *previous* epics need their
+   compact PR filled. (Not the epic you are archiving now — its compact_pr will be filled by a
+   future archival. This is only for epics already rolled up into the archive.)
+2. **Find matching PR for `compact_pr`.** For each epic found in step 1, run
+   `.agents/tools/backfill-compact-pr-info.sh <EP_NUMBER>` to resolve the PR number of the commit
+   that compacted that epic's folder. This is a best-effort pass — returns `undetermined` if no
+   merge-commit PR number is found.
+3. **Stop and report.** Tell user which epics were identified for backfill and their results before
+   proceeding to archive the current epic.
+4. **Backfill `compact_pr` for identified epics.** with results from step 2 , update the identified stories in step 1 in `.agents/changelogs/archive/index.json` with the pr number.
 
 ## Procedure — project track (`EP##`)
 
@@ -57,13 +62,16 @@ Routing (paths→units), append+validate, and integrity are `domains-from-diff.s
        The `summary` is what was *done* (past tense); no `file:line`, no code — git
        holds the detail (Compaction D5/D6).
      - **[JUDGMENT 2 — nouns]** For its touched unit(s), maintain
-       `{unit}/KNOWLEDGE.md` to **current state, by area** (D5 as amended):
-       *append* a new area section, *add* a claim to an existing area, *edit* a
-       changed claim, or *delete* a claim that is no longer true. **Never regenerate
-       the whole file** and **never add a "superseded" section** — retired knowledge
-       lives in git + the archive. Update the `sources` frontmatter (add the ids
-       whose claims are now present; drop any whose claims you removed) and `updated`.
-       Provenance stays in frontmatter, never inline in the prose (D5, D7).
+       `{unit}/KNOWLEDGE.md` to **current state, by area** (D5 as amended).
+       **MUST READ** `RULES.md §KNOWLEDGE.md Maintenance` before editing.
+       
+       Rules summary: *append* a new area section (never regenerate), *add* a claim
+       to an existing area, *edit* a changed claim, or *delete* a claim no longer
+       true. **Never add a "superseded" section** — retired knowledge lives in git
+       + the archive. Update the `sources` frontmatter (add ids whose claims are
+       present; drop any whose claims you removed) and `updated`. Provenance stays
+       in frontmatter, never inline (D5, D7).
+       
        Start from `.agents/plans/templates/KNOWLEDGE-TEMPLATE.md` if the unit has none.
    - **Fix routing (D5):** *every* fix reaches the archive. A fix reaches
      `KNOWLEDGE.md` **only if it changes current state**. A conformance fix (code
