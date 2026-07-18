@@ -199,3 +199,23 @@ Verified: `graph:build` on the fixture → **15 nodes / 14 edges**
 
 Not done (as scoped out): backfill, `archive-check` validator, embeddings/UI/API, and the
 end-to-end LLM `query()` path (needs a key). Nothing is committed — git is the user's to run.
+
+## Post-retrofit pivot (2026-07-19) — concern-centric model
+
+After reviewing the built graph (8 story + 2 epic nodes out of 15 — the picture was
+dominated by *work items*, not *knowledge*), the PO decided the graph should portray
+**concerns**, not stories/epics. The model was rebuilt:
+
+- **Nodes are now `domain` + `concern` only.** Story and epic nodes are gone.
+- **Stories/epics survive as provenance metadata** on each concern
+  (`sources`/`epics`/`prs`), so "what produced this?" still answers — the work is a
+  citation, never the skeleton.
+- **`archive.ts` produces no nodes** — it builds a provenance index keyed by
+  (domain, concern). **`knowledge.ts`** owns all nodes: `domain --contains--> concern`,
+  concern `content` = the prose under each `##` heading, plus cross-domain
+  `concern --relates--> concern` edges for concerns co-produced by one epic.
+- A local **`graph:ui`** explorer (force-graph + Ollama-backed chat) was added.
+
+EP44 fixture now builds **5 nodes / 5 edges** (`domain(2) concern(3)`), typecheck +
+18 tests green. This revises ADR D7 (story/epic as timeline nodes) — **recorded in
+the D7 amendment (2026-07-19)** of the Two-Axis Knowledge Architecture ADR.
