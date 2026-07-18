@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 # .agents/tools/archive-check.sh
-# Integrity guard for the two-axis knowledge architecture. Enforces the cross-axis
-# invariants (Two-Axis D5/D9/D10) on demand — there is no schedule (this project
-# has no milestone concept, D10). Run it after a rollup, in CI, or by hand.
+# Validates archive integrity: ensures index.json matches schema, all knowledge
+# references resolve to valid archived stories, and cleanup invariants hold.
 #
 # Invariants enforced:
 #   1. index.json validates against schema.json.
-#   2. Every `sources` id in any KNOWLEDGE.md resolves to an archive epic/story (D5).
-#   3. No archived epic keeps a live changelogs/<EP##>--*/ folder (D10);
-#      no archived AGN## keeps a live plans/AGN##-*.md plan (D11).
-#   4. No _loose/ entry lacks a `domain` + a `fixes`/`relates` reference (D9).
+#   2. Every `sources` id in any KNOWLEDGE.md resolves to an archived epic/story.
+#   3. No archived epic retains a live changelogs/<EP##>--*/ folder;
+#      no archived AGN## retains a live plans/AGN##-*.md plan.
+#   4. Every _loose/ entry has both a `domain` and a `fixes`/`relates` reference.
 #
 # Usage:
 #   archive-check.sh                 # check the repo (root = git toplevel)
