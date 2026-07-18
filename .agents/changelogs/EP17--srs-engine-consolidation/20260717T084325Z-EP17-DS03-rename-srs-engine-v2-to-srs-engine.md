@@ -1,7 +1,7 @@
-# EP17-DS03: Rename `@gll/srs-engine-v2` → `@gll/srs-engine` Specification
+# EP17-DS03: Rename `@gll/srs-engine-v2` → `@gll/srs-engine` Specification *(Done)*
 
 **Date**: 20260717T084325Z
-**Status**: Draft
+**Status**: Completed
 **Epic**: [EP17 - SRS Engine Consolidation](../../plans/epics/EP17-srs-engine-consolidation.md)
 
 ---
@@ -66,17 +66,17 @@ Analysis performed against the current (pre-merge) repo state; the same consumer
 **Scope**: Repo-wide rename of the package name, directory, and every consumer's `package.json` dependency + import path, done only after the merge, sub-path exports, and consumer migration are fully verified working under the old name.
 **Read List**: `packages/srs-engine-v2/package.json`, root `package.json` (workspaces), the 74 files enumerated in §5 (grep for `srs-engine-v2` at the start of the story to get a live, current-state list rather than relying on this DS's snapshot)
 **Tasks**:
-- [ ] `git mv packages/srs-engine-v2 packages/srs-engine`
-- [ ] Update `packages/srs-engine/package.json` `name` field to `@gll/srs-engine`
-- [ ] Update every consumer `package.json` dependency entry (server, srs-demo, cli-demo-db, db)
-- [ ] Update every import specifier across consumer source (bare `@gll/srs-engine-v2` and sub-paths `/learn`, `/shelving`, `/review`, `/data/mock/*`) to `@gll/srs-engine`
-- [ ] Update root-level references: `package.json`, `CODEMAP.md`, `AGENT.md`, `eslint.config.ts`
-- [ ] Re-run install to regenerate the lockfile / workspace graph
+- [x] `git mv packages/srs-engine-v2 packages/srs-engine`
+- [x] Update `packages/srs-engine/package.json` `name` field to `@gll/srs-engine`
+- [x] Update every consumer `package.json` dependency entry (server, srs-demo, cli-demo-db, db)
+- [x] Update every import specifier across consumer source (bare `@gll/srs-engine-v2` and sub-paths `/learn`, `/shelving`, `/review`, `/data/mock/*`) to `@gll/srs-engine`
+- [x] Update root-level references: `package.json`, `CODEMAP.md`, `AGENT.md`, `eslint.config.ts`
+- [x] Re-run install to regenerate the lockfile / workspace graph
 
 **Acceptance Criteria**:
-- [ ] `grep -r "srs-engine-v2"` across `packages/`, `apps/`, and root-level files returns no hits
-- [ ] Full repo `typecheck` and `test` pass
-- [ ] No behaviour change: FSRS scheduling, shelving policy, and rating inference are bit-for-bit unchanged
+- [x] `grep -r "srs-engine-v2"` across `packages/`, `apps/`, and root-level files returns no hits
+- [x] Full repo `typecheck` and `test` pass
+- [x] No behaviour change: FSRS scheduling, shelving policy, and rating inference are bit-for-bit unchanged
 
 ## 7. Success Criteria
 

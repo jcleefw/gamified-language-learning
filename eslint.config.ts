@@ -8,7 +8,7 @@ export default tseslint.config(
       '**/.nuxt/**',
       '.worktrees/**',
       '**/data/**',
-      'packages/srs-engine-v2/src/runner/interactive.ts',
+      'packages/srs-engine/src/runner/interactive.ts',
       '**/drizzle.config.ts',
       '**/vitest.config.ts',
       '**/playwright.config.ts',

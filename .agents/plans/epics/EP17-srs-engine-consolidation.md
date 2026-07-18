@@ -1,11 +1,11 @@
 # EP17 - SRS Engine Consolidation
 
 **Created**: 20260717T082916Z
-**Status**: Accepted
+**Status**: Completed
 
 <!-- Status: Draft | Accepted | In Progress | Impl-Complete | BDD Pending | Completed | Shelved | Withdrawn -->
 
-**Type**: Epic Plan
+**Type**: Epic Plan *(Done)*
 **Depends on**: EP20 (`srs-engine-v2` core), EP26 (`srs-shelving`), EP36 (`srs-review`)
 **Parallel with**: N/A
 **Predecessor**: N/A — this is a packaging/scope consolidation of three existing shipped packages, not a rebuild of any of them
@@ -83,12 +83,12 @@ The word lifecycle — learn, shelve when stuck, graduate, schedule for long-ter
 
 ## Overall Acceptance Criteria
 
-- [ ] `docs/02-concepts.md` and `docs/03-walkthrough.md` cover Learning, Shelving, and Review
-- [ ] `srs-review` and `srs-shelving` logic lives inside the engine package; both standalone packages are deleted
-- [ ] Consumers import only the phase sub-paths they use (`apps/srs-demo` never imports `/review`)
-- [ ] All existing tests (engine, demo, server, cli-demo-db, db) pass after migration
-- [ ] Package is renamed to `@gll/srs-engine` repo-wide, with no lingering `srs-engine-v2` references
-- [ ] No change in behaviour: FSRS scheduling, shelving policy, and rating inference are bit-for-bit unchanged
+- [x] `docs/02-concepts.md` and `docs/03-walkthrough.md` cover Learning, Shelving, and Review
+- [x] `srs-review` and `srs-shelving` logic lives inside the engine package; both standalone packages are deleted
+- [x] Consumers import only the phase sub-paths they use (`apps/srs-demo` never imports `/review`)
+- [x] All existing tests (engine, demo, server, cli-demo-db, db) pass after migration
+- [x] Package is renamed to `@gll/srs-engine` repo-wide, with no lingering `srs-engine-v2` references
+- [x] No change in behaviour: FSRS scheduling, shelving policy, and rating inference are bit-for-bit unchanged
 
 ---
 
