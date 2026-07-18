@@ -1,0 +1,7 @@
+# Generated graph data
+.graph-data.json
+.graph-data-focused.json
+
+# Backups
+*.bak
+.graph-data.backup-*.json
