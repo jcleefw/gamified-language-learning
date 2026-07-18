@@ -1,9 +1,9 @@
-# srs-engine-v2 Demo
+# srs-engine Demo
 
 ## Running the demo
 
 ```bash
-pnpm --filter @gll/srs-engine-v2 exec tsx demo/learning-runner.ts
+pnpm --filter @gll/srs-engine exec tsx demo/learning-runner.ts
 ```
 
 To change configuration, edit `demo/config.ts`.

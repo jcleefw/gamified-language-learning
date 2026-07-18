@@ -162,7 +162,7 @@ Repeat until active.length === 0 && queue.length === 0
 
 ## Shelving: the stagnation relief valve
 
-Shelving lives in `src/shelving/` (`@gll/srs-engine-v2/shelving`), independent of the Learning types above — `evaluateShelving` takes primitive `stagnantWordIds`/`currentlyShelved`/`config`, never a `RunState` or `WordState`. Detecting *which* words are stagnant is the host's job (e.g. "no mastery progress for `stagnationBatchWindow` consecutive batches"); the module only decides what to do once candidates are handed to it.
+Shelving lives in `src/shelving/` (`@gll/srs-engine/shelving`), independent of the Learning types above — `evaluateShelving` takes primitive `stagnantWordIds`/`currentlyShelved`/`config`, never a `RunState` or `WordState`. Detecting *which* words are stagnant is the host's job (e.g. "no mastery progress for `stagnationBatchWindow` consecutive batches"); the module only decides what to do once candidates are handed to it.
 
 ```ts
 evaluateShelving(stagnantWordIds: string[], currentlyShelved: Set<string>, config: ShelvingConfig): ShelvingDecision
@@ -177,7 +177,7 @@ evaluateShelving(stagnantWordIds: string[], currentlyShelved: Set<string>, confi
 
 ## Review: long-term scheduling with FSRS
 
-Once a word masters, it graduates out of Learning into Review — long-term spaced repetition, distinct from the streak/mastery cycle above. This lives in `src/review/` (`@gll/srs-engine-v2/review`) and is intentionally **server-only**: `apps/srs-demo` never imports it (ADR D3) — only `apps/server` schedules and serves due reviews.
+Once a word masters, it graduates out of Learning into Review — long-term spaced repetition, distinct from the streak/mastery cycle above. This lives in `src/review/` (`@gll/srs-engine/review`) and is intentionally **server-only**: `apps/srs-demo` never imports it (ADR D3) — only `apps/server` schedules and serves due reviews.
 
 The module is built around one contract, `ReviewScheduler`, with `FsrsScheduler` (wrapping `ts-fsrs`) as its only implementation:
 

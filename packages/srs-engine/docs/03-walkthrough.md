@@ -319,7 +319,7 @@ After sentence retires (`sentenceStreak >= 3`), it moves to FSRS review scheduli
 
 ## Batch N: Shelving and Review
 
-**Shelving — a word gets stuck.** Suppose w4 (not in the original 3-word deck; imagine a longer session) has been wrong for 3 consecutive batches with no mastery progress — the host's `stagnationBatchWindow` default. The host, not the engine, decides w4 is stagnant and calls into `@gll/srs-engine-v2/shelving`:
+**Shelving — a word gets stuck.** Suppose w4 (not in the original 3-word deck; imagine a longer session) has been wrong for 3 consecutive batches with no mastery progress — the host's `stagnationBatchWindow` default. The host, not the engine, decides w4 is stagnant and calls into `@gll/srs-engine/shelving`:
 
 ```ts
 evaluateShelving(['th::w4'], currentlyShelved, DEFAULT_SHELVING_CONFIG)
@@ -329,7 +329,7 @@ evaluateShelving(['th::w4'], currentlyShelved, DEFAULT_SHELVING_CONFIG)
 
 The host removes `th::w4` from `active`, and it stops being served — the practice session keeps moving with the words that remain. `runState` for w4 is untouched; it isn't retired, just parked. A later session start calls `unshelveAll()`, and the host merges the previously-shelved IDs back into that session's initial `active`/`queue` split — w4 gets another shot, without carrying the shelving decision itself.
 
-**Review — w1 graduates from Learning.** Back in the main walkthrough, w1 reached `mastery: 5` in Batch 5 and retired from `active`. That's where Learning's job for w1 ends and Review's begins. The host derives a `GraduationPerformance` snapshot from w1's final `WordState` and hands it to `@gll/srs-engine-v2/review`:
+**Review — w1 graduates from Learning.** Back in the main walkthrough, w1 reached `mastery: 5` in Batch 5 and retired from `active`. That's where Learning's job for w1 ends and Review's begins. The host derives a `GraduationPerformance` snapshot from w1's final `WordState` and hands it to `@gll/srs-engine/review`:
 
 ```ts
 const performance: GraduationPerformance = { correctStreak: 6, lapses: 0, correctRatio: 1.0 };

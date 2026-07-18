@@ -1,4 +1,4 @@
-# @gll/srs-engine-v2
+# @gll/srs-engine
 
 The word lifecycle engine for a language-learning app: learning, shelving, and review. Pure TypeScript, no I/O, no side effects.
 
@@ -18,7 +18,7 @@ import {
   updateMasteryState,
   initAdaptiveSession,
   advanceAdaptiveSession,
-} from '@gll/srs-engine-v2';
+} from '@gll/srs-engine';
 ```
 
 All functions are pure: no I/O, no persistence, same inputs → same outputs.
@@ -37,7 +37,7 @@ Edit `demo/config.ts` to adjust settings or `demo/learning-runner.ts` to change 
 ```bash
 pnpm test                                    # all tests
 pnpm test:watch                              # watch mode
-pnpm --filter @gll/srs-engine-v2 test        # from repo root
+pnpm --filter @gll/srs-engine test        # from repo root
 ```
 
 ## Architecture
