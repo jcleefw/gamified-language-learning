@@ -1,21 +1,24 @@
 // ============================================================================
-// Types for Graph RAG — two-axis knowledge model
+// Types for Graph RAG — concern-centric knowledge model
 // ============================================================================
 //
-// Governed by the Two-Axis Knowledge Architecture ADR (D7). The graph is built
-// from exactly two artifacts:
-//   - Time axis:   .agents/changelogs/archive/index.json  -> story / epic nodes
-//   - Domain axis: {apps,packages}/<unit>/KNOWLEDGE.md     -> domain / concern nodes
+// The graph portrays KNOWLEDGE, not work. Its nodes are:
+//   - domain:  a workspace unit (apps/*, packages/*) — a grouping of concerns
+//   - concern: a named area of knowledge within a domain (a KNOWLEDGE.md heading),
+//              carrying the durable prose that describes how that area works
 //
-// An epic is ALWAYS an edge target (via `contains` / `sources` / `fixes`), never
-// a grouping node. Grouping is by workspace `domain`. There are no `file:` nodes:
-// the graph never duplicates what git already records (Compaction D6).
+// Stories and epics are NOT nodes. They are demoted to provenance metadata on
+// each concern (`sources` / `epics` / `prs`) so "which work produced this?" is
+// still answerable — the work is the citation, never the skeleton.
+//
+// NOTE: this deliberately revises the Two-Axis ADR's D7, which made story/epic
+// first-class timeline nodes. That axis dominated the picture with work items
+// instead of knowledge; here the time axis survives only as provenance. Recorded
+// in the D7 amendment (2026-07-19) of the Two-Axis Knowledge Architecture ADR.
 
 export type NodeType =
-  | 'story' // time axis — one completed unit of work
-  | 'epic' // time axis — a rollup of stories; only ever an edge target
-  | 'domain' // domain axis — a workspace unit (apps/*, packages/*)
-  | 'concern'; // domain axis — a named area within a domain (a KNOWLEDGE.md heading)
+  | 'domain' // a workspace unit — groups the concerns beneath it
+  | 'concern'; // a named area of knowledge within a domain (a KNOWLEDGE.md heading)
 
 export interface Node {
   id: string;
@@ -25,12 +28,8 @@ export interface Node {
 }
 
 export type EdgeType =
-  | 'contains' // epic -> story        (story.epic)
-  | 'touches' // story -> domain      (story.domain)
-  | 'about' // concern -> domain     (KNOWLEDGE.md heading scoping)
-  | 'sources' // domain -> story|epic  (KNOWLEDGE.md `sources` frontmatter — provenance)
-  | 'supersedes' // story -> story        (story.supersedes[])
-  | 'fixes'; // story -> epic|story   (story.fixes[])
+  | 'contains' // domain -> concern   (a domain groups its concerns)
+  | 'relates'; // concern -> concern  (two concerns co-evolved in the same epic)
 
 export interface Edge {
   from: string;

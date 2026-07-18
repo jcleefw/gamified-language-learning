@@ -46,17 +46,20 @@ export class QueryEngine {
 
     str += `RELEVANT NODES (for your query):\n`;
     context.relevantNodes.forEach((node) => {
+      const m = node.metadata ?? {};
       str += `- [${node.type.toUpperCase()}] ${node.label}\n`;
-      if (node.metadata?.summary) {
-        const summary = String(node.metadata.summary).substring(0, 200);
-        str += `  Summary: ${summary}${String(node.metadata.summary).length > 200 ? '...' : ''}\n`;
+      if (m.content) {
+        str += `  Knowledge:\n`;
+        String(m.content)
+          .split('\n')
+          .forEach((line) => (str += `    ${line}\n`));
       }
-      if (node.metadata?.notes) {
-        const notes = String(node.metadata.notes).substring(0, 200);
-        str += `  Notes: ${notes}${String(node.metadata.notes).length > 200 ? '...' : ''}\n`;
+      if (Array.isArray(m.sources) && m.sources.length) {
+        str += `  Produced by: ${m.sources.join(', ')}`;
+        if (Array.isArray(m.epics) && m.epics.length) str += ` (epic ${m.epics.join(', ')})`;
+        if (Array.isArray(m.prs) && m.prs.length) str += ` — PR ${m.prs.map((p) => `#${p}`).join(', ')}`;
+        str += `\n`;
       }
-      if (node.metadata?.domain) str += `  Domain: ${node.metadata.domain}\n`;
-      if (node.metadata?.pr) str += `  PR: #${node.metadata.pr}\n`;
     });
 
     str += `\nRELATIONSHIP SUBGRAPH (related nodes & edges):\n`;
@@ -86,14 +89,16 @@ export class QueryEngine {
     const context = this.getContext(question);
     const contextStr = this.contextToString(context);
 
-    const systemPrompt = `You are an expert in software project history and architecture.
-You have access to a two-axis knowledge graph of a language-learning platform:
-- a TIME axis of stories and epics (completed units of work), and
-- a DOMAIN axis of workspace units and the concerns within them.
-Provenance edges ('sources') connect a domain's current state back to the stories/epics that produced it.
-Answer questions about the project's development, architecture, and evolution from the graph context provided.
-Be specific: reference story/epic IDs, workspace domains, and PR numbers when available.
-Group your reasoning by domain, not by epic — an epic is a unit of work in time, not a unit of knowledge.`;
+    const systemPrompt = `You are an expert in a software project's architecture.
+You read a knowledge graph of a language-learning platform organized by KNOWLEDGE, not by work:
+- domain nodes are workspace units (apps/*, packages/*),
+- concern nodes are named areas of knowledge within a domain, each carrying the durable
+  description of how that area works.
+Each concern also records its provenance — the stories/epics/PRs that produced it — as
+metadata, so you can cite the work without treating it as the structure.
+Answer from the concern knowledge in the context. Be specific: name the domain and concern,
+quote what the knowledge says, and cite the producing story/epic IDs and PR numbers when asked
+"what produced this?". Do not organize your answer around epics — organize it around concerns.`;
 
     const userPrompt = `Based on the project graph below, answer this question:\n\n${question}\n\n---\n\n${contextStr}`;
 
@@ -132,11 +137,11 @@ Group your reasoning by domain, not by epic — an epic is a unit of work in tim
       const m = node.metadata ?? {};
       const parts = [
         node.label,
-        m.summary,
-        m.notes,
+        m.content, // the concern's durable knowledge prose
         m.concern,
-        m.domain,
-        Array.isArray(m.domains) ? m.domains.join(' ') : undefined,
+        m.unit,
+        Array.isArray(m.sources) ? m.sources.join(' ') : undefined, // provenance ids
+        Array.isArray(m.epics) ? m.epics.join(' ') : undefined,
       ];
       return parts.filter(Boolean).join(' ').toLowerCase();
     };
