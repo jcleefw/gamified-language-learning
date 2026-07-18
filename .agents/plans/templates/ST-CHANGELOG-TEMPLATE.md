@@ -3,6 +3,9 @@
 **Created**: {TIMESTAMP} <!-- Run .agents/tools/generate-timestamp.sh -->
 **Epic**: [EP## - {Epic Name}]({path})
 **Status**: Complete ✅
+**Track**: project <!-- project | agentic -->
+**Supersedes**: — <!-- archive/story id(s) this work replaces, or — -->
+
 
 ## Summary
 
