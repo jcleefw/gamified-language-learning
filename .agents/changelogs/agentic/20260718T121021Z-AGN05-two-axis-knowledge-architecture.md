@@ -2,7 +2,7 @@
 
 **Date**: 20260718T121021Z <!-- Run .agents/tools/generate-timestamp.sh -->
 **Type**: Tool | Skill | Template | Workflow | Rule
-**Status**: **Approved** (2026-07-18)
+**Status**: **Done** (2026-07-18)
 **Track**: agentic
 **Source ADRs**:
 - [DS Lifecycle Compaction](../../../../product-documentation/architecture/20260718T021231Z-agentic-ds-lifecycle-compaction.md)
