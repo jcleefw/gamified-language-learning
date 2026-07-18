@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gamified-language-learning/.agents/changelogs/archive/schema.json",
+  "title": "Two-Axis Knowledge Archive (time axis)",
+  "description": "The time axis of the two-axis knowledge architecture (Two-Axis ADR D4). Flat per-story array plus a small per-epic rollup. Verbs — what was done, when, how long — never a duplicate of git's content.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["stories", "epics"],
+  "properties": {
+    "stories": {
+      "type": "array",
+      "description": "Flat, primary. Filterable by domain without flattening; ordered by `completed` (D9).",
+      "items": { "$ref": "#/$defs/story" }
+    },
+    "epics": {
+      "type": "object",
+      "description": "Small rollup keyed by epic/work-unit id (EP## or AGN##) for lookup.",
+      "additionalProperties": { "$ref": "#/$defs/epic" }
+    }
+  },
+  "$defs": {
+    "story": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "epic", "track", "title", "domain", "concern",
+        "completed", "duration", "summary", "supersedes", "fixes", "pr"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Story/work-unit id, e.g. EP44-ST01 or AGN05.",
+          "pattern": "^(EP[0-9]+(-[A-Z]+[0-9]+)?|AGN[0-9]+)$"
+        },
+        "epic": {
+          "type": ["string", "null"],
+          "description": "Owning epic id, or null for loose maintenance stories that belong to no epic (D4, D9).",
+          "pattern": "^(EP[0-9]+|AGN[0-9]+)$"
+        },
+        "track": {
+          "type": "string",
+          "description": "Which work track this belongs to (D8).",
+          "enum": ["project", "agentic"]
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "domain": {
+          "type": "string",
+          "description": "Workspace unit (apps/* or packages/*) for project work; agentic/<concern> for agentic work (D1, D8).",
+          "minLength": 1
+        },
+        "concern": {
+          "type": "string",
+          "description": "Free-form cross-cutting concern within the domain (routing, audio, scheduling). No controlled vocabulary yet (D1).",
+          "minLength": 1
+        },
+        "completed": {
+          "type": "string",
+          "description": "Completion date; the organising key for playback (D9).",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "duration": {
+          "type": "string",
+          "description": "Human-readable elapsed effort, e.g. 1d, 3d, 2w.",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "description": "Verbs — what was done. Points to git's content, never duplicates it. No file:line anchors (Compaction D5).",
+          "minLength": 1
+        },
+        "supersedes": {
+          "type": "array",
+          "description": "Tombstone hook — ids this work replaced (Compaction D4).",
+          "items": { "type": "string" }
+        },
+        "fixes": {
+          "type": "array",
+          "description": "Sealed epic/story ids this story corrects without reopening (D9).",
+          "items": { "type": "string" }
+        },
+        "pr": {
+          "type": ["integer", "null"],
+          "description": "Provenance PR number — stable across squash-merge (D4). NEVER a commit SHA. Null only for agentic work with no PR (D11).",
+          "minimum": 1
+        }
+      }
+    },
+    "epic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "domains", "archived"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "domains": {
+          "type": "array",
+          "description": "Distinct workspace units this epic touched.",
+          "items": { "type": "string" }
+        },
+        "archived": {
+          "type": "string",
+          "description": "Date the epic was rolled up and its changelog folder compacted (D10).",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional epic-level rollup note (deferrals, tombstone rationale)."
+        }
+      }
+    }
+  }
+}
