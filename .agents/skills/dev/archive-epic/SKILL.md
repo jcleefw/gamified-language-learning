@@ -66,14 +66,20 @@ Routing (paths→units), append+validate, and integrity are `domains-from-diff.s
      `{title, domains[], archived, notes?}`.
    - Commit the record: `git add index.json {unit}/KNOWLEDGE.md` then
      `git commit -m "docs(archive): record EP## — <title>"`.
-4. **COMPACT (self-contained commit — D10 as amended):** in a **separate** commit
+4. **BACKFILL prior `compact_pr` (AGN05 enhancement):** Before compacting, scan the
+   archive for stories with `compact_pr: null`, extract the merge PR number for this
+   epic (from `git log`'s merge commit message if squash-merged), and backfill all
+   prior orphaned stories:
+   `.agents/tools/archive-backfill-compact.sh <this-epic-pr-number>`
+   This records the epoch boundary when older work left active tracking.
+5. **COMPACT (self-contained commit — D10 as amended):** in a **separate** commit
    that contains *nothing but the deletion*, remove the rolled-up folder:
    `git rm -r .agents/changelogs/EP##--*/` then
    `git commit -m "docs(archive): compact EP## changelog folder"`.
    Keeping the delete isolated makes it reviewable and revertible on its own.
    (Do **not** open a PR or emit a deletion manifest — those are recorded as future
    automation in the idea doc, not the day-one path.)
-5. **Verify:** `.agents/tools/archive-check.sh` must pass (sources resolve, no stray
+6. **Verify:** `.agents/tools/archive-check.sh` must pass (sources resolve, no stray
    archived-epic folder, `_loose/` drained).
 
 ## Procedure — agentic track (`AGN##`, D11)
@@ -113,12 +119,12 @@ ADRs. Same two-commit shape, with the recorded tier expressed as flat markdown:
   "domain": "apps/srs-demo", "concern": "routing",
   "completed": "2026-07-15", "duration": "1d",
   "summary": "Installed Vue Router 4; 10 routes on the Screen union; App.vue reduced to a layout shell.",
-  "supersedes": [], "fixes": [], "pr": 41
+  "supersedes": [], "fixes": [], "pr": 41, "compact_pr": null
 }
 ```
 
-- `pr` is the **PR number**, never a commit SHA (squash rewrites SHAs — D4). `null`
-  only for agentic work with no PR.
+- `pr` is the **PR number** that delivered the work, never a commit SHA (squash rewrites SHAs — D4). Extract from the merge commit message if squash-merged; `null` if not found or for agentic work with no PR.
+- `compact_pr` is the **PR number when this story was compacted/archived away** — initially `null`, filled at a later epoch's archival boundary (when the next epic compacts). This traces when the work left active tracking.
 - `epic` may be `null` for a loose maintenance story (from `_loose/`) that belongs
   to no epic; set `fixes`/`supersedes` to reference the sealed epic it corrects (D9).
 - `concern` is free-form (no controlled vocabulary yet — D1).

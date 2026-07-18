@@ -24,10 +24,10 @@ The design goal is **maximum determinism**: the LLM seam shrinks to exactly two 
 | ----------- | -------- | --------------- |
 | Domain taxonomy | Read from `pnpm-workspace.yaml`; never invent nodes | Two-Axis D1 |
 | Archive format | Flat per-story `stories[]` + `epics{}` rollup, JSON | Two-Axis D3, D4 |
-| Provenance | `pr` number, never commit SHA | Two-Axis D4 |
+| Provenance | `pr` (merged) + `compact_pr` (compacted); extract from merge commit message if squash-merged, else null | Two-Axis D4; **AGN05 enhancement** |
 | Domain format | Markdown + frontmatter; maintained incrementally to current state, by area; no history log | Two-Axis D3, **D5 (as amended by AGN05)** |
 | Completion split | Verbs → archive; nouns → `KNOWLEDGE.md`; no third "record" | Two-Axis D6 (amends Compaction D3) |
-| Compaction | Rewrite-then-delete, post-merge, against main; record + self-contained delete = two commits | Compaction D2; **Two-Axis D10 (as amended by AGN05)** |
+| Compaction | Rewrite-then-delete, post-merge, against main; record + self-contained delete = two commits; backfill prior compact_pr before deleting new folder | Compaction D2; **Two-Axis D10 (as amended by AGN05)** |
 | Late fixes | `_loose/` staging bucket, reference sealed epic, never reopen | Two-Axis D9 |
 | Fix routing | Every fix → archive; only *state-changing* fixes → `KNOWLEDGE.md` | Two-Axis D5 |
 | Line numbers / `file:line` | Planning tier only; forbidden Recorded-onward | Compaction D5, D6 |
@@ -91,7 +91,7 @@ Epic PR merges to main (done-done)
 **Tasks**:
 
 - [ ] Create `.agents/changelogs/archive/index.json` seeded empty: `{"stories": [], "epics": {}}`
-- [ ] Author a JSON Schema for the archive (story + epic shapes per D4) at `.agents/changelogs/archive/schema.json` — `id, epic|null, track, title, domain, concern, completed, duration, summary, supersedes[], fixes[], pr`
+- [ ] Author a JSON Schema for the archive (story + epic shapes per D4) at `.agents/changelogs/archive/schema.json` — `id, epic|null, track, title, domain, concern, completed, duration, summary, supersedes[], fixes[], pr, compact_pr`
 - [ ] Create `.agents/changelogs/_loose/` with a `.gitkeep` and a short `README.md` describing the drain-at-merge convention (D9)
 - [ ] Create `.agents/plans/templates/KNOWLEDGE-TEMPLATE.md` — frontmatter (`unit, concern, sources[], updated`) + current-state prose skeleton (D5)
 - [ ] Create `.agents/plans/templates/_LOOSE-TEMPLATE.md` — `track, domain, fixes|relates` reference to a sealed epic (D9)
@@ -125,6 +125,7 @@ Epic PR merges to main (done-done)
 - [ ] Script at `.agents/tools/archive-append.sh` — accepts a story object, validates against `schema.json`, appends to `stories[]`, upserts `epics{}`
 - [ ] Reject on schema violation with a clear message; never write partial/invalid JSON
 - [ ] Preserve `completed`-timestamp ordering as the organising key (D9)
+- [ ] **PR extraction (AGN05 enhancement):** When passed a merge commit SHA, extract `pr` number from squash-merge message (`Merge pull request #N`) if present; if not found, accept `null`
 
 **Acceptance Criteria**:
 - [ ] Appending a valid story leaves `index.json` schema-valid
@@ -160,6 +161,7 @@ Epic PR merges to main (done-done)
 - [ ] Procedure: guard *merged-to-main* → `domains-from-diff` → per story: **summarise verbs** → `archive-append`; **maintain current-state nouns by area** (add/edit/remove claims incrementally — D5 amended) → `{unit}/KNOWLEDGE.md`, update `sources`
 - [ ] State-changing vs conformance fix routing: every fix → archive; only state-changing → `KNOWLEDGE.md` (D5)
 - [ ] **Two commits (D10 amended):** a *record* commit (archive-append + KNOWLEDGE) then a **self-contained *compact* commit** — `git rm` the epic's `changelogs/EP##--*/` folder, deletion only, after the record commit succeeds (D2, D10). No PR/manifest/Action (future spec).
+- [ ] **Backfill prior `compact_pr` (AGN05 enhancement):** Before compacting this epic, run backfill script to find all stories with `compact_pr: null`, extract the current PR number, and update them — then proceed with deletion. This link-at-compaction-time pattern ensures every archived story knows when it left active tracking.
 - [ ] Runs **against main, never the branch**; skipped rollup is a safe no-op (folder simply stays — D10)
 - [ ] Optional gate: require epic *verified* (UAT clear), not merely merged (D10)
 - [ ] **Agentic branch (D11):** for `track:agentic` work, compact the `plans/AGN##-*.md` into a flat `changelogs/agentic/AGN##-*.md` artifact (`AGN-TEMPLATE.md` shape) + `git rm` the plan; `archive-append` a `track:agentic`, `domain:agentic/<concern>` entry; amend the relevant `agentic-*` ADR when a standing decision changed. Same skill or a thin sibling — decide during ST05.
