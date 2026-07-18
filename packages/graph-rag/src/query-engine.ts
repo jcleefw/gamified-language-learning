@@ -47,13 +47,16 @@ export class QueryEngine {
     str += `RELEVANT NODES (for your query):\n`;
     context.relevantNodes.forEach((node) => {
       str += `- [${node.type.toUpperCase()}] ${node.label}\n`;
-      if (node.metadata?.problem) {
-        const problem = String(node.metadata.problem).substring(0, 100);
-        str += `  Problem: ${problem}${String(node.metadata.problem).length > 100 ? '...' : ''}\n`;
+      if (node.metadata?.summary) {
+        const summary = String(node.metadata.summary).substring(0, 200);
+        str += `  Summary: ${summary}${String(node.metadata.summary).length > 200 ? '...' : ''}\n`;
       }
-      if (Array.isArray(node.metadata?.dependencies) && node.metadata.dependencies.length > 0) {
-        str += `  Dependencies: ${node.metadata.dependencies.join(', ')}\n`;
+      if (node.metadata?.notes) {
+        const notes = String(node.metadata.notes).substring(0, 200);
+        str += `  Notes: ${notes}${String(node.metadata.notes).length > 200 ? '...' : ''}\n`;
       }
+      if (node.metadata?.domain) str += `  Domain: ${node.metadata.domain}\n`;
+      if (node.metadata?.pr) str += `  PR: #${node.metadata.pr}\n`;
     });
 
     str += `\nRELATIONSHIP SUBGRAPH (related nodes & edges):\n`;
@@ -84,16 +87,18 @@ export class QueryEngine {
     const contextStr = this.contextToString(context);
 
     const systemPrompt = `You are an expert in software project history and architecture.
-You have access to a knowledge graph of how a language learning platform project was built.
-The graph contains episodes, stories, design decisions, components, and their relationships.
-Answer questions about the project's development, architecture, and evolution based on the graph context provided.
-Be specific, reference episode numbers and design decisions when available.
-Explain the reasoning and relationships that led to key decisions.`;
+You have access to a two-axis knowledge graph of a language-learning platform:
+- a TIME axis of stories and epics (completed units of work), and
+- a DOMAIN axis of workspace units and the concerns within them.
+Provenance edges ('sources') connect a domain's current state back to the stories/epics that produced it.
+Answer questions about the project's development, architecture, and evolution from the graph context provided.
+Be specific: reference story/epic IDs, workspace domains, and PR numbers when available.
+Group your reasoning by domain, not by epic — an epic is a unit of work in time, not a unit of knowledge.`;
 
     const userPrompt = `Based on the project graph below, answer this question:\n\n${question}\n\n---\n\n${contextStr}`;
 
     const response = await this.client.messages.create({
-      model: 'claude-opus-4-1-20250805',
+      model: 'claude-opus-4-8',
       max_tokens: 2000,
       messages: [
         {
@@ -109,6 +114,7 @@ Explain the reasoning and relationships that led to key decisions.`;
 
     return {
       query: question,
+      answer,
       context: contextStr,
       nodes: context.relevantNodes,
       edges: context.subgraph.edges,
@@ -122,10 +128,23 @@ Explain the reasoning and relationships that led to key decisions.`;
       .split(/\s+/)
       .filter((w) => w.length > 2);
 
+    const searchableText = (node: Node): string => {
+      const m = node.metadata ?? {};
+      const parts = [
+        node.label,
+        m.summary,
+        m.notes,
+        m.concern,
+        m.domain,
+        Array.isArray(m.domains) ? m.domains.join(' ') : undefined,
+      ];
+      return parts.filter(Boolean).join(' ').toLowerCase();
+    };
+
     const scored = Array.from(this.graph.nodes.values())
       .map((node) => {
-        const label = node.label.toLowerCase();
-        const matches = keywords.filter((k) => label.includes(k)).length;
+        const text = searchableText(node);
+        const matches = keywords.filter((k) => text.includes(k)).length;
         return { node, score: matches };
       })
       .filter((x) => x.score > 0)

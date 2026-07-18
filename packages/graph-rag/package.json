@@ -16,8 +16,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "ingest": "tsx src/cli/ingest.ts",
-    "ingest:config": "tsx src/cli/ingest-configurable.ts"
+    "graph:build": "tsx src/cli/build.ts",
+    "graph:query": "tsx src/cli/query.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.31.0"
