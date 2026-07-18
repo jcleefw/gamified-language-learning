@@ -1,4 +1,4 @@
-import type { WordState, StreakThresholds } from '@gll/srs-engine-v2';
+import type { WordState, StreakThresholds } from '@gll/srs-engine-v2/learn';
 
 /**
  * The per-user config a transition was computed under. Owned here (not in an app) so the

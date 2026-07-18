@@ -1,6 +1,6 @@
 # @gll/srs-engine-v2
 
-Standalone SRS quiz engine. Pure TypeScript, no I/O, no side effects. Exposes functions for composing quiz questions and managing session state.
+The word lifecycle engine for a language-learning app: learning, shelving, and review. Pure TypeScript, no I/O, no side effects.
 
 ## Quick start
 

@@ -29,7 +29,7 @@ import {
   type SentenceQuizResult,
   type GraduationHook,
   isMastered,
-} from '../src/index.js';
+} from '../src/learn/index.js';
 import { mockDecks } from '../data/mock/mock-decks.js';
 import { LEARNING_CONFIG } from './config.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';

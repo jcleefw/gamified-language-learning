@@ -2,7 +2,7 @@ import {
   nextQuestion,
   submitBatchResult,
   type BatchState,
-} from '@gll/srs-engine-v2';
+} from '@gll/srs-engine-v2/learn';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 
 export function runAutoInteractive(

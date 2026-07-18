@@ -22,7 +22,7 @@ The engine distinguishes two categories of active items:
 - **Vocabulary words** (`MockWord`) — curated deck content
 - **Foundational items** (`MockFoundational`) — consonants, vowels, tones; the script building blocks
 
-Both share the same `QuizItem` union type and go through the same `RunState` / streak / mastery cycle. The difference is in `assembleBatch` (`src/engine/assemble-batch.ts:28-38`):
+Both share the same `QuizItem` union type and go through the same `RunState` / streak / mastery cycle. The difference is in `assembleBatch` (`src/learn/engine/assemble-batch.ts:28-38`):
 
 ```ts
 const activeFoundational = active.filter(item => 'foundationalType' in item);
@@ -34,7 +34,7 @@ const wordLimit = wordsPerBatch - foundationalLimit;
 
 Question slots are **proportionally split** based on how many of each type are in the active pool. If 2 of 6 active items are foundational, foundational items get ~⅓ of the question slots.
 
-Foundational items also get different question directions (`FOUNDATIONAL_DIRECTIONS` in `src/engine/compose-word-batch.ts`):
+Foundational items also get different question directions (`FOUNDATIONAL_DIRECTIONS` in `src/learn/engine/compose-word-batch.ts`):
 
 | Type | Directions |
 |---|---|
@@ -63,7 +63,7 @@ Mastery is **global** — `RunState` is keyed on `wordId` alone, with no `deckId
 
 ## How streaks drive mastery
 
-The rule (`updateRunState` in `src/types/word-state.ts`):
+The rule (`updateRunState` in `src/learn/types/word-state.ts`):
 
 - **Correct answer**: `correctStreak++`, `wrongStreak = 0`. Once `correctStreak >= correctStreakThreshold` → `mastery = min(5, mastery + 1)`
 - **Wrong answer**: `wrongStreak++`, `correctStreak = 0`. Once `wrongStreak >= wrongStreakThreshold` → `mastery = max(0, mastery - 1)`
@@ -76,7 +76,7 @@ Retirement check: `ws.mastery >= masteryThreshold` (default: 5).
 
 ## The recheck loop
 
-Wrong answers don't disappear — they re-enter the question queue within the same batch, up to a cap (`retryPerWordCap` per batch, `retryPerSessionCap` across the whole session). This is the **recheck mechanic** managed by `BatchState` in `src/engine/batch-queue.ts`.
+Wrong answers don't disappear — they re-enter the question queue within the same batch, up to a cap (`retryPerWordCap` per batch, `retryPerSessionCap` across the whole session). This is the **recheck mechanic** managed by `BatchState` in `src/learn/engine/batch-queue.ts`.
 
 `retryPerSessionCap` is tracked per word in `AdaptiveSessionState.sessionRetryCounts`, accumulated across batches by `finishBatch`/`advanceAdaptiveSession`. Once a word's cumulative retries hit the cap, it stops getting re-served within a batch — but this budget isn't permanent: `advanceAdaptiveSession` clears a word's `sessionRetryCounts` entry as soon as its `correctStreak` reaches `correctStreakThreshold` again, giving it a full retry allowance on the next batch. Without this reset, a word that struggled for several batches early on would stay retry-starved for the rest of the session even after the learner started getting it right.
 
@@ -157,6 +157,44 @@ Repeat until active.length === 0 && queue.length === 0
 - Wrong answers of either kind re-queue within the batch (subject to per-word, per-session caps)
 - Sentence results do not affect `WordState.mastery` — they update `SentenceRunState` only
 - Sentence eligibility is checked per batch; eligible sentences are passed as `extraThunks` to assembly
+
+---
+
+## Shelving: the stagnation relief valve
+
+Shelving lives in `src/shelving/` (`@gll/srs-engine-v2/shelving`), independent of the Learning types above — `evaluateShelving` takes primitive `stagnantWordIds`/`currentlyShelved`/`config`, never a `RunState` or `WordState`. Detecting *which* words are stagnant is the host's job (e.g. "no mastery progress for `stagnationBatchWindow` consecutive batches"); the module only decides what to do once candidates are handed to it.
+
+```ts
+evaluateShelving(stagnantWordIds: string[], currentlyShelved: Set<string>, config: ShelvingConfig): ShelvingDecision
+```
+
+- Filters out anything already in `currentlyShelved` — no re-shelving a word that's already off to the side.
+- Caps how many it shelves this call by `config.maxShelved - currentlyShelved.size` — shelving is a relief valve with a fixed number of slots, not an unlimited escape hatch.
+- Preserves input order when trimming candidates down to available slots.
+- `toUnshelve` is always empty from this function — unshelving (bringing every shelved word back into rotation) is the separate `unshelveAll()` helper, called by the host at session boundaries (e.g. "a new session always brings previously shelved words back in").
+
+`DEFAULT_SHELVING_CONFIG` ships as `{ stagnationBatchWindow: 3, maxShelved: 2 }`, both overridable per host.
+
+## Review: long-term scheduling with FSRS
+
+Once a word masters, it graduates out of Learning into Review — long-term spaced repetition, distinct from the streak/mastery cycle above. This lives in `src/review/` (`@gll/srs-engine-v2/review`) and is intentionally **server-only**: `apps/srs-demo` never imports it (ADR D3) — only `apps/server` schedules and serves due reviews.
+
+The module is built around one contract, `ReviewScheduler`, with `FsrsScheduler` (wrapping `ts-fsrs`) as its only implementation:
+
+```ts
+interface ReviewScheduler {
+  seed(wordId: string, performance: GraduationPerformance, now: Date): ReviewCard;
+  schedule(card: ReviewCard, rating: ReviewRating, now: Date): ReviewCard;
+  isDue(card: ReviewCard, now: Date): boolean;
+}
+```
+
+- **`seed`** creates a word's first `ReviewCard` at the moment it graduates from Learning, inferring an initial `ReviewRating` (`again` | `hard` | `good` | `easy`) from its `GraduationPerformance` — `correctStreak`, `lapses`, `correctRatio` — never `again`, since graduation already implies success.
+- **`schedule`** advances a card after a review is answered, given the (inferred, never asked) rating for that review.
+- **`isDue`** is a pure time check against the card's `due` date.
+- `ReviewCard.schedulerData` is an opaque blob — only `FsrsScheduler` reads or writes its shape (the serialised `ts-fsrs` `Card`). Persistence round-trips it as-is; nothing outside the scheduler inspects it.
+
+The `review` module never imports `WordState` or anything from `learn/` — `GraduationPerformance` is a primitive snapshot the host derives from `WordState` at the graduation boundary, keeping Review decoupled from how Learning tracks progress.
 
 ---
 

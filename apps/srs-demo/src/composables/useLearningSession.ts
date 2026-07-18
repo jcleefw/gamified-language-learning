@@ -25,8 +25,8 @@ import {
   type AdaptiveSessionState,
   type BatchState,
   type WordState,
-} from '@gll/srs-engine-v2';
-import { evaluateShelving } from '@gll/srs-shelving';
+} from '@gll/srs-engine-v2/learn';
+import { evaluateShelving } from '@gll/srs-engine-v2/shelving';
 import type { AppDeckPayload } from '@gll/api-contract';
 import { loadRunState, postAnswer, clearStore } from './useStore';
 import {

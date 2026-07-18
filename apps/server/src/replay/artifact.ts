@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { WordState } from '@gll/srs-engine-v2';
+import type { WordState } from '@gll/srs-engine-v2/learn';
 import type { ResolvedThresholds } from '@gll/db';
 
 /**

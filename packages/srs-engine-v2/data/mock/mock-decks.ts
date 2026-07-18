@@ -1,4 +1,4 @@
-import { MockDeck, MockLine } from '../../src/types/deck.js';
+import { MockDeck, MockLine } from '../../src/learn/types/deck.js';
 
 const eatLines: MockLine[] = [
   {

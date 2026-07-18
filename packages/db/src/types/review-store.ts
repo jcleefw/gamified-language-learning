@@ -1,4 +1,4 @@
-import type { ReviewCard } from '@gll/srs-review';
+import type { ReviewCard } from '@gll/srs-engine-v2/review';
 
 /** Per-user FSRS review cards for words that have graduated out of Learning. */
 export interface IReviewStore {

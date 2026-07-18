@@ -1,4 +1,4 @@
-import type { MockTone } from '../../src/types/foundational.js';
+import type { MockTone } from '../../src/learn/types/foundational.js';
 
 export const mockTones: MockTone[] = [
   { id: 'th:mai ek:่', foundationalType: 'tone', native: 'mai ek:่', romanization: 'mai ek', english: 'low tone', language: 'th' },

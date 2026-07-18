@@ -1,5 +1,5 @@
 import { getDb, SqliteContentStore } from '@gll/db';
-import { FsrsScheduler } from '@gll/srs-review';
+import { FsrsScheduler } from '@gll/srs-engine-v2/review';
 import { buildScenario, REVIEW_SCENARIOS, type ExpectedOutcome } from './scenario-builder.js';
 import { applyBuiltScenario } from './apply-scenario.js';
 

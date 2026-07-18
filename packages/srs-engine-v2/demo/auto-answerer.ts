@@ -4,7 +4,7 @@ import {
   nextQuestion,
   submitBatchResult,
   type BatchState,
-} from '../src/index.js';
+} from '../src/learn/index.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 
 export function runAutoInteractive(

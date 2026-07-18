@@ -23,8 +23,6 @@
     "@gll/api-contract": "workspace:*",
     "@gll/logger": "workspace:*",
     "@gll/srs-engine-v2": "workspace:*",
-    "@gll/srs-review": "workspace:*",
-    "@gll/srs-shelving": "workspace:*",
     "better-sqlite3": "^12.11.1",
     "drizzle-orm": "^0.45.2"
   },

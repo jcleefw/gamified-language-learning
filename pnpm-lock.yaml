@@ -54,12 +54,6 @@ importers:
       '@gll/srs-engine-v2':
         specifier: workspace:*
         version: link:../../packages/srs-engine-v2
-      '@gll/srs-review':
-        specifier: workspace:*
-        version: link:../../packages/srs-review
-      '@gll/srs-shelving':
-        specifier: workspace:*
-        version: link:../../packages/srs-shelving
       better-sqlite3:
         specifier: ^12.11.1
         version: 12.11.1
@@ -103,12 +97,6 @@ importers:
       '@gll/srs-engine-v2':
         specifier: workspace:*
         version: link:../../packages/srs-engine-v2
-      '@gll/srs-review':
-        specifier: workspace:*
-        version: link:../../packages/srs-review
-      '@gll/srs-shelving':
-        specifier: workspace:*
-        version: link:../../packages/srs-shelving
       '@hono/node-server':
         specifier: ^1
         version: 1.19.11(hono@4.12.7)
@@ -152,9 +140,6 @@ importers:
       '@gll/srs-engine-v2':
         specifier: workspace:*
         version: link:../../packages/srs-engine-v2
-      '@gll/srs-shelving':
-        specifier: workspace:*
-        version: link:../../packages/srs-shelving
       vue:
         specifier: ^3.5
         version: 3.5.34(typescript@5.9.3)
@@ -200,6 +185,34 @@ importers:
         specifier: ^5.7
         version: 5.9.3
 
+  packages/curation:
+    dependencies:
+      '@gll/api-contract':
+        specifier: workspace:*
+        version: link:../api-contract
+      '@gll/db':
+        specifier: workspace:*
+        version: link:../db
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@12.11.1)
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      better-sqlite3:
+        specifier: ^12.11.1
+        version: 12.11.1
+      tsx:
+        specifier: ^4
+        version: 4.21.0
+      typescript:
+        specifier: ^5.7
+        version: 5.9.3
+      vitest:
+        specifier: ^3
+        version: 3.2.4(@types/node@25.5.0)(happy-dom@20.10.6)(jiti@2.6.1)(tsx@4.21.0)
+
   packages/db:
     dependencies:
       '@gll/api-contract':
@@ -211,12 +224,6 @@ importers:
       '@gll/srs-engine-v2':
         specifier: workspace:*
         version: link:../srs-engine-v2
-      '@gll/srs-review':
-        specifier: workspace:*
-        version: link:../srs-review
-      '@gll/srs-shelving':
-        specifier: workspace:*
-        version: link:../srs-shelving
       better-sqlite3:
         specifier: ^12.11.1
         version: 12.11.1
@@ -259,65 +266,15 @@ importers:
         specifier: ^3
         version: 3.2.4(@types/node@25.5.0)(happy-dom@20.10.6)(jiti@2.6.1)(tsx@4.21.0)
 
-  packages/srs-curation:
-    dependencies:
-      '@gll/api-contract':
-        specifier: workspace:*
-        version: link:../api-contract
-      '@gll/db':
-        specifier: workspace:*
-        version: link:../db
-      drizzle-orm:
-        specifier: ^0.45.2
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@12.11.1)
-    devDependencies:
-      '@types/better-sqlite3':
-        specifier: ^7.6.13
-        version: 7.6.13
-      better-sqlite3:
-        specifier: ^12.11.1
-        version: 12.11.1
-      tsx:
-        specifier: ^4
-        version: 4.21.0
-      typescript:
-        specifier: ^5.7
-        version: 5.9.3
-      vitest:
-        specifier: ^3
-        version: 3.2.4(@types/node@25.5.0)(happy-dom@20.10.6)(jiti@2.6.1)(tsx@4.21.0)
-
   packages/srs-engine-v2:
-    devDependencies:
-      '@types/better-sqlite3':
-        specifier: ^7.6.13
-        version: 7.6.13
-      typescript:
-        specifier: ^5.7
-        version: 5.9.3
-      vitest:
-        specifier: ^3
-        version: 3.2.4(@types/node@25.5.0)(happy-dom@20.10.6)(jiti@2.6.1)(tsx@4.21.0)
-
-  packages/srs-review:
     dependencies:
       ts-fsrs:
         specifier: ^5
         version: 5.2.3
     devDependencies:
-      typescript:
-        specifier: ^5.7
-        version: 5.9.3
-      vitest:
-        specifier: ^3
-        version: 3.2.4(@types/node@25.5.0)(happy-dom@20.10.6)(jiti@2.6.1)(tsx@4.21.0)
-
-  packages/srs-shelving:
-    dependencies:
-      '@gll/srs-engine-v2':
-        specifier: workspace:*
-        version: link:../srs-engine-v2
-    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
       typescript:
         specifier: ^5.7
         version: 5.9.3

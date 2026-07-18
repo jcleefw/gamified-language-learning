@@ -3,7 +3,15 @@ name: srs-engine-v2-library-boundary
 description: SRS Engine v2 is a library, not an application. Enforce clean separation.
 metadata:
   type: feedback
+  status: stale
 ---
+
+> **STALE (2026-07-17):** The `LearningStore` interface claim below is outdated — `ILearningStore`
+> actually lives in `packages/db`, not in the engine package, and this is correct current
+> behaviour, not a bug. See `product-documentation/architecture/20260717T080435Z-engineering-srs-engine-consolidation-and-scope.md`,
+> which also redefines the engine's scope to cover Learning + Shelving + Review as one lifecycle
+> (superseding the "Learning phase only" framing implied here). The core DB-agnostic /
+> no-app-layer-glue rule below still holds; only the `LearningStore`-lives-here line is wrong.
 
 ## Rule: SRS Engine v2 Library Boundary
 

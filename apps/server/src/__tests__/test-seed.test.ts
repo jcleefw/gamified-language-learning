@@ -2,8 +2,8 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { initDb, schema, SqliteLearningStore } from '@gll/db';
-import type { WordState } from '@gll/srs-engine-v2';
-import { DEFAULT_SHELVING_CONFIG } from '@gll/srs-shelving';
+import type { WordState } from '@gll/srs-engine-v2/learn';
+import { DEFAULT_SHELVING_CONFIG } from '@gll/srs-engine-v2/shelving';
 
 // ---------------------------------------------------------------------------
 // DB mock — override getDb() to return a fresh in-memory DB per test

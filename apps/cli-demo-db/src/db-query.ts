@@ -2,7 +2,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { schema } from '@gll/db';
-import type { MockFoundational, SentenceContext } from '@gll/srs-engine-v2';
+import type { MockFoundational, SentenceContext } from '@gll/srs-engine-v2/learn';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../..');

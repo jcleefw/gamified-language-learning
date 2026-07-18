@@ -5,7 +5,7 @@ import type {
   MCQQuestion,
   RunState,
   WordState,
-} from '@gll/srs-engine-v2';
+} from '@gll/srs-engine-v2/learn';
 import type { AppDeckPayload } from '@gll/api-contract';
 import { useLearningSession } from '../useLearningSession';
 import { useDebugRecording } from '../useDebugRecording';

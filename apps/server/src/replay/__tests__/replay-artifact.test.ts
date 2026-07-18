@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { WordState } from '@gll/srs-engine-v2';
+import type { WordState } from '@gll/srs-engine-v2/learn';
 import { applyAnswer } from '../../learning/apply-answer.js';
 import { makeMemoryLearningStore } from '../memory-store.js';
 import { replayArtifact } from '../replay-artifact.js';

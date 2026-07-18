@@ -10,8 +10,8 @@ import {
 } from '@gll/db';
 import { DIFFICULTY_PRESETS } from '../config/difficulty-presets.js';
 import { seedDemoUser } from '../seed/seed-db.js';
-import { updateRunState } from '@gll/srs-engine-v2';
-import { FsrsScheduler } from '@gll/srs-review';
+import { updateRunState } from '@gll/srs-engine-v2/learn';
+import { FsrsScheduler } from '@gll/srs-engine-v2/review';
 import type { AnswerResponse, ApiResponse, WordStatePayload } from '@gll/api-contract';
 
 type TestDb = ReturnType<typeof drizzle<typeof schema>>;

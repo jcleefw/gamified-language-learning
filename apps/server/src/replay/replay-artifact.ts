@@ -1,4 +1,4 @@
-import type { WordState } from '@gll/srs-engine-v2';
+import type { WordState } from '@gll/srs-engine-v2/learn';
 import { applyAnswer, type LearningTransitionStore } from '../learning/apply-answer.js';
 import type { ReplayArtifact, TransitionInput } from './artifact.js';
 

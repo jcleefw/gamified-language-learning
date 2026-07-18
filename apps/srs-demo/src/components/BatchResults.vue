@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import type { WordState, QuizItem } from '@gll/srs-engine-v2';
+import type { WordState, QuizItem } from '@gll/srs-engine-v2/learn';
 import PoolDebugPanel from './PoolDebugPanel.vue';
 
 export interface BatchSummary {

@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, lte, sql } from 'drizzle-orm';
-import type { ReviewCard } from '@gll/srs-review';
+import type { ReviewCard } from '@gll/srs-engine-v2/review';
 import type { IReviewStore } from './types/review-store.js';
 import * as schema from './schema.js';
 import type { DbClient } from './types/db-client.js';

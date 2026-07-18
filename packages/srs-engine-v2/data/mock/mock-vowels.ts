@@ -1,4 +1,4 @@
-import type { MockVowel } from '../../src/types/foundational.js';
+import type { MockVowel } from '../../src/learn/types/foundational.js';
 
 export const mockVowels: MockVowel[] = [
   { id: 'th::ี', foundationalType: 'vowel', native: 'อี', romanization: 'sara-ii', english: 'long i', position: 'surrounding', length: 'long', language: 'th' },

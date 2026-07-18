@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import * as schema from '../schema';
 import { initDb } from '../init-db';
 import { SqliteReviewStore } from '../sqlite-review-store';
-import { FsrsScheduler, type ReviewCard } from '@gll/srs-review';
+import { FsrsScheduler, type ReviewCard } from '@gll/srs-engine-v2/review';
 import type { DbClient } from '../types/db-client';
 
 function makeTestDb(): { db: DbClient; sqlite: BetterSqlite3.Database } {

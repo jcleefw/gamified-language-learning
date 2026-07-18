@@ -29,12 +29,12 @@ import {
   type SentenceState,
   type GraduationHook,
   isMastered,
-} from '@gll/srs-engine-v2';
+} from '@gll/srs-engine-v2/learn';
 import {
   evaluateShelving,
   DEFAULT_SHELVING_CONFIG,
   type ShelvingConfig,
-} from '@gll/srs-shelving';
+} from '@gll/srs-engine-v2/shelving';
 import { LEARNING_CONFIG } from './config.js';
 import type { AutoAnswerStrategy } from './auto-answer-strategy.js';
 import { runAutoInteractive } from './auto-answerer.js';

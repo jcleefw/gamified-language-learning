@@ -3,12 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./dist/src/index.js",
-  "types": "./dist/src/index.d.ts",
   "exports": {
-    ".": {
-      "import": "./dist/src/index.js",
-      "types": "./dist/src/index.d.ts"
+    "./learn": {
+      "import": "./dist/src/learn/index.js",
+      "types": "./dist/src/learn/index.d.ts"
+    },
+    "./shelving": {
+      "import": "./dist/src/shelving/index.js",
+      "types": "./dist/src/shelving/index.d.ts"
+    },
+    "./review": {
+      "import": "./dist/src/review/index.js",
+      "types": "./dist/src/review/index.d.ts"
     },
     "./data/mock/mock-decks": {
       "import": "./dist/data/mock/mock-decks.js",
@@ -34,6 +40,9 @@
     "lint": "eslint src __tests__",
     "typecheck": "tsc --noEmit",
     "engine:mock-db": "tsx demo/learning-runner.ts"
+  },
+  "dependencies": {
+    "ts-fsrs": "^5"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

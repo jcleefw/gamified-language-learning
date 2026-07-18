@@ -1,6 +1,6 @@
-import type { WordState, RunState } from '@gll/srs-engine-v2';
-import type { SentenceState, SentenceRunState } from '@gll/srs-engine-v2';
-import type { ShelvedWord } from '@gll/srs-shelving';
+import type { WordState, RunState } from '@gll/srs-engine-v2/learn';
+import type { SentenceState, SentenceRunState } from '@gll/srs-engine-v2/learn';
+import type { ShelvedWord } from '@gll/srs-engine-v2/shelving';
 
 /** Per-user Learning-phase state: word/sentence progress, stagnation tracking, and shelving. */
 export interface ILearningStore {

@@ -5,8 +5,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import * as schema from '../schema';
 import { initDb } from '../init-db';
 import { SqliteLearningStore } from '../sqlite-learning-store';
-import type { WordState } from '@gll/srs-engine-v2';
-import type { SentenceState } from '@gll/srs-engine-v2';
+import type { WordState } from '@gll/srs-engine-v2/learn';
+import type { SentenceState } from '@gll/srs-engine-v2/learn';
 import type { DbClient } from '../types/db-client';
 
 function makeTestDb(): { db: DbClient; sqlite: BetterSqlite3.Database } {

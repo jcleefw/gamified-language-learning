@@ -1,4 +1,4 @@
-import type { MCQQuestion } from '../src/index.js';
+import type { MCQQuestion } from '../src/learn/index.js';
 
 export interface AutoAnswerStrategy {
   selectAnswer(question: MCQQuestion): number;

@@ -10,7 +10,7 @@ import type {
   ResetStagnationCountersRequest,
   ResetStagnationCountersForWordsRequest,
 } from '@gll/api-contract';
-import { DEFAULT_SHELVING_CONFIG, type ShelvingConfig } from '@gll/srs-shelving';
+import { DEFAULT_SHELVING_CONFIG, type ShelvingConfig } from '@gll/srs-engine-v2/shelving';
 
 export async function loadShelvedWords(deckId: string): Promise<ShelvedWordPayload[]> {
   const res = await fetch(`/api/shelving?deckId=${encodeURIComponent(deckId)}`);

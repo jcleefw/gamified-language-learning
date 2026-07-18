@@ -3,7 +3,7 @@ import type {
   WordState,
   StreakThresholds,
   SentenceQuestion,
-} from '@gll/srs-engine-v2';
+} from '@gll/srs-engine-v2/learn';
 import type {
   AnswerRequest,
   AnswerResponse,

@@ -4,10 +4,10 @@ import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type BetterSqlite3 from 'better-sqlite3';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { schema, initDb, SqliteReviewStore } from '@gll/db';
-import { FsrsScheduler } from '@gll/srs-review';
-import type { MCQQuestion } from '@gll/srs-engine-v2';
+import { FsrsScheduler } from '@gll/srs-engine-v2/review';
+import type { MCQQuestion } from '@gll/srs-engine-v2/learn';
 import type { IReviewStore } from '@gll/db';
-import type { ReviewCard } from '@gll/srs-review';
+import type { ReviewCard } from '@gll/srs-engine-v2/review';
 import {
   runReviewSession,
   loadDueCards,
