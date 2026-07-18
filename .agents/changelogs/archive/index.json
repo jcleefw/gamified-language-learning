@@ -1,4 +1,20 @@
 {
-  "stories": [],
+  "stories": [
+    {
+      "id": "AGN05",
+      "epic": "AGN05",
+      "track": "agentic",
+      "title": "Two-Axis Knowledge Architecture",
+      "domain": "agentic/knowledge",
+      "concern": "archive-structure",
+      "completed": "2026-07-18",
+      "duration": "7h 33m",
+      "summary": "Implemented two-axis knowledge compaction (time archive + domain KNOWLEDGE.md); specified AGN rollup lifecycle (plan→artifact+archive entry); tools (domains-from-diff, archive-append, archive-check) and archive-epic skill.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null
+    }
+  ],
   "epics": {}
 }
