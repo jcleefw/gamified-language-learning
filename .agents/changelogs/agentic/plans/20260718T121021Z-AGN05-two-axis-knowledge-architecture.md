@@ -25,9 +25,9 @@ The design goal is **maximum determinism**: the LLM seam shrinks to exactly two 
 | Domain taxonomy | Read from `pnpm-workspace.yaml`; never invent nodes | Two-Axis D1 |
 | Archive format | Flat per-story `stories[]` + `epics{}` rollup, JSON | Two-Axis D3, D4 |
 | Provenance | `pr` number, never commit SHA | Two-Axis D4 |
-| Domain format | Markdown + frontmatter, overwritten to current state | Two-Axis D3, D5 |
+| Domain format | Markdown + frontmatter; maintained incrementally to current state, by area; no history log | Two-Axis D3, **D5 (as amended by AGN05)** |
 | Completion split | Verbs → archive; nouns → `KNOWLEDGE.md`; no third "record" | Two-Axis D6 (amends Compaction D3) |
-| Compaction | Rewrite-then-delete, post-merge, against main | Compaction D2; Two-Axis D10 |
+| Compaction | Rewrite-then-delete, post-merge, against main; record + self-contained delete = two commits | Compaction D2; **Two-Axis D10 (as amended by AGN05)** |
 | Late fixes | `_loose/` staging bucket, reference sealed epic, never reopen | Two-Axis D9 |
 | Fix routing | Every fix → archive; only *state-changing* fixes → `KNOWLEDGE.md` | Two-Axis D5 |
 | Line numbers / `file:line` | Planning tier only; forbidden Recorded-onward | Compaction D5, D6 |
@@ -65,10 +65,14 @@ The design goal is **maximum determinism**: the LLM seam shrinks to exactly two 
 Epic PR merges to main (done-done)
   → archive-epic skill runs against main (NOT the branch — D10)
      → domains-from-diff:  changed paths → workspace units
-     → summarise each story (verbs)  → archive-append → index.json  [JUDGMENT]
-     → write current state (nouns)   → {unit}/KNOWLEDGE.md          [JUDGMENT]
-                                        append epic id to `sources`
-     → git rm the EP##--*/ changelog folder (compact)
+     ┌─ RECORD commit ──────────────────────────────────────────────┐
+     │  summarise each story (verbs)  → archive-append → index.json  [JUDGMENT]
+     │  maintain current state (nouns, by area, incremental — D5 amended):
+     │    {unit}/KNOWLEDGE.md  add/edit/remove claims; update `sources`  [JUDGMENT]
+     └───────────────────────────────────────────────────────────────┘
+     ┌─ COMPACT commit (self-contained — D10 amended) ──────────────┐
+     │  git rm the EP##--*/ changelog folder — deletion only        │
+     └───────────────────────────────────────────────────────────────┘
   → archive-check (on demand): no stray folders, every `sources` id resolves,
                                no orphaned _loose/ items
   → (future retrieval layer re-indexes the artifacts — not built here)
@@ -138,13 +142,13 @@ Epic PR merges to main (done-done)
   - no archived epic still has a live `changelogs/EP##--*/` folder (D10)
   - no `_loose/` entry lacks a `domain` + `fixes`/`relates` reference (D9)
   - `index.json` validates against `schema.json`
-- [ ] Add an archive-integrity block to `.agents/guardrails.yml` (rules, LLM-agnostic)
+- [ ] ~~Add an archive-integrity block to `.agents/guardrails.yml`~~ **Deferred (2026-07-18 decision).** No pre-commit hook or live CI is wired, so a `guardrails.yml` entry would be a no-op that falsely implies enforcement. The working guard is `archive-check.sh` (run by human/CI). Wiring it into CI/pre-commit is recorded as future automation in `product-documentation/ideas/20260718T104755Z-archive-tooling-automation.md` (ideas 1–2).
 
 **Acceptance Criteria**:
 - [ ] A deliberately orphaned `sources: [EP99]` fails the check
 - [ ] A stray archived-epic folder fails the check
 - [ ] Passes clean on the ST01 seed state
-- [ ] `guardrails.yml` edit confirmed with user (it is a sensitive file per existing guardrails)
+- [ ] ~~`guardrails.yml` edit confirmed with user~~ — user declined the guardrails edit; enforcement deferred (see above)
 
 ### AGN05-ST05: `archive-epic` Skill (Record + Compact)
 
@@ -153,9 +157,9 @@ Epic PR merges to main (done-done)
 **Tasks**:
 
 - [ ] `SKILL.md` at `.agents/skills/dev/archive-epic/` (`tools: Read, Write, Exec`)
-- [ ] Procedure: guard *merged-to-main* → `domains-from-diff` → per story: **summarise verbs** → `archive-append`; **write current-state nouns** → `{unit}/KNOWLEDGE.md`, append epic id to `sources`
+- [ ] Procedure: guard *merged-to-main* → `domains-from-diff` → per story: **summarise verbs** → `archive-append`; **maintain current-state nouns by area** (add/edit/remove claims incrementally — D5 amended) → `{unit}/KNOWLEDGE.md`, update `sources`
 - [ ] State-changing vs conformance fix routing: every fix → archive; only state-changing → `KNOWLEDGE.md` (D5)
-- [ ] Compact: `git rm` the epic's `changelogs/EP##--*/` folder after the append+refresh succeed (D2, D10)
+- [ ] **Two commits (D10 amended):** a *record* commit (archive-append + KNOWLEDGE) then a **self-contained *compact* commit** — `git rm` the epic's `changelogs/EP##--*/` folder, deletion only, after the record commit succeeds (D2, D10). No PR/manifest/Action (future spec).
 - [ ] Runs **against main, never the branch**; skipped rollup is a safe no-op (folder simply stays — D10)
 - [ ] Optional gate: require epic *verified* (UAT clear), not merely merged (D10)
 - [ ] **Agentic branch (D11):** for `track:agentic` work, compact the `plans/AGN##-*.md` into a flat `changelogs/agentic/AGN##-*.md` artifact (`AGN-TEMPLATE.md` shape) + `git rm` the plan; `archive-append` a `track:agentic`, `domain:agentic/<concern>` entry; amend the relevant `agentic-*` ADR when a standing decision changed. Same skill or a thin sibling — decide during ST05.

@@ -1,39 +1,34 @@
 ---
-unit: {packages,apps}/<unit>        # the workspace unit this doc describes (D1)
-concern: <free-form>                 # cross-cutting concern within the unit (routing, scheduling, audio)
-sources: []                          # archive ids that shaped this state — [EP20, EP21, EP23]; append, never inline
-updated: YYYY-MM-DD                  # date this state was last overwritten
+unit: {packages,apps}/<unit>        # the workspace unit this describes; one KNOWLEDGE.md per unit
+sources: []                          # archive ids whose claims are present now — [EP20, EP24, EP25]
+updated: YYYY-MM-DD
 ---
 
-# <unit> — <Concern>
+# <unit> — Domain Knowledge
 
 <!--
-  This is the DOMAIN axis of the two-axis knowledge architecture (Two-Axis ADR).
-  Write PURE CURRENT STATE (nouns) — what is true now, and why. Present tense.
-  This file is OVERWRITTEN to current state on each relevant merge; it is NOT a
-  history log. The history lives once, in the time archive (changelogs/archive/index.json).
+  Current state of the domain, by AREA. Nouns, present tense. Maintain it
+  incrementally — never regenerate the whole file:
+    - new area        → append a `##` section (leave existing areas untouched)
+    - new claim        → add a bullet under its area
+    - changed claim    → edit it in place
+    - removed claim    → delete it (no "superseded" — retired knowledge lives in
+                         git and in the time archive)
+  Provenance is the `sources` frontmatter, NOT inline in the prose — IDs are
+  metadata, never narration like "reached via EP44" (D5; the graph reads
+  frontmatter sources as its edges, D7). Keep `sources` = the ids whose claims
+  are present now (add on arrival, drop when none remain).
 
-  RULES (D5, Compaction D5/D6):
-  - NO epic/story IDs inline in the prose ("reached via EP44"). IDs are metadata:
-    they live only in the `sources` frontmatter, as citations. When state shifts,
-    OVERWRITE the prose and APPEND the new id to `sources` — the growing list IS
-    the shift history, as resolvable references.
-  - NO `file:line` anchors, code snippets, route tables, or data-structure dumps.
-    Reference symbols and behaviour, not locations. git is the detail store.
-  - NO acceptance criteria, planning meta, or "the prior draft got X wrong".
-  - Only STATE-CHANGING knowledge belongs here. A conformance fix (code corrected
-    to match what the doc already described) goes to the archive only — not here.
-    Test: does it change what is TRUE about the domain, or just make code match
-    what was already documented as true?
-
-  THIS IS NOT `CODEMAP.md`. They are orthogonal artifacts with different jobs and
-  must NEVER be merged:
-    - CODEMAP answers "what functions/symbols exist here?" — a token-saving lookup
-      that mirrors the reality of the code as-of-now, refreshed by the code-mapper
-      skill, never epic- or history-aware.
-    - KNOWLEDGE (this file) answers "how does this domain behave, and why?" — domain
-      state and the decisions behind it.
+  Do NOT include: inline epic/story IDs, file:line anchors, code snippets,
+  route/data dumps, acceptance criteria, or planning meta. This is NOT CODEMAP.md
+  — CODEMAP lists symbols that exist now; KNOWLEDGE says how the domain behaves
+  and why.
 -->
 
-<Current-state prose. How this domain behaves now and the decisions behind it.
-Present tense, nouns. No IDs, no file:line, no scaffolding.>
+## <Area>
+
+- <Claim true now for this area — clean prose, no IDs.>
+
+## <Another Area>
+
+- <Claim.>

@@ -1,9 +1,11 @@
 # ADR: Two-Axis Knowledge Architecture — Time Archive + Domain Knowledge
 
-**Status:** Accepted
+**Status:** Accepted (amended)
 
 <!-- Status: Proposed | Accepted | Superseded | Deprecated -->
 <!-- For amendments, use "Accepted (amended)" and add an Amended-by line below. -->
+
+**Amended by:** AGN05 implementation (2026-07-18) — corrects **D5** (KNOWLEDGE.md is maintained incrementally to current state, by area; it is *not* overwritten to a snapshot and carries no superseded log) and refines **D10** (record and compact land as two commits; the folder deletion is a self-contained commit; rollup-PR / manifest+GitHub-Action delivery are future automation, not built). See the amendment notes on D5 and D10 below.
 
 **Date:** 2026-07-18
 
@@ -86,7 +88,9 @@ Provenance uses **`pr` (stable), not commit SHA** — squash-merge rewrites SHAs
 
 ### D5 — Domain knowledge: current-state prose + provenance metadata
 
-`KNOWLEDGE.md` content is **pure current state (nouns)** and is **overwritten to now**, never appended-to as a history. Provenance lives in frontmatter, not prose:
+> **Amended by AGN05 (2026-07-18):** "overwritten to now" was wrong — a wholesale overwrite destroys unrelated areas of the doc and the provenance edges a future graph (D7) ingests, so it "won't work" as an accumulation surface. Corrected model: `KNOWLEDGE.md` holds current state **organized by area/concern** and is **maintained incrementally** — a new area *appends* a section, a new claim is *added*, a changed claim is *edited in place*, a removed claim is *deleted*. There is **no superseded log** (retired knowledge lives in git + the time archive, which narrates the work that removed it). This keeps the doc current-state (the original intent) without regenerating it wholesale. `sources` remains the current-state provenance set — add an id when its claim lands, drop it when none remain; every id must still resolve. One `KNOWLEDGE.md` per unit, sectioned by area (this also sharpens the D2 "per unit + concern" grain to one file per unit).
+
+`KNOWLEDGE.md` content is **pure current state (nouns)**, maintained incrementally (see the amendment above — *not* a wholesale overwrite). Provenance lives in frontmatter, not prose:
 
 ```markdown
 ---
@@ -103,7 +107,7 @@ active window with the shelving/stagnation policy gating advance...
 ```
 
 - **Epic/story IDs are metadata, not knowledge.** They are a `sources` reference field, never inline narration ("reached via EP44"). The prose stays clean state; the IDs are citations.
-- When knowledge shifts, **overwrite the state and append the new id to `sources`.** The growing `sources` list *is* the shift history — as resolvable references, not narrative. The narrative of the work lives once, in the archive.
+- When knowledge shifts, **edit the affected claim in place (or add/remove one) and update `sources` accordingly** (amended — not a whole-file overwrite). The `sources` list is the current-state provenance set — resolvable references, not narrative. The narrative of the work, and of anything removed, lives once in the archive.
 - **Fixes reach domain knowledge only when they change current state.** A *state-changing* fix (behaviour now differs) overwrites `KNOWLEDGE.md` and appends its id to `sources`. A *conformance* fix (code corrected to match what the doc already described) is recorded in the archive only — touching the domain doc would be noise. Test: *does the fix change what is true about the domain, or merely make the code match what was already documented as true?* Every fix reaches the archive; only state-changing ones reach domain knowledge.
 - **`KNOWLEDGE.md` is not `CODEMAP.md`.** The existing per-folder `CODEMAP.md` is a token-saving lookup of the functions/symbols currently available — it mirrors the *reality of the code*. `KNOWLEDGE.md` carries *domain state and decisions* (how it behaves now, and why). They are orthogonal artifacts with different jobs and must never be merged: CODEMAP answers "what functions exist here?"; KNOWLEDGE answers "how does this domain behave and why?" CODEMAP is **never epic- or history-aware** — it reflects code as-of-now and is refreshed by the `code-mapper` skill, never by `archive-epic`.
 
@@ -141,6 +145,8 @@ Agentic work has no package to co-locate in, so its domain knowledge is document
 **Done-done = merged to main. A merged epic is sealed and never reopened.** Work discovered afterward — a bug in a prior epic's domain, a small fix, a late story — neither reopens the epic nor requires its own (an epic-per-fix is excessive). It lands in a flat staging bucket, `.agents/changelogs/_loose/`, each entry carrying `track`, `domain`, and a `fixes`/`relates` reference to the sealed epic. At compaction it becomes a **domain-keyed** archive story that *references, never mutates* the prior epic. The bucket needs no lifecycle of its own: it **drains at each item's own merge** — every entry carries a `domain` + `fixes`/`relates` reference, so it can always be filed and never orphaned. The archive is ordered by `completed` timestamp, so playback is correct regardless of the `epic` tag — the timeline is the organising key, the epic is only a label.
 
 ### D10 — Record and compact run post-merge, off main
+
+> **Amended by AGN05 (2026-07-18):** record and compact still run in one `archive-epic` invocation, but land as **two commits** — a *record* commit (append `index.json` + update `KNOWLEDGE.md`) and a **self-contained *compact* commit** (only the `git rm` of the rolled-up folder, nothing else). Isolating the destructive step lets it be reviewed and reverted on its own with no extra machinery. Delivering the rollup as a review PR, or via a deletion **manifest** executed by a **GitHub Action** post-merge, are recorded as *future automation* (see `product-documentation/ideas/20260718T104755Z-archive-tooling-automation.md`) — deliberately not built here, since the manifest/Action path hides the deletion from the review diff and the idea doc defers CI automation until the manual path is proven.
 
 The rollup triggers when the epic's final PR **merges to main** — the done-done event — and runs **against main, never on the branch** (a branch is a proposal, not solidified work; compacting it destructively is premature). Record (archive append + `KNOWLEDGE.md` refresh) and compact (folder deletion) happen **together**, since merge is now the hard boundary. Because the merged epic folder stays intact in main until the rollup runs, there is no reconstruction cost, and a skipped rollup loses nothing — the epic simply stays un-compacted (a safe failure mode). Graph re-index and the integrity checks (stray folders, orphaned `_loose/` items) run **on demand**, not on any schedule — this project has no milestone concept. Optionally gate deletion on the epic being *verified* (not merely merged) if UAT should clear first.
 
@@ -197,7 +203,7 @@ Self-referentially, completing **AGN05** produces the `AGN05` flat artifact, app
 
 - Two artifacts to keep consistent; a `sources` id must always resolve to an archive entry (needs a guard).
 - Completion now writes to two places (archive + one or more `KNOWLEDGE.md`), fanning out when a DS touches several units.
-- Overwriting `KNOWLEDGE.md` to current state relies on git for prior states — recovering old knowledge means reading history.
+- `KNOWLEDGE.md` keeps only current state (maintained incrementally, D5 as amended); recovering *removed* knowledge means reading git or the time archive, not the doc.
 - Immutability depends on discipline: the `_loose/` bucket only works if it is genuinely drained and never used to smuggle edits back into sealed epics.
 
 **Neutral:**

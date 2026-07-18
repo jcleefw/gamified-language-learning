@@ -17,9 +17,11 @@ Once the `archive-epic` skill + `archive-check` script exist (per the ADR), auto
 
 3. **Automated post-merge rollup.** The manual `archive-epic` run is the day-one default (it doubles as the human "this is done-done" gesture). If automated rollup is ever wanted, a merge-to-main trigger could invoke the judgment step headlessly and open a bookkeeping change. The headless LLM invocation is the single provider-specific seam — keep it behind one configurable command so swapping CLIs is a one-line change.
 
+4. **Reviewable deletion via manifest + GitHub Action.** *(Spec kept, not built — AGN05 decision, 2026-07-18.)* The day-one compaction mechanism is simpler: `archive-epic` lands the folder `git rm` as a **self-contained commit**, separate from the additive record commit, so the destructive step can be reviewed and reverted on its own (Two-Axis D10 as amended). A heavier future variant: the rollup PR carries only the additive writes plus a **deletion manifest**, and a GitHub Action performs the `git rm` from that manifest after merge. Rejected for day-one because it *hides* the deletion from the review diff (the reviewer approves a manifest, not the removal) — but retained here as the spec to reach for if deletions ever need to execute in an environment the author can't touch directly.
+
 ### Status
 
-Exploration only. Not scheduled. Revisit after the manual `archive-epic` skill and `archive-check` script are built and proven.
+Exploration only. Not scheduled. Revisit after the manual `archive-epic` skill and `archive-check` script are built and proven. As of AGN05 (2026-07-18) the manual script exists; CI/pre-commit enforcement (ideas 1–2) and the manifest+Action deletion (idea 4) remain deferred — there is no live CI wired, and a declarative `guardrails.yml` entry would be a no-op until an adapter (git hook / CI) runs `archive-check`.
 
 ### Related
 
