@@ -1,4 +1,4 @@
-import type { ReviewRating } from '@gll/srs-engine-v2/review';
+import type { ReviewRating } from '@gll/srs-engine/review';
 
 export interface RatingThresholds {
   easyMaxMs: number; // ≤ this (correct) ⇒ easy

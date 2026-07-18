@@ -1,6 +1,6 @@
-# @gll/srs-engine-v2 Rules
+# @gll/srs-engine Rules
 
-**@gll/srs-engine-v2 is a pure engine library. It has no knowledge of persistence, I/O, or deployment.**
+**@gll/srs-engine is a pure engine library. It has no knowledge of persistence, I/O, or deployment.**
 
 ## What this library IS
 

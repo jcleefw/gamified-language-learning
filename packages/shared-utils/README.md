@@ -1,6 +1,6 @@
 # @gll/shared-utils
 
-Small, pure, dependency-free utility functions shared across apps that would otherwise have no common package to live in. Not a types package (see `@gll/api-contract` for wire-format types) and not a home for domain/engine logic — each engine package (`srs-engine-v2`, `srs-review`, `srs-shelving`) keeps its own internals. This package is for cross-cutting helpers with zero runtime dependencies, used identically by more than one app.
+Small, pure, dependency-free utility functions shared across apps that would otherwise have no common package to live in. Not a types package (see `@gll/api-contract` for wire-format types) and not a home for domain/engine logic — each engine package (`srs-engine`, `srs-review`, `srs-shelving`) keeps its own internals. This package is for cross-cutting helpers with zero runtime dependencies, used identically by more than one app.
 
 ## Public API
 

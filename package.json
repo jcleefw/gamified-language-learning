@@ -13,7 +13,7 @@
     "test:watch": "turbo watch test",
     "lint": "eslint .",
     "typecheck": "turbo typecheck",
-    "engine:mock-db": "tsx packages/srs-engine-v2/demo/learning-runner.ts",
+    "engine:mock-db": "tsx packages/srs-engine/demo/learning-runner.ts",
     "dev:all": "docker compose up -d && concurrently -n server,web -c blue,green \"pnpm --filter @gll/server dev\" \"pnpm --filter @gll/srs-demo dev\""
   },
   "devDependencies": {

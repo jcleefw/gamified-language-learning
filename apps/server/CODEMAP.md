@@ -55,5 +55,5 @@ Purpose: Hono 4 HTTP server for the GLL API. Runs on Cloudflare Workers (product
 | better-sqlite3 | `better-sqlite3` | SQLite driver for local dev. |
 | Drizzle ORM | `drizzle-orm` | Type-safe query builder. |
 | @gll/db | `@gll/db` | Database schema and init. |
-| @gll/srs-engine-v2 | `@gll/srs-engine-v2` | SRS state machine. |
+| @gll/srs-engine | `@gll/srs-engine` | SRS state machine. |
 | @gll/api-contract | `@gll/api-contract` | Type contracts for HTTP API. |

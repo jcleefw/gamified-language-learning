@@ -1,5 +1,5 @@
-import type { RunState } from '@gll/srs-engine-v2/learn';
-import type { ReviewScheduler } from '@gll/srs-engine-v2/review';
+import type { RunState } from '@gll/srs-engine/learn';
+import type { ReviewScheduler } from '@gll/srs-engine/review';
 import type { IReviewStore } from '@gll/db';
 import { toGraduationPerformance } from './graduation-performance.js';
 

@@ -1,5 +1,5 @@
 /** HTTP wire representation of a single word's learning state.
- *  Maps 1:1 with WordState from @gll/srs-engine-v2. */
+ *  Maps 1:1 with WordState from @gll/srs-engine. */
 export interface WordStatePayload {
   wordId: string;
   seen: number;

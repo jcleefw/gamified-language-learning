@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initDb, schema, SqliteLearningStore } from '@gll/db';
-import { processRecheckResult, type WordState } from '@gll/srs-engine-v2/learn';
+import { processRecheckResult, type WordState } from '@gll/srs-engine/learn';
 import { applyAnswer } from '../apply-answer.js';
 
 type Store = SqliteLearningStore;

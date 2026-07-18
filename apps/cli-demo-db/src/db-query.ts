@@ -2,7 +2,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { schema } from '@gll/db';
-import type { MockFoundational, SentenceContext } from '@gll/srs-engine-v2/learn';
+import type { MockFoundational, SentenceContext } from '@gll/srs-engine/learn';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../..');
@@ -43,7 +43,7 @@ export function buildQuizItems(db: DbClient): VocabWord[] {
 export async function buildFoundationalPool(): Promise<MockFoundational[]> {
   const p = path.join(
     REPO_ROOT,
-    'packages/srs-engine-v2/data/seed-data/thai-full-foundations.ts',
+    'packages/srs-engine/data/seed-data/thai-full-foundations.ts',
   );
   const mod = await import(p) as {
     thaiConsonants: MockFoundational[];

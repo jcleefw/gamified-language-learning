@@ -1,4 +1,4 @@
-import { processRecheckResult, isMastered, type WordState } from '@gll/srs-engine-v2/learn';
+import { processRecheckResult, isMastered, type WordState } from '@gll/srs-engine/learn';
 import type { ILearningStore, ResolvedThresholds } from '@gll/db';
 
 /** The raw answer fact the transition folds. `latencyMs` is carried for the record; the transition does not read it. */

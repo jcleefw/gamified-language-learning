@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { SentenceQuestion } from '@gll/srs-engine-v2/learn';
+import type { SentenceQuestion } from '@gll/srs-engine/learn';
 import { DIFFICULTY_PRESETS, type DifficultyPreset } from './difficulty-presets.js';
 
 /**

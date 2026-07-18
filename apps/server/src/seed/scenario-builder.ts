@@ -1,5 +1,5 @@
-import type { ReviewCard, ReviewRating, GraduationPerformance } from '@gll/srs-engine-v2/review';
-import type { FsrsScheduler } from '@gll/srs-engine-v2/review';
+import type { ReviewCard, ReviewRating, GraduationPerformance } from '@gll/srs-engine/review';
+import type { FsrsScheduler } from '@gll/srs-engine/review';
 import { FIXED_SYSTEM } from '../config/learning.js';
 
 /** Word-state row shape seeded by a scenario (mirrors WordState fields). */

@@ -51,9 +51,9 @@ importers:
       '@gll/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@gll/srs-engine-v2':
+      '@gll/srs-engine':
         specifier: workspace:*
-        version: link:../../packages/srs-engine-v2
+        version: link:../../packages/srs-engine
       better-sqlite3:
         specifier: ^12.11.1
         version: 12.11.1
@@ -94,9 +94,9 @@ importers:
       '@gll/shared-utils':
         specifier: workspace:*
         version: link:../../packages/shared-utils
-      '@gll/srs-engine-v2':
+      '@gll/srs-engine':
         specifier: workspace:*
-        version: link:../../packages/srs-engine-v2
+        version: link:../../packages/srs-engine
       '@hono/node-server':
         specifier: ^1
         version: 1.19.11(hono@4.12.7)
@@ -137,9 +137,9 @@ importers:
       '@gll/shared-utils':
         specifier: workspace:*
         version: link:../../packages/shared-utils
-      '@gll/srs-engine-v2':
+      '@gll/srs-engine':
         specifier: workspace:*
-        version: link:../../packages/srs-engine-v2
+        version: link:../../packages/srs-engine
       vue:
         specifier: ^3.5
         version: 3.5.34(typescript@5.9.3)
@@ -221,9 +221,9 @@ importers:
       '@gll/logger':
         specifier: workspace:*
         version: link:../logger
-      '@gll/srs-engine-v2':
+      '@gll/srs-engine':
         specifier: workspace:*
-        version: link:../srs-engine-v2
+        version: link:../srs-engine
       better-sqlite3:
         specifier: ^12.11.1
         version: 12.11.1
@@ -266,7 +266,7 @@ importers:
         specifier: ^3
         version: 3.2.4(@types/node@25.5.0)(happy-dom@20.10.6)(jiti@2.6.1)(tsx@4.21.0)
 
-  packages/srs-engine-v2:
+  packages/srs-engine:
     dependencies:
       ts-fsrs:
         specifier: ^5

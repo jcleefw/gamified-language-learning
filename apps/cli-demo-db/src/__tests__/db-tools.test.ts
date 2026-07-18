@@ -19,7 +19,7 @@ interface FoundationalEntry {
 }
 
 async function loadFoundations(): Promise<FoundationalEntry[]> {
-  const p = path.join(REPO_ROOT, 'packages/srs-engine-v2/data/seed-data/thai-full-foundations.ts');
+  const p = path.join(REPO_ROOT, 'packages/srs-engine/data/seed-data/thai-full-foundations.ts');
   const mod = await import(p);
   return [
     ...(mod.thaiConsonants as FoundationalEntry[]),

@@ -5,7 +5,7 @@ import { initDb, schema, SqliteLearningStore } from '@gll/db';
 import { runAdaptiveLoop } from '../learning-io.js';
 import { CorrectAutoAnswerStrategy } from '../auto-answer-strategy.js';
 import { LEARNING_CONFIG, STREAK_THRESHOLDS } from '../config.js';
-import type { WordState, SentenceState, SentenceContext, RunState, GraduationHook } from '@gll/srs-engine-v2/learn';
+import type { WordState, SentenceState, SentenceContext, RunState, GraduationHook } from '@gll/srs-engine/learn';
 
 // Suppress and clear console.log per test — runAdaptiveLoop prints batch/score lines
 beforeEach(() => { vi.spyOn(console, 'log').mockImplementation(() => {}); });

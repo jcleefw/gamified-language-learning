@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { FsrsScheduler } from '@gll/srs-engine-v2/review';
+import { FsrsScheduler } from '@gll/srs-engine/review';
 import { buildScenario, REVIEW_SCENARIOS, type ReviewScenarioSpec } from '../scenario-builder.js';
 
 const DAY = 1000 * 60 * 60 * 24;

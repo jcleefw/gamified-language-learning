@@ -4,8 +4,8 @@ import type {
   RunState,
   SentenceState,
   SentenceRunState,
-} from '@gll/srs-engine-v2/learn';
-import type { ShelvedWord } from '@gll/srs-engine-v2/shelving';
+} from '@gll/srs-engine/learn';
+import type { ShelvedWord } from '@gll/srs-engine/shelving';
 import type { ILearningStore } from './types/learning-store.js';
 import * as schema from './schema.js';
 import type { DbClient } from './types/db-client.js';

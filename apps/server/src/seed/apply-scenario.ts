@@ -1,5 +1,5 @@
 import { getDb, SqliteLearningStore, SqliteReviewStore } from '@gll/db';
-import type { WordState } from '@gll/srs-engine-v2/learn';
+import type { WordState } from '@gll/srs-engine/learn';
 import type { BuiltScenario } from './scenario-builder.js';
 
 /**

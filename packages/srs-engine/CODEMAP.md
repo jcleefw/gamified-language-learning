@@ -1,4 +1,4 @@
-# CODEMAP.md — `@gll/srs-engine-v2`
+# CODEMAP.md — `@gll/srs-engine`
 
 Package navigation index. Navigate to subfolder CODEMAPs for file-level detail.
 

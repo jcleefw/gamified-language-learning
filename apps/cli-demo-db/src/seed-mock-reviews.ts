@@ -4,8 +4,8 @@ import { dirname, resolve } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { getDb, closeDb, SqliteReviewStore } from '@gll/db';
 import type { IReviewStore } from '@gll/db';
-import { FsrsScheduler } from '@gll/srs-engine-v2/review';
-import type { ReviewScheduler } from '@gll/srs-engine-v2/review';
+import { FsrsScheduler } from '@gll/srs-engine/review';
+import type { ReviewScheduler } from '@gll/srs-engine/review';
 import { buildQuizItems } from './db-query.js';
 import type { DbClient } from './db-tools.js';
 

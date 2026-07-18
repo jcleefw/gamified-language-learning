@@ -1,6 +1,6 @@
 # srs-demo
 
-A Vue 3 webapp that runs the `@gll/srs-engine-v2` spaced-repetition quiz loop in the browser, backed by a persistent SQLite database via the `@gll/server` API.
+A Vue 3 webapp that runs the `@gll/srs-engine` spaced-repetition quiz loop in the browser, backed by a persistent SQLite database via the `@gll/server` API.
 
 > **The two apps produce different batches — this is expected, not a bug.** This web demo and the CLI (`cli-demo-db`) share the same deck **data** but run against **separate databases** (`.data/srs-demo.db` vs. `apps/cli-demo-db/data/learning-state.db`), so each holds independent learner progress (mastery, shelving, seen counts). Because a batch is scheduled from stored state, differing progress produces differing batches. Do not treat a difference between the two apps' batches as scheduling drift — compare batches only within a single database.
 
@@ -15,7 +15,7 @@ pnpm install
 # 2. Build packages (required before first run)
 pnpm --filter @gll/api-contract build
 pnpm --filter @gll/db build
-pnpm --filter @gll/srs-engine-v2 build
+pnpm --filter @gll/srs-engine build
 
 # 3. Seed deck content and start everything
 GLL_SEED_CONTENT=1 pnpm --filter srs-demo dev:all
@@ -38,7 +38,7 @@ GLL_SEED_CONTENT=1 pnpm --filter @gll/server dev
 pnpm --filter @gll/server dev
 ```
 
-Source data: `packages/srs-engine-v2/data/samples/conversations-2026-03-08.json` (5 Thai conversation topics).
+Source data: `packages/srs-engine/data/samples/conversations-2026-03-08.json` (5 Thai conversation topics).
 
 To add a new deck at runtime (curator upload):
 

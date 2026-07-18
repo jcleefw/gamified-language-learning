@@ -4,8 +4,8 @@ import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type BetterSqlite3 from 'better-sqlite3';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { schema, initDb, SqliteReviewStore } from '@gll/db';
-import { FsrsScheduler } from '@gll/srs-engine-v2/review';
-import type { WordState, RunState } from '@gll/srs-engine-v2/learn';
+import { FsrsScheduler } from '@gll/srs-engine/review';
+import type { WordState, RunState } from '@gll/srs-engine/learn';
 import { seedGraduatedReviewCards } from '../seed-graduated-review-cards.js';
 
 type DbClient = BetterSQLite3Database<typeof schema> & { $client: BetterSqlite3.Database };

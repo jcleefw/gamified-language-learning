@@ -1,5 +1,5 @@
-import type { WordState } from '@gll/srs-engine-v2/learn';
-import type { GraduationPerformance } from '@gll/srs-engine-v2/review';
+import type { WordState } from '@gll/srs-engine/learn';
+import type { GraduationPerformance } from '@gll/srs-engine/review';
 
 /** App-layer mapping: Learning WordState → Review seed input (DS03 §3). */
 export function toGraduationPerformance(ws: WordState): GraduationPerformance {

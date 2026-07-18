@@ -54,7 +54,7 @@ Vue 3 single-file components (`.vue`).
 
 | Target | Used By | Purpose |
 |---|---|---|
-| `@gll/srs-engine-v2` | `useLearningSession`, `useReviewSession` | SRS state machine: quiz batches, answer application, word state. |
+| `@gll/srs-engine` | `useLearningSession`, `useReviewSession` | SRS state machine: quiz batches, answer application, word state. |
 | `@gll/srs-shelving` | `useShelving` | Compute shelving boundaries and stats. |
 | `@gll/api-contract` | All composables | Type contracts for HTTP API and VTT parsing. |
 | `/api/decks` | `useStore` | Fetch deck list with word metadata. |

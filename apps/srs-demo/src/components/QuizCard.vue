@@ -7,7 +7,7 @@ import type {
   SentenceTile,
   QuizResult,
   QuizItem,
-} from '@gll/srs-engine-v2/learn';
+} from '@gll/srs-engine/learn';
 import PoolDebugPanel from './PoolDebugPanel.vue';
 import AudioPlayer from './AudioPlayer.vue';
 import { env } from '../env';

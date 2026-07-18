@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { mockConsonants } from '../../data/mock/mock-consonants.js';
 
-describe('srs-engine-v2 smoke', () => {
+describe('srs-engine smoke', () => {
   it('mock consonants load correctly', () => {
     expect(mockConsonants.length).toBeGreaterThan(0);
   });
