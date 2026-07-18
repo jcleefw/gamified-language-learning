@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, provide, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { type QuizItem } from '@gll/srs-engine-v2/learn';
+import { type QuizItem } from '@gll/srs-engine/learn';
 import type { AppDeckPayload, GetDecksResponse } from '@gll/api-contract';
 import { resolveSentenceAudio } from './composables/useAudio';
 import { bootApp } from './composables/useAppBoot';

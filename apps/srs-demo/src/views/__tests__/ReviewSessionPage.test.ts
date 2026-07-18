@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { ref } from 'vue';
-import type { SentenceQuestion } from '@gll/srs-engine-v2/learn';
+import type { SentenceQuestion } from '@gll/srs-engine/learn';
 import ReviewSessionPage from '../ReviewSessionPage.vue';
 import QuizCard from '../../components/QuizCard.vue';
 import ReviewSummary from '../../components/ReviewSummary.vue';

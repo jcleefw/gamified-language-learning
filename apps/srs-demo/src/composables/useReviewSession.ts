@@ -11,7 +11,7 @@ import {
   type QuizResult,
   type RunState,
   type BatchState,
-} from '@gll/srs-engine-v2/learn';
+} from '@gll/srs-engine/learn';
 import type { DueReviewItem, ReviewQuestionType } from '@gll/api-contract';
 import {
   loadAnytimeReviews,

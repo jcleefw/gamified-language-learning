@@ -1,4 +1,4 @@
-import type { SessionConfig, SentenceQuestion } from '@gll/srs-engine-v2/learn';
+import type { SessionConfig, SentenceQuestion } from '@gll/srs-engine/learn';
 
 export type Screen =
   | 'home'

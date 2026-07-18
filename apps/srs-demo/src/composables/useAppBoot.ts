@@ -1,5 +1,5 @@
 import type { Ref } from 'vue';
-import { type QuizItem, type RunState } from '@gll/srs-engine-v2/learn';
+import { type QuizItem, type RunState } from '@gll/srs-engine/learn';
 import type { AppDeckPayload, GetDecksResponse } from '@gll/api-contract';
 import { loadRunState, loadConfig } from './useStore';
 import { loadShelvedWords } from './useShelving';
