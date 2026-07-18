@@ -92,34 +92,6 @@ Routing (paths→units), append+validate, and integrity are `domains-from-diff.s
 6. **Verify:** `.agents/tools/archive-check.sh` must pass (sources resolve, no stray
    archived-epic folder, `_loose/` drained).
 
-## Procedure — agentic track (`AGN##`, D11)
-
-Agentic work has no package to co-locate in; its domain home is the `agentic-*`
-ADRs. Same two-commit shape, with the recorded tier expressed as flat markdown:
-
-1. **RECORD commit:**
-   - **Compact the plan → artifact.** Rewrite `.agents/changelogs/agentic/plans/AGN##-*.md`
-     into a lean flat artifact `.agents/changelogs/agentic/AGN##-*.md` using the
-     `AGN-TEMPLATE.md` shape (*What Changed / Why / Before-After*). Drop the
-     scaffolding forbidden Recorded-onward (`file:line`, acceptance criteria,
-     planning meta — Compaction D5).
-   - **Archive entry.** `archive-append.sh --story -` one story with
-     `track: "agentic"`, `domain: "agentic/<concern>"`, `epic: "AGN##"` (or the
-     `AGN##` id), `pr` = the PR number or `null` if none.
-   - **State knowledge → ADRs.** If the work changed a *standing* agentic decision,
-     amend the relevant `agentic-*` ADR (status → "Accepted (amended)" + an
-     Amended-by line). Pure mechanics (a script/template, no standing-decision
-     change) produce only the artifact + archive entry.
-   - Commit: `git add` the new flat artifact + `index.json` (+ any amended ADR),
-     `git commit -m "docs(archive): record AGN## — <title>"`.
-2. **COMPACT commit (self-contained):** `git rm .agents/changelogs/agentic/plans/AGN##-*.md`
-   then `git commit -m "docs(archive): compact AGN## plan"`.
-3. **Verify:** `.agents/tools/archive-check.sh`.
-
-> Self-referentially, completing **AGN05** follows this agentic path: its plan
-> compacts into a flat `AGN05` artifact, an archive `track: "agentic"` story is
-> appended, and the Two-Axis ADR is amended for the D5/D10 decisions it implemented.
-
 ## Archive story object (Two-Axis D4)
 
 ```json
