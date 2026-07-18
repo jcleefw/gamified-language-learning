@@ -16,7 +16,7 @@ pnpm install
 # 2. Build the packages this server depends on
 pnpm --filter @gll/api-contract build
 pnpm --filter @gll/db build
-pnpm --filter @gll/srs-engine-v2 build
+pnpm --filter @gll/srs-engine build
 pnpm --filter @gll/srs-review build
 pnpm --filter @gll/srs-shelving build
 pnpm --filter @gll/logger build
@@ -52,7 +52,7 @@ To run the server together with the `srs-demo` frontend, use
   categorized by who may change it — see the
   [Config Ownership & Layering ADR](../../product-documentation/architecture/20260709T091559Z-engineering-config-ownership-and-layering.md).
 - **The state transition is server-authoritative**: `POST /api/answer` runs
-  the pure `@gll/srs-engine-v2` transition and persists the result — clients
+  the pure `@gll/srs-engine` transition and persists the result — clients
   send raw answers and adopt the returned canonical `WordState`. See the
   [Learning Authority ADR](../../product-documentation/architecture/20260708T125551Z-engineering-srs-demo-learning-authority-and-debug-trace.md).
   - The transition itself is the single pure function

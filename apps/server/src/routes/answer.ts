@@ -7,8 +7,8 @@ import {
   SqliteUserConfigStore,
   type ResolvedThresholds,
 } from '@gll/db';
-import { isMastered, type WordState } from '@gll/srs-engine-v2/learn';
-import { FsrsScheduler } from '@gll/srs-engine-v2/review';
+import { isMastered, type WordState } from '@gll/srs-engine/learn';
+import { FsrsScheduler } from '@gll/srs-engine/review';
 import { applyAnswer } from '../learning/apply-answer.js';
 import {
   ErrorCode,

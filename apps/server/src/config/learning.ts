@@ -1,4 +1,4 @@
-import type { StreakThresholds, SentenceQuestion } from '@gll/srs-engine-v2/learn';
+import type { StreakThresholds, SentenceQuestion } from '@gll/srs-engine/learn';
 import type { IUserConfigStore, UserConfigRecord } from '@gll/db';
 import {
   DEFAULT_PRESET,

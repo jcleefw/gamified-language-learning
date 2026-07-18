@@ -5,7 +5,7 @@ import {
   type ResolvedThresholds,
   type AnswerEventRecord,
 } from '@gll/db';
-import type { WordState } from '@gll/srs-engine-v2/learn';
+import type { WordState } from '@gll/srs-engine/learn';
 import { ErrorCode, type ApiResponse } from '@gll/api-contract';
 import type { TransitionInput } from '../replay/artifact.js';
 import { getCurrentUserId } from '../identity/current-user.js';

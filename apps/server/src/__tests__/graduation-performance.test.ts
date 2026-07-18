@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { WordState } from '@gll/srs-engine-v2/learn';
+import type { WordState } from '@gll/srs-engine/learn';
 import { toGraduationPerformance } from '../review/graduation-performance.js';
 
 const ws = (o: Partial<WordState> = {}): WordState => ({

@@ -1,4 +1,4 @@
-import type { StreakThresholds } from '@gll/srs-engine-v2/learn';
+import type { StreakThresholds } from '@gll/srs-engine/learn';
 
 /**
  * Server-only difficulty knob (T1). The preset NAME is the unit of persistence

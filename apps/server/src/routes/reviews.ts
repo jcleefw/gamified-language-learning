@@ -4,7 +4,7 @@ import {
   SqliteReviewStore,
   SqliteReviewAnswerEventStore,
 } from '@gll/db';
-import { FsrsScheduler, type ReviewCard, type ReviewRating } from '@gll/srs-engine-v2/review';
+import { FsrsScheduler, type ReviewCard, type ReviewRating } from '@gll/srs-engine/review';
 import {
   ErrorCode,
   type AnytimeReviewsResponse,

@@ -12,7 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
 const CONVERSATIONS_PATH = path.join(
   REPO_ROOT,
-  'packages/srs-engine-v2/data/samples/conversations-2026-03-08.json',
+  'packages/srs-engine/data/samples/conversations-2026-03-08.json',
 );
 
 type DbClient = BetterSQLite3Database<typeof schema> & { $client: BetterSqlite3.Database };

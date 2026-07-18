@@ -5,10 +5,10 @@ import {
   SqliteLearningStore,
   SqliteReviewStore,
 } from '@gll/db';
-import { DEFAULT_SHELVING_CONFIG, type ShelvingConfig } from '@gll/srs-engine-v2/shelving';
+import { DEFAULT_SHELVING_CONFIG, type ShelvingConfig } from '@gll/srs-engine/shelving';
 import { ErrorCode, type ApiResponse } from '@gll/api-contract';
-import type { WordState } from '@gll/srs-engine-v2/learn';
-import { FsrsScheduler, type GraduationPerformance } from '@gll/srs-engine-v2/review';
+import type { WordState } from '@gll/srs-engine/learn';
+import { FsrsScheduler, type GraduationPerformance } from '@gll/srs-engine/review';
 import { buildScenario, REVIEW_SCENARIOS } from '../seed/scenario-builder.js';
 import { applyBuiltScenario } from '../seed/apply-scenario.js';
 import { getCurrentUserId } from '../identity/current-user.js';
