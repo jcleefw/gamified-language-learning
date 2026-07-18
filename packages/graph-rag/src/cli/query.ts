@@ -20,11 +20,11 @@ async function main() {
 
   const engine = new QueryEngine(graph);
 
-  // Demo queries — two-axis phrasing (domains + provenance, not episodes).
+  // Demo queries — concern-centric phrasing (knowledge + provenance).
   const queries = [
     'How does routing work in srs-demo and which work produced it?',
-    'What changed in batch composition and why?',
-    'Which stories touched the srs-demo app shell?',
+    'What does the graph say about batch composition?',
+    'How is the srs-demo app shell structured?',
   ];
 
   console.log('🤖 Graph RAG Query Engine\n');

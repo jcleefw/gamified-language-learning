@@ -1,17 +1,22 @@
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { ProjectGraph } from '../graph.js';
+import { concernKey } from './archive.js';
+import type { ProvenanceIndex } from './archive.js';
 
 // ---------------------------------------------------------------------------
-// Domain axis reader: {apps,packages,...}/<unit>/KNOWLEDGE.md
+// Knowledge reader: {apps,packages,...}/<unit>/KNOWLEDGE.md
 //
-// Produces `domain` and `concern` nodes:
-//   concern --about--> domain               (level-2 heading scoping)
-//   domain  --sources--> story|epic         (frontmatter `sources` = provenance)
+// The knowledge graph IS this file's structure. It produces:
+//   - domain node:   the workspace unit (frontmatter `unit`)
+//   - concern node:  each level-2 heading, carrying the prose beneath it as its
+//                    durable content, plus provenance stamped from the archive
+//                    (which stories/epics/PRs produced it)
+//   - contains edge: domain --contains--> concern
+//   - relates edge:  concern --relates--> concern, for concerns in DIFFERENT
+//                    domains that were produced by the same epic (co-evolution)
 //
-// The `sources` edge is the mechanism that keeps the epic an edge TARGET: a
-// KNOWLEDGE.md points back at the epics/stories that produced its state; the
-// graph is never grouped by epic.
+// Stories and epics are never nodes — only citations on the concerns.
 // ---------------------------------------------------------------------------
 
 const SKIP_DIRS = new Set(['node_modules', '.git', '.agents', 'dist', 'coverage', '__fixtures__']);
@@ -20,12 +25,16 @@ export interface KnowledgeFrontmatter {
   unit: string;
   sources: string[];
   updated?: string;
-  concern?: string;
+}
+
+export interface ConcernSection {
+  title: string; // the level-2 heading text
+  content: string; // the prose beneath it, up to the next heading
 }
 
 export interface KnowledgeDoc {
   frontmatter: KnowledgeFrontmatter;
-  concerns: string[]; // level-2 headings, in document order
+  concerns: ConcernSection[];
   path: string; // absolute path on disk (provenance only; NOT the node identity)
 }
 
@@ -57,9 +66,9 @@ export function findKnowledgeFiles(root: string): string[] {
 }
 
 /**
- * Minimal frontmatter parser for the fixed KNOWLEDGE.md shape (D5):
- *   unit: <scalar>, sources: [<id>, ...], updated: <scalar>, concern: <scalar>.
- * Deliberately not a full YAML parser — the frontmatter shape is fixed by the ADR.
+ * Minimal parser for the fixed KNOWLEDGE.md shape (D5): a frontmatter block
+ * (unit / sources / updated) followed by `## Concern` sections. The prose under
+ * each heading — the actual knowledge — is captured as that concern's content.
  */
 export function parseKnowledge(content: string, path: string): KnowledgeDoc | null {
   const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
@@ -71,7 +80,6 @@ export function parseKnowledge(content: string, path: string): KnowledgeDoc | nu
     const kv = line.match(/^([A-Za-z_][\w-]*):\s*(.*)$/);
     if (kv) fm[kv[1]] = kv[2].trim();
   }
-
   if (!fm.unit) return null;
 
   const parseList = (raw: string | undefined): string[] => {
@@ -83,14 +91,22 @@ export function parseKnowledge(content: string, path: string): KnowledgeDoc | nu
       .filter(Boolean);
   };
 
-  const concerns = Array.from(body.matchAll(/^##\s+(.+?)\s*$/gm)).map((m) => m[1].trim());
+  // Split the body on level-2 headings, keeping the prose that follows each.
+  const concerns: ConcernSection[] = [];
+  const headingRe = /^##\s+(.+?)\s*$/gm;
+  const matches = [...body.matchAll(headingRe)];
+  for (let i = 0; i < matches.length; i++) {
+    const title = matches[i][1].trim();
+    const start = matches[i].index! + matches[i][0].length;
+    const end = i + 1 < matches.length ? matches[i + 1].index! : body.length;
+    concerns.push({ title, content: body.slice(start, end).trim() });
+  }
 
   return {
     frontmatter: {
       unit: fm.unit.replace(/^["']|["']$/g, ''),
       sources: parseList(fm.sources),
       updated: fm.updated,
-      concern: fm.concern,
     },
     concerns,
     path,
@@ -98,15 +114,20 @@ export function parseKnowledge(content: string, path: string): KnowledgeDoc | nu
 }
 
 /**
- * Read every KNOWLEDGE.md below `root` into the graph as domain/concern nodes,
- * wiring `about` and `sources` edges. `sources` edges are only created to nodes
- * that already exist in the graph (the archive reader runs first).
+ * Read every KNOWLEDGE.md below `root` into the graph as domain/concern nodes.
+ * `provenance` (built from the archive) stamps each concern with the work that
+ * produced it and drives the cross-domain `relates` edges.
  */
 export function ingestKnowledge(
   graph: ProjectGraph,
   root: string,
   filter: KnowledgeFilter = {},
+  provenance?: ProvenanceIndex,
 ): void {
+  // concernKey -> { nodeId, domain }, so the relates pass can resolve co-evolved
+  // concerns back to the nodes we created.
+  const keyToNode = new Map<string, { id: string; domain: string }>();
+
   for (const file of findKnowledgeFiles(root)) {
     const doc = parseKnowledge(readFileSync(file, 'utf-8'), file);
     if (!doc) continue;
@@ -122,23 +143,56 @@ export function ingestKnowledge(
       metadata: { unit, updated, sources, path: file },
     });
 
-    // Concern nodes (level-2 headings) --about--> domain.
-    for (const concern of doc.concerns) {
-      const concernId = `${unit}#${concern}`;
+    for (const { title, content } of doc.concerns) {
+      const concernId = `${unit}#${title}`;
+      const key = concernKey(unit, title);
+      const prov = provenance?.byConcern.get(key);
+
       graph.addNode({
         id: concernId,
         type: 'concern',
-        label: `${unit} · ${concern}`,
-        metadata: { concern, unit },
+        label: `${unit} · ${title}`,
+        metadata: {
+          concern: title,
+          unit,
+          updated,
+          content,
+          // Provenance as metadata — the work is a citation, not a node.
+          sources: prov?.stories ?? [],
+          epics: prov?.epics ?? [],
+          prs: prov?.prs ?? [],
+        },
       });
-      graph.addEdge({ from: concernId, to: unit, type: 'about', label: 'about' });
+      graph.addEdge({ from: unit, to: concernId, type: 'contains', label: 'contains' });
+      keyToNode.set(key, { id: concernId, domain: unit });
     }
+  }
 
-    // Provenance: domain --sources--> story|epic. Skip targets not in the graph
-    // (e.g. a source outside the current filter slice) so edges never dangle.
-    for (const target of sources) {
-      if (!graph.getNode(target)) continue;
-      graph.addEdge({ from: unit, to: target, type: 'sources', label: 'sources' });
+  wireRelates(graph, provenance, keyToNode);
+}
+
+/**
+ * For each epic, connect the concerns it produced that live in DIFFERENT domains
+ * — a `relates` edge meaning "these co-evolved in the same unit of work". Concerns
+ * within one domain are already grouped by their shared domain node, so we don't
+ * clutter the graph with intra-domain relates.
+ */
+function wireRelates(
+  graph: ProjectGraph,
+  provenance: ProvenanceIndex | undefined,
+  keyToNode: Map<string, { id: string; domain: string }>,
+): void {
+  if (!provenance) return;
+
+  for (const [epicId, keys] of provenance.epicSpan) {
+    const nodes = [...keys].map((k) => keyToNode.get(k)).filter((n): n is { id: string; domain: string } => !!n);
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        if (nodes[i].domain === nodes[j].domain) continue; // cross-domain only
+        // Order the pair deterministically so A→B and B→A collapse to one edge.
+        const [from, to] = nodes[i].id < nodes[j].id ? [nodes[i].id, nodes[j].id] : [nodes[j].id, nodes[i].id];
+        graph.addEdge({ from, to, type: 'relates', label: `via ${epicId}` });
+      }
     }
   }
 }
