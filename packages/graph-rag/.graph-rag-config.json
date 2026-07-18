@@ -1,63 +1,17 @@
 {
   "focus": {
-    "title": "SRS Batch Composition Deep Dive",
-    "description": "Understanding how batch composition prioritizes words through active window management",
-    "created_at": "2026-07-17",
-    "updated_at": "2026-07-18"
+    "title": "EP44 Two-Axis Sample",
+    "description": "Graph built from the frozen EP44 fixture: srs-demo routing/app-shell + srs-engine-v2 batch composition",
+    "created_at": "2026-07-19",
+    "updated_at": "2026-07-19"
   },
-  "sources": {
-    "epics": {
-      "enabled": true,
-      "path": ".agents/plans/epics",
-      "filter": {
-        "episodes": [2, 3, 4, 5, 6, 7]
-      }
-    },
-    "changelogs": {
-      "enabled": true,
-      "path": ".agents/changelogs",
-      "filter": {
-        "episodes": [2, 3, 4, 5, 6, 7]
-      }
-    },
-    "git": {
-      "enabled": false
-    },
-    "custom": {
-      "enabled": false
-    }
-  },
-  "extraction": {
-    "episodes": {
-      "extract_problem_statement": true,
-      "extract_dependencies": true,
-      "extract_stories": true,
-      "extract_acceptance_criteria": false
-    },
-    "changelogs": {
-      "extract_design_specs": true,
-      "extract_files_modified": true,
-      "extract_corrections": true,
-      "extract_lessons_learned": false
-    },
-    "custom_fields": []
+  "root": "packages/graph-rag/__fixtures__/two-axis-sample",
+  "filter": {
+    "tracks": null,
+    "domains": null
   },
   "output": {
-    "graph_file": ".graph-data-focused.json",
-    "pretty_print": true,
-    "save_validation_report": false,
-    "backup_previous": false
-  },
-  "validation": {
-    "check_orphaned_nodes": true,
-    "check_circular_deps": true,
-    "check_epic_changelog_sync": true,
-    "fail_on_validation_error": false
-  },
-  "logging": {
-    "level": "info",
-    "verbose": true,
-    "log_extractions": true,
-    "profile": false
+    "graph_file": ".graph-data.json",
+    "pretty_print": true
   }
 }

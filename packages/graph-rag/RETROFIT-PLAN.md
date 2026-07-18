@@ -1,6 +1,8 @@
 # Graph RAG — Retrofit Plan (Two-Axis Reader)
 
-**Status:** Proposed
+**Status:** Implemented (2026-07-19) — built against the EP44 sample fixture;
+`pnpm --filter @gll/graph-rag typecheck && test` green (15/15). See the completion
+note at the bottom.
 **Date:** 2026-07-18
 **Decision:** Option B — reader-only retrofit onto the two-axis artifacts
 **Nature:** Experimental. This package is **fully isolated** — it reads the knowledge
@@ -165,9 +167,35 @@ epic-as-edge-target.
   Option C retrieval/UI (~1.5M+).
 
 ## Open items
-- Confirm the exact current model id to pin in `query-engine.ts`.
-- Decide `concern` representation: standalone node vs. a property on `story`/`domain`.
-  (Leaning standalone node so the graph can group by concern later — cheap to change while
-  the graph is small.)
-- KNOWLEDGE.md frontmatter shape is fixed by D5 (`unit`, `concern`, `sources`, `updated`);
-  confirm once the EP44 sample authors the first real one.
+- Confirm the exact current model id to pin in `query-engine.ts`. *(pinned `claude-opus-4-8`
+  for now — the query path is untested end-to-end since it needs `ANTHROPIC_API_KEY`.)*
+- ~~Decide `concern` representation.~~ **Resolved:** standalone `concern` node
+  (`<unit>#<heading>`) with `about --> domain`, so the graph can group by concern later.
+- ~~KNOWLEDGE.md frontmatter shape.~~ **Confirmed** against the EP44 sample: `unit`,
+  `sources`, `updated` (+ optional `concern`). `concern` nodes come from `##` headings, not
+  frontmatter.
+
+## Completion note (2026-07-19)
+
+Built against `__fixtures__/two-axis-sample/` (frozen EP44 sample). What landed:
+
+- **`src/types.ts`** — rewritten to the 4-type ontology (`story`/`epic`/`domain`/`concern`)
+  and 6 edges (`contains`/`touches`/`about`/`sources`/`supersedes`/`fixes`).
+- **`src/readers/archive.ts` + `src/readers/knowledge.ts`** — the two readers;
+  **`src/build-graph.ts`** orchestrates them (archive first so `sources` edges resolve).
+- **Deleted** `src/ingestion.ts`, `src/ingestion-configurable.ts`, `src/cli/ingest*.ts`
+  (the epic-grouped + `file:`-node pipeline). New CLI: `src/cli/build.ts` (`graph:build`).
+- **`src/query-engine.ts`** — both bugs fixed (`answer` now returned; model id updated) and
+  search/prompt reworded to the two-axis model.
+- **`src/config.ts` + `.graph-rag-config.json`** — episode-range filters → `track`/`domain`
+  filters; `root` points at the fixture by default.
+- **Tests** — `__tests__/unit/two-axis-reader.test.ts` asserts the ADR invariants (grouped
+  by domain, epic edge-target-only, zero `file:` nodes, provenance at both grains).
+- **Docs** — `README.md`, `ARCHITECTURE.md`, `EXTRACTION_PATTERNS.md`, `RESEED_GUIDE.md`
+  rewritten to the two-axis reader.
+
+Verified: `graph:build` on the fixture → **15 nodes / 14 edges**
+(`story(8) epic(2) domain(2) concern(3)`); typecheck + 15 tests green.
+
+Not done (as scoped out): backfill, `archive-check` validator, embeddings/UI/API, and the
+end-to-end LLM `query()` path (needs a key). Nothing is committed — git is the user's to run.

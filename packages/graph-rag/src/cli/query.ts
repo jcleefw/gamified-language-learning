@@ -20,11 +20,11 @@ async function main() {
 
   const engine = new QueryEngine(graph);
 
-  // Demo queries
+  // Demo queries — two-axis phrasing (domains + provenance, not episodes).
   const queries = [
-    'How did the SRS engine evolve?',
-    'What design decisions were made for batch composition?',
-    'Show me the dependency chain for the quiz runner',
+    'How does routing work in srs-demo and which work produced it?',
+    'What changed in batch composition and why?',
+    'Which stories touched the srs-demo app shell?',
   ];
 
   console.log('🤖 Graph RAG Query Engine\n');
@@ -43,8 +43,8 @@ async function main() {
     console.log('\n' + '─'.repeat(70));
     console.log('📝 To query with LLM reasoning:\n');
     console.log('```typescript');
-    console.log("const result = await engine.query('How did the SRS engine evolve?');");
-    console.log('console.log(result);');
+    console.log(`const result = await engine.query('${queries[0]}');`);
+    console.log('console.log(result.answer);');
     console.log('```');
   }
 

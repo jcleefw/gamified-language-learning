@@ -1,0 +1,137 @@
+{
+  "stories": [
+    {
+      "id": "EP44-ST01",
+      "epic": "EP44",
+      "track": "project",
+      "title": "Install Vue Router 4 & scaffold router table",
+      "domain": "apps/srs-demo",
+      "concern": "routing",
+      "completed": "2026-07-15",
+      "duration": "2h",
+      "summary": "Added Vue Router 4 and scaffolded src/router.ts with 10 lazy-loaded routes (one per Screen union value), :deckId path params, and curationOnly route meta; wired the router into main.ts bootstrap.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": 41,
+      "compact_pr": null
+    },
+    {
+      "id": "EP44-ST02",
+      "epic": "EP44",
+      "track": "project",
+      "title": "Collapse App.vue to RouterView and add the nav guard",
+      "domain": "apps/srs-demo",
+      "concern": "routing",
+      "completed": "2026-07-15",
+      "duration": "3h",
+      "summary": "Reduced App.vue to a NavMenu+RouterView layout shell; replaced useLearningSession's screen Ref dependency with an injected navigate callback; ported the old navTo confirm/flush/finalize sequence into a router.beforeEach guard (router-guards.ts) that reaches the shared session via a module singleton.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": 41,
+      "compact_pr": null
+    },
+    {
+      "id": "EP44-ST03",
+      "epic": "EP44",
+      "track": "project",
+      "title": "Add view wrappers and extract CurationLanding",
+      "domain": "apps/srs-demo",
+      "concern": "routing",
+      "completed": "2026-07-16",
+      "duration": "3h",
+      "summary": "Added ten thin view wrappers under src/views/ and extracted CurationLanding.vue from App.vue inline markup; views hold only composable reads, route params/query, and router.push; introduced component-test infra (@vue/test-utils + happy-dom).",
+      "supersedes": [],
+      "fixes": [],
+      "pr": 41,
+      "compact_pr": null
+    },
+    {
+      "id": "EP44-ST05",
+      "epic": "EP44",
+      "track": "project",
+      "title": "Routing documentation",
+      "domain": "apps/srs-demo",
+      "concern": "routing",
+      "completed": "2026-07-16",
+      "duration": "1h",
+      "summary": "Documented the routing architecture in README (10 routes, navigate-injection rationale) and added a routing best-practice note to RULES.md; struck the browser-only manual-verification story ST04 as agent-unverifiable.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": 41,
+      "compact_pr": null
+    },
+    {
+      "id": "EP44-ST06",
+      "epic": "EP44",
+      "track": "project",
+      "title": "Extract boot hydration into useAppBoot",
+      "domain": "apps/srs-demo",
+      "concern": "app-shell",
+      "completed": "2026-07-16",
+      "duration": "1h",
+      "summary": "Extracted App.vue boot-time hydration into a useAppBoot composable exposing bootApp(deps); onMounted now delegates to it verbatim with no behavior change.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": 41,
+      "compact_pr": null
+    },
+    {
+      "id": "EP44-ST07",
+      "epic": "EP44",
+      "track": "project",
+      "title": "Extract DebugRecordingControls component",
+      "domain": "apps/srs-demo",
+      "concern": "app-shell",
+      "completed": "2026-07-16",
+      "duration": "1h",
+      "summary": "Extracted the debug-recording buttons, handlers, and CSS into DebugRecordingControls.vue, gated by env.debugMode, taking an activeNav prop and emitting error so App.vue keeps ownership of apiError.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": 41,
+      "compact_pr": null
+    },
+    {
+      "id": "EP44-RV01",
+      "epic": "EP44",
+      "track": "project",
+      "title": "Fix assemble-batch shuffle bias",
+      "domain": "packages/srs-engine-v2",
+      "concern": "batch-composition",
+      "completed": "2026-07-16",
+      "duration": "1h",
+      "summary": "Replaced assemble-batch's non-uniform sort(Math.random) shuffle with the shared Fisher-Yates shuffle util and added permutation-validity tests; a drive-by correctness fix surfaced during EP44 code review.",
+      "supersedes": [],
+      "fixes": [
+        "EP23"
+      ],
+      "pr": 41,
+      "compact_pr": null
+    },
+    {
+      "id": "AGN05",
+      "epic": "AGN05",
+      "track": "agentic",
+      "title": "Two-Axis Knowledge Architecture",
+      "domain": "agentic/knowledge",
+      "concern": "archive-structure",
+      "completed": "2026-07-18",
+      "duration": "7h 33m",
+      "summary": "Implemented two-axis knowledge compaction (time archive + domain KNOWLEDGE.md); specified AGN rollup lifecycle (plan→artifact+archive entry); tools (domains-from-diff, archive-append, archive-check) and archive-epic skill.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null
+    }
+  ],
+  "epics": {
+    "EP44": {
+      "title": "App.vue to Vue Router refactor",
+      "domains": [
+        "apps/srs-demo",
+        "packages/srs-engine-v2"
+      ],
+      "archived": "2026-07-19",
+      "notes": "Screen-string routing replaced by Vue Router 4; App.vue reduced to a layout shell. Individual page-component refactors (DeckOverview/QuizCard/MarkAudio) deferred to EP45+. ST04 manual browser verification struck. Includes a drive-by Fisher-Yates fix to srs-engine-v2 assemble-batch."
+    }
+  }
+}
