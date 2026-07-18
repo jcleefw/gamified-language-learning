@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gamified-language-learning/.agents/changelogs/archive/schema.json",
+  "title": "Two-Axis Knowledge Archive (time axis)",
+  "description": "Historical record of completed work organized by completion date and epic. Flat per-story array plus per-epic rollup. Records what was done, when, and duration — never duplicates git's content.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["stories", "epics"],
+  "properties": {
+    "stories": {
+      "type": "array",
+      "description": "Flat primary array of completed stories, ordered by completion date. Filterable by domain without flattening.",
+      "items": { "$ref": "#/$defs/story" }
+    },
+    "epics": {
+      "type": "object",
+      "description": "Keyed rollup by epic/work-unit ID (EP## or AGN##) for lookup and aggregation.",
+      "additionalProperties": { "$ref": "#/$defs/epic" }
+    }
+  },
+  "$defs": {
+    "story": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "epic", "track", "title", "domain", "concern",
+        "completed", "duration", "summary", "supersedes", "fixes", "pr", "compact_pr"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Story/work-unit id, e.g. EP44-ST01 or AGN05.",
+          "pattern": "^(EP[0-9]+(-[A-Z]+[0-9]+)?|AGN[0-9]+)$"
+        },
+        "epic": {
+          "type": ["string", "null"],
+          "description": "Owning epic id, or null for loose maintenance stories that belong to no epic.",
+          "pattern": "^(EP[0-9]+|AGN[0-9]+)$"
+        },
+        "track": {
+          "type": "string",
+          "description": "Work track: project (product features/infrastructure) or agentic (agent/workflow development).",
+          "enum": ["project", "agentic"]
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "domain": {
+          "type": "string",
+          "description": "Workspace unit: apps/*, packages/* for project work, or agentic/<concern> for agent work.",
+          "minLength": 1
+        },
+        "concern": {
+          "type": "string",
+          "description": "Cross-cutting concern within the domain (e.g., routing, audio, scheduling). Free-form, no controlled vocabulary.",
+          "minLength": 1
+        },
+        "completed": {
+          "type": "string",
+          "description": "Completion date in YYYY-MM-DD format. Primary sort key for timeline ordering.",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "duration": {
+          "type": "string",
+          "description": "Human-readable elapsed effort, e.g. 1d, 3d, 2w.",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "description": "What was done (action verbs). Points to git history, does not duplicate commit messages.",
+          "minLength": 1
+        },
+        "supersedes": {
+          "type": "array",
+          "description": "Story IDs this work replaced or obsoleted.",
+          "items": { "type": "string" }
+        },
+        "fixes": {
+          "type": "array",
+          "description": "Sealed epic/story IDs this story corrects without reopening them.",
+          "items": { "type": "string" }
+        },
+        "pr": {
+          "type": ["integer", "null"],
+          "description": "Provenance PR number (stable across squash-merge, never a commit SHA). Null only for agentic work with no PR.",
+          "minimum": 1
+        },
+        "compact_pr": {
+          "type": ["integer", "null"],
+          "description": "PR number of the epic's compaction commit (when this story's changelog folder was archived). Null until the epic is compacted.",
+          "minimum": 1
+        }
+      }
+    },
+    "epic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "domains", "archived"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "domains": {
+          "type": "array",
+          "description": "Distinct workspace units this epic touched.",
+          "items": { "type": "string" }
+        },
+        "archived": {
+          "type": "string",
+          "description": "Date the epic was archived and its changelog folder compacted, in YYYY-MM-DD format.",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional epic-level rollup note (deferrals, tombstone rationale)."
+        }
+      }
+    }
+  }
+}

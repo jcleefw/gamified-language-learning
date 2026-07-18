@@ -1,489 +1,151 @@
 # Graph RAG Architecture: Build Pipeline & Storage
 
-## Data Pipeline Overview
+## Data pipeline overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ SOURCE DATA                                                     │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  .agents/plans/epics/*.md  (37 files)                          │
-│  └─ Problem statements, scope, stories, dependencies           │
-│                                                                 │
-│  .agents/changelogs/EP*/*.md  (152 files)                      │
-│  └─ Implementation details, files modified, corrections        │
-│                                                                 │
-└──────────────────────────┬──────────────────────────────────────┘
+│ SOURCE ARTIFACTS  (the only two the reader consumes — D7)         │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  TIME axis:  <root>/.agents/changelogs/archive/index.json         │
+│  └─ stories[] (one per completed unit of work) + epics{} rollups  │
+│                                                                   │
+│  DOMAIN axis: <root>/{apps,packages}/<unit>/KNOWLEDGE.md          │
+│  └─ frontmatter (unit, sources, updated) + ## concern headings    │
+│                                                                   │
+│  It never reads raw .agents/plans/epics or .agents/changelogs/EP* │
+└──────────────────────────┬────────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ INGESTION (DataIngestion class)                                │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  Step 1: Ingest Epics (.agents/plans/epics/*.md)              │
-│  ├─ Extract: episodeNum from filename (EP01, EP02, ...)       │
-│  ├─ Extract: title from filename                               │
-│  ├─ Parse: Problem Statement section                           │
-│  ├─ Parse: Dependencies (Depends on: EP01, EP02, ...)         │
-│  ├─ Parse: Stories (### EP01-ST01: ...)                       │
-│  ├─ Add: Episode node {id, type, label, metadata}             │
-│  ├─ Add: Story nodes for each ### match                        │
-│  └─ Add: Edges (episode → story [contains])                    │
-│                                                                 │
-│  Step 2: Ingest Changelogs (.agents/changelogs/*/*.md)        │
-│  ├─ Extract: episodeNum from directory name                   │
-│  ├─ Extract: designSpecId from filename (DS01, DS02, ...)    │
-│  ├─ Parse: Files Modified section                              │
-│  ├─ Add: File nodes {id: 'file:path/to/file.ts', ...}        │
-│  ├─ Add: DesignSpec nodes (if found)                          │
-│  └─ Add: Edges for all relationships                           │
-│                                                                 │
-└──────────────────────────┬──────────────────────────────────────┘
+│ READERS  (src/readers/, orchestrated by buildGraph)               │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  1. ingestArchive(graph, root, filter)                            │
+│     ├─ story node per stories[] entry (rich metadata)             │
+│     ├─ epic node per referenced epic  (edge target ONLY)          │
+│     ├─ epic  --contains-->  story     (story.epic)                │
+│     ├─ story --supersedes-> story     (story.supersedes[])        │
+│     └─ story --fixes-->     epic|story(story.fixes[])             │
+│                                                                   │
+│  2. ingestKnowledge(graph, root, filter)   [runs second]          │
+│     ├─ domain node per KNOWLEDGE.md    (id = `unit` frontmatter)   │
+│     ├─ concern node per ## heading                                │
+│     ├─ concern --about-->   domain                                │
+│     └─ domain  --sources--> story|epic (frontmatter `sources[]`)   │
+│                                                                   │
+│  Order matters: archive first, so story/epic nodes exist by the   │
+│  time KNOWLEDGE.md wires its `sources` provenance edges to them.   │
+└──────────────────────────┬────────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ IN-MEMORY GRAPH (ProjectGraph class)                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  nodes: Map<id, Node>  (229 entries)                           │
-│  edges: Edge[]         (296 entries)                           │
-│                                                                 │
-│  Node structure:                                                │
-│  {                                                              │
-│    id: "EP02"                                                  │
-│    type: "episode"                                             │
-│    label: "EP02: srs engine mastery"                          │
-│    metadata: {                                                 │
-│      problem: "The SRS engine has no mastery tracking..."     │
-│      dependencies: ["EP01"]                                   │
-│    }                                                            │
-│  }                                                              │
-│                                                                 │
-│  Edge structure:                                                │
-│  {                                                              │
-│    from: "EP02"                                                │
-│    to: "EP02-ST01"                                             │
-│    type: "contains"                                            │
-│    label: "contains story"                                     │
-│  }                                                              │
-│                                                                 │
-└──────────────────────────┬──────────────────────────────────────┘
+│ IN-MEMORY GRAPH (ProjectGraph)                                    │
+│   nodes: Map<id, Node>   edges: Edge[]   (dedup by from,to,type)   │
+├──────────────────────────┬────────────────────────────────────────┤
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ SERIALIZATION → JSON                                           │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  Stored in: packages/graph-rag/.graph-data.json               │
-│                                                                 │
-│  {                                                              │
-│    "nodes": [                                                  │
-│      { "id": "EP01", "type": "episode", ... },                │
-│      { "id": "EP01-ST01", "type": "story", ... },            │
-│      ...  (229 total)                                          │
-│    ],                                                           │
-│    "edges": [                                                  │
-│      { "from": "EP01", "to": "EP01-ST01", "type": "contains" },
-│      ...  (296 total)                                          │
-│    ],                                                           │
-│    "summary": {                                                │
-│      "totalNodes": 229,                                        │
-│      "nodesByType": { "episode": 37, "story": 190, ... },    │
-│      "totalEdges": 296                                         │
-│    }                                                            │
-│  }                                                              │
-│                                                                 │
-└──────────────────────────┬──────────────────────────────────────┘
+│ SERIALIZATION → packages/graph-rag/.graph-data.json (gitignored)  │
+└──────────────────────────┬────────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ QUERYING (QueryEngine)                                         │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  1. Load .graph-data.json → reconstruct graph                 │
-│  2. Parse user question                                        │
-│  3. Search nodes (keyword matching)                           │
-│  4. Traverse edges (follow relationships, depth=3)             │
-│  5. Build subgraph (relevant nodes + edges)                    │
-│  6. Format as string context                                   │
-│  7. Send to Claude API with context                           │
-│  8. Return answer + graph data                                 │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+│ QUERYING (QueryEngine): keyword search → traverse → LLM reasoning │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
-## Storage Format: The Graph JSON
+## The grouping invariant
 
-### File Location
-```
-packages/graph-rag/.graph-data.json
-```
+The whole point of the two-axis model is that **grouping is by workspace `domain`,
+and an epic is only ever an edge target** (via `contains`, `sources`, or `fixes`).
+No edge originates from an epic except the timeline `contains`. There are no
+`file:` component nodes — the graph never duplicates what git already stores
+(Compaction D6). This is enforced by tests in
+`__tests__/unit/two-axis-reader.test.ts`.
 
-### Structure
+## Node types
+
+| Type | Axis | Source | Key metadata |
+| --- | --- | --- | --- |
+| `story` | time | `index.json` stories[] | `epic`, `track`, `domain`, `concern`, `completed`, `duration`, `summary`, `pr`, `compact_pr` |
+| `epic` | time | `index.json` epics{} | `title`, `domains[]`, `archived`, `notes` |
+| `domain` | domain | `KNOWLEDGE.md` frontmatter | `unit`, `updated`, `sources`, `path` |
+| `concern` | domain | `KNOWLEDGE.md` `##` heading | `concern`, `unit` |
+
+## Edge types
+
+| Edge | From → To | Derived from |
+| --- | --- | --- |
+| `contains` | epic → story | story.epic |
+| `touches` | story → domain | story.domain |
+| `about` | concern → domain | KNOWLEDGE.md heading scoping |
+| `sources` | domain → story\|epic | KNOWLEDGE.md `sources[]` (provenance) |
+| `supersedes` | story → story | story.supersedes[] |
+| `fixes` | story → epic\|story | story.fixes[] |
+
+## Storage format
+
+`packages/graph-rag/.graph-data.json` — regenerated by `graph:build`, never
+hand-edited, gitignored. Shape (abridged, from the EP44 fixture):
+
 ```json
 {
   "nodes": [
     {
-      "id": "EP01",
-      "type": "episode",
-      "label": "EP01: monorepo scaffolding",
-      "metadata": {
-        "file": "EP01-monorepo-scaffolding.md",
-        "problem": "No project structure exists. All Stage 1 work...",
-        "dependencies": []
-      }
-    },
-    {
-      "id": "EP02",
-      "type": "episode",
-      "label": "EP02: srs engine mastery",
-      "metadata": {
-        "file": "EP02-srs-engine-mastery.md",
-        "problem": "The SRS engine has no mastery tracking...",
-        "dependencies": ["EP01"]
-      }
-    },
-    {
-      "id": "EP01-ST01",
+      "id": "EP44-ST01",
       "type": "story",
-      "label": "EP01-ST01: pnpm workspace + Turborepo",
+      "label": "EP44-ST01: Install Vue Router 4 & scaffold router table",
       "metadata": {
-        "episode": "EP01"
+        "epic": "EP44",
+        "track": "project",
+        "domain": "apps/srs-demo",
+        "concern": "routing",
+        "completed": "2026-07-15",
+        "summary": "Added Vue Router 4 and scaffolded src/router.ts ...",
+        "pr": 41
       }
     },
-    {
-      "id": "DS01",
-      "type": "design-spec",
-      "label": "DS01",
-      "metadata": {
-        "episode": "EP01",
-        "file": "20260305T200100Z-DS01-monorepo-scaffolding.md"
-      }
-    },
-    {
-      "id": "file:packages/srs-engine/package.json",
-      "type": "component",
-      "label": "packages/srs-engine/package.json",
-      "metadata": {
-        "type": "file"
-      }
-    }
+    { "id": "EP44", "type": "epic", "label": "EP44: App.vue to Vue Router refactor", "metadata": { "domains": ["apps/srs-demo", "packages/srs-engine-v2"] } },
+    { "id": "apps/srs-demo", "type": "domain", "label": "apps/srs-demo", "metadata": { "unit": "apps/srs-demo", "sources": ["EP44"], "updated": "2026-07-19" } },
+    { "id": "apps/srs-demo#Routing", "type": "concern", "label": "apps/srs-demo · Routing", "metadata": { "concern": "Routing", "unit": "apps/srs-demo" } }
   ],
   "edges": [
-    {
-      "from": "EP01",
-      "to": "EP01-ST01",
-      "type": "contains",
-      "label": "contains story"
-    },
-    {
-      "from": "EP02",
-      "to": "EP01",
-      "type": "depends-on",
-      "label": "depends on"
-    },
-    {
-      "from": "EP01",
-      "to": "file:packages/srs-engine/package.json",
-      "type": "modified",
-      "label": "modified"
-    },
-    {
-      "from": "DS01",
-      "to": "EP01",
-      "type": "defines",
-      "label": "defines"
-    }
+    { "from": "EP44", "to": "EP44-ST01", "type": "contains", "label": "contains story" },
+    { "from": "apps/srs-demo", "to": "EP44", "type": "sources", "label": "sources" },
+    { "from": "apps/srs-demo#Routing", "to": "apps/srs-demo", "type": "about", "label": "about" },
+    { "from": "EP44-RV01", "to": "EP23", "type": "fixes", "label": "fixes" }
   ],
   "summary": {
-    "totalNodes": 229,
-    "nodesByType": {
-      "episode": 37,
-      "story": 190,
-      "design-spec": 2,
-      "problem": 0,
-      "component": 0,
-      "decision": 0
-    },
-    "totalEdges": 296
+    "totalNodes": 15,
+    "nodesByType": { "story": 8, "epic": 2, "domain": 2, "concern": 3 },
+    "totalEdges": 14
   }
 }
 ```
 
-## Extraction Rules
+## Filtering
 
-### Episode Extraction (from epic plan files)
+`buildGraph(root, { tracks, domains })` (and the config's `filter` block) scope the
+graph:
 
-**File pattern**: `.agents/plans/epics/EP##-*.md`
+- `tracks`: keep only stories on these tracks (e.g. `['project']` drops `agentic`).
+- `domains`: keep only these workspace units on both axes.
 
-```typescript
-// Filename → Episode ID
-"EP01-monorepo-scaffolding.md" → id: "EP01"
+`null`/omitted = no filter. Edges whose target falls outside the slice are never
+created, so the graph never dangles. Epic nodes referenced by an included story's
+`fixes`/`contains` are materialized as edge-target placeholders even if no included
+story belongs to them.
 
-// Filename → Title
-"EP01-monorepo-scaffolding.md" → label: "EP01: monorepo scaffolding"
+## Deduplication
 
-// Markdown → Problem statement
-"## Problem Statement\n\nNo project structure exists..." → metadata.problem
+- **Nodes**: adding an existing `id` overwrites — last write wins.
+- **Edges**: `(from, to, type)` must be unique; duplicates are skipped.
+- **Determinism**: same artifacts in → same graph out. Rebuild anytime; the JSON
+  is a cache, not a source of truth.
 
-// Markdown → Dependencies
-"**Depends on**: EP01, EP02" → metadata.dependencies: ["EP01", "EP02"]
+## Reseeding
 
-// Markdown → Stories
-"### EP01-ST01: pnpm workspace + Turborepo" → creates story node + edge
-```
-
-### Changelog Extraction (from changelog files)
-
-**File pattern**: `.agents/changelogs/EP##--*/.*-*.md`
-
-```typescript
-// Filename → Design Spec ID
-"20260305T200100Z-DS01-monorepo-scaffolding.md" → designSpecId: "DS01"
-
-// Section → Files Modified
-"### `packages/srs-engine/package.json`" → file node + modified edge
-
-// Section → Corrections
-"## DS01 Spec Gaps Corrected" → corrected-from edge
-
-// Directory → Episode
-"/changelogs/EP01--monorepo-scaffolding/" → episode: "EP01"
-```
-
-## How Deduplication Works
-
-### Duplicate Nodes
-```typescript
-// If you re-ingest and a node ID already exists
-graph.addNode({ id: "EP01", ... })  // Overwrites previous
-```
-
-### Duplicate Edges
-```typescript
-// Edges are deduplicated: (from, to, type) tuple must be unique
-if (edges.some(e => e.from === edge.from && e.to === edge.to && e.type === edge.type)) {
-  // Skip, already exists
-} else {
-  edges.push(edge)  // Add new
-}
-```
-
-### Result: Always Clean Graph
-- Running `pnpm ingest` twice produces identical `.graph-data.json`
-- No orphaned nodes or duplicate edges
-- Safe to regenerate anytime
-
-## How to Reseed/Rebuild the Graph
-
-### Scenario 1: Quick Reseed (Delete & Regenerate)
-
-```bash
-# 1. Remove cached graph
-rm packages/graph-rag/.graph-data.json
-
-# 2. Rebuild from source
-pnpm --filter @gll/graph-rag ingest
-
-# Result: Fresh graph from .agents/ directory
-```
-
-### Scenario 2: Partial Update (Specific Episodes)
-
-If you only want to re-ingest certain episodes, modify `src/ingestion.ts`:
-
-```typescript
-private ingestEpics(graph: ProjectGraph): void {
-  const epicsDir = join(this.projectRoot, '.agents', 'plans', 'epics');
-  let epicFiles = readdirSync(epicsDir).filter((f) => f.endsWith('.md'));
-  
-  // BEFORE: Process all 37 files
-  // AFTER: Filter to specific episodes
-  epicFiles = epicFiles.filter(f => {
-    const match = f.match(/EP(\d+)/);
-    const num = match ? parseInt(match[1]) : 0;
-    return num >= 20;  // Only EP20 and above
-  });
-  
-  // Rest of logic unchanged
-}
-```
-
-### Scenario 3: Custom Data Source (Replace Entirely)
-
-If you want to use a different data source (e.g., git logs, Jira, Notion):
-
-**Create a new ingestion class:**
-```typescript
-// src/ingestion-custom.ts
-export class CustomDataIngestion {
-  async ingest(): Promise<ProjectGraph> {
-    const graph = new ProjectGraph();
-    
-    // Your custom logic:
-    // - Query git history
-    // - Parse Jira tickets
-    // - Read from database
-    // - Call external API
-    
-    // Then: graph.addNode(...), graph.addEdge(...)
-    return graph;
-  }
-}
-```
-
-**Use it in CLI:**
-```typescript
-// src/cli/ingest.ts
-import { CustomDataIngestion } from '../ingestion-custom.js';
-
-const ingestion = new CustomDataIngestion(projectRoot);
-const graph = await ingestion.ingest();
-```
-
-### Scenario 4: Modify Extraction Rules
-
-If you want to extract more data (e.g., decisions, problems, tradeoffs):
-
-**Update the regex patterns in `ingestEpics()`:**
-
-```typescript
-// Extract decisions from epic plans
-const decisionsMatch = content.match(/## Design Decisions\n\n([\s\S]*?)\n\n/);
-if (decisionsMatch) {
-  const decisions = decisionsMatch[1].split('\n-').map(d => d.trim());
-  decisions.forEach((decision, idx) => {
-    const decisionId = `${episodeNum}-DECISION-${idx}`;
-    graph.addNode({
-      id: decisionId,
-      type: 'decision',
-      label: decision,
-      metadata: { episode: episodeNum }
-    });
-    
-    graph.addEdge({
-      from: episodeNum,
-      to: decisionId,
-      type: 'has-decision',
-      label: 'makes decision'
-    });
-  });
-}
-```
-
-Then reseed:
-```bash
-pnpm --filter @gll/graph-rag ingest
-```
-
-### Scenario 5: Validation & Repair
-
-Check graph integrity before using:
-
-```typescript
-// src/validation.ts
-export function validateGraph(graph: ProjectGraph): GraphValidationReport {
-  const issues = [];
-  
-  // Check for orphaned nodes
-  const referencedIds = new Set(graph.edges.flatMap(e => [e.from, e.to]));
-  graph.nodes.forEach(node => {
-    if (!referencedIds.has(node.id) && node.type !== 'episode') {
-      issues.push(`Orphaned node: ${node.id}`);
-    }
-  });
-  
-  // Check for broken references
-  graph.edges.forEach(edge => {
-    if (!graph.getNode(edge.from)) {
-      issues.push(`Broken edge from: ${edge.from}`);
-    }
-    if (!graph.getNode(edge.to)) {
-      issues.push(`Broken edge to: ${edge.to}`);
-    }
-  });
-  
-  return { isValid: issues.length === 0, issues };
-}
-```
-
-## Storage Decisions & Tradeoffs
-
-| Approach | Pros | Cons | Used? |
-|----------|------|------|-------|
-| **JSON file (.graph-data.json)** | Fast, portable, human-readable, git-trackable | File system bound, eventual consistency | ✅ YES |
-| **SQLite database** | ACID, complex queries, scalable | More setup, slower for small data | ❌ No (v1) |
-| **In-memory only** | Fast, simple | Lost on restart, not persistent | ❌ No (v1) |
-| **LLM-powered ingestion** | Flexible, semantic extraction | Slow, expensive, less reliable | ❌ No (v1) |
-| **Graph database (Neo4j)** | Native graph queries, relationship indexes | External dependency, overkill for 229 nodes | ❌ No (v1) |
-
-**Chosen approach (JSON)**:
-- 229 nodes + 296 edges = ~50KB JSON (tiny)
-- Re-ingestion from source is fast (~100ms)
-- Deterministic: same input → same output
-- Version-controllable (can track graph evolution)
-
-## Performance Characteristics
-
-### Ingestion
-```
-Parsing 37 epics:      ~10ms
-Parsing 152 changelogs: ~80ms
-Total:                 ~90ms
-
-Graph size: 229 nodes, 296 edges
-JSON size:  ~50KB
-```
-
-### Querying
-```
-Keyword search (top 10): <1ms
-Graph traversal (depth=3): <5ms
-Context formatting:      <10ms
-LLM call:               ~2-5s (network bound)
-```
-
-## Future: Hybrid Storage
-
-When you scale beyond this POC:
-
-```
-┌──────────────┐
-│ Source Data  │  (.agents/plans, .agents/changelogs)
-└──────┬───────┘
-       │
-       ├─→ Ingestion Pipeline
-       │
-       ├─→ Validation (check for issues)
-       │
-       └─→ Store in:
-            ├─ JSON (cache, human-readable)
-            ├─ SQLite (queryable, persistent)
-            └─ Vector DB (semantic search, embeddings)
-       
-       Query:
-       ├─ Keyword search → JSON (fast)
-       ├─ Relationship queries → SQLite (reliable)
-       └─ Semantic search → Vector DB (powerful)
-```
-
-## Summary: When to Reseed
-
-**Do it when:**
-- You add new episodes to `.agents/plans/epics/`
-- You add new changelogs to `.agents/changelogs/`
-- You want to change extraction rules
-- You want to include new data sources
-- You suspect the cached graph is stale
-
-**How:**
-```bash
-# Full reseed (0.1 seconds)
-rm packages/graph-rag/.graph-data.json
-pnpm --filter @gll/graph-rag ingest
-
-# Or just re-run ingest (overwrites)
-pnpm --filter @gll/graph-rag ingest
-```
-
-No downtime, deterministic output, always fresh.
+The graph accretes for free: it grows each time an epic is compacted into the
+archive + KNOWLEDGE.md. To refresh, just rebuild — see
+[RESEED_GUIDE.md](./RESEED_GUIDE.md).
