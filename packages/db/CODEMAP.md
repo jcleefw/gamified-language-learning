@@ -59,7 +59,7 @@ Purpose: SQLite schema, initialization, and port implementations. Provides inter
 | better-sqlite3 | `better-sqlite3@^12.11.1` | Synchronous SQLite driver. |
 | @gll/api-contract | `workspace:*` | Type contracts (DeckDoc, etc.). |
 | @gll/logger | `workspace:*` | Structured logging. |
-| @gll/srs-engine-v2 | `workspace:*` | WordState type context. |
+| @gll/srs-engine | `workspace:*` | WordState type context. |
 | @gll/srs-review | `workspace:*` | ReviewCard type context. |
 | @gll/srs-shelving | `workspace:*` | ShelvedWord type context. |
 

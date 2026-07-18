@@ -1,7 +1,7 @@
 import { and, eq, inArray, asc, desc } from 'drizzle-orm';
 import { type Logger, NoopLogger } from '@gll/logger';
 import * as schema from './schema.js';
-import type { WordState } from '@gll/srs-engine-v2/learn';
+import type { WordState } from '@gll/srs-engine/learn';
 import type {
   IAnswerEventStore,
   AnswerEventRecord,
