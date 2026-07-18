@@ -1,45 +1,14 @@
 # Extraction Patterns Reference
 
-Exactly how each field of the two source artifacts becomes a node or edge. There
-is **no regex mining of prose or file paths** — both sources are already
-structured (JSON + fixed frontmatter), which is the point of the compaction ADRs.
+Exactly how each field of the source artifacts becomes a node, edge, or
+provenance stamp. There is **no regex mining of prose or file paths** — both
+sources are already structured (JSON + fixed frontmatter), which is the point of
+the compaction ADRs.
 
-## Source 1 — Time axis: `<root>/.agents/changelogs/archive/index.json`
+The graph portrays **knowledge, not work**: nodes are domains and concerns.
+Stories/epics are folded into provenance metadata, never nodes.
 
-Read by [`src/readers/archive.ts`](./src/readers/archive.ts). Shape:
-
-```json
-{ "stories": [ { ...story } ], "epics": { "EP44": { ...epic } } }
-```
-
-### `stories[]` → `story` node (+ edges)
-
-| Field | Becomes |
-| --- | --- |
-| `id` | node id, e.g. `EP44-ST01` |
-| `title` | part of `label` (`<id>: <title>`) |
-| `epic` | edge **`epic --contains--> story`** |
-| `track` | metadata; drives the `tracks` filter |
-| `domain` | metadata (the `touches` target when a domain node exists) |
-| `concern`, `completed`, `duration`, `summary`, `pr`, `compact_pr` | metadata (searchable / rendered in query context) |
-| `supersedes[]` | edge **`story --supersedes--> story`** (only within the included slice) |
-| `fixes[]` | edge **`story --fixes--> epic\|story`** |
-
-### `epics{}` → `epic` node
-
-Only epics **referenced by an included story** (via `epic` or `fixes`) are
-materialized — an epic is an edge target, never a standalone grouping.
-
-| Field | Becomes |
-| --- | --- |
-| key (`EP44`) | node id |
-| `title` | part of `label` |
-| `domains[]`, `archived`, `notes` | metadata |
-
-A `fixes`/`contains` target epic with no included story is still materialized as a
-minimal placeholder node so the edge never dangles.
-
-## Source 2 — Domain axis: `<root>/{apps,packages}/<unit>/KNOWLEDGE.md`
+## Source 1 — Knowledge: `<root>/{apps,packages}/<unit>/KNOWLEDGE.md`
 
 Read by [`src/readers/knowledge.ts`](./src/readers/knowledge.ts). The reader walks
 `root` recursively, skipping `node_modules`, `.git`, `.agents`, `dist`,
@@ -59,27 +28,68 @@ updated: 2026-07-19
 | --- | --- |
 | `unit` | domain **node id** — identity is the frontmatter, *not* the disk path |
 | `updated` | metadata |
-| `sources[]` | edge **`domain --sources--> story\|epic`** (provenance; skipped if the target isn't in the graph slice) |
+| `sources[]` | metadata (domain-level provenance reference) |
 
-`parseKnowledge()` is a deliberately minimal frontmatter parser (scalars + `[a, b]`
-lists) — not a full YAML engine, because the shape is fixed by the ADR.
+### Level-2 headings (`## ...`) + their prose → `concern` node
 
-### Level-2 headings (`## ...`) → `concern` nodes
+Each `## Heading` becomes a `concern` node id `<unit>#<heading>`, with:
 
-Each `## Heading` becomes a `concern` node id `<unit>#<heading>` with edge
-**`concern --about--> domain`**. Body prose is *not* parsed into the graph — it's
-the human-readable layer; the graph indexes structure, not sentences.
+| Piece | Becomes |
+| --- | --- |
+| heading text | `metadata.concern` + part of the label |
+| prose beneath the heading (up to the next `##`) | `metadata.content` — the durable knowledge |
+| provenance (from Source 2) | `metadata.sources` / `epics` / `prs` |
+
+And one edge: **`domain --contains--> concern`**.
+
+`parseKnowledge()` is a deliberately minimal parser (frontmatter scalars + `[a, b]`
+lists, `##` section splitting) — not a full YAML/Markdown engine, because the
+shape is fixed by the ADR.
+
+## Source 2 — Provenance: `<root>/.agents/changelogs/archive/index.json`
+
+Read by [`src/readers/archive.ts`](./src/readers/archive.ts). **It produces no
+nodes.** `buildProvenanceIndex()` folds the stories into an index:
+
+```json
+{ "stories": [ { "id": "EP44-ST01", "domain": "apps/srs-demo", "concern": "routing", "epic": "EP44", "pr": 41 } ], "epics": { ... } }
+```
+
+| Field | Used for |
+| --- | --- |
+| `domain` + `concern` | the index key (see matching below) |
+| `id` | added to that concern's `sources[]` |
+| `epic` | added to `epics[]`, and recorded in `epicSpan` (drives `relates`) |
+| `pr` | added to `prs[]` |
+| `track` | honored by the `tracks` filter |
+
+A story with no `domain`/`concern`, or whose concern has no matching
+`KNOWLEDGE.md`, contributes nothing — it never appears in the graph.
+
+### Concern matching
+
+Story `concern` is a slug (`app-shell`); a heading is a title (`App Shell`).
+`normalizeConcern()` folds both (lowercase, strip non-alphanumerics) and
+`concernKey(domain, concern)` joins them with the domain, so
+`apps/srs-demo · app-shell` and `apps/srs-demo · App Shell` collide correctly.
+
+### `relates` edges (concern → concern)
+
+From `epicSpan`: for each epic, the concerns it produced that live in **different
+domains** are linked pairwise with a `relates` edge labeled `via <epicId>` —
+"these co-evolved in one unit of work". Same-domain concerns are skipped (already
+grouped by their shared domain node).
 
 ## Why order matters
 
-`buildGraph` runs the archive reader **first**, then the knowledge reader, so the
-story/epic nodes already exist when `sources` provenance edges are wired to them.
-The knowledge reader only creates a `sources` edge to a node that exists.
+`buildGraph` builds the provenance index **first**, then hands it to the knowledge
+reader, so every concern is stamped with its provenance as it's created and the
+`relates` pass can resolve co-evolved concerns to real nodes.
 
 ## Adding a field
 
 Because the sources are structured, "adding a field" means: add it to the archive
-schema (`.agents/changelogs/archive/schema.json`) or the KNOWLEDGE.md frontmatter,
-then surface it in the relevant reader's `metadata` object (or as a new edge).
-Keep changes reader-side and reflected in
-[`__tests__/unit/two-axis-reader.test.ts`](./__tests__/unit/two-axis-reader.test.ts).
+schema (`.agents/changelogs/archive/schema.json`) or the `KNOWLEDGE.md`
+frontmatter, then surface it in the relevant reader's `metadata` object (or as a
+new edge). Keep changes reader-side and reflected in
+[`__tests__/unit/concern-reader.test.ts`](./__tests__/unit/concern-reader.test.ts).

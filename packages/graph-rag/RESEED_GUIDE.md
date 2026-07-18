@@ -18,9 +18,13 @@ Reads `.graph-rag-config.json`, builds the graph, writes `.graph-data.json`
 You do **not** author graph data. It grows automatically as the repo's knowledge
 compacts: each time the `archive-epic` skill records an epic, it appends stories to
 `.agents/changelogs/archive/index.json` and maintains the touched
-`{apps,packages}/<unit>/KNOWLEDGE.md`. The next `graph:build` picks that up. If you
-want the graph to reflect new information, it must exist in those two artifacts
-first — never edit `.graph-data.json` by hand.
+`{apps,packages}/<unit>/KNOWLEDGE.md`. The next `graph:build` picks that up.
+
+New **concerns** appear when a `KNOWLEDGE.md` gains a `## heading`; new
+**provenance** (which work produced a concern) appears when a story in the archive
+carries that concern's `(domain, concern)`. If you want the graph to reflect new
+information, it must exist in those artifacts first — never edit `.graph-data.json`
+by hand.
 
 ## Point at a different root
 
@@ -68,7 +72,7 @@ Or inspect directly:
 
 ```bash
 jq '.summary' packages/graph-rag/.graph-data.json
-jq '.nodes[] | select(.type=="domain") | .id' packages/graph-rag/.graph-data.json
+jq '.nodes[] | select(.type=="concern") | {id, sources: .metadata.sources}' packages/graph-rag/.graph-data.json
 ```
 
 ## What you cannot do here (by design)

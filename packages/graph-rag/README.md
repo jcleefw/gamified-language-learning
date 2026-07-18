@@ -1,47 +1,52 @@
-# Graph RAG — Two-Axis Knowledge Reader
+# Graph RAG — Concern-Centric Knowledge Reader
 
-An **experimental, fully isolated** package that reads the repo's two compacted
-knowledge artifacts into a queryable graph. It only ever *reads* those artifacts;
-nothing writes them, and no other package depends on this one.
+An **experimental, fully isolated** package that reads the repo's compacted
+knowledge into a queryable graph. It only ever *reads* those artifacts; nothing
+writes them, and no other package depends on this one.
 
-> **Status:** reader-only retrofit. See [RETROFIT-PLAN.md](./RETROFIT-PLAN.md) for
-> the decision record and the mismatches this closed.
+> **Status:** reader-only. The graph portrays **knowledge, not work** — its nodes
+> are domains and concerns. Stories and epics are provenance *metadata*, never
+> nodes. This revises the Two-Axis ADR's D7 (which made story/epic first-class
+> timeline nodes); that axis dominated the picture with work items, so it was
+> demoted to citations. Recorded in the **D7 amendment (2026-07-19)** of the
+> Two-Axis Knowledge Architecture ADR.
 
-## What it reads
+## What it portrays
 
-Governed by the **Two-Axis Knowledge Architecture** ADR (D7). The graph is built
-from exactly two sources — never from raw epics or changelogs:
+The knowledge graph is the structure of the repo's `KNOWLEDGE.md` files:
 
-| Axis | Source | Becomes |
+| Node | Source | Meaning |
 | --- | --- | --- |
-| **Time** | `.agents/changelogs/archive/index.json` | `story` + `epic` nodes on a timeline |
-| **Domain** | `{apps,packages}/<unit>/KNOWLEDGE.md` | `domain` + `concern` nodes, grouped by workspace unit |
+| `domain` | `{apps,packages}/<unit>/KNOWLEDGE.md` frontmatter | a workspace unit — a grouping of concerns |
+| `concern` | each `##` heading in a `KNOWLEDGE.md` | a named area of knowledge, carrying the prose beneath it |
 
-The two axes are joined by the `sources` frontmatter in each `KNOWLEDGE.md`: a
-domain points back at the stories/epics that produced its current state.
+The archive (`.agents/changelogs/archive/index.json`) is **not** turned into
+nodes. It is distilled into a provenance index and stamped onto each concern as
+metadata — which stories, epics, and PRs produced it — so "what produced this?"
+is still answerable without work items cluttering the graph.
 
-### The invariant that matters
+### The principle
 
-**An epic is always an edge target, never a grouping node.** Grouping is by
-workspace `domain`. This is what structurally prevents the "knowledge-graph
-grouping bug" (an epic is a unit of work in *time*, not a unit of *knowledge*;
-grouping by it fragments every domain). The graph also never mines `file:` nodes —
-it does not duplicate what git already records (Compaction D6).
+**The graph shows knowledge; work is a citation, not the skeleton.** An epic is a
+unit of work in *time*, not a unit of *knowledge*; making epics/stories nodes
+fragmented every domain into an episode breakdown. Here a concern is the atom, its
+`content` is the durable description, and its `sources`/`epics`/`prs` are the
+provenance. The graph also never mines `file:` nodes — it does not duplicate what
+git already records (Compaction D6).
 
 ## Node & edge model
 
 ```
-epic  --contains-->  story                 (story.epic)
-story --touches-->   domain                (story.domain)
-story --supersedes-> story                 (story.supersedes[])
-story --fixes-->     epic | story          (story.fixes[])
-concern --about-->   domain                (KNOWLEDGE.md ## heading)
-domain  --sources--> story | epic          (KNOWLEDGE.md `sources` frontmatter)
+domain  --contains-->  concern     (a domain groups its concerns)
+concern --relates-->   concern     (two concerns co-evolved in the same epic,
+                                     across different domains)
+
+# provenance lives on the concern as metadata, not as edges:
+concern.metadata = { content, sources:[storyIds], epics:[epicIds], prs:[numbers] }
 ```
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full pipeline and the on-disk
-JSON shape, and [EXTRACTION_PATTERNS.md](./EXTRACTION_PATTERNS.md) for exactly
-which field maps to which node/edge.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the pipeline and JSON shape, and
+[EXTRACTION_PATTERNS.md](./EXTRACTION_PATTERNS.md) for exact field mappings.
 
 ## Usage
 
@@ -63,8 +68,21 @@ By default the config points `root` at the frozen **EP44 sample fixture**
 (`__fixtures__/two-axis-sample/`), so a fresh checkout builds a real graph with no
 setup. Point `root` at `.` to build from the live repo once epics start compacting.
 
-Building is pure file reading + parsing — it never calls an LLM. An
-`ANTHROPIC_API_KEY` is only needed for `QueryEngine.query()`.
+Building is pure file reading + parsing — it never calls an LLM.
+
+### Explore it (graph + chat)
+
+```bash
+pnpm --filter @gll/graph-rag graph:ui        # http://localhost:5179
+```
+
+A local web app: a force-graph of the domains/concerns on the left, and a chat on
+the right. Retrieval runs **key-free** on the graph server-side; only the final
+answer is generated by a **local Ollama** model (`http://localhost:11434`, model
+picker defaults to `qwen3-coder:30b`). The nodes grounding each answer light up in
+the graph. It's a local app — not a hosted artifact — precisely because the chat
+must reach your local Ollama, which a sandboxed browser page cannot. Override with
+`-- --root=. --port=5173 --ollama=http://host:11434`.
 
 ### Build programmatically
 
@@ -73,13 +91,14 @@ import { buildGraph, QueryEngine } from '@gll/graph-rag';
 
 const graph = buildGraph('/path/to/repo-or-fixture', { tracks: ['project'] });
 
-// Traversal is synchronous and LLM-free:
-const provenance = graph.edges.filter((e) => e.from === 'apps/srs-demo' && e.type === 'sources');
+// Concern nodes carry their own provenance — no traversal needed:
+const routing = graph.getNode('apps/srs-demo#Routing');
+console.log(routing?.metadata.sources); // ['EP44-ST01', 'EP44-ST02', ...]
 
-// Or reason over a subgraph with the LLM:
+// Or reason over a subgraph with an LLM (Anthropic path):
 const engine = new QueryEngine(graph);
 const result = await engine.query('How does routing work in srs-demo and which work produced it?');
-console.log(result.answer);
+console.log(result.answer); // engine.query() needs ANTHROPIC_API_KEY; the UI uses Ollama instead
 ```
 
 ### Query CLI (context preview)
@@ -94,10 +113,10 @@ extracted graph context (no LLM call).
 ## Sample fixture
 
 `__fixtures__/two-axis-sample/` is a frozen snapshot produced by a sample run of
-the `archive-epic` skill over **EP44** (App.vue → Vue Router, PR #41), stopped
-before the compact step. It exercises the full path: two real workspace domains,
-epic-level and story-level provenance, a `fixes` cross-reference, and a
-cross-track entry. See the fixture's own `README.md` for its contract.
+the `archive-epic` skill over **EP44** (App.vue → Vue Router, PR #41). It yields
+two workspace domains, three concerns with real prose and provenance, and two
+cross-domain `relates` edges (EP44 spanned both domains). See the fixture's own
+`README.md` for its contract.
 
 ## Testing
 
@@ -105,9 +124,9 @@ cross-track entry. See the fixture's own `README.md` for its contract.
 pnpm --filter @gll/graph-rag test
 ```
 
-Tests cover the graph structure plus the ADR invariants against the EP44 fixture:
-grouped by domain, epic appears only as an edge target, zero `file:` nodes,
-provenance wired at both grains.
+Tests assert the concern-centric invariants against the EP44 fixture: **no story
+or epic nodes**, concerns grouped under their domain, provenance kept as concern
+metadata, cross-domain `relates` only, and zero `file:` nodes.
 
 ## API
 
@@ -117,27 +136,26 @@ provenance wired at both grains.
 buildGraph(root: string, opts?: { tracks?: string[] | null; domains?: string[] | null }): ProjectGraph
 
 // readers (composable)
-ingestArchive(graph, root, filter?)     // time axis
-ingestKnowledge(graph, root, filter?)   // domain axis
+loadArchiveIndex(root)                              // archive JSON
+buildProvenanceIndex(archive, filter?)             // -> ProvenanceIndex (no nodes)
+ingestKnowledge(graph, root, filter?, provenance?) // domain/concern nodes + edges
 
 // graph
 graph.getNode(id): Node | undefined
-graph.nodesByType(type): Node[]
+graph.nodesByType(type): Node[]                    // 'domain' | 'concern'
 graph.traverse(nodeId, edgeTypes, depth?): Node[]
-graph.findPath(fromId, toId, maxDepth?): Edge[]
 graph.toJSON(): GraphData
 
 // query
 engine.getContext(query): GraphContext
 engine.contextToString(context): string
-engine.query(question): Promise<QueryResult>   // needs ANTHROPIC_API_KEY
+engine.query(question): Promise<QueryResult>       // Anthropic; the UI uses Ollama
 ```
 
 ## Explicitly out of scope
 
 - **Backfill** of legacy changelogs (separate track).
-- The **`archive-check` validator** — stays the `.agents/tools/` script the ADR
-  specifies; this package is reader-only.
-- Embeddings / semantic retrieval, exploration UI, API endpoint (deferred until
-  real query patterns are known, per D7).
+- The **`archive-check` validator** — stays the `.agents/tools/` script; this
+  package is reader-only.
+- Embeddings / semantic retrieval.
 - Writing to *any* artifact.
