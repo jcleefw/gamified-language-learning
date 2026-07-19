@@ -42,3 +42,52 @@ one-line `description` and the drift-variant spellings that normalize to it:
 Ryoiki themselves are not enumerated here — a ryoiki is just a `##` heading path
 in a unit's `KNOWLEDGE.md` (D4). This file records only the *drift healing*
 between variant spellings.
+
+## `ryoiki-blacklist.json` — per-unit ryoiki exclusion
+
+Filtering is **include-by-default**: an unconfigured workspace unit records
+every confirmed ryoiki in full. This file is the only maintained control over
+that default — a short, per-unit list of ryoiki paths to leave out of that
+unit's `KNOWLEDGE.md`.
+
+Shape — an object keyed by **workspace unit** (`apps/*` or `packages/*`), each
+value an array of ryoiki-path strings to exclude. One reserved key, `"*"`,
+applies to *every* unit in addition to that unit's own list:
+
+```json
+{
+  "*": ["type-definitions"],
+  "apps/srs-demo": ["workspace-tooling", "package-scaffold"]
+}
+```
+
+- **`"*"` is global, and additive.** Its entries are excluded for every unit,
+  on top of whatever that unit lists for itself — never either/or. Use it for
+  a ryoiki that's noise everywhere (e.g. `type-definitions`) instead of
+  copy-pasting the same entry into every unit, which is the same staleness
+  risk D5 warns about for whitelists: a new unit added later would silently
+  miss it. `archive-epic.sh blacklist "*" --add <ryoiki>` targets this key the
+  same way a real unit key works.
+- **Absent unit = fully included (beyond the global set).** A unit with no key
+  of its own has no *unit-specific* exclusions — every confirmed ryoiki not
+  already caught by `"*"` becomes a `##` heading (D5). Only units with real,
+  known noise beyond the global set get an entry.
+- **Cascading, longest-prefix-wins.** Listing an entry drops that ryoiki *and*
+  every `entry/*` descendant (D6). There is no separate mechanism for
+  excluding a whole subtree — the prefix does it.
+- **Consulted at the gate.** The `archive-epic` tooling's `scaffold` and
+  `check` steps read this file when building or validating a unit's
+  `KNOWLEDGE.md`: `scaffold` skips blacklisted ryoiki when printing the
+  heading skeleton, and `check` treats a confirmed-but-blacklisted ryoiki as
+  legitimately headless rather than drift.
+- **Exclusion is lossy by design.** A blacklisted ryoiki is simply never
+  written to `KNOWLEDGE.md`. There is no tombstone and no exclusion log
+  anywhere in the repo — `index.json` still carries the confirmed entry, and
+  git history is the only backstop if a decision needs to be revisited (D9).
+- **Edited by hand, routinely.** Unlike the alias map, this file is expected
+  to change often — once per unit, at every compaction's review gate, right
+  after the unit's ryoiki are confirmed in `index.json`. No tool writes it
+  either, for the same reason as the alias map: *what* to exclude is a human
+  judgment call about a unit's real content, not something mechanics can
+  decide — but here the judgment is expected to recur every time, not just
+  when drift is noticed.

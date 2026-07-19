@@ -1,34 +1,23 @@
 {
-  "apps/cli-demo-db": [
+  "*": [
     "type-definitions"
   ],
-  "apps/server": [
-    "type-definitions"
-  ],
+  "apps/cli-demo-db": [],
+  "apps/server": [],
   "apps/srs-demo": [
     "workspace-tooling",
     "package-scaffold",
-    "type-definitions",
     "ui-state"
   ],
-  "packages/api-contract": [
-    "type-definitions"
-  ],
-  "packages/db": [
-    "type-definitions"
-  ],
-  "packages/logger": [
-    "type-definitions"
-  ],
-  "packages/shared-utils": [
-    "type-definitions"
-  ],
+  "packages/api-contract": [],
+  "packages/db": [],
+  "packages/logger": [],
+  "packages/shared-utils": [],
   "packages/srs-engine": [
     "batch-validation",
     "demo-harness",
     "design-spec",
     "test-infrastructure",
-    "type-definitions",
     "workspace-tooling"
   ]
 }
