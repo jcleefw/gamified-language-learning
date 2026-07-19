@@ -6,10 +6,25 @@
       "track": "project",
       "title": "Vitest Workspace + srs-engine Package Scaffold",
       "domain": "packages/srs-engine",
-      "ryoiki": "package-scaffold",
+      "ryoiki": "test-infrastructure",
       "completed": "2026-03-05",
       "duration": "undetermined",
-      "summary": "Scaffolded packages/srs-engine (ESM package, tsconfig, Vitest workspace + package config, test setup/directories, README) and corrected three DS01 spec gaps (dependency version protocol, tsconfig include, Vitest no-test exit code).",
+      "summary": "Created root Vitest workspace config and full `packages/srs-engine/` skeleton. `pnpm install`, `pnpm build`, and `pnpm test` all exit 0. Three gaps in DS01 spec were corrected during implementation (see recent-decisions.md).",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null
+    },
+    {
+      "id": "EP01-DS01",
+      "epic": "EP01",
+      "track": "project",
+      "title": "Monorepo Scaffolding Specification",
+      "domain": "packages/srs-engine",
+      "ryoiki": "design-spec",
+      "completed": "2026-03-05",
+      "duration": "undetermined",
+      "summary": "TODO: summarize — see .agents/changelogs/EP01--monorepo-scaffolding/20260305T200100Z-DS01-monorepo-scaffolding.md",
       "supersedes": [],
       "fixes": [],
       "pr": null,
@@ -20,11 +35,11 @@
       "epic": "EP01",
       "track": "project",
       "title": "pnpm Workspace + Turborepo",
-      "domain": "<repo-root>",
+      "domain": "<non-workspace>",
       "ryoiki": "workspace-tooling",
       "completed": "2026-03-05",
       "duration": "undetermined",
-      "summary": "Established pnpm workspace and Turborepo build orchestration at the repo root.",
+      "summary": "Created the three root config files that establish pnpm workspace and Turborepo build orchestration. All acceptance criteria pass. One gap found in DS01: Turbo 2.x requires `packageManager` in `package.json` — added and documented in `recent-decisions.md`.",
       "supersedes": [],
       "fixes": [],
       "pr": null,
@@ -35,11 +50,11 @@
       "epic": "EP01",
       "track": "project",
       "title": "Root tsconfig + ESLint flat config",
-      "domain": "<repo-root>",
+      "domain": "packages/srs-engine",
       "ryoiki": "workspace-tooling",
       "completed": "2026-03-05",
       "duration": "undetermined",
-      "summary": "Created the shared TypeScript base config and ESLint 9 flat config for the monorepo.",
+      "summary": "Created shared TypeScript base config and ESLint flat config. Config parses and resolves correctly against `packages/**/*.ts`. One gap found in DS01: ESLint 9.x requires `jiti` to load `.ts` config files — installed as root devDependency.",
       "supersedes": [],
       "fixes": [],
       "pr": null,
@@ -65,10 +80,10 @@
     "EP01": {
       "title": "Monorepo Scaffolding",
       "domains": [
-        "<repo-root>",
+        "<non-workspace>",
         "packages/srs-engine"
       ],
-      "archived": "2026-07-19"
+      "archived": "2026-07-20"
     }
   }
 }
