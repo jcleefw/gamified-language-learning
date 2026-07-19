@@ -115,21 +115,21 @@ per touched unit (from the commit range → units routing):
 
 Renumbered for the single-epic shape. ST02 and ST03 already landed on this branch; the old speculative stories are cut (§ Cut, below).
 
-### AGN06-ST01: `KNOWLEDGE.md` ryoiki-as-heading contract — *status: open*
+### AGN06-ST01: `KNOWLEDGE.md` ryoiki-as-heading contract — *status: done*
 
 **Scope**: The `KNOWLEDGE-TEMPLATE.md` contract. Frontmatter is `unit / sources / updated` only; a ryoiki IS a `##` heading; the blacklist is not here (it is central — ST02).
 **Read List**: `.agents/plans/templates/KNOWLEDGE-TEMPLATE.md`; ADR D4, D5, D7
 **Tasks**:
-- [ ] Frontmatter carries `unit / sources / updated` — no `blacklist` field.
-- [ ] Document that ryoiki paths mirror the `##` headings (a path IS a heading — D4) and hierarchy is slash depth.
-- [ ] Note that exclusion is central and per-unit (`ryoiki-blacklist.json`, ST02), not per-doc.
-- [ ] A **visible** approval guard in the template body (not a comment): no agent/automation writes without explicit human approval; always ask, first write and every append. It persists into every generated `KNOWLEDGE.md`.
+- [x] Frontmatter carries `unit / sources / updated` — no `blacklist` field.
+- [x] Document that ryoiki paths mirror the `##` headings (a path IS a heading — D4) and hierarchy is slash depth.
+- [x] Note that exclusion is central and per-unit (`ryoiki-blacklist.json`, ST02), not per-doc.
+- [x] A **visible** approval guard in the template body (not a comment): no agent/automation writes without explicit human approval; always ask, first write and every append. It persists into every generated `KNOWLEDGE.md`.
 
 **Acceptance**:
-- [ ] Template frontmatter is `unit / sources / updated` only; no `blacklist`.
-- [ ] Ryoiki-as-heading + slash-depth hierarchy documented.
-- [ ] Every generated `KNOWLEDGE.md` carries the approval guard as visible text (survives appends, not a strippable comment).
-- [ ] Existing `KNOWLEDGE.md` files stay valid.
+- [x] Template frontmatter is `unit / sources / updated` only; no `blacklist`.
+- [x] Ryoiki-as-heading + slash-depth hierarchy documented.
+- [x] Every generated `KNOWLEDGE.md` carries the approval guard as visible text (survives appends, not a strippable comment).
+- [x] Existing `KNOWLEDGE.md` files stay valid.
 
 ### AGN06-ST02: ryoiki reference config — alias map + blacklist — *status: partial (alias done a501068)*
 
