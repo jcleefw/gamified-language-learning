@@ -1,12 +1,57 @@
 {
   "stories": [
     {
+      "id": "EP01-ST03",
+      "epic": "EP01",
+      "track": "project",
+      "title": "Vitest Workspace + srs-engine Package Scaffold",
+      "domain": "packages/srs-engine",
+      "ryoiki": "package-scaffold",
+      "completed": "2026-03-05",
+      "duration": "undetermined",
+      "summary": "Scaffolded packages/srs-engine (ESM package, tsconfig, Vitest workspace + package config, test setup/directories, README) and corrected three DS01 spec gaps (dependency version protocol, tsconfig include, Vitest no-test exit code).",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null
+    },
+    {
+      "id": "EP01-ST01",
+      "epic": "EP01",
+      "track": "project",
+      "title": "pnpm Workspace + Turborepo",
+      "domain": "<repo-root>",
+      "ryoiki": "workspace-tooling",
+      "completed": "2026-03-05",
+      "duration": "undetermined",
+      "summary": "Established pnpm workspace and Turborepo build orchestration at the repo root.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null
+    },
+    {
+      "id": "EP01-ST02",
+      "epic": "EP01",
+      "track": "project",
+      "title": "Root tsconfig + ESLint flat config",
+      "domain": "<repo-root>",
+      "ryoiki": "workspace-tooling",
+      "completed": "2026-03-05",
+      "duration": "undetermined",
+      "summary": "Created the shared TypeScript base config and ESLint 9 flat config for the monorepo.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null
+    },
+    {
       "id": "AGN05",
       "epic": "AGN05",
       "track": "agentic",
       "title": "Two-Axis Knowledge Architecture",
       "domain": "agentic/knowledge",
-      "concern": "archive-structure",
+      "ryoiki": "archive-structure",
       "completed": "2026-07-18",
       "duration": "7h 33m",
       "summary": "Implemented two-axis knowledge compaction (time archive + domain KNOWLEDGE.md); specified AGN rollup lifecycle (plan→artifact+archive entry); tools (domains-from-diff, archive-append, archive-check) and archive-epic skill.",
@@ -16,5 +61,14 @@
       "compact_pr": null
     }
   ],
-  "epics": {}
+  "epics": {
+    "EP01": {
+      "title": "Monorepo Scaffolding",
+      "domains": [
+        "<repo-root>",
+        "packages/srs-engine"
+      ],
+      "archived": "2026-07-19"
+    }
+  }
 }

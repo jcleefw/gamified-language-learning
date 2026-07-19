@@ -23,7 +23,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "id", "epic", "track", "title", "domain", "concern",
+        "id", "epic", "track", "title", "domain", "ryoiki",
         "completed", "duration", "summary", "supersedes", "fixes", "pr", "compact_pr"
       ],
       "properties": {
@@ -45,12 +45,12 @@
         "title": { "type": "string", "minLength": 1 },
         "domain": {
           "type": "string",
-          "description": "Workspace unit: apps/*, packages/* for project work, or agentic/<concern> for agent work.",
+          "description": "Workspace unit: apps/*, packages/* for project work, or agentic/<ryoiki> for agent work.",
           "minLength": 1
         },
-        "concern": {
+        "ryoiki": {
           "type": "string",
-          "description": "Cross-cutting concern within the domain (e.g., routing, audio, scheduling). Free-form, no controlled vocabulary.",
+          "description": "The distinct aspect of the domain this story is about (e.g., routing, audio, scheduling) — the same word used as the unit's KNOWLEDGE.md section heading for this content. Free-form, no controlled vocabulary.",
           "minLength": 1
         },
         "completed": {

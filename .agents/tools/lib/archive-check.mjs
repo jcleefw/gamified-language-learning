@@ -120,7 +120,7 @@ for (const doc of knowledgeDocs) {
   const fm = frontmatter(readFileSync(doc, 'utf8'))
   const rel = relative(root, doc)
   if (!fm) {
-    fail(`${rel}: missing YAML frontmatter (needs unit/concern/sources/updated)`)
+    fail(`${rel}: missing YAML frontmatter (needs unit / sources / updated)`)
     continue
   }
   const sources = Array.isArray(fm.sources) ? fm.sources : fm.sources ? [fm.sources] : []

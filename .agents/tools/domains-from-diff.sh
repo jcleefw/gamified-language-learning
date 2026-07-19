@@ -19,7 +19,7 @@
 #                                      workspace units (root config, .agents/,
 #                                      product-documentation/, docs/…). The caller
 #                                      supplies what this domain name is (e.g.,
-#                                      "agentic/concern" or a repo-level concern);
+#                                      "agentic/<ryoiki>" or a repo-level ryoiki);
 #                                      this router identifies only the fact that
 #                                      it's outside workspace, never assigns it.
 set -euo pipefail

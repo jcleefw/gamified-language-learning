@@ -13,7 +13,7 @@ It lands here instead, as one flat markdown entry per item, drafted from
 Each entry carries, in its frontmatter:
 
 - `track` — `project` or `agentic`
-- `domain` — the workspace unit (`apps/*`, `packages/*`) or `agentic/<concern>`
+- `domain` — the workspace unit (`apps/*`, `packages/*`) or `agentic/<ryoiki>`
 - `fixes` **or** `relates` — the sealed epic/story id it references (never mutates)
 
 ## Drain-at-merge
