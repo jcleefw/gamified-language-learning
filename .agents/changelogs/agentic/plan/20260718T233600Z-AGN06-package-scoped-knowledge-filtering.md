@@ -197,20 +197,37 @@ Renumbered for the single-epic shape. ST02 and ST03 already landed on this branc
 - [ ] With no blacklist for a unit, its `KNOWLEDGE.md` is written fully (include-by-default).
 - [ ] The skill halts for human confirmation before writing; the tool does the mechanical parts (**AC3** codify).
 
-### AGN06-ST06: `write-knowledge` skill — human-tone knowledge — *status: open*
+### AGN06-ST06: `write-knowledge` skill — human-tone knowledge — *status: implemented, pending commit*
 
 **Scope**: The step-4 writer, a focused agentic skill invoked by ST05. It writes a unit's `KNOWLEDGE.md` content in the voice of a **non-engineer — Product Owner / BA**. Not a changelog, not an engineer's notes.
 **Read List**: `packages/srs-engine/KNOWLEDGE.md` (existing tone reference); ADR D4; ST05
 **Tasks**:
-- [ ] Set the writer role to a non-engineer (PO / BA). Content is nouns/current-state a PO can read.
-- [ ] Plain language only. No code identifiers, file paths, or API names as content — a code reference carries no meaning for the reader.
-- [ ] Write only where there is human-meaningful knowledge. A ryoiki with none (e.g. `package-scaffold`) is routed to the blacklist, not filler-written.
-- [ ] Capture what is *used* and what to *watch*: e.g. `test-infrastructure` → the tools/approach in use (vitest, unit tests, BDD/gherkin), coverage, gotchas, fragile dependencies — not config mechanics.
+- [x] Set the writer role to a non-engineer (PO / BA). Content is nouns/current-state a PO can read.
+- [x] Plain language only. No code identifiers, file paths, or API names as content — a code reference carries no meaning for the reader.
+- [x] Write only where there is human-meaningful knowledge. A ryoiki with none (e.g. `package-scaffold`) is routed to the blacklist, not filler-written.
+- [x] Capture what is *used* and what to *watch*: e.g. `test-infrastructure` → the tools/approach in use (vitest, unit tests, BDD/gherkin), coverage, gotchas, fragile dependencies — not config mechanics.
 
 **Acceptance**:
-- [ ] The output reads in plain language a PO/BA understands; no code refs or jargon as content.
-- [ ] A low-value ryoiki is blacklisted, not written for its own sake.
-- [ ] `test-infrastructure` covers tools/approach + gotchas + risky dependencies, not configuration.
+- [x] The output reads in plain language a PO/BA understands; no code refs or jargon as content.
+- [x] A low-value ryoiki is blacklisted, not written for its own sake.
+- [x] `test-infrastructure` covers tools/approach + gotchas + risky dependencies, not configuration.
+- [x] if all pointers from index.json garners no meaningful weight, don't write anything. Don't write for the sake of writing
+
+### AGN06-ST07: global blacklist key — one entry, every unit — *status: implemented, pending commit*
+
+**Scope**: `ryoiki-blacklist.json` gains one reserved key, `"*"`, whose entries cascade to *every* unit in addition to that unit's own list — additive, not either/or. Motivated by `type-definitions`: it already sits identically in all 8 current unit entries (the seeded file), which is the exact staleness risk D5 warns about for whitelists, just inverted — a repo-wide exclusion hand-copied per unit will eventually miss a new unit. This extends D7's "central file" home and reuses D6's cascade unchanged; it does not touch D5 (still include-by-default) or introduce a second mechanism.
+**Read List**: `archive-epic.sh` `blacklist_for` / `cmd_blacklist`; `ryoiki-blacklist.json`; `.agents/reference/README.md`; ADR D5–D7
+**Tasks**:
+- [x] Migrate the seed data: replace the 8 duplicate per-unit `type-definitions` entries with a single `"*": ["type-definitions"]` entry; leave each unit's remaining, genuinely unit-scoped entries in place.
+- [x] `blacklist_for()` merges `.["*"] // []` with `.[$u] // []` (dedup) before returning — global and per-unit entries are both subject to the same longest-prefix-wins cascade (D6), unchanged in `excluded_by`.
+- [x] `cmd_blacklist` accepts `"*"` as a valid unit argument, e.g. `archive-epic.sh blacklist "*" --add type-definitions`, appending to the reserved global entry the same way a real unit key works (already worked mechanically — no unit-format validation existed to block it; verified with a scratch dry-run).
+- [x] `.agents/reference/README.md`'s blacklist section documents `"*"`: applies everywhere, cascades identically to a per-unit entry, and is additive — a unit's own entries still apply on top of it, never replaced by it.
+
+**Acceptance**:
+- [x] A ryoiki blacklisted only via `"*"` is excluded from `scaffold`/`check` for every unit, with no per-unit entry required. Verified: `scaffold apps/cli-demo-db` prints no `type-definitions` heading; `blacklist_for packages/srs-engine` returns the merged, deduped list.
+- [x] A unit with its own entries alongside `"*"` gets the union of both — confirmed via `packages/srs-engine`, which carries both the global `type-definitions` and its own unit-specific entries in `blacklist_for`'s merged output.
+- [x] `ryoiki-blacklist.json` no longer repeats `type-definitions` per unit; one `"*"` entry covers all current units.
+- [x] Existing unit-only entries (`workspace-tooling`, `package-scaffold`, `design-spec`, etc.) are unaffected — still scoped to their own unit only.
 
 ## Not built (speculative ahead of a read consumer — ADR D10)
 
