@@ -1,0 +1,78 @@
+{
+  "workspace-tooling": {
+    "description": "Shared repo-root build/lint/type-check/formatting config — not owned by any single package or app.",
+    "alias": ["eslint", "eslint-config", "lint", "linting", "prettier", "tsconfig", "type-check", "typescript-config", "formatting", "build-tooling", "build", "bundling", "packaging"]
+  },
+  "test-infrastructure": {
+    "description": "Test setup, runners, fixtures, and seeding used to exercise a unit — vitest config, mock data, scenario seeds.",
+    "alias": ["testing", "tests", "test-setup", "test-harness", "test-tooling", "test-fixtures", "vitest", "fixtures", "seeding"]
+  },
+  "package-scaffold": {
+    "description": "Initial package/app skeleton — manifest, tsconfig, barrel exports, directory layout.",
+    "alias": ["scaffold", "scaffolding", "package-setup", "package-init", "bootstrap", "project-setup"]
+  },
+  "archive-structure": {
+    "description": "The two-axis knowledge archive — index.json, schema, append/check tooling, compaction rules.",
+    "alias": ["archive", "archiving", "changelog-archive", "time-archive", "knowledge-archive"]
+  },
+  "database-schema": {
+    "description": "SQLite storage substrate — Drizzle schema tables, db connection, schema init, migrations.",
+    "alias": ["drizzle", "drizzle-schema", "db-schema", "migrations", "init-db", "tables", "sqlite", "database", "db", "storage"]
+  },
+  "data-access": {
+    "description": "Store ports and their SQLite implementations — query/update operations over the schema (LearningStore, ContentStore, ReviewStore, AnswerEventStore, …).",
+    "alias": ["stores", "store", "dao", "data-layer", "sqlite-store", "learning-store", "content-store", "review-store", "answer-event-store"]
+  },
+  "logging": {
+    "description": "Structured logging port and implementations (Noop/Pino), context and correlation.",
+    "alias": ["logger", "log", "observability", "pino"]
+  },
+  "api-contract": {
+    "description": "HTTP wire-format types shared across client and server — response envelope, error codes, zod schemas.",
+    "alias": ["contracts", "api-types", "wire-format", "wire-types", "dto", "api-schema"]
+  },
+  "http-server": {
+    "description": "HTTP API surface — Hono app, routes, middleware, Workers/node runtime.",
+    "alias": ["server", "routing", "routes", "endpoints", "hono", "http", "middleware", "api-server"]
+  },
+  "spaced-repetition": {
+    "description": "SRS scheduling core — FSRS interval computation, due-date scheduling, review-card state.",
+    "alias": ["srs", "fsrs", "ts-fsrs", "scheduler", "scheduling", "review-scheduling", "due-dates", "intervals"]
+  },
+  "review-session": {
+    "description": "Running a review pass — fetching due cards, auto-rating answers, re-scheduling. The app-level review flow, distinct from the scheduling core.",
+    "alias": ["review", "review-flow", "review-runner", "review-mode", "review-rating", "due-cards"]
+  },
+  "session-lifecycle": {
+    "description": "Adaptive learning session orchestration — init/advance, active pool, queue, batch loop.",
+    "alias": ["session", "session-orchestration", "adaptive-session", "session-state", "learning-session"]
+  },
+  "batch-composition": {
+    "description": "Assembling quiz batches from the active pool — question generation, MCQ composition.",
+    "alias": ["batch", "batching", "quiz-batch", "batch-assembly", "compose-batch"]
+  },
+  "mastery-tracking": {
+    "description": "Per-word learning state — streaks, mastery thresholds, graduation.",
+    "alias": ["mastery", "word-state", "streak", "graduation", "mastery-state"]
+  },
+  "shelving": {
+    "description": "Word shelving policy — easy/okay/hard shelf boundaries and distributions.",
+    "alias": ["shelf", "shelving-policy", "word-shelving", "shelves"]
+  },
+  "curriculum": {
+    "description": "Learning content — decks, words, sentences, curriculum import and curation.",
+    "alias": ["curation", "content", "decks", "deck-management", "curriculum-import", "vocabulary"]
+  },
+  "audio-timing": {
+    "description": "Audio playback and WebVTT cue timing — wavesurfer control, marker authoring, audio metadata.",
+    "alias": ["audio", "webvtt", "vtt", "audio-playback", "audio-markers", "wavesurfer", "audio-curation"]
+  },
+  "ui-components": {
+    "description": "Vue 3 single-file components — quiz cards, dashboards, audio UI.",
+    "alias": ["components", "vue-components", "ui"]
+  },
+  "ui-state": {
+    "description": "Vue 3 composables holding app state and API communication.",
+    "alias": ["composables", "vue-composables", "state-management"]
+  }
+}
