@@ -123,10 +123,12 @@ Renumbered for the single-epic shape. ST02 and ST03 already landed on this branc
 - [ ] Frontmatter carries `unit / sources / updated` — no `blacklist` field.
 - [ ] Document that ryoiki paths mirror the `##` headings (a path IS a heading — D4) and hierarchy is slash depth.
 - [ ] Note that exclusion is central and per-unit (`ryoiki-blacklist.json`, ST02), not per-doc.
+- [ ] A **visible** approval guard in the template body (not a comment): no agent/automation writes without explicit human approval; always ask, first write and every append. It persists into every generated `KNOWLEDGE.md`.
 
 **Acceptance**:
 - [ ] Template frontmatter is `unit / sources / updated` only; no `blacklist`.
 - [ ] Ryoiki-as-heading + slash-depth hierarchy documented.
+- [ ] Every generated `KNOWLEDGE.md` carries the approval guard as visible text (survives appends, not a strippable comment).
 - [ ] Existing `KNOWLEDGE.md` files stay valid.
 
 ### AGN06-ST02: ryoiki reference config — alias map + blacklist — *status: partial (alias done a501068)*
