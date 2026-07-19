@@ -7,9 +7,13 @@
     "description": "Automated CI gate — GitHub Actions running lint/typecheck/test on every PR and push. Distinct from workspace-tooling (the config it invokes) and test-infrastructure (what the tests exercise).",
     "alias": ["github-actions", "ci", "ci-workflow", "pr-gate"]
   },
+  "design-spec": {
+    "description": "Design specification — decisions, design contracts, epic specs before implementation. Not the implementation itself, but the approved blueprint.",
+    "alias": ["spec", "specification", "design", "design-doc", "architecture", "ds"]
+  },
   "test-infrastructure": {
     "description": "Test setup, runners, fixtures, and seeding used to exercise a unit — vitest config, mock data, scenario seeds, Playwright-BDD e2e specs.",
-    "alias": ["testing", "tests", "test-setup", "test-harness", "test-tooling", "test-fixtures", "vitest", "fixtures", "seeding", "playwright", "playwright-bdd", "bdd", "gherkin", "e2e", "scenario-fixture", "step-definitions", "feature-spec", "snapshot-builder", "seed-cli", "scenario-builder", "vite-cheat-mode"]
+    "alias": ["testing", "tests", "test-setup", "test-harness", "test-tooling", "test-fixtures", "vitest", "fixtures", "seeding", "playwright", "playwright-bdd", "bdd", "gherkin", "e2e", "scenario-fixture", "step-definitions", "feature-spec"]
   },
   "package-scaffold": {
     "description": "Initial package/app skeleton — manifest, tsconfig, barrel exports, directory layout.",
@@ -45,7 +49,7 @@
   },
   "client-routing": {
     "description": "Frontend SPA navigation — Vue Router instance, route-name constants, and navigation guards (confirm-on-leave, curation-only gating). Distinct from backend http-server routing.",
-    "alias": ["vue-router", "router-guards", "route-names", "spa-routing", "navigation-guard", "route-guard", "deep-linking", "browser-history"]
+    "alias": ["vue-router", "router-guards", "route-names", "spa-routing", "navigation-guard", "route-guard"]
   },
   "spaced-repetition": {
     "description": "SRS scheduling core — FSRS interval computation, due-date scheduling, review-card state.",
@@ -113,19 +117,15 @@
   },
   "demo-harness": {
     "description": "Reference terminal-CLI host built on the library's public subpaths — shows how to wire a consuming interface. Not product-facing; typically blacklisted.",
-    "alias": ["cli-demo", "terminal-demo", "learning-runner", "auto-answerer", "demo", "quiz-runner", "answer-strategy", "cli-demo-db"]
+    "alias": ["cli-demo", "terminal-demo", "learning-runner", "auto-answerer", "demo"]
   },
   "audio-timing": {
     "description": "Audio playback and WebVTT cue timing — wavesurfer control, marker authoring, audio metadata.",
-    "alias": ["audio", "webvtt", "vtt", "audio-playback", "audio-markers", "wavesurfer", "audio-curation", "segment-player", "marker-authoring", "regions-plugin", "cuechange"]
-  },
-  "audio-storage": {
-    "description": "Audio binary storage and retrieval — content-addressed keys, S3/MinIO/R2-compatible client, the versioned audio table, and the curator upload endpoint. Distinct from audio-timing, which owns WebVTT cue data once a binary exists.",
-    "alias": ["minio", "r2", "s3-compatible", "content-addressed", "audio-table", "curator-upload"]
+    "alias": ["audio", "webvtt", "vtt", "audio-playback", "audio-markers", "wavesurfer", "audio-curation", "segment-player", "marker-authoring"]
   },
   "debug-tooling": {
     "description": "Developer/QA debug-trace recording — correlation IDs per served question, buffered appearance events, replay-artifact export.",
-    "alias": ["debug-recording", "replay-artifact", "transition-trace", "debug-trace", "correlation-id", "transition-channel", "appearance-channel", "replay-tool", "golden-master"]
+    "alias": ["debug-recording", "replay-artifact", "transition-trace", "debug-trace"]
   },
   "api-client": {
     "description": "Frontend thin fetch wrappers over backend HTTP endpoints — typed request/response calls, no reactive state of their own. Distinct from data-access (backend stores) — same shape, different side.",
@@ -133,18 +133,10 @@
   },
   "ui-components": {
     "description": "Vue 3 single-file components — quiz cards, dashboards, audio UI.",
-    "alias": ["components", "vue-components", "ui", "view-stub", "views"]
+    "alias": ["components", "vue-components", "ui"]
   },
   "ui-state": {
     "description": "Generic Vue 3 composables holding app-level state/bootstrapping not covered by a more specific ryoiki (e.g. the app boot sequence).",
     "alias": ["composables", "vue-composables", "state-management", "app-boot", "boot-sequence"]
-  },
-  "config-tiering": {
-    "description": "Per-user config preference tier (T1) vs. system-fixed config (T3) — difficulty presets, GET/PUT /api/user/config resolve-and-write path. Distinct from language-config (display rules, not user preference).",
-    "alias": ["config-ownership", "difficulty-preset", "preference-tier", "tier-reclassification"]
-  },
-  "agentic-dev-workflow": {
-    "description": "The agent-driven development process itself — epic lifecycle gates, branching model, commit discipline, story sizing, PR template. Dev-process, not application behavior.",
-    "alias": ["epic-lifecycle", "branching-model", "commit-discipline", "story-sizing", "pr-template", "bdd-ownership"]
   }
 }
