@@ -1,0 +1,21 @@
+# CODEMAP.md — `src/composables/`
+
+State management and reusable logic as Vue 3 composition functions.
+
+---
+
+## Files
+
+| File | Main exports | Purpose |
+|---|---|---|
+| `learningSessionSingleton.ts` | `LearningSessionBundle`, `setLearningSession()`, `getLearningSession()`, `resetLearningSessionForTest()` | Module-level singleton bridging `App.vue`'s `useLearningSession()` instance + `apiError` ref to `router-guards.ts`, which runs outside the component tree and can't `inject()` |
+| `useAppBoot.ts` | `AppBootDeps`, `bootApp(deps)` | `App.vue`'s `onMounted` boot sequence: fetch `/api/decks`, build a deduped cross-deck word pool, `loadConfig()` (fail-closed), restore run state, refresh due/review badges, restore shelved words for the last deck, apply test sentence-config override if `env.testHooks`, recalculate completed decks |
+| `useAudio.ts` | `DeckAudio`, `resolveSentenceAudio(decks, sentenceId)` | Finds the deck containing a `sentenceId`, returns `{ audioUrl, vttUrl }` only if the deck is segmentable, else `null`. Keeps the SRS engine audio-free per the playback ADR |
+| `useDebugRecording.ts` | `Phase`, `RecordingState`, `AppearanceEvent`, `UseDebugRecording`; `useDebugRecording()`, `dumpRecentAndDownload(lastN)`, `crossesPhaseOrMidQuiz()`, `shouldFinalizeOnNav()`, `finalizeRecordingOnNav()`, `setDownloaderForTest()` | Module-level singleton debug-trace recorder: issues correlation IDs per served question, buffers appearance events, finalizes via `POST /api/debug/transitions` + downloads a `ReplayArtifact` JSON. Also supports a post-hoc dump of the last N answers via `/api/debug/transitions-recent` |
+| `useLearningSession.ts` | `LAST_DECK_KEY`, `NavigateFn`, `UseLearningSessionDeps`, `useLearningSession(deps)` | The adaptive-quiz state machine: `startBatch`, `initSession`, `onSelect`, `onResume`, `onClear`, `finishBatchAndTransition`, `onAnswered`, `onExitBatch`, `onNext`, `onNextDeck`, `onUnshelveWord`, `onUpdateShelvedSet`, `onUpdateWordStates` + reactive state (`sessionState`, `globalRunState`, `batchState`, `currentQuestion`, `shelvedSet`, `completedDeckIds`, `masteredDeck`, `masteredGlobal`, `nextDeckId`). Orchestrates `@gll/srs-engine/learn` + `@gll/srs-engine/shelving`, persists answers server-authoritatively via `postAnswer` |
+| `useMarkerAuthoring.ts` | `MarkerDraft`, `NUDGE_COARSE`, `NUDGE_FINE`, `MarkerAuthoring`, `useMarkerAuthoring()` | WebVTT marker-authoring state: `seed()` (hydrate from existing VTT via `@gll/shared-utils` `parseVtt`), `setIn`/`setOut` (auto-prefill next row's start), `nudge()`, `isComplete()`, `buildVtt()` (via `@gll/shared-utils` `buildVtt`). Backs `MarkAudio.vue` |
+| `useReviewSession.ts` | `UseReviewSessionDeps`, `useReviewSession(deps)` | Pool-global review-session state machine: `onReview()` (due), `onAnytimeReview()` (practice-anytime), `onReviewAnswered()`, `refreshDueBadge()`, `refreshReviewAvailability()`, computed `reviewUnlocked`. Server-authoritative — adopts the server-returned schedule, no client-side FSRS computation |
+| `useSegmentPlayer.ts` | `SegmentPlayer`, `useSegmentPlayer(container, src, vttUrl?)` | Wavesurfer.js-backed playback controller: `play/pause/seek/setRate/playSegment/playCue`, `activeCueId` computed from parsed WebVTT cues (`@gll/shared-utils` `parseVtt`), reactive `currentTime`/`duration`/`playing`/`rate` |
+| `useShelving.ts` | `loadShelvedWords`, `applyShelving`, `unshelveAll`, `updateStagnationCounters`, `getStagnantWords`, `resetStagnationCounters`, `unshelveWord`, `resetStagnationCountersForWords`, `getShelvingConfig` | Thin fetch wrappers over the shelving/stagnation HTTP endpoints, typed against `@gll/api-contract` and `@gll/srs-engine/shelving` |
+| `useStore.ts` | `AppConfig`; `loadRunState`, `saveWordState`, `postAnswer`, `loadDueReviews`, `loadAnytimeReviews`, `postReviewAnswer`, `uploadDeckAudio`, `commitDeckVtt`, `fetchDeckVtt`, `clearStore`, `loadConfig` | Thin fetch wrappers over core state/answer/review/config/curation HTTP endpoints. Despite the name, holds no reactive state — pure API-call functions with `WordState`↔`WordStatePayload` mapping helpers |
+| `useTestSentenceConfig.ts` | `applyTestSentenceConfig(CONFIG)` | Test-only (gated by `env.testHooks`): merges a sentence-scheduling override fetched from `/api/test/config/sentence` onto the loaded `CONFIG`. Non-fatal on failure |
