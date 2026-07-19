@@ -131,19 +131,19 @@ Renumbered for the single-epic shape. ST02 and ST03 already landed on this branc
 - [x] Every generated `KNOWLEDGE.md` carries the approval guard as visible text (survives appends, not a strippable comment).
 - [x] Existing `KNOWLEDGE.md` files stay valid.
 
-### AGN06-ST02: ryoiki reference config — alias map + blacklist — *status: partial (alias done a501068)*
+### AGN06-ST02: ryoiki reference config — alias map + blacklist — *status: done (alias a501068)*
 
 **Scope**: Two reference files + README: naming (`ryoiki-aliases.json`) and filtering (`ryoiki-blacklist.json`). Consumed by the skill's naming step and the tool's `check`/build.
 **Read List**: ADR D2, D5, D7; `.agents/reference/`
 **Tasks**:
 - [x] `.agents/reference/ryoiki-aliases.json` **curated-seeded** in `{canonical: {description, alias: […]}}` shape.
-- [ ] `.agents/reference/ryoiki-blacklist.json` keyed by unit → `[ryoiki-path, …]`; absent unit = fully included; cascading longest-prefix-wins. Seeded per the repo's known noise.
-- [ ] `.agents/reference/README.md` documents both shapes, "consulted at the gate", and "no tool writes the alias map".
+- [x] `.agents/reference/ryoiki-blacklist.json` keyed by unit → `[ryoiki-path, …]`; absent unit = fully included; cascading longest-prefix-wins. Seeded per the repo's known noise.
+- [x] `.agents/reference/README.md` documents both shapes, "consulted at the gate", and "no tool writes the alias map".
 
 **Acceptance**:
-- [ ] Both files valid JSON at the documented paths.
-- [ ] The alias map only canonicalizes, never rejects (D2).
-- [ ] The blacklist is keyed by unit; a missing unit means fully included; a coarse entry drops itself and its `/*` descendants.
+- [x] Both files valid JSON at the documented paths.
+- [x] The alias map only canonicalizes, never rejects (D2).
+- [x] The blacklist is keyed by unit; a missing unit means fully included; a coarse entry drops itself and its `/*` descendants.
 
 ### AGN06-ST03: `epic-commit-range.sh` + archive-epic step 1 — *status: done (c719e9f)*
 
@@ -161,25 +161,25 @@ Renumbered for the single-epic shape. ST02 and ST03 already landed on this branc
 - [x] Cross-epic bot-reformat commit → `indeterminate` + `entangled_commits_present` + candidate list.
 - [x] No changelog-folder commits → `not_found`, mutates nothing.
 
-### AGN06-ST04: `archive-epic.sh` runner — the mechanical spine — *status: open*
+### AGN06-ST04: `archive-epic.sh` runner — the mechanical spine — *status: implemented, pending commit*
 
 **Scope**: One bash tool that drives §4's mechanics against `index.json` and the reference files. It writes draft entries, reads confirmed ones, and checks consistency. It never commits, never writes `KNOWLEDGE.md` prose, never deletes `state`, and never writes a confirmed ryoiki (Golden Rule 3). Draft entries live only in the working tree; the tool writes them directly (not through the strict `archive-append` path, which stays for confirmed entries). No hidden state file.
 **Read List**: `.agents/tools/{epic-commit-range,domains-from-diff,archive-append,backfill-compact-pr-info,archive-check}.sh`; `archive/schema.json`; §4
 **Tasks**:
-- [ ] `discover EP## [--range]` — run `epic-commit-range` + `domains-from-diff`; print range + units.
-- [ ] `draft EP##` — write each story to `index.json` as facts + a *suggested* ryoiki + `state:"draft"`. Idempotent by id; re-run leaves confirmed (no-`state`) entries untouched.
-- [ ] `status EP##` — list the epic's entries split into draft vs confirmed, reading `index.json` directly. The visibility helper for the gate.
-- [ ] `scaffold <unit>` — print a `##` heading skeleton from that unit's **confirmed, non-blacklisted** ryoiki (reads `ryoiki-blacklist.json`). No prose, no file write.
-- [ ] `check` — every confirmed, non-blacklisted index ryoiki for a unit is a `##` heading in its doc; a blacklisted ryoiki is legitimately headless (recorded, suppressed by design — D9); fail on drift.
-- [ ] `verify` — `archive-check.sh` + `check`.
-- [ ] `backfill` — scan `index.json` for `compact_pr: null`; report only.
-- [ ] `compact EP##` — print the `git rm -r` + commit commands (human runs them).
+- [x] `discover EP## [--range]` — run `epic-commit-range` + `domains-from-diff`; print range + units.
+- [x] `draft EP##` — write each story to `index.json` as facts + a *suggested* ryoiki + `state:"draft"`. Idempotent by id; re-run leaves confirmed (no-`state`) entries untouched.
+- [x] `status EP##` — list the epic's entries split into draft vs confirmed, reading `index.json` directly. The visibility helper for the gate.
+- [x] `scaffold <unit>` — print a `##` heading skeleton from that unit's **confirmed, non-blacklisted** ryoiki (reads `ryoiki-blacklist.json`). No prose, no file write.
+- [x] `check` — every confirmed, non-blacklisted index ryoiki for a unit is a `##` heading in its doc; a blacklisted ryoiki is legitimately headless (recorded, suppressed by design — D9); fail on drift.
+- [x] `verify` — `archive-check.sh` + `check`.
+- [x] `backfill` — scan `index.json` for `compact_pr: null`; report only.
+- [x] `compact EP##` — print the `git rm -r` + commit commands (human runs them).
 
 **Acceptance**:
-- [ ] `draft` writes draft entries the human can see and edit in the `index.json` git diff; strict `archive-check` is unaffected because drafts are uncommitted.
-- [ ] Only no-`state` entries are treated as confirmed by `scaffold`/`check`; `state:"draft"` (or any other `state`) is ignored downstream (**AC1** — seed confirmed entries to test build/check without re-drafting).
-- [ ] A confirmed but **blacklisted** ryoiki passes `check` as legitimately headless; a confirmed **non-blacklisted** ryoiki with no `##` heading fails.
-- [ ] The tool never commits, never edits a `KNOWLEDGE.md`, never deletes `state`, never writes a confirmed ryoiki.
+- [x] `draft` writes draft entries the human can see and edit in the `index.json` git diff; strict `archive-check` is unaffected because drafts are uncommitted.
+- [x] Only no-`state` entries are treated as confirmed by `scaffold`/`check`; `state:"draft"` (or any other `state`) is ignored downstream (**AC1** — seed confirmed entries to test build/check without re-drafting).
+- [x] A confirmed but **blacklisted** ryoiki passes `check` as legitimately headless; a confirmed **non-blacklisted** ryoiki with no `##` heading fails.
+- [x] The tool never commits, never edits a `KNOWLEDGE.md`, never deletes `state`, never writes a confirmed ryoiki.
 
 ### AGN06-ST05: `archive-epic` skill — the draft/confirm flow — *status: open*
 
