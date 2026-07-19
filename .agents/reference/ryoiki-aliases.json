@@ -1,15 +1,23 @@
 {
   "workspace-tooling": {
     "description": "Shared repo-root build/lint/type-check/formatting config — not owned by any single package or app.",
-    "alias": ["eslint", "eslint-config", "lint", "linting", "prettier", "tsconfig", "type-check", "typescript-config", "formatting", "build-tooling", "build", "bundling", "packaging"]
+    "alias": ["eslint", "eslint-config", "lint", "linting", "prettier", "tsconfig", "type-check", "typescript-config", "formatting", "build-tooling", "build", "bundling", "packaging", "turborepo", "turbo", "pnpm-workspace", "no-floating-promises"]
+  },
+  "ci-pipeline": {
+    "description": "Automated CI gate — GitHub Actions running lint/typecheck/test on every PR and push. Distinct from workspace-tooling (the config it invokes) and test-infrastructure (what the tests exercise).",
+    "alias": ["github-actions", "ci", "ci-workflow", "pr-gate"]
   },
   "test-infrastructure": {
-    "description": "Test setup, runners, fixtures, and seeding used to exercise a unit — vitest config, mock data, scenario seeds.",
-    "alias": ["testing", "tests", "test-setup", "test-harness", "test-tooling", "test-fixtures", "vitest", "fixtures", "seeding"]
+    "description": "Test setup, runners, fixtures, and seeding used to exercise a unit — vitest config, mock data, scenario seeds, Playwright-BDD e2e specs.",
+    "alias": ["testing", "tests", "test-setup", "test-harness", "test-tooling", "test-fixtures", "vitest", "fixtures", "seeding", "playwright", "playwright-bdd", "bdd", "gherkin", "e2e", "scenario-fixture", "step-definitions", "feature-spec", "snapshot-builder", "seed-cli", "scenario-builder", "vite-cheat-mode"]
   },
   "package-scaffold": {
     "description": "Initial package/app skeleton — manifest, tsconfig, barrel exports, directory layout.",
-    "alias": ["scaffold", "scaffolding", "package-setup", "package-init", "bootstrap", "project-setup"]
+    "alias": ["scaffold", "scaffolding", "package-setup", "package-init", "bootstrap", "project-setup", "sub-path-exports", "exports-map"]
+  },
+  "type-definitions": {
+    "description": "Internal type/interface declarations and config-shape plumbing — engine-owned types with no runtime domain behavior. Low graph-knowledge weight; typically blacklisted.",
+    "alias": ["types", "type-setup", "interfaces", "engine-types", "config-types", "typing", "type-declarations"]
   },
   "archive-structure": {
     "description": "The two-axis knowledge archive — index.json, schema, append/check tooling, compaction rules.",
@@ -17,62 +25,126 @@
   },
   "database-schema": {
     "description": "SQLite storage substrate — Drizzle schema tables, db connection, schema init, migrations.",
-    "alias": ["drizzle", "drizzle-schema", "db-schema", "migrations", "init-db", "tables", "sqlite", "database", "db", "storage"]
+    "alias": ["drizzle", "drizzle-schema", "db-schema", "migrations", "init-db", "tables", "sqlite", "database", "db", "storage", "better-sqlite3", "d1", "document-model", "json-column", "deck-doc"]
   },
   "data-access": {
     "description": "Store ports and their SQLite implementations — query/update operations over the schema (LearningStore, ContentStore, ReviewStore, AnswerEventStore, …).",
-    "alias": ["stores", "store", "dao", "data-layer", "sqlite-store", "learning-store", "content-store", "review-store", "answer-event-store"]
+    "alias": ["stores", "store", "dao", "data-layer", "sqlite-store", "learning-store", "content-store", "review-store", "answer-event-store", "async-storage-contract", "user-config-store"]
   },
   "logging": {
     "description": "Structured logging port and implementations (Noop/Pino), context and correlation.",
-    "alias": ["logger", "log", "observability", "pino"]
+    "alias": ["logger", "log", "observability", "pino", "console-logger", "noop-logger", "injected-logger"]
   },
   "api-contract": {
     "description": "HTTP wire-format types shared across client and server — response envelope, error codes, zod schemas.",
-    "alias": ["contracts", "api-types", "wire-format", "wire-types", "dto", "api-schema"]
+    "alias": ["contracts", "api-types", "wire-format", "wire-types", "dto", "api-schema", "zod"]
   },
   "http-server": {
-    "description": "HTTP API surface — Hono app, routes, middleware, Workers/node runtime.",
-    "alias": ["server", "routing", "routes", "endpoints", "hono", "http", "middleware", "api-server"]
+    "description": "Backend HTTP API surface — Hono app, routes, middleware, Workers/node runtime. Distinct from a frontend SPA's client-side navigation (see client-routing) — same word, different aspect.",
+    "alias": ["server", "routing", "routes", "endpoints", "hono", "http", "middleware", "api-server", "wrangler", "cloudflare-workers", "cors"]
+  },
+  "client-routing": {
+    "description": "Frontend SPA navigation — Vue Router instance, route-name constants, and navigation guards (confirm-on-leave, curation-only gating). Distinct from backend http-server routing.",
+    "alias": ["vue-router", "router-guards", "route-names", "spa-routing", "navigation-guard", "route-guard", "deep-linking", "browser-history"]
   },
   "spaced-repetition": {
     "description": "SRS scheduling core — FSRS interval computation, due-date scheduling, review-card state.",
-    "alias": ["srs", "fsrs", "ts-fsrs", "scheduler", "scheduling", "review-scheduling", "due-dates", "intervals"]
+    "alias": ["srs", "fsrs", "ts-fsrs", "scheduler", "scheduling", "review-scheduling", "due-dates", "intervals", "review-scheduler", "fsrs-scheduler", "graduation-performance", "review-card"]
   },
   "review-session": {
     "description": "Running a review pass — fetching due cards, auto-rating answers, re-scheduling. The app-level review flow, distinct from the scheduling core.",
-    "alias": ["review", "review-flow", "review-runner", "review-mode", "review-rating", "due-cards"]
+    "alias": ["review", "review-flow", "review-runner", "review-mode", "review-rating", "due-cards", "due-review", "anytime-review", "review-hub", "srs-review", "rating-inference", "practice-anytime", "eager-practice", "review-ahead", "due-gated-advance"]
   },
-  "session-lifecycle": {
-    "description": "Adaptive learning session orchestration — init/advance, active pool, queue, batch loop.",
-    "alias": ["session", "session-orchestration", "adaptive-session", "session-state", "learning-session"]
+  "learning-session-lifecycle": {
+    "description": "Adaptive learning-path session orchestration — init/advance, active pool, queue, batch loop.",
+    "alias": ["session-orchestration", "adaptive-session", "learning-session", "active-pool", "pool-rotation", "batch-loop", "active-window"]
+  },
+  "user-sessions": {
+    "description": "User identity/auth session — request-scoped userId, auth validation.",
+    "alias": ["auth-passthrough", "bearer-token", "identity-seam", "get-current-user-id", "demo-user"]
+  },
+  "in-memory-state-store": {
+    "description": "Process-lifetime, pre-persistence server state (word-state array, batch registry) that backed the HTTP API before a real database existed. Superseded by database-schema/data-access; historical, typically blacklisted.",
+    "alias": ["state-store", "batch-registry", "in-memory-store"]
+  },
+  "learning-authority": {
+    "description": "Server-authoritative answer handling — MCQ distractor generation and correctness determination, plus the durable per-answer state transition (applyAnswer) with rollout gate, shadow parallel-run, and golden-master parity testing. Distinct from batch-composition (content selection, not answer authority).",
+    "alias": ["answer-authority", "selected-key", "correct-key", "distractor-generation", "server-authoritative", "rollout-gate", "shadow-parallel-run", "golden-master-parity-test", "apply-answer"]
   },
   "batch-composition": {
-    "description": "Assembling quiz batches from the active pool — question generation, MCQ composition.",
-    "alias": ["batch", "batching", "quiz-batch", "batch-assembly", "compose-batch"]
+    "description": "Assembling quiz batches from the active pool — MCQ + sentence question generation, composer registry. Distinct from batch-serving (runtime play-through) and batch-validation (post-composition integrity check).",
+    "alias": ["batch", "batching", "quiz-batch", "batch-assembly", "compose-batch", "question-composition", "composer-registry", "compose-registry", "mcq-generation", "carry-over", "foundational-allocation", "quiz-direction", "distractor"]
+  },
+  "batch-serving": {
+    "description": "Per-batch question serving and retry — the runtime play-through state machine that pops the next question and re-enqueues wrong answers. Distinct from batch-composition (building the question set).",
+    "alias": ["batch-queue", "batch-state", "question-serving", "retry-queue"]
+  },
+  "batch-validation": {
+    "description": "Pure post-composition integrity checker for a finished batch — a safety net, not a repair mechanism. No domain behavior of its own; typically blacklisted.",
+    "alias": ["batch-integrity", "batch-safety-net"]
   },
   "mastery-tracking": {
-    "description": "Per-word learning state — streaks, mastery thresholds, graduation.",
-    "alias": ["mastery", "word-state", "streak", "graduation", "mastery-state"]
+    "description": "Per-word learning state — streaks, mastery thresholds, graduation, and the recheck flow that suppresses streak/mastery on a first recheck attempt.",
+    "alias": ["mastery", "word-state", "streak", "graduation", "mastery-state", "recheck", "recheck-flow", "newly-mastered", "graduation-hook", "anki", "lapses", "retirement", "retire", "continuous-wrong-rule"]
+  },
+  "sentence-scheduling": {
+    "description": "Eligibility gating and streak tracking for sentence (word-block) questions — when a sentence context becomes available and how its streak/shelving state evolves. Parallel to word shelving, but sentence-scoped.",
+    "alias": ["sentence-context", "sentence-eligibility", "sentence-streak", "sentence-run-state", "word-block"]
   },
   "shelving": {
     "description": "Word shelving policy — easy/okay/hard shelf boundaries and distributions.",
-    "alias": ["shelf", "shelving-policy", "word-shelving", "shelves"]
+    "alias": ["shelf", "shelving-policy", "word-shelving", "shelves", "stagnation", "unshelve", "stagnation-counter", "srs-shelving", "stuck-words", "manual-unshelving"]
   },
   "curriculum": {
-    "description": "Learning content — decks, words, sentences, curriculum import and curation.",
-    "alias": ["curation", "content", "decks", "deck-management", "curriculum-import", "vocabulary"]
+    "description": "Learning content — decks, conversation lines, vocabulary words; curriculum import and curation. Distinct from foundational-content (alphabet/character drills).",
+    "alias": ["curation", "content", "decks", "deck-management", "curriculum-import", "vocabulary", "word-pool"]
+  },
+  "deck-overview": {
+    "description": "Deck detail/overview screen — conversation sentences with translations, per-word mastery/shelving status, and navigation into audio playback and sentence-by-sentence learning. Distinct from deck selection (curriculum) and the quiz-play UI itself.",
+    "alias": ["deck-overview-page", "word-to-sentence-navigation"]
+  },
+  "foundational-content": {
+    "description": "Foundational alphabet/character seed data — consonants, vowels, tones, hiragana, katakana — distinct from conversational curriculum content.",
+    "alias": ["foundational", "consonants", "vowels", "tones", "hiragana", "katakana", "character-seed-data", "foundational-characters"]
+  },
+  "language-config": {
+    "description": "Per-language display rules — how words join into a displayed sentence (space vs no-space scripts like Thai, Japanese, Chinese, Korean).",
+    "alias": ["word-join", "language-config-table", "space-less-scripts"]
+  },
+  "demo-harness": {
+    "description": "Reference terminal-CLI host built on the library's public subpaths — shows how to wire a consuming interface. Not product-facing; typically blacklisted.",
+    "alias": ["cli-demo", "terminal-demo", "learning-runner", "auto-answerer", "demo", "quiz-runner", "answer-strategy", "cli-demo-db"]
   },
   "audio-timing": {
     "description": "Audio playback and WebVTT cue timing — wavesurfer control, marker authoring, audio metadata.",
-    "alias": ["audio", "webvtt", "vtt", "audio-playback", "audio-markers", "wavesurfer", "audio-curation"]
+    "alias": ["audio", "webvtt", "vtt", "audio-playback", "audio-markers", "wavesurfer", "audio-curation", "segment-player", "marker-authoring", "regions-plugin", "cuechange"]
+  },
+  "audio-storage": {
+    "description": "Audio binary storage and retrieval — content-addressed keys, S3/MinIO/R2-compatible client, the versioned audio table, and the curator upload endpoint. Distinct from audio-timing, which owns WebVTT cue data once a binary exists.",
+    "alias": ["minio", "r2", "s3-compatible", "content-addressed", "audio-table", "curator-upload"]
+  },
+  "debug-tooling": {
+    "description": "Developer/QA debug-trace recording — correlation IDs per served question, buffered appearance events, replay-artifact export.",
+    "alias": ["debug-recording", "replay-artifact", "transition-trace", "debug-trace", "correlation-id", "transition-channel", "appearance-channel", "replay-tool", "golden-master"]
+  },
+  "api-client": {
+    "description": "Frontend thin fetch wrappers over backend HTTP endpoints — typed request/response calls, no reactive state of their own. Distinct from data-access (backend stores) — same shape, different side.",
+    "alias": ["use-store", "store-fetch", "api-wrappers", "http-client", "fetch-wrappers"]
   },
   "ui-components": {
     "description": "Vue 3 single-file components — quiz cards, dashboards, audio UI.",
-    "alias": ["components", "vue-components", "ui"]
+    "alias": ["components", "vue-components", "ui", "view-stub", "views"]
   },
   "ui-state": {
-    "description": "Vue 3 composables holding app state and API communication.",
-    "alias": ["composables", "vue-composables", "state-management"]
+    "description": "Generic Vue 3 composables holding app-level state/bootstrapping not covered by a more specific ryoiki (e.g. the app boot sequence).",
+    "alias": ["composables", "vue-composables", "state-management", "app-boot", "boot-sequence"]
+  },
+  "config-tiering": {
+    "description": "Per-user config preference tier (T1) vs. system-fixed config (T3) — difficulty presets, GET/PUT /api/user/config resolve-and-write path. Distinct from language-config (display rules, not user preference).",
+    "alias": ["config-ownership", "difficulty-preset", "preference-tier", "tier-reclassification"]
+  },
+  "agentic-dev-workflow": {
+    "description": "The agent-driven development process itself — epic lifecycle gates, branching model, commit discipline, story sizing, PR template. Dev-process, not application behavior.",
+    "alias": ["epic-lifecycle", "branching-model", "commit-discipline", "story-sizing", "pr-template", "bdd-ownership"]
   }
 }
