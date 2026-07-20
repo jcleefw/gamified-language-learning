@@ -21,6 +21,12 @@ export interface GraphRagConfig {
     /** e.g. ['apps/srs-demo']; null = all domains. */
     domains: string[] | null;
   };
+  adrs: {
+    /** false skips ADR ingestion entirely — no adr nodes/edges. */
+    include: boolean;
+    /** Restrict to specific ADR files (filename or slug); null = every ADR. */
+    files: string[] | null;
+  };
   output: {
     graph_file: string;
     pretty_print: boolean;
@@ -56,6 +62,10 @@ export class ConfigLoader {
       filter: {
         tracks: null,
         domains: null,
+      },
+      adrs: {
+        include: true,
+        files: null,
       },
       output: {
         graph_file: '.graph-data.json',

@@ -51,8 +51,13 @@ export function adrSlug(filename: string): string {
   return filename.replace(TIMESTAMP_PREFIX, '').replace(/\.md$/, '');
 }
 
-/** List every ADR markdown file directly under product-documentation/architecture/. */
-export function findAdrFiles(root: string): string[] {
+/**
+ * List ADR markdown files directly under product-documentation/architecture/.
+ * `only` restricts to specific files — matched by filename or by slug (the
+ * filename minus its timestamp prefix) — so a caller can name an ADR either
+ * way; omitted/empty means every `.md` file in the dir (the bulk default).
+ */
+export function findAdrFiles(root: string, only?: string[] | null): string[] {
   const dir = join(root, ADR_RELATIVE_DIR);
   let entries: import('fs').Dirent[];
   try {
@@ -60,10 +65,12 @@ export function findAdrFiles(root: string): string[] {
   } catch {
     return [];
   }
-  return entries
-    .filter((e) => e.isFile() && e.name.endsWith('.md'))
-    .map((e) => join(dir, e.name))
-    .sort();
+  let names = entries.filter((e) => e.isFile() && e.name.endsWith('.md')).map((e) => e.name);
+  if (only && only.length > 0) {
+    const wanted = new Set(only);
+    names = names.filter((name) => wanted.has(name) || wanted.has(adrSlug(name)));
+  }
+  return names.map((name) => join(dir, name)).sort();
 }
 
 function boldField(block: string, name: string): string {
@@ -138,11 +145,14 @@ function parseLineage(header: string, thisSlug: string): AdrLineage[] {
  * at already exist — an unmatched target simply leaves the ADR floating.
  * `canonicalize` folds a target's ryoiki drift variant to the canonical spelling
  * so `domain#fsrs` still resolves to the `spaced-repetition` node.
+ * `only` narrows ingestion to specific ADR files (filename or slug); omitted
+ * means every ADR under the architecture dir (the bulk default).
  */
 export function ingestAdrs(
   graph: ProjectGraph,
   root: string,
   canonicalize: (name: string) => string = (name) => name,
+  only?: string[] | null,
 ): void {
   // Resolve a `**Decides:**` target to an existing node id, or null if unbuilt.
   const ryoikiByKey = new Map<string, string>(); // ryoikiKey -> node id
@@ -162,7 +172,7 @@ export function ingestAdrs(
   };
 
   const lineage: AdrLineage[] = [];
-  for (const file of findAdrFiles(root)) {
+  for (const file of findAdrFiles(root, only)) {
     const doc = parseAdr(readFileSync(file, 'utf-8'), file);
     if (!doc) continue;
 
