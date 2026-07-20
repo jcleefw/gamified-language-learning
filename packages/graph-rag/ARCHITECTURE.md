@@ -61,10 +61,11 @@
 ## The organizing principle
 
 The graph portrays **knowledge, not work**. Grouping is by workspace `domain`;
-the atom of knowledge is the `concern`. Stories/epics are provenance metadata on
-each concern, never nodes — so the picture can't fragment into an episode
-breakdown. There are no `file:` nodes: the graph never duplicates what git stores
-(Compaction D6). Enforced by `__tests__/unit/concern-reader.test.ts`.
+the atom of knowledge is the `concern`. Above them sits a decision layer — the
+`adr` node (the *why*). Stories/epics are provenance metadata on each concern,
+never nodes — so the picture can't fragment into an episode breakdown. There are
+no `file:` nodes: the graph never duplicates what git stores (Compaction D6).
+Enforced by `__tests__/unit/concern-reader.test.ts`.
 
 > This revises the Two-Axis ADR's D7, which made story/epic first-class timeline
 > nodes. The time axis survives only as provenance. Recorded in the D7 amendment
@@ -76,6 +77,14 @@ breakdown. There are no `file:` nodes: the graph never duplicates what git store
 | --- | --- | --- |
 | `domain` | `KNOWLEDGE.md` frontmatter | `unit`, `updated`, `sources`, `path` |
 | `concern` | `KNOWLEDGE.md` `##` heading | `concern`, `unit`, `updated`, `content` (prose), `sources[]`, `epics[]`, `prs[]` |
+| `adr` | `product-documentation/architecture/*.md` | `slug`, `status`, `date`, `deciders`, `scope`, `content`, `decides[]`, `path` |
+
+The `adr` is a third layer — a **decision** (the *why*), distinct from realized knowledge
+(`concern`) and from work (provenance). ADRs ingest as-is and start **floating**; a human
+links an ADR to the concern(s) it governs, and that link is authored back into the ADR's
+`**Decides:**` field (the source of truth). An ADR with no `decides` edge is "decided, not
+yet built". Read by `src/readers/adr.ts`; the link write-back lives in `server/serve.ts`
+(`POST /api/link`). See [docs/plan/adr-third-node-layer.md](./docs/plan/adr-third-node-layer.md).
 
 ## Edge types
 
@@ -83,6 +92,8 @@ breakdown. There are no `file:` nodes: the graph never duplicates what git store
 | --- | --- | --- |
 | `contains` | domain → concern | a domain groups its concerns |
 | `relates` | concern → concern | two concerns in *different* domains produced by the same epic (co-evolution); label is `via <epicId>` |
+| `decides` | adr → concern \| domain | the ADR's `**Decides:**` field names the knowledge it governs |
+| `supersedes` | adr → adr | a newer ADR replaces/amends an older one (auto-parsed from `Superseded by` / `Amended by` links) |
 
 Concerns within one domain are already grouped by their shared domain node, so no
 intra-domain `relates` edges are drawn.
