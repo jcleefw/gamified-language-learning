@@ -14,5 +14,5 @@
 
 ## Context
 
-Audio is an MVP-release blocker. This decision names a concern (`Audio Playback`)
-that has not been built yet — so the ADR stays FLOATING until that concern exists.
+Audio is an MVP-release blocker. This decision names a ryoiki (`Audio Playback`)
+that has not been built yet — so the ADR stays FLOATING until that ryoiki exists.

@@ -1,22 +1,29 @@
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { ProjectGraph } from '../graph.js';
-import { concernKey } from './archive.js';
+import { ryoikiKey } from './archive.js';
 import type { ProvenanceIndex } from './archive.js';
+import { INCLUDE_ALL } from './ryoiki-config.js';
+import type { RyoikiConfig } from './ryoiki-config.js';
 
 // ---------------------------------------------------------------------------
 // Knowledge reader: {apps,packages,...}/<unit>/KNOWLEDGE.md
 //
 // The knowledge graph IS this file's structure. It produces:
 //   - domain node:   the workspace unit (frontmatter `unit`)
-//   - concern node:  each level-2 heading, carrying the prose beneath it as its
+//   - ryoiki node:   each level-2 heading, carrying the prose beneath it as its
 //                    durable content, plus provenance stamped from the archive
 //                    (which stories/epics/PRs produced it)
-//   - contains edge: domain --contains--> concern
-//   - relates edge:  concern --relates--> concern, for concerns in DIFFERENT
+//   - contains edge: domain --contains--> ryoiki
+//   - relates edge:  ryoiki --relates--> ryoiki, for ryoiki in DIFFERENT
 //                    domains that were produced by the same epic (co-evolution)
 //
-// Stories and epics are never nodes — only citations on the concerns.
+// A `ryoiki` (AGN06) is a named aspect of one unit — the text of a `##` heading.
+// Blacklisted ryoiki are NEVER added to the graph: the heading is skipped at
+// ingest (RyoikiConfig.isBlacklisted). The join to archive provenance is
+// alias-aware — each heading is canonicalized before keying.
+//
+// Stories and epics are never nodes — only citations on the ryoiki.
 // ---------------------------------------------------------------------------
 
 const SKIP_DIRS = new Set(['node_modules', '.git', '.agents', 'dist', 'coverage', '__fixtures__']);
@@ -27,14 +34,14 @@ export interface KnowledgeFrontmatter {
   updated?: string;
 }
 
-export interface ConcernSection {
+export interface RyoikiSection {
   title: string; // the level-2 heading text
   content: string; // the prose beneath it, up to the next heading
 }
 
 export interface KnowledgeDoc {
   frontmatter: KnowledgeFrontmatter;
-  concerns: ConcernSection[];
+  ryoiki: RyoikiSection[];
   path: string; // absolute path on disk (provenance only; NOT the node identity)
 }
 
@@ -67,8 +74,8 @@ export function findKnowledgeFiles(root: string): string[] {
 
 /**
  * Minimal parser for the fixed KNOWLEDGE.md shape (D5): a frontmatter block
- * (unit / sources / updated) followed by `## Concern` sections. The prose under
- * each heading — the actual knowledge — is captured as that concern's content.
+ * (unit / sources / updated) followed by `## Ryoiki` sections. The prose under
+ * each heading — the actual knowledge — is captured as that ryoiki's content.
  */
 export function parseKnowledge(content: string, path: string): KnowledgeDoc | null {
   const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
@@ -92,14 +99,14 @@ export function parseKnowledge(content: string, path: string): KnowledgeDoc | nu
   };
 
   // Split the body on level-2 headings, keeping the prose that follows each.
-  const concerns: ConcernSection[] = [];
+  const ryoiki: RyoikiSection[] = [];
   const headingRe = /^##\s+(.+?)\s*$/gm;
   const matches = [...body.matchAll(headingRe)];
   for (let i = 0; i < matches.length; i++) {
     const title = matches[i][1].trim();
     const start = matches[i].index! + matches[i][0].length;
     const end = i + 1 < matches.length ? matches[i + 1].index! : body.length;
-    concerns.push({ title, content: body.slice(start, end).trim() });
+    ryoiki.push({ title, content: body.slice(start, end).trim() });
   }
 
   return {
@@ -108,24 +115,27 @@ export function parseKnowledge(content: string, path: string): KnowledgeDoc | nu
       sources: parseList(fm.sources),
       updated: fm.updated,
     },
-    concerns,
+    ryoiki,
     path,
   };
 }
 
 /**
- * Read every KNOWLEDGE.md below `root` into the graph as domain/concern nodes.
- * `provenance` (built from the archive) stamps each concern with the work that
- * produced it and drives the cross-domain `relates` edges.
+ * Read every KNOWLEDGE.md below `root` into the graph as domain/ryoiki nodes.
+ * `provenance` (built from the archive) stamps each ryoiki with the work that
+ * produced it and drives the cross-domain `relates` edges. `config` carries the
+ * alias map (for the provenance join key) and the blacklist (skips excluded
+ * ryoiki so they never enter the graph).
  */
 export function ingestKnowledge(
   graph: ProjectGraph,
   root: string,
   filter: KnowledgeFilter = {},
   provenance?: ProvenanceIndex,
+  config: RyoikiConfig = INCLUDE_ALL,
 ): void {
-  // concernKey -> { nodeId, domain }, so the relates pass can resolve co-evolved
-  // concerns back to the nodes we created.
+  // ryoikiKey -> { nodeId, domain }, so the relates pass can resolve co-evolved
+  // ryoiki back to the nodes we created.
   const keyToNode = new Map<string, { id: string; domain: string }>();
 
   for (const file of findKnowledgeFiles(root)) {
@@ -143,17 +153,31 @@ export function ingestKnowledge(
       metadata: { unit, updated, sources, path: file },
     });
 
-    for (const { title, content } of doc.concerns) {
-      const concernId = `${unit}#${title}`;
-      const key = concernKey(unit, title);
-      const prov = provenance?.byConcern.get(key);
+    for (const { title, content } of doc.ryoiki) {
+      // Blacklisted ryoiki are excluded by design — never a node (AGN06 D5/D9).
+      // A blacklisted ryoiki should never have been WRITTEN as a heading in the
+      // first place (the blacklist is a write-time projection), so its presence
+      // here is an authoring anomaly: warn loudly, then skip so it still never
+      // enters the graph.
+      if (config.isBlacklisted(unit, title)) {
+        console.warn(
+          `[graph-rag] "${unit}" KNOWLEDGE.md has a blacklisted ryoiki heading ` +
+            `"${title}" — it should never have been written (AGN06 D9). Skipping; ` +
+            `not added to the graph.`,
+        );
+        continue;
+      }
+
+      const ryoikiId = `${unit}#${title}`;
+      const key = ryoikiKey(unit, config.canonicalize(title));
+      const prov = provenance?.byRyoiki.get(key);
 
       graph.addNode({
-        id: concernId,
-        type: 'concern',
+        id: ryoikiId,
+        type: 'ryoiki',
         label: `${unit} · ${title}`,
         metadata: {
-          concern: title,
+          ryoiki: title,
           unit,
           updated,
           content,
@@ -163,8 +187,8 @@ export function ingestKnowledge(
           prs: prov?.prs ?? [],
         },
       });
-      graph.addEdge({ from: unit, to: concernId, type: 'contains', label: 'contains' });
-      keyToNode.set(key, { id: concernId, domain: unit });
+      graph.addEdge({ from: unit, to: ryoikiId, type: 'contains', label: 'contains' });
+      keyToNode.set(key, { id: ryoikiId, domain: unit });
     }
   }
 
@@ -172,8 +196,8 @@ export function ingestKnowledge(
 }
 
 /**
- * For each epic, connect the concerns it produced that live in DIFFERENT domains
- * — a `relates` edge meaning "these co-evolved in the same unit of work". Concerns
+ * For each epic, connect the ryoiki it produced that live in DIFFERENT domains
+ * — a `relates` edge meaning "these co-evolved in the same unit of work". Ryoiki
  * within one domain are already grouped by their shared domain node, so we don't
  * clutter the graph with intra-domain relates.
  */

@@ -12,3 +12,9 @@ updated: 2026-07-19
   from the shared shuffle utility. Ordering is a uniform permutation of the batch —
   it never uses a comparator-based `sort` with a random result, which is
   statistically biased and unspecified.
+
+## Type Definitions
+
+- ANOMALY FIXTURE: this ryoiki is blacklisted globally (the "*" key), so it should
+  never have been written here. Graph-rag must warn about it and leave it out of
+  the graph.
