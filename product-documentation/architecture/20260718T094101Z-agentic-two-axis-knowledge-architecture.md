@@ -7,6 +7,8 @@
 
 **Amended by:** AGN05 implementation (2026-07-18) — corrects **D5** (KNOWLEDGE.md is maintained incrementally to current state, by area; it is *not* overwritten to a snapshot and carries no superseded log) and refines **D10** (record and compact land as two commits; the folder deletion is a self-contained commit; rollup-PR / manifest+GitHub-Action delivery are future automation, not built). See the amendment notes on D5 and D10 below.
 
+**Amended by:** [Package-Scoped Knowledge Filtering](20260718T213334Z-agentic-package-scoped-knowledge-filtering.md) (2026-07-18) — refines **D1**: within-unit cross-cutting structure is renamed `concern` → `ryoiki` and gains a concrete model (free-form path notation + a soft alias map, surfaced as `KNOWLEDGE.md` section headings, filtered include-by-default via a per-unit blacklist). Keeps D1's free-form / no-controlled-vocabulary stance; see the amendment note on D1 below.
+
 **Date:** 2026-07-18
 
 **Deciders:** JC Lee / PO
@@ -41,6 +43,8 @@ The resolution is to recognise **two legitimate, distinct axes over the same eve
 ### D1 — Domains are the workspace, not invented concepts
 
 The domain taxonomy **is** `pnpm-workspace.yaml`: every `apps/*` and `packages/*` is a domain node (`apps/srs-demo`, `packages/srs-engine-v2`, `apps/server`, …). Cross-cutting **concerns** (routing, audio, scheduling) are sub-nodes *within* a unit, never standalone domains. Concern names are **free-form for now** — whether they need a controlled vocabulary waits until the retrieval-layer query patterns are known. The knowledge graph mirrors the module graph; it does not author its own. EP44's knowledge belongs to `apps/srs-demo` / concern `routing` — not a floating `app-routing`.
+
+> **Refined by [Package-Scoped Knowledge Filtering](20260718T213334Z-agentic-package-scoped-knowledge-filtering.md) (2026-07-18):** the within-unit sub-structure this decision left free-form is renamed **`concern` → `ryoiki`** and given a concrete model — free-form **path notation** (`review-scheduling/fsrs`), a global **alias map** for drift, surfaced as `KNOWLEDGE.md` **section headings**, and filtered **include-by-default** via a per-unit **blacklist** in the doc's frontmatter. D1's stance is unchanged (still free-form, still no controlled vocabulary); the refinement only fills in *how* within-unit structure is expressed and filtered at write time. Read-time (graph) filtering is deferred to a future Graph RAG ADR.
 
 ### D2 — Two artifacts, two axes
 

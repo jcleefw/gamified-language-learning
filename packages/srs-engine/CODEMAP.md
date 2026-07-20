@@ -7,76 +7,71 @@ Package navigation index. Navigate to subfolder CODEMAPs for file-level detail.
 ## Package Purpose
 
 Standalone SRS quiz engine for language learning. Exposes pure functions for
-composing quiz questions and managing session state. Can be consumed by any
-interface layer — terminal (via `demo/`) or web (future server + frontend).
+composing quiz questions, adaptive session state, sentence scheduling,
+shelving, and FSRS-based review. Can be consumed by any interface layer —
+terminal (via `demo/`) or web (server + frontend).
 
 ---
 
 ## Entry Points
 
-| File | Role |
-| --- | --- |
-| `src/index.ts` | Public library API — single import surface for all consumers |
-| `docs/` | **Start here** — humanized explanations at three levels (stakeholder, developer, walkthrough) |
-| `demo/learning-runner.ts` | CLI demo — wires mock data → `initAdaptiveSession` → question loop → `advanceAdaptiveSession` |
-| `dist/index.js` | Built library output (generated from `src/`) |
+There is no root package entry (`package.json` `exports` has no `.` — every
+consumer imports a subpath):
+
+| Subpath | File | Role |
+| --- | --- | --- |
+| `@gll/srs-engine/learn` | `src/learn/index.ts` | Quiz composition, adaptive session, batch queue, mastery/recheck, sentence scheduling |
+| `@gll/srs-engine/review` | `src/review/index.ts` | FSRS-backed review scheduling |
+| `@gll/srs-engine/shelving` | `src/shelving/index.ts` | Stuck-word shelving policy |
+| `@gll/srs-engine/data/mock/*` | `data/mock/*.ts` | Mock decks/words/foundational data (dev + tests only) |
+| `docs/` | — | **Start here** — humanized explanations at three levels (stakeholder, developer, walkthrough) |
+| `demo/learning-runner.ts` | — | CLI demo — wires mock data → `initAdaptiveSession` → question loop → `advanceAdaptiveSession` |
 
 ---
 
 ## `docs/` — Start Here
 
-Three humanized explanations at different levels:
-
-| File | Audience | Time | Content |
+| File | Audience | Content | CODEMAP |
 | --- | --- | --- | --- |
-| `docs/01-stakeholder.md` | Product owners, non-technical | 5 min | What the engine does and why |
-| `docs/02-concepts.md` | Developers, architects | 10 min | Architecture, core concepts, design decisions |
-| `docs/03-walkthrough.md` | Builders, debuggers | 15 min | Step-by-step algorithm trace with worked example |
+| `docs/01-stakeholder.md` | Product owners, non-technical | What the engine does and why | [CODEMAP](docs/CODEMAP.md) |
+| `docs/02-concepts.md` | Developers, architects | Architecture, core concepts, design decisions | ″ |
+| `docs/03-walkthrough.md` | Builders, debuggers | Step-by-step algorithm trace with worked example | ″ |
+| `docs/04-deferred-features.md` | Planners | Gap analysis vs PRD | ″ |
 
 ---
 
 ## `src/` — Library
 
-| Folder | Purpose |
-| --- | --- |
-| `src/engine/` | Session orchestration, batch composition, answer processing — pure functions, no I/O |
-| `src/types/` | TypeScript definitions — `WordState`, `RunState`, `SentenceState`, `QuizQuestion`, etc. |
-| `src/config/` | Language config — `wordJoin` for space-less scripts (Thai, Japanese, etc.) |
+| Folder | Purpose | CODEMAP |
+| --- | --- | --- |
+| `src/learn/` | Quiz composition, adaptive session, batch queue, mastery/recheck, sentence scheduling — the `learn` subpath export | [CODEMAP](src/learn/CODEMAP.md) |
+| `src/learn/engine/` | Pure session/batch/composition logic behind `learn/` | [CODEMAP](src/learn/engine/CODEMAP.md) |
+| `src/learn/types/` | TypeScript definitions for the `learn` domain | [CODEMAP](src/learn/types/CODEMAP.md) |
+| `src/learn/utils/` | Small generic helpers (shuffle) used by `learn/engine/` | [CODEMAP](src/learn/utils/CODEMAP.md) |
+| `src/review/` | FSRS-backed review scheduling — the `review` subpath export | [CODEMAP](src/review/CODEMAP.md) |
+| `src/shelving/` | Stuck-word shelving policy — the `shelving` subpath export | [CODEMAP](src/shelving/CODEMAP.md) |
+| `src/config/` | Language config — `LANGUAGE_CONFIG` for space-less scripts (Thai, Japanese, etc.) | [CODEMAP](src/config/CODEMAP.md) |
+
+There is no `src/index.ts` — see Entry Points above.
 
 ---
 
 ## `demo/` — Terminal Demo
 
 Shows how to build a terminal interface on top of the library. All files
-import from `../src/index.js` — same as a web server would.
-
-| File | Purpose |
-| --- | --- |
-| `demo/learning-runner.ts` | Entry point — deck selection loop, wires mock data into `runAdaptiveLoop` |
-| `demo/learning-io.ts` | Terminal I/O + orchestration — `selectDeck`, `runInteractive`, `runAdaptiveLoop` |
-| `demo/auto-answerer.ts` | Auto mode runner — `runAutoInteractive` with a strategy |
-| `demo/auto-answer-strategy.ts` | Answer strategies — `CorrectAutoAnswerStrategy`, `RandomAutoAnswerStrategy`, `WeightedAccuracyAutoAnswerStrategy` |
-| `demo/config.ts` | Demo config — `LEARNING_CONFIG`, `STREAK_THRESHOLDS`, `AUTO_MODE` flag |
+import from the `learn`/`review`/`shelving` subpaths — same as a web server
+would. See [CODEMAP](demo/CODEMAP.md) for file-level detail.
 
 ---
 
-## `data/` — Mock Data
+## `data/` — Sample & Mock Data
 
 | Folder | Purpose | CODEMAP |
 | --- | --- | --- |
-| `data/mock/` | Thai and Japanese foundational + vocabulary test data | [CODEMAP](data/mock/CODEMAP.md) |
-
----
-
-## `src/__tests__/` — Tests
-
-| File | Purpose |
-| --- | --- |
-| `unit/word-state.test.ts` | `updateRunState`, streak & mastery logic, `isMastered` |
-| `unit/recheck.test.ts` | `processRecheckResult`, `recheckPending`/`recheckReentered`, `nextActivePool` |
-| `unit/compose-batch.test.ts` | `composeWordBatch`, `composeWordBatchMulti` (word MCQ generation) |
-| `unit/update-mastery-state.test.ts` | Full batch result processing, streak tracking |
-| `integration/auto-scenarios.test.ts` | End-to-end scenarios — perfect answers, 80/20, random, determinism |
+| `data/mock/` | Thai mock decks/words/foundational data, consumed by `demo/` and tests | [CODEMAP](data/mock/CODEMAP.md) |
+| `data/samples/` | Raw sample conversation JSON + hand-authored Thai consonant reference data | [CODEMAP](data/samples/CODEMAP.md) |
+| `data/seed-data/` | Full Thai/Japanese foundational-character seed sets (consonants, vowels, tones, kana) | [CODEMAP](data/seed-data/CODEMAP.md) |
+| `data/types.ts` | Shared `FoundationalCharacter` type — see [CODEMAP](data/CODEMAP.md) | — |
 
 ---
 
@@ -84,10 +79,10 @@ import from `../src/index.js` — same as a web server would.
 
 | File | Purpose |
 | --- | --- |
-| `package.json` | ESM package, declares `ts-fsrs` dep, build + test scripts |
-| `tsconfig.json` | Base TS config (no emit, includes everything) |
-| `tsconfig.build.json` | Build config — compiles `src/` → `dist/` |
-| `vitest.config.ts` | Discovers tests across `src/`, `data/`, `__tests__/integration/` |
+| `package.json` | ESM package, no root export (subpath-only), declares `ts-fsrs` dep, build/test/lint/typecheck scripts + `engine:mock-db` demo runner |
+| `tsconfig.json` | Base TS config (no emit), includes `src/`, `__tests__/`, `demo/`, `data/` |
+| `tsconfig.build.json` | Build config — compiles `src/` + `data/` → `dist/` |
+| `vitest.config.ts` | Discovers tests across `src/**/__tests__/`, `data/**/__tests__/`, `__tests__/integration/` |
 
 ---
 
@@ -99,13 +94,13 @@ initAdaptiveSession(words, config)
    AdaptiveSessionState {active, queue, runState, ...}
         ↓
 per batch:
-  assembleBatch(active, pool, config) → QuizQuestion[]
+  assembleBatch(active, wordPool, foundationalPool, wordsPerBatch, options?) → QuizQuestion[]
   initBatchState(questions) → BatchState
-  
+
   per question:
     nextQuestion(batchState) → question + state
     submitBatchResult(batchState, answer) → state (re-enqueue if wrong)
-  
+
   finishBatch(batchState) → BatchOutput
         ↓
 advanceAdaptiveSession(sessionState, batchOutput, config)
@@ -117,7 +112,8 @@ advanceAdaptiveSession(sessionState, batchOutput, config)
 repeat until active.length === 0 && queue.length === 0
 ```
 
-See `docs/02-concepts.md` for architecture diagram and `docs/03-walkthrough.md` for annotated example.
+See `docs/02-concepts.md` for the architecture diagram and `docs/03-walkthrough.md`
+for an annotated example.
 
 ---
 
@@ -125,6 +121,6 @@ See `docs/02-concepts.md` for architecture diagram and `docs/03-walkthrough.md` 
 
 | Dep | Version | Status |
 | --- | --- | --- |
-| `ts-fsrs` | ^5 | Declared — reserved for `src/scheduler/` (EP21-ST01) |
+| `ts-fsrs` | ^5 | Used by `src/review/FsrsScheduler.ts` |
 | `typescript` | ^5.7 | Dev |
 | `vitest` | ^3 | Dev |

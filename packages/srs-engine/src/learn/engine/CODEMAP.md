@@ -1,4 +1,4 @@
-# CODEMAP.md — `src/engine/`
+# CODEMAP.md — `src/learn/engine/`
 
 Quiz generation and session state logic. Pure functions only — no I/O,
 no side effects.
@@ -9,14 +9,19 @@ no side effects.
 
 | File | Purpose |
 | --- | --- |
-| `compose-batch.ts` | Composes `QuizQuestion[]` from language content |
-| `session.ts` | Session state transitions — recheck, pool rotation, mastery updates |
-| `sentence-scheduling.ts` | Sentence context eligibility gating and streak/shelving state updates for sentence questions |
+| `adaptive-session.ts` | Top-level session orchestration across batches |
+| `assemble-batch.ts` | Partitions active items into foundational vs. vocabulary, proportionally splits question-limit, wires the composer registry |
+| `batch-queue.ts` | Per-batch question serving/retry state machine |
+| `compose-registry.ts` | Thunk-based registry pattern for merging question sources |
+| `compose-sentence-batch.ts` | Builds sentence questions from a resolved context |
+| `compose-word-batch.ts` | MCQ question generation for a single foundational/vocabulary item |
+| `sentence-scheduling.ts` | Sentence context eligibility gating and streak/shelving state updates |
+| `session.ts` | Recheck, pool rotation, mastery update logic |
 | `validate-batch.ts` | Pure post-composition integrity checker for a finished batch — safety net, not a repair mechanism |
 
 ---
 
-## Exports — `compose-batch.ts`
+## Exports — `compose-word-batch.ts`
 
 | Export | Signature | Purpose |
 | --- | --- | --- |
@@ -36,26 +41,69 @@ no side effects.
 
 ---
 
+## Exports — `assemble-batch.ts`
+
+| Export | Signature | Purpose |
+| --- | --- | --- |
+| `assembleBatch` | `(active: QuizItem[], wordPool: QuizItem[], foundationalPool: QuizItem[], wordsPerBatch: number, options?: AssembleBatchOptions) → QuizQuestion[]` | Orchestrates batch assembly: filters `excludeIds`, splits `active` into foundational vs. vocabulary, proportionally divides `wordsPerBatch` between them, composes each via the registry, optionally shuffles the merged result |
+| `AssembleBatchOptions` | `interface` | `{ shuffle?: boolean (default true); extraThunks?: (() => QuizQuestion[])[]; excludeIds?: Set<string> }` |
+
+---
+
+## Exports — `compose-registry.ts`
+
+| Export | Signature | Purpose |
+| --- | --- | --- |
+| `createComposerRegistry` | `() → ComposerRegistry` | Thunk-based registry; `.add(thunk)` queues a `() => QuizQuestion[]` source |
+| `assembleBatchQuestions` | `(registry: ComposerRegistry) → QuizQuestion[]` | Runs every registered thunk and flattens the results |
+| `ComposerRegistry` | `interface` | `{ add(thunk): void, ... }` |
+
+---
+
+## Exports — `compose-sentence-batch.ts`
+
+| Export | Signature | Purpose |
+| --- | --- | --- |
+| `composeSentenceBatch` | `(ctx: SentenceContext, resolvedTiles: SentenceTile[], language: string, options?) → SentenceQuestion[]` | Builds 3 directions per sentence context (english-to-native, romanization-to-native, native-to-romanization) using `LANGUAGE_CONFIG` word-join rules |
+
+---
+
+## Exports — `adaptive-session.ts`
+
+| Export | Signature | Purpose |
+| --- | --- | --- |
+| `initAdaptiveSession` | `(words, config: SessionConfig, recheckIds?, initialRunState?) → AdaptiveSessionState` | Builds the initial session state (active pool, queue, run state) |
+| `advanceAdaptiveSession` | `(state: AdaptiveSessionState, batchOutput: BatchOutput, config: SessionConfig) → AdaptiveSessionState` | Applies a finished batch's results — mastery update, sentence run-state update, pool rotation — and returns the next session state |
+| `AdaptiveSessionState` | `interface` | `{ active, queue, runState, ... }` |
+| `SessionConfig` | `interface` | Session-wide tunables (batch size, thresholds, sentence config) |
+
+---
+
+## Exports — `batch-queue.ts`
+
+| Export | Signature | Purpose |
+| --- | --- | --- |
+| `initBatchState` | `(questions: QuizQuestion[]) → BatchState` | Seeds the per-batch serving/retry queue |
+| `isBatchDone` | `(state: BatchState) → boolean` | True once every question has been answered correctly |
+| `nextQuestion` | `(state: BatchState) → { question, state }` | Pops the next question to serve |
+| `submitBatchResult` | `(state: BatchState, answer) → BatchState` | Records an answer; re-enqueues the question on a wrong answer |
+| `finishBatch` | `(state: BatchState) → BatchOutput` | Collapses the batch state into a result summary |
+| `BatchOutput` | `interface` | Batch-level result summary |
+| `BatchState` | `interface` | Per-batch queue/retry state |
+
+---
+
 ## Exports — `session.ts`
 
 | Export | Signature | Purpose |
 | --- | --- | --- |
 | `processRecheckResult` | `(wordId, wasCorrect, runState, recheckPending, recheckReentered, masteryThreshold, streakThresholds?) → RecheckResultOutput` | Applies one answer; suppresses streak/mastery on first recheck attempt |
+| `classifyRechecks` | — | Splits recheck candidates by pending/reentered state |
 | `nextActivePool` | `(active, queue, questionLimit, runState, masteryThreshold, recheckExempt?) → { active, queue }` | Retires mastered words and fills freed slots from queue |
 | `updateMasteryState` | `(results, runState, prevState, recheckPending, recheckReentered, masteryThreshold, streakThresholds) → MasteryUpdateResult` | Applies a full batch of results; returns `newlyMasteredIds` for this batch |
+| `getNewlyMasteredIds` | — | Extracts the newly-mastered subset from a mastery update |
 | `RecheckResultOutput` | `interface` | `{ runState, recheckPending, recheckReentered }` |
 | `MasteryUpdateResult` | `interface` | `{ runState, recheckPending, recheckReentered, masteredCount, newlyMasteredIds }` |
-
----
-
-## Dependencies
-
-| Import | Source |
-| --- | --- |
-| `QuizQuestion`, `QuizDirection`, `QuizChoice`, `QuizResult` | `../types/quiz` |
-| `MockFoundational` | `../types/foundational` |
-| `MockWord` | `../../../data/mock/mock-words` |
-| `RunState`, `StreakThresholds`, `updateRunState`, `isMastered` | `../types/word-state` |
 
 ---
 
@@ -79,13 +127,20 @@ no side effects.
 
 ---
 
+## Dependencies
+
+| Import | Source |
+| --- | --- |
+| `QuizQuestion`, `QuizDirection`, `QuizChoice`, `QuizResult`, `SentenceQuestion`, `SentenceTile` | `../types/quiz.js` |
+| `MockFoundational` | `../types/foundational.js` |
+| `SentenceContext` | `../types/sentence.js` |
+| `RunState`, `StreakThresholds`, `updateRunState`, `isMastered` | `../types/word-state.js` |
+| `SentenceRunState`, `SentenceState` | `../types/sentence-state.js` |
+| `shuffle` | `../utils/shuffle.js` |
+| `LANGUAGE_CONFIG` | `../../config/language.js` |
+
+---
+
 ## Unit Tests
 
-| Test file | Covers |
-| --- | --- |
-| `src/__tests__/unit/compose-batch.test.ts` | `composeWordBatch`, `composeWordBatchMulti` |
-| `src/__tests__/unit/recheck.test.ts` | `processRecheckResult`, `nextActivePool` |
-| `src/__tests__/unit/adaptive-loop.test.ts` | `nextActivePool` pool rotation |
-| `src/__tests__/unit/update-mastery-state.test.ts` | `updateMasteryState` |
-| `src/__tests__/unit/sentence-spacing.test.ts` | `resolveEligibleContexts`, `updateSentenceRunState` |
-| `src/__tests__/unit/validate-batch.test.ts` | `validateBatch` — excluded-word leak (MCQ + sentence tile), duplicate detection, combined violations |
+Tests live under `src/learn/__tests__/unit/` and `src/learn/__tests__/integration/`.

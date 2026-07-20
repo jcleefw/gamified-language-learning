@@ -51,10 +51,10 @@ This document clarifies the gap between the product specification and current im
 
 ## 🔗 Related files
 
-- `src/index.ts` — Public API exports
-- `src/types/word-state.ts` — `RunState`, `WordState`, streak logic
-- `src/engine/session.ts` — `updateMasteryState`, `nextActivePool`
-- `src/engine/adaptive-session.ts` — `AdaptiveSessionState` orchestration
-- `src/engine/batch-queue.ts` — `BatchState`, retry mechanics
-- `src/engine/compose-word-batch.ts` — Question generation
-- `CODEMAP.md` — Full package navigation
+- `src/learn/index.ts` — Public API exports (`learn` subpath)
+- `src/learn/types/word-state.ts` — `RunState`, `WordState`, streak logic
+- `src/learn/engine/session.ts` — `updateMasteryState`, `nextActivePool`
+- `src/learn/engine/adaptive-session.ts` — `AdaptiveSessionState` orchestration
+- `src/learn/engine/batch-queue.ts` — `BatchState`, retry mechanics
+- `src/learn/engine/compose-word-batch.ts` — Question generation
+- `../CODEMAP.md` — Full package navigation

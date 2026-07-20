@@ -1,0 +1,23 @@
+{
+  "*": [
+    "type-definitions"
+  ],
+  "apps/cli-demo-db": [],
+  "apps/server": [],
+  "apps/srs-demo": [
+    "workspace-tooling",
+    "package-scaffold",
+    "ui-state"
+  ],
+  "packages/api-contract": [],
+  "packages/db": [],
+  "packages/logger": [],
+  "packages/shared-utils": [],
+  "packages/srs-engine": [
+    "batch-validation",
+    "demo-harness",
+    "design-spec",
+    "test-infrastructure",
+    "workspace-tooling"
+  ]
+}

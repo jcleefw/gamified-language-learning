@@ -29,7 +29,7 @@ artifact, an archive entry is recorded, and any standing decisions are amended.
      scaffolding forbidden Recorded-onward (`file:line`, acceptance criteria,
      planning meta — Compaction D5).
    - **Archive entry.** `archive-append.sh --story -` one story with
-     `track: "agentic"`, `domain: "agentic/<concern>"`, `epic: "AGN##"` (or the
+     `track: "agentic"`, `domain: "agentic/<ryoiki>"`, `epic: "AGN##"` (or the
      `AGN##` id), `pr` = the PR number or `null` if none.
    - **State knowledge → ADRs.** If the work changed a *standing* agentic decision,
      amend the relevant `agentic-*` ADR (status → "Accepted (amended)" + an
@@ -49,7 +49,7 @@ For agentic work, the archive entry follows this shape:
 {
   "id": "AGN05-ST01", "epic": "AGN05", "track": "agentic",
   "title": "Two-Axis Knowledge Architecture",
-  "domain": "agentic/knowledge", "concern": "archive-structure",
+  "domain": "agentic/knowledge", "ryoiki": "archive-structure",
   "completed": "2026-07-18",
   "summary": "Implemented compaction rules (D4-D11); separated archive from active tracking; amended ADRs for amended decisions.",
   "supersedes": [], "fixes": [], "pr": 123, "compact_pr": null
@@ -58,8 +58,8 @@ For agentic work, the archive entry follows this shape:
 
 - `pr` is the **PR number** that delivered the work, or `null` if not merged via PR.
 - `compact_pr` is the **PR number when this story was compacted/archived away** — initially `null`, filled at a later epoch's archival boundary.
-- `domain` is `agentic/<concern>` (agentic work lives in the ADR namespace, not a package).
-- `concern` is free-form.
+- `domain` is `agentic/<ryoiki>` (agentic work lives in the ADR namespace, not a package).
+- `ryoiki` is free-form.
 
 ## Rules
 
