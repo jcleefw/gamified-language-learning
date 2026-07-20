@@ -19,12 +19,13 @@
 // ---------------------------------------------------------------------------
 
 import { createServer, IncomingMessage, ServerResponse } from 'http';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { dirname, join, isAbsolute } from 'path';
 import { fileURLToPath } from 'url';
 import { buildGraph } from '../build-graph.js';
 import { ConfigLoader } from '../config.js';
 import { QueryEngine } from '../query-engine.js';
+import { findAdrFiles, adrSlug, parseAdr } from '../readers/adr.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '../../../..');
@@ -45,18 +46,28 @@ const config = existsSync(configPath)
 const configuredRoot = arg('root') ?? config.root ?? '.';
 const root = isAbsolute(configuredRoot) ? configuredRoot : join(repoRoot, configuredRoot);
 
-const graph = buildGraph(root, { tracks: config.filter.tracks, domains: config.filter.domains });
-const engine = new QueryEngine(graph, 'unused-retrieval-is-key-free');
-const graphJSON = JSON.stringify(graph.toJSON());
+// Mutable: a live ADR re-link edits an ADR file, rebuilds, and swaps these in.
+let graph = buildGraph(root, { tracks: config.filter.tracks, domains: config.filter.domains });
+let engine = new QueryEngine(graph, 'unused-retrieval-is-key-free');
+let graphJSON = JSON.stringify(graph.toJSON());
 
-const SYSTEM_PROMPT = `You are an expert in a software project's history and architecture.
-You read a TWO-AXIS knowledge graph of a language-learning platform:
-- a TIME axis of stories and epics (completed units of work), and
-- a DOMAIN axis of workspace units and the concerns within them.
-Provenance edges ('sources') connect a domain's current state back to the stories/epics that produced it.
-Answer ONLY from the graph context supplied below. Be specific: cite story/epic IDs, workspace
-domains, and PR numbers. Group your reasoning by domain, not by epic — an epic is a unit of work
-in time, not a unit of knowledge. If the context doesn't contain the answer, say so plainly.`;
+function rebuild(): void {
+  graph = buildGraph(root, { tracks: config.filter.tracks, domains: config.filter.domains });
+  engine = new QueryEngine(graph, 'unused-retrieval-is-key-free');
+  graphJSON = JSON.stringify(graph.toJSON());
+}
+
+const SYSTEM_PROMPT = `You are an expert in a software project's architecture, reading a
+knowledge graph organized by KNOWLEDGE, not by work:
+- domain nodes are workspace units (apps/*, packages/*);
+- concern nodes are named areas of knowledge within a domain, each carrying the durable
+  description of how that area works, plus provenance (the stories/epics/PRs that produced it);
+- adr nodes are architecture DECISIONS (the *why*). A 'decides' edge points from an ADR to the
+  concern/domain it governs; a 'supersedes' edge points from a newer ADR to the one it replaces.
+  An ADR with no 'decides' edge is a decision that is not yet realized in a concern.
+Answer ONLY from the graph context below. Be specific: name domains and concerns, cite the
+producing story/epic IDs and PR numbers, and when asked *why*, cite the governing ADR and its
+status. Organize the answer around concerns, not epics. If the context lacks the answer, say so.`;
 
 // --- Helpers ----------------------------------------------------------------
 function send(res: ServerResponse, code: number, type: string, body: string | Buffer): void {
@@ -176,6 +187,57 @@ async function handleQuery(req: IncomingMessage, res: ServerResponse): Promise<v
   res.end();
 }
 
+// --- ADR link write-back ----------------------------------------------------
+// The ADR file is the SOURCE OF TRUTH for its links (`.graph-data.json` is a
+// rebuilt cache). Adding/removing a link edits the ADR's `**Decides:**` field on
+// disk, then rebuilds — so a reset + rebuild reconstructs the link from the ADR.
+
+/** Rewrite (or insert/remove) the `**Decides:**` field to carry exactly `targets`. */
+function setDecidesField(content: string, targets: string[]): string {
+  const line = targets.length ? `**Decides:** ${targets.join(', ')}` : '';
+  const existing = /^\*\*Decides:\*\*.*$/m;
+  if (existing.test(content)) {
+    return line ? content.replace(existing, line) : content.replace(/^\*\*Decides:\*\*.*\n?/m, '');
+  }
+  if (!line) return content;
+  const sepIdx = content.search(/\n---\n/);
+  return sepIdx >= 0
+    ? `${content.slice(0, sepIdx)}\n${line}\n${content.slice(sepIdx)}`
+    : `${content}\n\n${line}\n`;
+}
+
+async function handleLink(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  let adrSlugArg = '';
+  let target = '';
+  let op = 'add';
+  try {
+    const parsed = JSON.parse((await readBody(req)) || '{}');
+    adrSlugArg = String(parsed.adrSlug ?? '').trim();
+    target = String(parsed.target ?? '').trim();
+    if (parsed.op) op = String(parsed.op);
+  } catch {
+    /* fall through to guard */
+  }
+  if (!adrSlugArg || !target || (op !== 'add' && op !== 'remove')) {
+    return send(res, 400, 'application/json', JSON.stringify({ error: 'bad request' }));
+  }
+
+  // Only files the ADR reader recognises are editable — keeps writes inside the
+  // architecture dir and to a real ADR.
+  const file = findAdrFiles(root).find((f) => adrSlug(f.slice(f.lastIndexOf('/') + 1)) === adrSlugArg);
+  if (!file) return send(res, 404, 'application/json', JSON.stringify({ error: 'unknown adr' }));
+
+  const content = readFileSync(file, 'utf-8');
+  const doc = parseAdr(content, file);
+  let targets = doc ? [...doc.decides] : [];
+  if (op === 'add' && !targets.includes(target)) targets.push(target);
+  if (op === 'remove') targets = targets.filter((t) => t !== target);
+
+  writeFileSync(file, setDecidesField(content, targets));
+  rebuild(); // re-read the ADR (now the source of truth) into a fresh graph
+  return send(res, 200, 'application/json', graphJSON);
+}
+
 // --- Router -----------------------------------------------------------------
 const uiPath = join(__dirname, 'ui.html');
 
@@ -194,6 +256,9 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === 'POST' && url === '/api/query') {
       return handleQuery(req, res);
+    }
+    if (req.method === 'POST' && url === '/api/link') {
+      return handleLink(req, res);
     }
     send(res, 404, 'text/plain', 'Not found');
   } catch (err) {

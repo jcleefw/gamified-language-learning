@@ -1,6 +1,7 @@
 import { ProjectGraph } from './graph.js';
 import { loadArchiveIndex, buildProvenanceIndex } from './readers/archive.js';
 import { ingestKnowledge } from './readers/knowledge.js';
+import { ingestAdrs } from './readers/adr.js';
 
 export interface BuildOptions {
   /** Restrict provenance to stories in these tracks (e.g. ['project']); null = all. */
@@ -23,6 +24,8 @@ export function buildGraph(root: string, options: BuildOptions = {}): ProjectGra
   const archive = loadArchiveIndex(root);
   const provenance = buildProvenanceIndex(archive, filter);
   ingestKnowledge(graph, root, { domains: filter.domains }, provenance);
+  // ADRs last: the decision layer links to concern/domain nodes just created.
+  ingestAdrs(graph, root);
 
   return graph;
 }
