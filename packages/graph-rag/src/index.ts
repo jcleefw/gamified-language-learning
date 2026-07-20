@@ -4,8 +4,8 @@ export type { BuildOptions } from './build-graph.js';
 export {
   loadArchiveIndex,
   buildProvenanceIndex,
-  concernKey,
-  normalizeConcern,
+  ryoikiKey,
+  normalizeRyoiki,
   ARCHIVE_RELATIVE_PATH,
 } from './readers/archive.js';
 export type {
@@ -13,16 +13,18 @@ export type {
   ArchiveStory,
   ArchiveEpic,
   ArchiveFilter,
-  ConcernProvenance,
+  RyoikiProvenance,
   ProvenanceIndex,
 } from './readers/archive.js';
 export { ingestKnowledge, findKnowledgeFiles, parseKnowledge } from './readers/knowledge.js';
 export type {
   KnowledgeDoc,
   KnowledgeFrontmatter,
-  ConcernSection,
+  RyoikiSection,
   KnowledgeFilter,
 } from './readers/knowledge.js';
+export { loadRyoikiConfig, INCLUDE_ALL } from './readers/ryoiki-config.js';
+export type { RyoikiConfig } from './readers/ryoiki-config.js';
 export { ConfigLoader } from './config.js';
 export type { GraphRagConfig } from './config.js';
 export { QueryEngine } from './query-engine.js';

@@ -9,7 +9,7 @@ files see [EXTRACTION_PATTERNS.md](../EXTRACTION_PATTERNS.md). The three form a 
 here, then go to those for the mechanics.
 
 Every example below uses real data from the project (`apps/srs-demo`, the `Routing`
-concern, `EP44`).
+ryoiki, `EP44`).
 
 ---
 
@@ -21,13 +21,13 @@ The whole graph is just two lists in one JSON file (`.graph-data.json`): a list 
 ```json
 {
   "id":    "apps/srs-demo#Routing",     // unique name — how edges point at it
-  "type":  "concern",                    // which KIND of node (the important part)
+  "type":  "ryoiki",                    // which KIND of node (the important part)
   "label": "apps/srs-demo · Routing",    // the human-readable caption on screen
   "metadata": { ... }                    // everything else hangs in here
 }
 ```
 
-The `type` field is the whole game. There are **three** types: `domain` and `concern`
+The `type` field is the whole game. There are **three** types: `domain` and `ryoiki`
 (the knowledge) and `adr` (the decisions). Here they are, one at a time.
 
 ---
@@ -66,21 +66,21 @@ clusters around.
 
 ---
 
-## Node type 2 of 3 — `concern`
+## Node type 2 of 3 — `ryoiki`
 
 **What it represents:** one *named area of knowledge* inside a domain — "how routing
 works," "how batch composition works." This is the actual **knowledge** in the knowledge
-graph. The domain is just the folder it lives in; the concern is the substance.
+graph. The domain is just the folder it lives in; the ryoiki is the substance.
 
 **A real one:**
 
 ```json
 {
   "id": "apps/srs-demo#Routing",
-  "type": "concern",
+  "type": "ryoiki",
   "label": "apps/srs-demo · Routing",
   "metadata": {
-    "concern": "Routing",
+    "ryoiki": "Routing",
     "unit": "apps/srs-demo",
     "content": "- Navigation is handled by Vue Router 4. ...",   // the actual prose
     "sources": ["EP44-ST01", "EP44-ST02", "EP44-ST03", "EP44-ST05"],
@@ -101,24 +101,24 @@ graph. The domain is just the folder it lives in; the concern is the substance.
 - The boot sequence hydrates...
 ```
 
-Each `## heading` becomes **one concern node**. The heading text is the concern's name;
+Each `## heading` becomes **one ryoiki node**. The heading text is the ryoiki's name;
 **the prose underneath it, word for word, becomes `metadata.content`** — that's the durable
 knowledge. The prose is stored *as-is*, never chopped into more nodes. (There is no layer
 that reads those sentences and turns them into structure — the graph carries the prose
 verbatim.)
 
-**The `sources` / `epics` / `prs` tags:** notice the concern also carries a list of story
+**The `sources` / `epics` / `prs` tags:** notice the ryoiki also carries a list of story
 IDs. That's **provenance** — "which work built this knowledge." It comes from a *different*
 file, the archive index (`.agents/changelogs/archive/index.json`), and gets stamped onto
-the concern. Crucially, **stories and epics are NOT their own nodes** — they're just tags
-on the concern. That was deliberate: the graph shows *knowledge*, and work is only a
+the ryoiki. Crucially, **stories and epics are NOT their own nodes** — they're just tags
+on the ryoiki. That was deliberate: the graph shows *knowledge*, and work is only a
 citation, never part of the skeleton.
 
 ---
 
 ## Node type 3 of 3 — `adr`
 
-**What it represents:** an architecture **decision** — the *why*. A concern says *how routing
+**What it represents:** an architecture **decision** — the *why*. A ryoiki says *how routing
 works now*; an ADR says *why we chose Vue Router in the first place*. It's neither a folder
 nor "how it works now," so it's a distinct third kind of node, drawn as a **diamond** (◇)
 instead of a circle so you can tell a decision from realized knowledge at a glance.
@@ -157,7 +157,7 @@ straight from the file, never interpreted from prose:
 | `content` | the prose body after the `---`, stored **verbatim** (for search/detail) |
 | `decides` | the `**Decides:**` field, split on commas — **this is the link** |
 
-Compare it to a concern: a concern's `content` is the *substance*; an ADR's fields are *about
+Compare it to a ryoiki: a ryoiki's `content` is the *substance*; an ADR's fields are *about
 a decision* — who decided, when, its status, and what it governs. Different shape of object
 because it's a different kind of thing.
 
@@ -171,7 +171,7 @@ edges — and reference nodes by `id`. Here's the object that joins the two node
 ```json
 {
   "from":  "apps/srs-demo",           // the domain node's id
-  "to":    "apps/srs-demo#Routing",   // the concern node's id
+  "to":    "apps/srs-demo#Routing",   // the ryoiki node's id
   "type":  "contains",
   "label": "contains"
 }
@@ -180,7 +180,7 @@ edges — and reference nodes by `id`. Here's the object that joins the two node
 That's the whole object — just four fields.
 
 **How it hooks the two together:** the glue is the **`id` string**. The edge's `from` is a
-copy of the domain node's id; `to` is a copy of the concern node's id. There's no pointer
+copy of the domain node's id; `to` is a copy of the ryoiki node's id. There's no pointer
 or nesting — it's literally string-matching. When the UI draws the graph, it walks the edge
 list and, for each edge, looks up `from` and `to` in the node list to know which two dots
 to connect with a line.
@@ -190,14 +190,14 @@ to connect with a line.
 | Field | Meaning |
 | --- | --- |
 | `from` | id of the node the arrow starts at (here, the domain) |
-| `to` | id of the node the arrow points to (here, the concern) |
+| `to` | id of the node the arrow points to (here, the ryoiki) |
 | `type` | which *kind* of relationship (`contains`, `relates`, `decides`, `supersedes`) |
 | `label` | the caption drawn on the line |
 
 **Direction matters.** `apps/srs-demo → apps/srs-demo#Routing` reads "domain *contains*
-concern," not the reverse. Every concern gets exactly one `contains` edge pointing down
+ryoiki," not the reverse. Every ryoiki gets exactly one `contains` edge pointing down
 into it from its parent domain. So `apps/srs-demo` has one of these fanning out to each of
-its concerns — and that downward line is what makes them visually cluster under the same
+its ryoikis — and that downward line is what makes them visually cluster under the same
 bubble.
 
 ---
@@ -206,10 +206,10 @@ bubble.
 
 All four are the **same four-field shape** — only `type` and `label` differ.
 
-- **`contains`** — `domain → concern`. "This folder holds this area of knowledge." Every
-  concern has exactly one.
+- **`contains`** — `domain → ryoiki`. "This folder holds this area of knowledge." Every
+  ryoiki has exactly one.
 
-- **`relates`** — `concern → concern`, but only between concerns in *different* domains
+- **`relates`** — `ryoiki → ryoiki`, but only between ryoikis in *different* domains
   that were built by the **same epic**. "These two areas co-evolved in one push of work."
   The `label` carries *why*:
 
@@ -218,10 +218,10 @@ All four are the **same four-field shape** — only `type` and `label` differ.
     "type": "relates", "label": "via EP44" }
   ```
 
-  Concerns *within* one domain are already grouped by their shared domain node, so a
+  Ryoikis *within* one domain are already grouped by their shared domain node, so a
   `relates` edge is drawn only across domains.
 
-- **`decides`** — `adr → concern` (or `adr → domain`). "This decision governs that
+- **`decides`** — `adr → ryoiki` (or `adr → domain`). "This decision governs that
   knowledge." This is how an ADR attaches to the graph — see below.
 
 - **`supersedes`** — `adr → adr`. "This newer decision replaces/amends that older one."
@@ -232,7 +232,7 @@ All four are the **same four-field shape** — only `type` and `label` differ.
 
 An ADR reaches into the graph through **two** of those edges.
 
-### `decides` — the ADR → concern link, authored by *you*
+### `decides` — the ADR → ryoiki link, authored by *you*
 
 This is driven entirely by the `**Decides:**` field in the ADR file:
 
@@ -248,19 +248,19 @@ The reader turns that into an edge:
 ```
 
 The glue is the **same id string-match** as `contains`: the `**Decides:**` target
-`apps/srs-demo#Routing` *is* the concern node's id. A bare `apps/srs-demo` (no `#`) targets a
+`apps/srs-demo#Routing` *is* the ryoiki node's id. A bare `apps/srs-demo` (no `#`) targets a
 domain node instead. Two things fall out of that:
 
-- **No matching node?** (e.g. `apps/srs-demo#Audio Playback`, a concern not built yet) — no
+- **No matching node?** (e.g. `apps/srs-demo#Audio Playback`, a ryoiki not built yet) — no
   edge is drawn. The ADR is **floating**.
 - **No `**Decides:**` field at all?** — also floating. This is how every ADR *starts*.
 
 A floating ADR is drawn as a **dotted** diamond — meaning *"decided, but not yet built."*
 That's a feature: you can see at a glance which decisions have landed and which haven't (and,
-inversely, which concerns like EP44's have *no* ADR behind them).
+inversely, which ryoikis like EP44's have *no* ADR behind them).
 
 **The link is yours to draw.** In the UI you turn on *Link ADR*, click a diamond, then click
-a concern — and the server writes `apps/srs-demo#Routing` back into that ADR's `**Decides:**`
+a ryoiki — and the server writes `apps/srs-demo#Routing` back into that ADR's `**Decides:**`
 field on disk. **The ADR file is the source of truth**, not the graph. `.graph-data.json` is
 just a rebuilt cache, so deleting it and rebuilding reconstructs every link from the ADR files.
 
@@ -285,9 +285,9 @@ a slug, and draws an edge from the **newer** decision to the **older** one:
 ## The whole model, in one breath
 
 > `KNOWLEDGE.md` files become **domain** nodes (folders), each **containing** several
-> **concern** nodes (knowledge); concerns that grew together across folders are **related**.
-> **ADR** diamonds sit on top: each **decides** the concern(s) it governs (a link you draw,
+> **ryoiki** nodes (knowledge); ryoikis that grew together across folders are **related**.
+> **ADR** diamonds sit on top: each **decides** the ryoiki(s) it governs (a link you draw,
 > stored back in the ADR file) and may **supersede** an older ADR. Stories and epics aren't
-> nodes — they're just credit tags on the concerns.
+> nodes — they're just credit tags on the ryoikis.
 
 Three node types, four edge types. That's the entire graph.

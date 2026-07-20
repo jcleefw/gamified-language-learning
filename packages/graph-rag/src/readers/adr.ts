@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { ProjectGraph } from '../graph.js';
-import { concernKey } from './archive.js';
+import { ryoikiKey } from './archive.js';
 
 // ---------------------------------------------------------------------------
 // ADR reader — the DECISION layer (the *why*).
@@ -9,12 +9,12 @@ import { concernKey } from './archive.js';
 // ADRs live in <root>/product-documentation/architecture/*.md and use markdown
 // bold fields (`**Status:**`, `**Date:**`, …), NOT YAML frontmatter. They ingest
 // AS-IS as standalone `adr` nodes and start FLOATING — no prose is mined for
-// concern links (staying true to EXTRACTION_PATTERNS.md's "no prose mining").
+// ryoiki links (staying true to EXTRACTION_PATTERNS.md's "no prose mining").
 //
-// A human links an ADR to the concern(s) it governs; that link is authored back
+// A human links an ADR to the ryoiki it governs; that link is authored back
 // into the ADR's `**Decides:**` field (the SOURCE OF TRUTH), so a reset + rebuild
 // reconstructs it by re-reading the ADR. Two edge kinds come out:
-//   - decides   : adr -> concern|domain   (from the `**Decides:**` field)
+//   - decides   : adr -> ryoiki|domain    (from the `**Decides:**` field)
 //   - supersedes: adr -> adr              (auto-parsed from `Superseded by` /
 //                 `Amended by` links in the Status/header block; best-effort)
 //
@@ -41,7 +41,7 @@ export interface AdrDoc {
   deciders: string;
   scope: string;
   content: string; // the body after the header block — carried for search/detail
-  decides: string[]; // `**Decides:**` targets: `domain#Concern` or bare `domain`
+  decides: string[]; // `**Decides:**` targets: `domain#Ryoiki` or bare `domain`
   lineage: AdrLineage[]; // adr→adr supersedes claims (slugs, unresolved to nodes)
   path: string;
 }
@@ -133,26 +133,32 @@ function parseLineage(header: string, thisSlug: string): AdrLineage[] {
 
 /**
  * Read every ADR into the graph as `adr` nodes, drawing `decides` edges to the
- * concern/domain nodes they govern and `supersedes` edges between ADRs. MUST run
- * AFTER ingestKnowledge so the concern/domain nodes a `**Decides:**` field points
+ * ryoiki/domain nodes they govern and `supersedes` edges between ADRs. MUST run
+ * AFTER ingestKnowledge so the ryoiki/domain nodes a `**Decides:**` field points
  * at already exist — an unmatched target simply leaves the ADR floating.
+ * `canonicalize` folds a target's ryoiki drift variant to the canonical spelling
+ * so `domain#fsrs` still resolves to the `spaced-repetition` node.
  */
-export function ingestAdrs(graph: ProjectGraph, root: string): void {
+export function ingestAdrs(
+  graph: ProjectGraph,
+  root: string,
+  canonicalize: (name: string) => string = (name) => name,
+): void {
   // Resolve a `**Decides:**` target to an existing node id, or null if unbuilt.
-  const concernByKey = new Map<string, string>(); // concernKey -> node id
+  const ryoikiByKey = new Map<string, string>(); // ryoikiKey -> node id
   for (const node of graph.nodes.values()) {
-    if (node.type === 'concern') {
+    if (node.type === 'ryoiki') {
       const unit = String(node.metadata.unit ?? '');
-      const concern = String(node.metadata.concern ?? '');
-      concernByKey.set(concernKey(unit, concern), node.id);
+      const ryoiki = String(node.metadata.ryoiki ?? '');
+      ryoikiByKey.set(ryoikiKey(unit, canonicalize(ryoiki)), node.id);
     }
   }
   const resolveTarget = (target: string): string | null => {
     const hash = target.indexOf('#');
     if (hash < 0) return graph.getNode(target)?.type === 'domain' ? target : null;
     const domain = target.slice(0, hash);
-    const concern = target.slice(hash + 1);
-    return concernByKey.get(concernKey(domain, concern)) ?? null;
+    const ryoiki = target.slice(hash + 1);
+    return ryoikiByKey.get(ryoikiKey(domain, canonicalize(ryoiki))) ?? null;
   };
 
   const lineage: AdrLineage[] = [];

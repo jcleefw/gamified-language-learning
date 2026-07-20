@@ -92,17 +92,17 @@ export class QueryEngine {
     const systemPrompt = `You are an expert in a software project's architecture.
 You read a knowledge graph of a language-learning platform organized by KNOWLEDGE, not by work:
 - domain nodes are workspace units (apps/*, packages/*),
-- concern nodes are named areas of knowledge within a domain, each carrying the durable
+- ryoiki nodes are named areas of knowledge within a domain, each carrying the durable
   description of how that area works,
 - adr nodes are architecture DECISIONS (the *why*): a 'decides' edge points from an ADR to the
-  concern/domain it governs, and a 'supersedes' edge from a newer ADR to the one it replaces.
-  An ADR with no 'decides' edge is a decision not yet realized in a concern.
-Each concern also records its provenance — the stories/epics/PRs that produced it — as
+  ryoiki/domain it governs, and a 'supersedes' edge from a newer ADR to the one it replaces.
+  An ADR with no 'decides' edge is a decision not yet realized in a ryoiki.
+Each ryoiki also records its provenance — the stories/epics/PRs that produced it — as
 metadata, so you can cite the work without treating it as the structure.
-Answer from the concern knowledge in the context. Be specific: name the domain and concern,
+Answer from the ryoiki knowledge in the context. Be specific: name the domain and ryoiki,
 quote what the knowledge says, cite the producing story/epic IDs and PR numbers when asked
 "what produced this?", and cite the governing ADR (and its status) when asked "why?".
-Do not organize your answer around epics — organize it around concerns.`;
+Do not organize your answer around epics — organize it around ryoiki.`;
 
     const userPrompt = `Based on the project graph below, answer this question:\n\n${question}\n\n---\n\n${contextStr}`;
 
@@ -141,8 +141,8 @@ Do not organize your answer around epics — organize it around concerns.`;
       const m = node.metadata ?? {};
       const parts = [
         node.label,
-        m.content, // the concern's durable knowledge prose (or an ADR's body)
-        m.concern,
+        m.content, // the ryoiki's durable knowledge prose (or an ADR's body)
+        m.ryoiki,
         m.unit,
         m.status, // adr: Accepted / Superseded / Proposed
         m.scope, // adr: what the decision covers

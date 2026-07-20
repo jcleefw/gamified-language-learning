@@ -6,9 +6,9 @@
 <title>Knowledge Graph Explorer</title>
 <style>
   /* --------------------------------------------------------------------
-     A deliberately single-theme "observatory console": a two-axis star
-     chart on a blue-black ground. Time nodes lean left, domain nodes lean
-     right; cyan is the only accent, node hues are semantic data colors.
+     A deliberately single-theme "observatory console": a knowledge star
+     chart on a blue-black ground. Domains group their ryoiki; ADRs float as
+     decisions. Cyan is the only accent, node hues are semantic data colors.
      -------------------------------------------------------------------- */
   :root {
     --ground: #0b0e14;
@@ -24,7 +24,7 @@
     --story: #f5a623;
     --epic: #a78bfa;
     --domain: #2dd4bf;
-    --concern: #4ade80;
+    --ryoiki: #4ade80;
     --adr: #fbbf24;
     --danger: #f87171;
     --ok: #34d399;
@@ -194,7 +194,7 @@
   <header>
     <div class="brand">
       <h1>Knowledge Graph Explorer</h1>
-      <span class="sub">concern map · domains contain concerns</span>
+      <span class="sub">ryoiki map · domains contain ryoiki</span>
     </div>
     <div class="stats" id="stats"></div>
     <div class="spacer"></div>
@@ -215,7 +215,7 @@
         <button id="btn-fit">Fit</button>
         <button id="btn-reheat">Reheat</button>
         <span class="sep"></span>
-        <button id="btn-link" title="Link an ADR (◇) to the concern it governs — written back into the ADR file">Link ADR</button>
+        <button id="btn-link" title="Link an ADR (◇) to the ryoiki it governs — written back into the ADR file">Link ADR</button>
       </div>
       <div class="legend" id="legend"></div>
       <div class="detail" id="detail"></div>
@@ -232,7 +232,7 @@
           then a local model answers from only what it found — and the cited nodes light up on the left.
           <span class="ex" data-q="How does routing work in srs-demo and which work produced it?">→ How does routing work in srs-demo and which work produced it?</span>
           <span class="ex" data-q="What does the graph say about batch composition?">→ What does the graph say about batch composition?</span>
-          <span class="ex" data-q="Which concerns did EP44 produce?">→ Which concerns did EP44 produce?</span>
+          <span class="ex" data-q="Which ryoiki did EP44 produce?">→ Which ryoiki did EP44 produce?</span>
         </div>
       </div>
       <div class="composer">
@@ -245,7 +245,7 @@
 
 <script type="module">
 const TYPE_COLOR = {
-  domain: getVar('--domain'), concern: getVar('--concern'), adr: getVar('--adr'),
+  domain: getVar('--domain'), ryoiki: getVar('--ryoiki'), adr: getVar('--adr'),
 };
 function getVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function nodeRadius(n){
@@ -257,15 +257,15 @@ function nodeRadius(n){
 let NODES = [], EDGES = [], byId = new Map();
 let selected = null, highlighted = new Set(), highlightEdges = new Set();
 let adrHasDecides = new Set();          // adr ids that carry >=1 outgoing `decides`
-let linkMode = false, linkFrom = null;  // ADR→concern linking: the ADR awaiting a target
+let linkMode = false, linkFrom = null;  // ADR→ryoiki linking: the ADR awaiting a target
 const view = { x: 0, y: 0, k: 1 };
 let model = null;
 
-// Domain-bubble view: one packed circle per domain, area ∝ concern count.
+// Domain-bubble view: one packed circle per domain, area ∝ ryoiki count.
 let mode = 'graph';                 // 'graph' | 'bubbles'
 let BUBBLES = [], maxBubbleCount = 1, bubbleAlpha = 1;
 
-// Sequential single-hue (teal) magnitude ramp: dim = few concerns, bright = many.
+// Sequential single-hue (teal) magnitude ramp: dim = few ryoiki, bright = many.
 function lerpHex(a, b, t){
   const pa = parseInt(a.slice(1),16), pb = parseInt(b.slice(1),16);
   const r = Math.round((pa>>16&255) + ((pb>>16&255)-(pa>>16&255))*t);
@@ -323,9 +323,9 @@ async function boot(){
   loop();
 }
 
-// ---- Domain bubbles: derive one circle per domain, sized by concern count --
+// ---- Domain bubbles: derive one circle per domain, sized by ryoiki count --
 function buildBubbles(){
-  const counts = new Map();                 // domainId -> concern count
+  const counts = new Map();                 // domainId -> ryoiki count
   EDGES.forEach(e => {
     if (e.type === 'contains') counts.set(e.from, (counts.get(e.from) || 0) + 1);
   });
@@ -349,7 +349,7 @@ function renderLegend(){
   const el = document.getElementById('legend');
   if (mode === 'bubbles'){
     el.innerHTML =
-      `<div class="ramp"><span>concern count</span></div>` +
+      `<div class="ramp"><span>ryoiki count</span></div>` +
       `<div class="ramp"><div class="bar"></div></div>` +
       `<div class="ramp"><div class="ends"><span>few</span><span>${maxBubbleCount}</span></div></div>` +
       `<div class="sizes">` +
@@ -357,11 +357,11 @@ function renderLegend(){
         `<span class="s"><span class="c" style="width:30px;height:30px"></span>${Math.ceil(maxBubbleCount/2)}</span>` +
         `<span class="s"><span class="c" style="width:46px;height:46px"></span>${maxBubbleCount}</span>` +
       `</div>` +
-      `<div class="axis-note">circle area = concern count · click a domain · drag · scroll to zoom</div>`;
+      `<div class="axis-note">circle area = ryoiki count · click a domain · drag · scroll to zoom</div>`;
   } else {
     el.innerHTML =
       `<div class="row"><span class="swatch" style="background:var(--domain)"></span>domain · workspace unit</div>` +
-      `<div class="row"><span class="swatch" style="background:var(--concern)"></span>concern · area of knowledge</div>` +
+      `<div class="row"><span class="swatch" style="background:var(--ryoiki)"></span>ryoiki · area of knowledge</div>` +
       `<div class="row"><span class="swatch" style="background:var(--adr);transform:rotate(45deg);border-radius:1px"></span>adr · a decision (◇ = different shape)</div>` +
       `<div class="row"><span class="swatch" style="background:transparent;border:1.4px dotted var(--adr);transform:rotate(45deg)"></span>floating adr · decided, not built</div>` +
       `<div class="row"><span class="swatch" style="background:var(--accent);border-radius:1px;width:14px;height:2px"></span>relates · co-evolved in one epic</div>` +
@@ -520,7 +520,7 @@ function draw(){
       ctx.fillStyle = 'rgba(56,189,248,0.16)'; ctx.fill();
     }
     // ADRs are DIAMONDS (a different shape = a different kind of thing: a decision,
-    // not realized knowledge). Circles for domain/concern.
+    // not realized knowledge). Circles for domain/ryoiki.
     ctx.beginPath();
     if (n.type === 'adr'){
       ctx.moveTo(p.x, p.y-r); ctx.lineTo(p.x+r, p.y); ctx.lineTo(p.x, p.y+r); ctx.lineTo(p.x-r, p.y); ctx.closePath();
@@ -582,7 +582,7 @@ function drawEdgeLabel(a, b, type, hot, dim){
 }
 function shortLabel(n){
   if (n.type === 'domain') return n.id;
-  if (n.type === 'concern') return String(n.metadata?.concern ?? n.label);
+  if (n.type === 'ryoiki') return String(n.metadata?.ryoiki ?? n.label);
   if (n.type === 'adr') return String(n.label).replace(/^ADR:\s*/i, '');
   return n.id;
 }
@@ -668,7 +668,7 @@ function renderDetail(node){
 
   if (node.type === 'adr'){
     add('status', m.status); add('date', m.date); add('deciders', m.deciders); add('scope', m.scope);
-    // The concern(s)/domain(s) this decision governs — each removable (write-back).
+    // The ryoiki/domain(s) this decision governs — each removable (write-back).
     const targets = EDGES.filter(e => e.from === node.id && e.type === 'decides').map(e => e.to);
     const decidesHtml = targets.length
       ? targets.map(t => `<span class="cite" data-adr="${esc(m.slug)}" data-target="${esc(t)}" title="unlink">` +
@@ -688,7 +688,7 @@ function renderDetail(node){
   }
 
   add('unit', m.unit); add('updated', m.updated);
-  // Provenance — the work that produced this concern (metadata, not nodes).
+  // Provenance — the work that produced this ryoiki (metadata, not nodes).
   if (Array.isArray(m.sources) && m.sources.length) add('produced by', m.sources.join(', '));
   if (Array.isArray(m.epics) && m.epics.length) add('epic', m.epics.join(', '));
   if (Array.isArray(m.prs) && m.prs.length) add('PR', m.prs.map(p => '#'+p).join(', '));
@@ -705,17 +705,17 @@ function renderDetail(node){
 function renderBubbleDetail(b){
   const el = document.getElementById('detail');
   const color = TYPE_COLOR.domain;
-  const concerns = EDGES
+  const ryoiki = EDGES
     .filter(e => e.from === b.id && e.type === 'contains')
     .map(e => byId.get(e.to)).filter(Boolean);
-  const list = concerns
+  const list = ryoiki
     .map(c => `<div style="padding:3px 0;border-top:1px solid var(--border);color:var(--muted)">${esc(shortLabel(c))}</div>`)
-    .join('') || '<div style="color:var(--faint);padding:4px 0">no concerns recorded</div>';
+    .join('') || '<div style="color:var(--faint);padding:4px 0">no ryoiki recorded</div>';
   el.innerHTML =
     `<span class="close" id="det-close">×</span>` +
     `<span class="type-chip" style="background:${hexA(color,0.16)};color:${color}">domain</span>` +
     `<h3>${esc(b.label)}</h3>` +
-    `<dl><dt>concerns</dt><dd>${b.count}</dd></dl>` +
+    `<dl><dt>ryoiki</dt><dd>${b.count}</dd></dl>` +
     `<div class="summary" style="margin-top:8px">${list}</div>`;
   el.classList.add('show');
   document.getElementById('det-close').onclick = () => select(null);
@@ -762,7 +762,7 @@ function setMode(next){
 btnGraph.onclick = () => setMode('graph');
 btnBubbles.onclick = () => setMode('bubbles');
 
-// ---- ADR linking: click an ADR, then a concern/domain; written back to the ADR --
+// ---- ADR linking: click an ADR, then a ryoiki/domain; written back to the ADR --
 const btnLink = document.getElementById('btn-link');
 function setLinkMode(on){
   linkMode = on; resetLink();
@@ -780,7 +780,7 @@ function handleLinkClick(node){
   }
   if (node.id === linkFrom.id){ resetLink(); return; }
   if (node.type === 'adr'){ linkFrom = node; select(node); return; } // switch source
-  if (node.type === 'concern' || node.type === 'domain'){
+  if (node.type === 'ryoiki' || node.type === 'domain'){
     doLink(linkFrom.metadata.slug, node.id, 'add');
     resetLink();
   }

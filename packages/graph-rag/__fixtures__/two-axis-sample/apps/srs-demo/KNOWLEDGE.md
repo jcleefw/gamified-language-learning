@@ -38,3 +38,9 @@ updated: 2026-07-19
 - Debug-recording controls are a self-contained component, shown only when debug
   mode is enabled; it reports failures back to the shell for the shared error
   banner.
+
+## Workspace Tooling
+
+- ANOMALY FIXTURE: this ryoiki is blacklisted for apps/srs-demo, so it should
+  never have been written here. Graph-rag must warn about it and leave it out of
+  the graph.

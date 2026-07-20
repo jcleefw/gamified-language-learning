@@ -20,7 +20,7 @@ async function main() {
 
   const engine = new QueryEngine(graph);
 
-  // Demo queries — concern-centric phrasing (knowledge + provenance).
+  // Demo queries — ryoiki-centric phrasing (knowledge + provenance).
   const queries = [
     'How does routing work in srs-demo and which work produced it?',
     'What does the graph say about batch composition?',

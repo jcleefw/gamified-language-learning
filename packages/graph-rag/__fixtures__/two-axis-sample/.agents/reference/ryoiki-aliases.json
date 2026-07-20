@@ -1,0 +1,10 @@
+{
+  "routing": {
+    "description": "Client-side navigation and the route table.",
+    "alias": ["nav", "navigation", "vue-router"]
+  },
+  "workspace-tooling": {
+    "description": "Lint / format / build configuration.",
+    "alias": ["linting", "build-tooling"]
+  }
+}

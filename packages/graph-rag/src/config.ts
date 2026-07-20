@@ -48,7 +48,7 @@ export class ConfigLoader {
     return {
       focus: {
         title: 'Two-Axis Knowledge Graph',
-        description: 'Stories/epics (time) + domains/concerns (workspace) from the compacted archive',
+        description: 'Stories/epics (time) + domains/ryoikis (workspace) from the compacted archive',
         created_at: '',
         updated_at: '',
       },

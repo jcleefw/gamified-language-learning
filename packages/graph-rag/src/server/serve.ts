@@ -60,14 +60,14 @@ function rebuild(): void {
 const SYSTEM_PROMPT = `You are an expert in a software project's architecture, reading a
 knowledge graph organized by KNOWLEDGE, not by work:
 - domain nodes are workspace units (apps/*, packages/*);
-- concern nodes are named areas of knowledge within a domain, each carrying the durable
+- ryoiki nodes are named areas of knowledge within a domain, each carrying the durable
   description of how that area works, plus provenance (the stories/epics/PRs that produced it);
 - adr nodes are architecture DECISIONS (the *why*). A 'decides' edge points from an ADR to the
-  concern/domain it governs; a 'supersedes' edge points from a newer ADR to the one it replaces.
-  An ADR with no 'decides' edge is a decision that is not yet realized in a concern.
-Answer ONLY from the graph context below. Be specific: name domains and concerns, cite the
+  ryoiki/domain it governs; a 'supersedes' edge points from a newer ADR to the one it replaces.
+  An ADR with no 'decides' edge is a decision that is not yet realized in a ryoiki.
+Answer ONLY from the graph context below. Be specific: name domains and ryoiki, cite the
 producing story/epic IDs and PR numbers, and when asked *why*, cite the governing ADR and its
-status. Organize the answer around concerns, not epics. If the context lacks the answer, say so.`;
+status. Organize the answer around ryoiki, not epics. If the context lacks the answer, say so.`;
 
 // --- Helpers ----------------------------------------------------------------
 function send(res: ServerResponse, code: number, type: string, body: string | Buffer): void {

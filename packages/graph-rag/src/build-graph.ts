@@ -2,6 +2,7 @@ import { ProjectGraph } from './graph.js';
 import { loadArchiveIndex, buildProvenanceIndex } from './readers/archive.js';
 import { ingestKnowledge } from './readers/knowledge.js';
 import { ingestAdrs } from './readers/adr.js';
+import { loadRyoikiConfig } from './readers/ryoiki-config.js';
 
 export interface BuildOptions {
   /** Restrict provenance to stories in these tracks (e.g. ['project']); null = all. */
@@ -11,21 +12,25 @@ export interface BuildOptions {
 }
 
 /**
- * Build the concern-centric knowledge graph from a repo/fixture `root`.
+ * Build the ryoiki-centric knowledge graph from a repo/fixture `root`.
  *
- * The archive is distilled into a provenance index (no nodes); the KNOWLEDGE.md
- * files supply the actual domain/concern nodes and content, with provenance
- * stamped on each concern and cross-domain `relates` edges drawn from shared epics.
+ * The ryoiki reference config (alias map + blacklist) is loaded first: aliases
+ * feed the provenance join so drift variants meet their heading, and the
+ * blacklist keeps excluded ryoiki out of the graph entirely. The archive is
+ * distilled into a provenance index (no nodes); the KNOWLEDGE.md files supply
+ * the domain/ryoiki nodes and content, with provenance stamped on each ryoiki
+ * and cross-domain `relates` edges drawn from shared epics. ADRs ingest last.
  */
 export function buildGraph(root: string, options: BuildOptions = {}): ProjectGraph {
   const graph = new ProjectGraph();
   const filter = { tracks: options.tracks ?? null, domains: options.domains ?? null };
 
+  const config = loadRyoikiConfig(root);
   const archive = loadArchiveIndex(root);
-  const provenance = buildProvenanceIndex(archive, filter);
-  ingestKnowledge(graph, root, { domains: filter.domains }, provenance);
-  // ADRs last: the decision layer links to concern/domain nodes just created.
-  ingestAdrs(graph, root);
+  const provenance = buildProvenanceIndex(archive, filter, config.canonicalize);
+  ingestKnowledge(graph, root, { domains: filter.domains }, provenance, config);
+  // ADRs last: the decision layer links to ryoiki/domain nodes just created.
+  ingestAdrs(graph, root, config.canonicalize);
 
   return graph;
 }
