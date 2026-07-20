@@ -14,11 +14,11 @@ describe('concern-centric reader — EP44 fixture', () => {
   const idsOf = (type: Node['type']) => graph.nodesByType(type).map((n) => n.id).sort();
 
   it('portrays knowledge, not work: NO story or epic nodes exist', () => {
-    // The whole point of the rebuild — the graph is domains + concerns only.
+    // The graph is domains + concerns (knowledge) + adrs (decisions) — never work.
     const types = new Set(Array.from(graph.nodes.values()).map((n) => n.type));
     expect(types.has('story' as Node['type'])).toBe(false);
     expect(types.has('epic' as Node['type'])).toBe(false);
-    expect([...types].sort()).toEqual(['concern', 'domain']);
+    expect([...types].sort()).toEqual(['adr', 'concern', 'domain']);
   });
 
   it('groups concerns under their workspace-unit domain', () => {

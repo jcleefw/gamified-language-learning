@@ -27,12 +27,12 @@ The whole graph is just two lists in one JSON file (`.graph-data.json`): a list 
 }
 ```
 
-The `type` field is the whole game. Right now there are exactly **two** types: `domain`
-and `concern`. Here they are, one at a time.
+The `type` field is the whole game. There are **three** types: `domain` and `concern`
+(the knowledge) and `adr` (the decisions). Here they are, one at a time.
 
 ---
 
-## Node type 1 of 2 — `domain`
+## Node type 1 of 3 — `domain`
 
 **What it represents:** one workspace unit — a folder under `apps/` or `packages/`. Think
 of it as a *bucket*, not knowledge itself. It's the thing that groups other nodes.
@@ -66,7 +66,7 @@ clusters around.
 
 ---
 
-## Node type 2 of 2 — `concern`
+## Node type 2 of 3 — `concern`
 
 **What it represents:** one *named area of knowledge* inside a domain — "how routing
 works," "how batch composition works." This is the actual **knowledge** in the knowledge
@@ -116,6 +116,53 @@ citation, never part of the skeleton.
 
 ---
 
+## Node type 3 of 3 — `adr`
+
+**What it represents:** an architecture **decision** — the *why*. A concern says *how routing
+works now*; an ADR says *why we chose Vue Router in the first place*. It's neither a folder
+nor "how it works now," so it's a distinct third kind of node, drawn as a **diamond** (◇)
+instead of a circle so you can tell a decision from realized knowledge at a glance.
+
+**A real one:**
+
+```json
+{
+  "id": "adr:engineering-routing-vue-router",
+  "type": "adr",
+  "label": "ADR: Routing via Vue Router 4",
+  "metadata": {
+    "slug": "engineering-routing-vue-router",
+    "status": "Accepted",
+    "date": "2026-07-14",
+    "deciders": "PO (solo founder)",
+    "scope": "How the srs-demo app navigates between screens.",
+    "content": "## Context\nScreen-string routing had grown unwieldy...",
+    "decides": ["apps/srs-demo#Routing"],
+    "path": ".../20260714T100000Z-engineering-routing-vue-router.md"
+  }
+}
+```
+
+**Where it comes from:** each markdown file under `product-documentation/architecture/`.
+Unlike `KNOWLEDGE.md`, ADRs use **bold fields**, not frontmatter — and every field is lifted
+straight from the file, never interpreted from prose:
+
+| Field | Source in the `.md` file |
+| --- | --- |
+| `id` | `adr:` + the filename minus its timestamp prefix and `.md` |
+| `label` | the first `# ` heading line |
+| `slug` | the id without the `adr:` prefix (used to find the file for write-backs) |
+| `status` | first word of `**Status:**` (`Accepted`, `Superseded`, `Proposed`…) |
+| `date` / `deciders` / `scope` | the matching `**…:**` bold fields |
+| `content` | the prose body after the `---`, stored **verbatim** (for search/detail) |
+| `decides` | the `**Decides:**` field, split on commas — **this is the link** |
+
+Compare it to a concern: a concern's `content` is the *substance*; an ADR's fields are *about
+a decision* — who decided, when, its status, and what it governs. Different shape of object
+because it's a different kind of thing.
+
+---
+
 ## The connector — the `edge` object
 
 Nodes don't contain their connections. The connections live in a **separate list** — the
@@ -144,7 +191,7 @@ to connect with a line.
 | --- | --- |
 | `from` | id of the node the arrow starts at (here, the domain) |
 | `to` | id of the node the arrow points to (here, the concern) |
-| `type` | which *kind* of relationship (`contains` or `relates`) |
+| `type` | which *kind* of relationship (`contains`, `relates`, `decides`, `supersedes`) |
 | `label` | the caption drawn on the line |
 
 **Direction matters.** `apps/srs-demo → apps/srs-demo#Routing` reads "domain *contains*
@@ -155,47 +202,92 @@ bubble.
 
 ---
 
-## The two edge types
+## The four edge types
 
-Both edge types are the **same four-field shape** — only `type` and `label` differ.
+All four are the **same four-field shape** — only `type` and `label` differ.
 
 - **`contains`** — `domain → concern`. "This folder holds this area of knowledge." Every
   concern has exactly one.
 
 - **`relates`** — `concern → concern`, but only between concerns in *different* domains
-  that were built by the **same epic**. Meaning: "these two areas co-evolved in one push
-  of work." The `label` carries *why*:
+  that were built by the **same epic**. "These two areas co-evolved in one push of work."
+  The `label` carries *why*:
 
   ```json
-  {
-    "from":  "apps/srs-demo#Routing",
-    "to":    "packages/srs-engine-v2#Batch Composition",
-    "type":  "relates",
-    "label": "via EP44"
-  }
+  { "from": "apps/srs-demo#Routing", "to": "packages/srs-engine-v2#Batch Composition",
+    "type": "relates", "label": "via EP44" }
   ```
 
-Concerns *within* one domain are already grouped by their shared domain node, so no
-`relates` edge is drawn between them — only across domains.
+  Concerns *within* one domain are already grouped by their shared domain node, so a
+  `relates` edge is drawn only across domains.
+
+- **`decides`** — `adr → concern` (or `adr → domain`). "This decision governs that
+  knowledge." This is how an ADR attaches to the graph — see below.
+
+- **`supersedes`** — `adr → adr`. "This newer decision replaces/amends that older one."
+
+---
+
+## How an ADR links (the part that's different)
+
+An ADR reaches into the graph through **two** of those edges.
+
+### `decides` — the ADR → concern link, authored by *you*
+
+This is driven entirely by the `**Decides:**` field in the ADR file:
+
+```
+**Decides:** apps/srs-demo#Routing
+```
+
+The reader turns that into an edge:
+
+```json
+{ "from": "adr:engineering-routing-vue-router", "to": "apps/srs-demo#Routing",
+  "type": "decides", "label": "decides" }
+```
+
+The glue is the **same id string-match** as `contains`: the `**Decides:**` target
+`apps/srs-demo#Routing` *is* the concern node's id. A bare `apps/srs-demo` (no `#`) targets a
+domain node instead. Two things fall out of that:
+
+- **No matching node?** (e.g. `apps/srs-demo#Audio Playback`, a concern not built yet) — no
+  edge is drawn. The ADR is **floating**.
+- **No `**Decides:**` field at all?** — also floating. This is how every ADR *starts*.
+
+A floating ADR is drawn as a **dotted** diamond — meaning *"decided, but not yet built."*
+That's a feature: you can see at a glance which decisions have landed and which haven't (and,
+inversely, which concerns like EP44's have *no* ADR behind them).
+
+**The link is yours to draw.** In the UI you turn on *Link ADR*, click a diamond, then click
+a concern — and the server writes `apps/srs-demo#Routing` back into that ADR's `**Decides:**`
+field on disk. **The ADR file is the source of truth**, not the graph. `.graph-data.json` is
+just a rebuilt cache, so deleting it and rebuilding reconstructs every link from the ADR files.
+
+### `supersedes` — the ADR → ADR link, read automatically
+
+This one you don't author. When an ADR's header says:
+
+```
+**Status:** Superseded by [Routing via Vue Router 4](20260714T100000Z-engineering-routing-vue-router.md)
+```
+
+the reader spots the `Superseded by` / `Amended by` phrasing, resolves the linked filename to
+a slug, and draws an edge from the **newer** decision to the **older** one:
+
+```json
+{ "from": "adr:engineering-routing-vue-router", "to": "adr:engineering-screen-string-routing",
+  "type": "supersedes", "label": "supersedes" }
+```
 
 ---
 
 ## The whole model, in one breath
 
 > `KNOWLEDGE.md` files become **domain** nodes (folders), each **containing** several
-> **concern** nodes (knowledge); concerns that grew together across different folders are
-> **related**. Stories and epics aren't nodes — they're just credit tags on the concerns.
+> **concern** nodes (knowledge); concerns that grew together across folders are **related**.
+> **ADR** diamonds sit on top: each **decides** the concern(s) it governs (a link you draw,
+> stored back in the ADR file) and may **supersede** an older ADR. Stories and epics aren't
+> nodes — they're just credit tags on the concerns.
 
-Two node types, two edge types. That's the entire graph today.
-
----
-
-## Where an ADR would fit (a note, not a spec)
-
-An ADR is **none of the above** — it's not a folder, and it's not "how it works now." It's
-the *decision / the why*. That makes it a natural **third node type** (`adr`), drawn as a
-different shape, connected by a new `decides` edge pointing at the concern(s) it governs.
-
-A concern says *how routing works*; an ADR would say *why we chose Vue Router in the first
-place*. This is a future extension, sketched here only so the shape of the idea is on
-record — it is not yet built.
+Three node types, four edge types. That's the entire graph.

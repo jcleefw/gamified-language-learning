@@ -11,14 +11,23 @@
 // each concern (`sources` / `epics` / `prs`) so "which work produced this?" is
 // still answerable — the work is the citation, never the skeleton.
 //
+// A third layer sits above both: the `adr` node — a design DECISION (the *why*),
+// distinct from realized knowledge (`concern`) and from work (provenance). ADRs
+// ingest as-is and start FLOATING; a human links an ADR to the concern(s) it
+// governs, and that link is authored back into the ADR's `**Decides:**` field
+// (the source of truth — see readers/adr.ts). An ADR with no `decides` edge is
+// "decided, not yet built".
+//
 // NOTE: this deliberately revises the Two-Axis ADR's D7, which made story/epic
 // first-class timeline nodes. That axis dominated the picture with work items
-// instead of knowledge; here the time axis survives only as provenance. Recorded
-// in the D7 amendment (2026-07-19) of the Two-Axis Knowledge Architecture ADR.
+// instead of knowledge; here the time axis survives only as provenance, and a
+// decision layer is added on top. Recorded in the D7 amendment of the Two-Axis
+// Knowledge Architecture ADR.
 
 export type NodeType =
   | 'domain' // a workspace unit — groups the concerns beneath it
-  | 'concern'; // a named area of knowledge within a domain (a KNOWLEDGE.md heading)
+  | 'concern' // a named area of knowledge within a domain (a KNOWLEDGE.md heading)
+  | 'adr'; // an architecture decision — the *why* behind one or more concerns
 
 export interface Node {
   id: string;
@@ -29,7 +38,9 @@ export interface Node {
 
 export type EdgeType =
   | 'contains' // domain -> concern   (a domain groups its concerns)
-  | 'relates'; // concern -> concern  (two concerns co-evolved in the same epic)
+  | 'relates' // concern -> concern  (two concerns co-evolved in the same epic)
+  | 'decides' // adr -> concern|domain  (this decision governs that knowledge)
+  | 'supersedes'; // adr -> adr        (this decision replaces/amends an earlier one)
 
 export interface Edge {
   from: string;

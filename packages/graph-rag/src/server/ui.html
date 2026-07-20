@@ -25,6 +25,7 @@
     --epic: #a78bfa;
     --domain: #2dd4bf;
     --concern: #4ade80;
+    --adr: #fbbf24;
     --danger: #f87171;
     --ok: #34d399;
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
@@ -102,6 +103,19 @@
     border-radius: 6px; padding: 5px 9px; cursor: pointer;
   }
   .toolbar button:hover { color: var(--text); border-color: var(--border-bright); }
+  .toolbar button.active { color: var(--text); border-color: var(--accent-dim); background: rgba(56,189,248,0.12); }
+  .toolbar .sep { width: 1px; align-self: stretch; background: var(--border); margin: 0 3px; }
+
+  /* ---- Bubble-view legend extras ---- */
+  .legend .ramp { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  .legend .ramp .bar {
+    width: 90px; height: 8px; border-radius: 999px;
+    background: linear-gradient(90deg, #0f3d3a, #2dd4bf 55%, #5eead4);
+  }
+  .legend .ramp .ends { display: flex; justify-content: space-between; width: 90px; font-size: 10px; color: var(--faint); }
+  .legend .sizes { display: flex; align-items: flex-end; gap: 10px; color: var(--muted); }
+  .legend .sizes .s { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; color: var(--faint); }
+  .legend .sizes .c { border-radius: 50%; background: rgba(45,212,191,0.35); border: 1px solid rgba(45,212,191,0.6); }
 
   /* ---- Detail card (selected node) ---- */
   .detail {
@@ -195,15 +209,15 @@
     <div class="graph-pane">
       <canvas id="canvas"></canvas>
       <div class="toolbar">
+        <button id="btn-view-graph" class="active">Graph</button>
+        <button id="btn-view-bubbles">Domains</button>
+        <span class="sep"></span>
         <button id="btn-fit">Fit</button>
         <button id="btn-reheat">Reheat</button>
+        <span class="sep"></span>
+        <button id="btn-link" title="Link an ADR (◇) to the concern it governs — written back into the ADR file">Link ADR</button>
       </div>
-      <div class="legend">
-        <div class="row"><span class="swatch" style="background:var(--domain)"></span>domain · workspace unit</div>
-        <div class="row"><span class="swatch" style="background:var(--concern)"></span>concern · area of knowledge</div>
-        <div class="row"><span class="swatch" style="background:var(--accent);border-radius:1px;width:14px;height:2px"></span>relates · co-evolved in one epic</div>
-        <div class="axis-note">click a node · drag to move · scroll to zoom</div>
-      </div>
+      <div class="legend" id="legend"></div>
       <div class="detail" id="detail"></div>
     </div>
 
@@ -231,19 +245,35 @@
 
 <script type="module">
 const TYPE_COLOR = {
-  domain: getVar('--domain'), concern: getVar('--concern'),
+  domain: getVar('--domain'), concern: getVar('--concern'), adr: getVar('--adr'),
 };
 function getVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function nodeRadius(n){
-  const base = n.type === 'domain' ? 11 : 6.5;
+  const base = n.type === 'domain' ? 11 : n.type === 'adr' ? 8.5 : 6.5;
   return (base + Math.min(n.deg, 6) * 1.4) * Math.max(0.6, Math.min(view.k, 1.6));
 }
 
 // ---- State ----------------------------------------------------------------
 let NODES = [], EDGES = [], byId = new Map();
 let selected = null, highlighted = new Set(), highlightEdges = new Set();
+let adrHasDecides = new Set();          // adr ids that carry >=1 outgoing `decides`
+let linkMode = false, linkFrom = null;  // ADR→concern linking: the ADR awaiting a target
 const view = { x: 0, y: 0, k: 1 };
 let model = null;
+
+// Domain-bubble view: one packed circle per domain, area ∝ concern count.
+let mode = 'graph';                 // 'graph' | 'bubbles'
+let BUBBLES = [], maxBubbleCount = 1, bubbleAlpha = 1;
+
+// Sequential single-hue (teal) magnitude ramp: dim = few concerns, bright = many.
+function lerpHex(a, b, t){
+  const pa = parseInt(a.slice(1),16), pb = parseInt(b.slice(1),16);
+  const r = Math.round((pa>>16&255) + ((pb>>16&255)-(pa>>16&255))*t);
+  const g = Math.round((pa>>8&255)  + ((pb>>8&255) -(pa>>8&255)) *t);
+  const bl= Math.round((pa&255)     + ((pb&255)    -(pa&255))    *t);
+  return `rgb(${r},${g},${bl})`;
+}
+function bubbleColor(t){ return lerpHex('#0f3d3a', '#5eead4', Math.sqrt(t)); }
 
 // ============================================================================
 // Load graph + physics
@@ -260,15 +290,17 @@ function resize(){
 }
 window.addEventListener('resize', resize);
 
-async function boot(){
-  resize();
-  const g = await (await fetch('/api/graph')).json();
+// Ingest a graph payload into the render state. `preserve` keeps existing node
+// positions (used after a live re-link so the layout doesn't jump).
+function applyGraph(g, preserve){
+  const prev = preserve ? byId : new Map();
   byId = new Map();
   NODES = g.nodes.map((n, i) => {
+    const old = prev.get(n.id);
     const node = {
       ...n, deg: 0,
-      x: W/2 + Math.cos(i * 2.4) * 160,
-      y: H/2 + Math.sin(i * 1.7) * 130,
+      x: old ? old.x : W/2 + Math.cos(i * 2.4) * 160,
+      y: old ? old.y : H/2 + Math.sin(i * 1.7) * 130,
       vx: 0, vy: 0,
     };
     byId.set(n.id, node);
@@ -276,10 +308,65 @@ async function boot(){
   });
   EDGES = g.edges.filter(e => byId.has(e.from) && byId.has(e.to));
   EDGES.forEach(e => { byId.get(e.from).deg++; byId.get(e.to).deg++; });
+  adrHasDecides = new Set(EDGES.filter(e => e.type === 'decides').map(e => e.from));
 
   renderStats(g.summary);
+  buildBubbles();
+  renderLegend();
+}
+
+async function boot(){
+  resize();
+  const g = await (await fetch('/api/graph')).json();
+  applyGraph(g, false);
   fit();
   loop();
+}
+
+// ---- Domain bubbles: derive one circle per domain, sized by concern count --
+function buildBubbles(){
+  const counts = new Map();                 // domainId -> concern count
+  EDGES.forEach(e => {
+    if (e.type === 'contains') counts.set(e.from, (counts.get(e.from) || 0) + 1);
+  });
+  const domains = NODES.filter(n => n.type === 'domain');
+  maxBubbleCount = Math.max(1, ...domains.map(d => counts.get(d.id) || 0));
+  const RMIN = 20, RMAX = 92;
+  const k = RMAX / Math.sqrt(maxBubbleCount);   // area ∝ count  (r ∝ √count)
+  BUBBLES = domains.map((d, i) => {
+    const count = counts.get(d.id) || 0;
+    return {
+      id: d.id, label: d.label, node: d, count,
+      r: Math.max(RMIN, k * Math.sqrt(count)),
+      x: W/2 + Math.cos(i * 2.4) * 220,
+      y: H/2 + Math.sin(i * 2.4) * 180,
+      vx: 0, vy: 0,
+    };
+  }).sort((a, b) => b.r - a.r);               // big circles settle first
+}
+
+function renderLegend(){
+  const el = document.getElementById('legend');
+  if (mode === 'bubbles'){
+    el.innerHTML =
+      `<div class="ramp"><span>concern count</span></div>` +
+      `<div class="ramp"><div class="bar"></div></div>` +
+      `<div class="ramp"><div class="ends"><span>few</span><span>${maxBubbleCount}</span></div></div>` +
+      `<div class="sizes">` +
+        `<span class="s"><span class="c" style="width:16px;height:16px"></span>1</span>` +
+        `<span class="s"><span class="c" style="width:30px;height:30px"></span>${Math.ceil(maxBubbleCount/2)}</span>` +
+        `<span class="s"><span class="c" style="width:46px;height:46px"></span>${maxBubbleCount}</span>` +
+      `</div>` +
+      `<div class="axis-note">circle area = concern count · click a domain · drag · scroll to zoom</div>`;
+  } else {
+    el.innerHTML =
+      `<div class="row"><span class="swatch" style="background:var(--domain)"></span>domain · workspace unit</div>` +
+      `<div class="row"><span class="swatch" style="background:var(--concern)"></span>concern · area of knowledge</div>` +
+      `<div class="row"><span class="swatch" style="background:var(--adr);transform:rotate(45deg);border-radius:1px"></span>adr · a decision (◇ = different shape)</div>` +
+      `<div class="row"><span class="swatch" style="background:transparent;border:1.4px dotted var(--adr);transform:rotate(45deg)"></span>floating adr · decided, not built</div>` +
+      `<div class="row"><span class="swatch" style="background:var(--accent);border-radius:1px;width:14px;height:2px"></span>relates · co-evolved in one epic</div>` +
+      `<div class="axis-note">click a node · drag to move · scroll to zoom</div>`;
+  }
 }
 
 function renderStats(s){
@@ -327,10 +414,81 @@ function tick(){
   alpha *= 0.985;
 }
 
+// ---- Bubble packing: gravity to center + circle collision resolution -------
+function bubbleTick(){
+  if (bubbleAlpha < 0.005) return;
+  const cx = W/2, cy = H/2, CENTER = 0.015;
+  BUBBLES.forEach(b => {
+    if (b === dragging) return;
+    b.vx += (cx - b.x) * CENTER;
+    b.vy += (cy - b.y) * CENTER;
+  });
+  for (let i=0;i<BUBBLES.length;i++){
+    for (let j=i+1;j<BUBBLES.length;j++){
+      const a = BUBBLES[i], b = BUBBLES[j];
+      let dx = b.x-a.x, dy = b.y-a.y;
+      let d = Math.sqrt(dx*dx+dy*dy) || 0.01;
+      const min = a.r + b.r + 6;
+      if (d < min){
+        const push = (min-d)/d * 0.5;
+        const ox = dx*push, oy = dy*push;
+        if (a !== dragging){ a.x -= ox; a.y -= oy; }
+        if (b !== dragging){ b.x += ox; b.y += oy; }
+      }
+    }
+  }
+  BUBBLES.forEach(b => {
+    if (b === dragging) return;
+    b.vx *= 0.8; b.vy *= 0.8;
+    b.x += b.vx * bubbleAlpha; b.y += b.vy * bubbleAlpha;
+  });
+  bubbleAlpha *= 0.99;
+}
+
+function drawBubbles(){
+  ctx.clearRect(0,0,W,H);
+  const dim = highlighted.size > 0;
+  BUBBLES.forEach(b => {
+    const p = toScreen(b), r = b.r * view.k;
+    const t = b.count / maxBubbleCount;
+    const faded = dim && !highlighted.has(b.id);
+    ctx.globalAlpha = faded ? 0.22 : 1;
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7);
+    ctx.fillStyle = bubbleColor(t);
+    ctx.fill();
+    ctx.lineWidth = (selected && selected.id === b.id) ? 2.5 : 1;
+    ctx.strokeStyle = (selected && selected.id === b.id) ? '#fff' : 'rgba(230,237,243,0.28)';
+    ctx.stroke();
+    // count — dark ink on bright fills, light ink on dim fills (text ≠ mark hue)
+    ctx.textAlign = 'center';
+    ctx.fillStyle = t > 0.55 ? '#06222e' : '#e6edf3';
+    ctx.font = `700 ${Math.max(12, Math.min(r*0.55, 28))}px system-ui, sans-serif`;
+    ctx.fillText(String(b.count), p.x, p.y + r*0.12);
+    // domain name below the circle
+    ctx.globalAlpha = faded ? 0.3 : 1;
+    ctx.fillStyle = faded ? '#5b6678' : '#c9d4e2';
+    ctx.font = '600 11px system-ui, sans-serif';
+    ctx.fillText(b.label, p.x, p.y + r + 13);
+    ctx.globalAlpha = 1;
+  });
+}
+function pickBubble(m){
+  for (let i=0;i<BUBBLES.length;i++){
+    const p = toScreen(BUBBLES[i]);
+    const r = BUBBLES[i].r * view.k;
+    if ((p.x-m.x)**2 + (p.y-m.y)**2 < r*r) return BUBBLES[i];
+  }
+  return null;
+}
+
 // ============================================================================
 // Render
 // ============================================================================
-function loop(){ tick(); draw(); requestAnimationFrame(loop); }
+function loop(){
+  if (mode === 'bubbles'){ bubbleTick(); drawBubbles(); }
+  else { tick(); draw(); }
+  requestAnimationFrame(loop);
+}
 
 function toScreen(n){ return { x: n.x*view.k + view.x, y: n.y*view.k + view.y }; }
 
@@ -361,10 +519,34 @@ function draw(){
       ctx.beginPath(); ctx.arc(p.x, p.y, r+7, 0, 7);
       ctx.fillStyle = 'rgba(56,189,248,0.16)'; ctx.fill();
     }
-    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7);
+    // ADRs are DIAMONDS (a different shape = a different kind of thing: a decision,
+    // not realized knowledge). Circles for domain/concern.
+    ctx.beginPath();
+    if (n.type === 'adr'){
+      ctx.moveTo(p.x, p.y-r); ctx.lineTo(p.x+r, p.y); ctx.lineTo(p.x, p.y+r); ctx.lineTo(p.x-r, p.y); ctx.closePath();
+    } else {
+      ctx.arc(p.x, p.y, r, 0, 7);
+    }
     ctx.fillStyle = TYPE_COLOR[n.type] || '#888';
     ctx.globalAlpha = faded ? 0.25 : 1;
-    ctx.fill();
+    if (n.type === 'adr'){
+      // status/anchoring shapes the fill: Accepted+linked = solid; superseded =
+      // dashed hollow; floating (no `decides`) = dotted hollow = "decided, not built".
+      const superseded = /supersed/i.test(String(n.metadata?.status || ''));
+      const linked = adrHasDecides.has(n.id);
+      if (superseded || !linked){
+        ctx.globalAlpha = faded ? 0.06 : 0.14; ctx.fill();
+        ctx.globalAlpha = faded ? 0.2 : 0.95;
+        ctx.strokeStyle = TYPE_COLOR.adr; ctx.lineWidth = 1.6;
+        ctx.setLineDash(superseded ? [4,3] : [2,3]); ctx.stroke(); ctx.setLineDash([]);
+      } else {
+        ctx.fill();
+      }
+    } else {
+      ctx.fill();
+    }
+    // linking source gets a bright ring
+    if (linkFrom && linkFrom.id === n.id){ ctx.lineWidth = 2.5; ctx.strokeStyle = TYPE_COLOR.adr; ctx.stroke(); }
     if (selected && selected.id === n.id){ ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff'; ctx.stroke(); }
     ctx.globalAlpha = 1;
     // label
@@ -401,6 +583,7 @@ function drawEdgeLabel(a, b, type, hot, dim){
 function shortLabel(n){
   if (n.type === 'domain') return n.id;
   if (n.type === 'concern') return String(n.metadata?.concern ?? n.label);
+  if (n.type === 'adr') return String(n.label).replace(/^ADR:\s*/i, '');
   return n.id;
 }
 function edgeKey(e){ return `${e.from}|${e.type}|${e.to}`; }
@@ -410,10 +593,12 @@ function edgeKey(e){ return `${e.from}|${e.type}|${e.to}`; }
 // ============================================================================
 let dragging = null, panning = false, last = {x:0,y:0}, moved = false;
 
+function pickAny(m){ return mode === 'bubbles' ? pickBubble(m) : pick(m); }
+
 canvas.addEventListener('mousedown', ev => {
   const m = mouse(ev); moved = false;
-  const hit = pick(m);
-  if (hit){ dragging = hit; alpha = Math.max(alpha, 0.3); }
+  const hit = pickAny(m);
+  if (hit){ dragging = hit; alpha = Math.max(alpha, 0.3); bubbleAlpha = Math.max(bubbleAlpha, 0.3); }
   else { panning = true; }
   last = m;
 });
@@ -425,13 +610,14 @@ window.addEventListener('mousemove', ev => {
   } else if (panning){
     view.x += m.x - last.x; view.y += m.y - last.y; moved = true;
   } else {
-    canvas.style.cursor = pick(m) ? 'pointer' : 'grab';
+    canvas.style.cursor = pickAny(m) ? 'pointer' : 'grab';
   }
   last = m;
 });
 window.addEventListener('mouseup', ev => {
-  if (dragging && !moved) select(dragging);
-  else if (panning && !moved) { select(null); }
+  if (linkMode && dragging && !moved){ handleLinkClick(dragging); }
+  else if (dragging && !moved) select(dragging);
+  else if (panning && !moved) { if (linkMode) resetLink(); select(null); }
   dragging = null; panning = false;
 });
 canvas.addEventListener('wheel', ev => {
@@ -457,6 +643,11 @@ function pick(m){
 function select(node){
   selected = node;
   if (!node){ clearHighlight(); renderDetail(null); return; }
+  if (mode === 'bubbles'){
+    highlighted = new Set([node.id]); highlightEdges = new Set();
+    renderBubbleDetail(node);
+    return;
+  }
   const nb = new Set([node.id]); const he = new Set();
   EDGES.forEach(e => {
     if (e.from === node.id){ nb.add(e.to); he.add(edgeKey(e)); }
@@ -474,6 +665,28 @@ function renderDetail(node){
   const color = TYPE_COLOR[node.type];
   const rows = [];
   const add = (k,v) => { if (v!==undefined && v!==null && v!=='') rows.push(`<dt>${k}</dt><dd>${esc(String(v))}</dd>`); };
+
+  if (node.type === 'adr'){
+    add('status', m.status); add('date', m.date); add('deciders', m.deciders); add('scope', m.scope);
+    // The concern(s)/domain(s) this decision governs — each removable (write-back).
+    const targets = EDGES.filter(e => e.from === node.id && e.type === 'decides').map(e => e.to);
+    const decidesHtml = targets.length
+      ? targets.map(t => `<span class="cite" data-adr="${esc(m.slug)}" data-target="${esc(t)}" title="unlink">` +
+          `${esc(byId.get(t) ? shortLabel(byId.get(t)) : t)} <span style="color:var(--faint)">✕</span></span>`).join(' ')
+      : `<span style="color:var(--faint);font-size:11px">floating — decided, not yet linked. Use “Link ADR”.</span>`;
+    el.innerHTML =
+      `<span class="close" id="det-close">×</span>` +
+      `<span class="type-chip" style="background:${hexA(color,0.16)};color:${color}">adr ◇</span>` +
+      `<h3>${esc(node.label)}</h3>` +
+      `<dl>${rows.join('')}</dl>` +
+      `<dt style="margin-top:8px">decides</dt><div class="cites" style="margin-top:4px">${decidesHtml}</div>`;
+    el.classList.add('show');
+    document.getElementById('det-close').onclick = () => select(null);
+    el.querySelectorAll('.cite[data-target]').forEach(c =>
+      c.onclick = () => doLink(c.dataset.adr, c.dataset.target, 'remove'));
+    return;
+  }
+
   add('unit', m.unit); add('updated', m.updated);
   // Provenance — the work that produced this concern (metadata, not nodes).
   if (Array.isArray(m.sources) && m.sources.length) add('produced by', m.sources.join(', '));
@@ -489,7 +702,38 @@ function renderDetail(node){
   document.getElementById('det-close').onclick = () => select(null);
 }
 
+function renderBubbleDetail(b){
+  const el = document.getElementById('detail');
+  const color = TYPE_COLOR.domain;
+  const concerns = EDGES
+    .filter(e => e.from === b.id && e.type === 'contains')
+    .map(e => byId.get(e.to)).filter(Boolean);
+  const list = concerns
+    .map(c => `<div style="padding:3px 0;border-top:1px solid var(--border);color:var(--muted)">${esc(shortLabel(c))}</div>`)
+    .join('') || '<div style="color:var(--faint);padding:4px 0">no concerns recorded</div>';
+  el.innerHTML =
+    `<span class="close" id="det-close">×</span>` +
+    `<span class="type-chip" style="background:${hexA(color,0.16)};color:${color}">domain</span>` +
+    `<h3>${esc(b.label)}</h3>` +
+    `<dl><dt>concerns</dt><dd>${b.count}</dd></dl>` +
+    `<div class="summary" style="margin-top:8px">${list}</div>`;
+  el.classList.add('show');
+  document.getElementById('det-close').onclick = () => select(null);
+}
+
 // ---- view helpers ----
+function fitBubbles(){
+  if (!BUBBLES.length) return;
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  BUBBLES.forEach(b => {
+    minX=Math.min(minX,b.x-b.r); minY=Math.min(minY,b.y-b.r);
+    maxX=Math.max(maxX,b.x+b.r); maxY=Math.max(maxY,b.y+b.r);
+  });
+  const pad = 70;
+  view.k = Math.max(0.3, Math.min((W-pad*2)/(maxX-minX||1), (H-pad*2)/(maxY-minY||1), 1.4));
+  view.x = W/2 - (minX+maxX)/2*view.k;
+  view.y = H/2 - (minY+maxY)/2*view.k;
+}
 function fit(){
   if (!NODES.length) return;
   let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
@@ -500,8 +744,65 @@ function fit(){
   view.x = W/2 - (minX+maxX)/2*view.k;
   view.y = H/2 - (minY+maxY)/2*view.k;
 }
-document.getElementById('btn-fit').onclick = fit;
-document.getElementById('btn-reheat').onclick = () => { alpha = 1; };
+document.getElementById('btn-fit').onclick = () => { mode === 'bubbles' ? fitBubbles() : fit(); };
+document.getElementById('btn-reheat').onclick = () => { if (mode === 'bubbles') bubbleAlpha = 1; else alpha = 1; };
+
+// ---- view toggle: Graph ↔ Domains -----------------------------------------
+const btnGraph = document.getElementById('btn-view-graph');
+const btnBubbles = document.getElementById('btn-view-bubbles');
+function setMode(next){
+  if (mode === next) return;
+  mode = next;
+  btnGraph.classList.toggle('active', mode === 'graph');
+  btnBubbles.classList.toggle('active', mode === 'bubbles');
+  select(null);
+  renderLegend();
+  if (mode === 'bubbles'){ bubbleAlpha = 1; fitBubbles(); } else { alpha = 0.3; fit(); }
+}
+btnGraph.onclick = () => setMode('graph');
+btnBubbles.onclick = () => setMode('bubbles');
+
+// ---- ADR linking: click an ADR, then a concern/domain; written back to the ADR --
+const btnLink = document.getElementById('btn-link');
+function setLinkMode(on){
+  linkMode = on; resetLink();
+  btnLink.classList.toggle('active', on);
+  canvas.style.cursor = on ? 'crosshair' : 'grab';
+  if (on){ setMode('graph'); select(null); }
+}
+function resetLink(){ linkFrom = null; btnLink.textContent = linkMode ? 'Linking… pick an ADR' : 'Link ADR'; }
+btnLink.onclick = () => setLinkMode(!linkMode);
+
+function handleLinkClick(node){
+  if (!linkFrom){
+    if (node.type === 'adr'){ linkFrom = node; select(node); btnLink.textContent = 'Linking… pick a target'; }
+    return; // clicking a non-ADR first does nothing
+  }
+  if (node.id === linkFrom.id){ resetLink(); return; }
+  if (node.type === 'adr'){ linkFrom = node; select(node); return; } // switch source
+  if (node.type === 'concern' || node.type === 'domain'){
+    doLink(linkFrom.metadata.slug, node.id, 'add');
+    resetLink();
+  }
+}
+
+// Write a link add/remove to the server; it edits the ADR's `**Decides:**` field
+// on disk, rebuilds, and returns the fresh graph.
+async function doLink(adrSlug, targetId, op){
+  try {
+    const res = await fetch('/api/link', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adrSlug, target: targetId, op }),
+    });
+    if (!res.ok){ console.warn('link failed:', res.status, await res.text()); return; }
+    const g = await res.json();
+    const keep = selected && selected.id;
+    applyGraph(g, true);
+    alpha = Math.max(alpha, 0.25);
+    const again = keep && byId.get(keep);
+    if (again) select(again); else renderDetail(null);
+  } catch (e){ console.warn('link error', e); }
+}
 
 function esc(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function hexA(hex, a){ const n = parseInt(hex.slice(1),16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; }
@@ -602,6 +903,7 @@ function renderCites(el, ids){
 }
 
 function highlightFromQuery(nodeIds, subIds, edges){
+  setMode('graph');   // citations light up graph nodes, not domain bubbles
   highlighted = new Set([...(nodeIds||[]), ...(subIds||[])]);
   highlightEdges = new Set((edges||[]).map(edgeKey));
   selected = null; renderDetail(null);
