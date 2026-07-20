@@ -286,6 +286,13 @@
         "packages/srs-engine"
       ],
       "archived": "2026-07-20"
+    },
+    "EP04": {
+      "title": "SRS Engine: Batch Composition",
+      "domains": [
+        "packages/srs-engine"
+      ],
+      "archived": "2026-07-21"
     }
   }
 }
