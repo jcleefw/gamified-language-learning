@@ -189,6 +189,13 @@
         "packages/srs-engine"
       ],
       "archived": "2026-07-20"
+    },
+    "EP02": {
+      "title": "SRS Engine Core: Mastery + ANKI Scheduling",
+      "domains": [
+        "packages/srs-engine"
+      ],
+      "archived": "2026-07-20"
     }
   }
 }
