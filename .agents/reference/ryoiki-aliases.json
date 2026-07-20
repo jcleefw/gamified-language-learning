@@ -119,6 +119,10 @@
     "description": "Reference terminal-CLI host built on the library's public subpaths — shows how to wire a consuming interface. Not product-facing; typically blacklisted.",
     "alias": ["cli-demo", "terminal-demo", "learning-runner", "auto-answerer", "demo"]
   },
+  "web-demo": {
+    "description": "Reference web-SPA demo built on the library's public subpaths — shows how to wire a consuming interface. Not product-facing; typically blacklisted.",
+  "alias": ["srs-demo", "web", "vue-app"]
+  },
   "audio-timing": {
     "description": "Audio playback and WebVTT cue timing — wavesurfer control, marker authoring, audio metadata.",
     "alias": ["audio", "webvtt", "vtt", "audio-playback", "audio-markers", "wavesurfer", "audio-curation", "segment-player", "marker-authoring"]

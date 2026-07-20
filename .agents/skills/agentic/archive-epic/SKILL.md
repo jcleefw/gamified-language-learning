@@ -110,13 +110,13 @@ current-state prose, not history narration.
    **Apply the whole batch, once approval is given — that's it.** No
    entry is left pending and no file is hand-edited:
    - `.agents/tools/archive-epic.sh confirm EP##` applies the human's
-     approval to all confirmed (non-blacklisted) stories for the epic.
-     Pass `--data -` with a JSON array of `{"id": "...", "ryoiki": "..."}` 
-     containing **EVERY story that survived the gate** (all approved stories, 
-     whether renamed or not), with each story's final ryoiki from the Map 
-     Ryoiki column. The `confirm` command deletes each story's `state: "draft"` 
-     field. Any entry not in the --data array is treated as still pending and 
-     is left in draft state (not confirmed yet).
+     approval to all confirmed stories for the epic. Pass `--data -` with 
+     a JSON array of `{"id": "...", "ryoiki": "..."}` containing **all 
+     stories NOT blacklisted** — each with its final ryoiki (use the Map Ryoiki 
+     if untouched, or the renamed value if you said `rename [ID] ryoiki - [NEW]`).
+     The `confirm` command deletes each story's `state: "draft"` field. 
+     Stories in the --data array are confirmed; any entry not in the array 
+     is treated as still pending (state-carrying drafts, unconfirmed).
    - `.agents/tools/archive-epic.sh blacklist <unit> --add r1,r2,...` for
      each unit with new exclusions the human called out (cascading,
      longest-prefix-wins; a unit or ryoiki with no entry is fully
