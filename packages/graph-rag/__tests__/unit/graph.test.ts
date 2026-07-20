@@ -21,7 +21,7 @@ describe('ProjectGraph', () => {
     const graph = new ProjectGraph();
 
     graph.addNode({ id: 'apps/srs-demo', type: 'domain', label: 'apps/srs-demo', metadata: {} });
-    graph.addNode({ id: 'apps/srs-demo#Routing', type: 'concern', label: 'Routing', metadata: {} });
+    graph.addNode({ id: 'apps/srs-demo#Routing', type: 'ryoiki', label: 'Routing', metadata: {} });
 
     graph.addEdge({
       from: 'apps/srs-demo',
@@ -37,8 +37,8 @@ describe('ProjectGraph', () => {
   it('should not add duplicate edges', () => {
     const graph = new ProjectGraph();
 
-    graph.addNode({ id: 'A', type: 'concern', label: 'A', metadata: {} });
-    graph.addNode({ id: 'B', type: 'concern', label: 'B', metadata: {} });
+    graph.addNode({ id: 'A', type: 'ryoiki', label: 'A', metadata: {} });
+    graph.addNode({ id: 'B', type: 'ryoiki', label: 'B', metadata: {} });
 
     graph.addEdge({ from: 'A', to: 'B', type: 'relates', label: 'relates' });
     graph.addEdge({ from: 'A', to: 'B', type: 'relates', label: 'relates' });
@@ -50,18 +50,18 @@ describe('ProjectGraph', () => {
     const graph = new ProjectGraph();
 
     graph.addNode({ id: 'apps/srs-demo', type: 'domain', label: 'srs-demo', metadata: {} });
-    graph.addNode({ id: 'apps/srs-demo#Routing', type: 'concern', label: 'Routing', metadata: {} });
-    graph.addNode({ id: 'apps/srs-demo#App Shell', type: 'concern', label: 'App Shell', metadata: {} });
+    graph.addNode({ id: 'apps/srs-demo#Routing', type: 'ryoiki', label: 'Routing', metadata: {} });
+    graph.addNode({ id: 'apps/srs-demo#App Shell', type: 'ryoiki', label: 'App Shell', metadata: {} });
 
     expect(graph.nodesByType('domain')).toHaveLength(1);
-    expect(graph.nodesByType('concern')).toHaveLength(2);
+    expect(graph.nodesByType('ryoiki')).toHaveLength(2);
   });
 
   it('should export to JSON', () => {
     const graph = new ProjectGraph();
 
     graph.addNode({ id: 'apps/srs-demo', type: 'domain', label: 'srs-demo', metadata: {} });
-    graph.addNode({ id: 'apps/srs-demo#Routing', type: 'concern', label: 'Routing', metadata: {} });
+    graph.addNode({ id: 'apps/srs-demo#Routing', type: 'ryoiki', label: 'Routing', metadata: {} });
     graph.addEdge({ from: 'apps/srs-demo', to: 'apps/srs-demo#Routing', type: 'contains', label: 'contains' });
 
     const json = graph.toJSON();
@@ -70,6 +70,6 @@ describe('ProjectGraph', () => {
     expect(json.edges).toHaveLength(1);
     expect(json.summary.totalNodes).toBe(2);
     expect(json.summary.nodesByType.domain).toBe(1);
-    expect(json.summary.nodesByType.concern).toBe(1);
+    expect(json.summary.nodesByType.ryoiki).toBe(1);
   });
 });

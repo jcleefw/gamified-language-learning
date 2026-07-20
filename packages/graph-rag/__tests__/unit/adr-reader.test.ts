@@ -87,7 +87,7 @@ describe('ingestAdrs — against the fixture', () => {
     ]);
   });
 
-  it('draws a `decides` edge to a concern whose node exists', () => {
+  it('draws a `decides` edge to a ryoiki whose node exists', () => {
     expect(
       graph.edges.some(
         (e) =>
@@ -98,7 +98,7 @@ describe('ingestAdrs — against the fixture', () => {
     ).toBe(true);
   });
 
-  it('leaves an ADR FLOATING when its Decides target has no matching concern', () => {
+  it('leaves an ADR FLOATING when its Decides target has no matching ryoiki', () => {
     // engineering-audio-playback decides `apps/srs-demo#Audio Playback` (not built).
     const decides = graph.edges.filter(
       (e) => e.from === 'adr:engineering-audio-playback' && e.type === 'decides',
