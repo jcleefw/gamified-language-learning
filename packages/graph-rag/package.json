@@ -17,6 +17,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "graph:build": "tsx src/cli/build.ts",
+    "graph:refresh": "tsx src/cli/build.ts",
+    "graph:reset": "rm -f .graph-data.json && tsx src/cli/build.ts",
     "graph:query": "tsx src/cli/query.ts",
     "graph:ui": "tsx src/server/serve.ts"
   },

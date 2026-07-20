@@ -9,6 +9,10 @@ export interface BuildOptions {
   tracks?: string[] | null;
   /** Restrict to these workspace units; null/undefined = all. */
   domains?: string[] | null;
+  /** Set false to skip ADR ingestion entirely — no adr nodes/edges. Default true. */
+  includeAdrs?: boolean;
+  /** Restrict ADR ingestion to specific files (filename or slug); null/undefined = every ADR. */
+  adrFiles?: string[] | null;
 }
 
 /**
@@ -30,7 +34,9 @@ export function buildGraph(root: string, options: BuildOptions = {}): ProjectGra
   const provenance = buildProvenanceIndex(archive, filter, config.canonicalize);
   ingestKnowledge(graph, root, { domains: filter.domains }, provenance, config);
   // ADRs last: the decision layer links to ryoiki/domain nodes just created.
-  ingestAdrs(graph, root, config.canonicalize);
+  if (options.includeAdrs ?? true) {
+    ingestAdrs(graph, root, config.canonicalize, options.adrFiles ?? null);
+  }
 
   return graph;
 }

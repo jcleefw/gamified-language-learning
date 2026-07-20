@@ -46,13 +46,21 @@ const config = existsSync(configPath)
 const configuredRoot = arg('root') ?? config.root ?? '.';
 const root = isAbsolute(configuredRoot) ? configuredRoot : join(repoRoot, configuredRoot);
 
+// --no-adrs skips ADR ingestion; --adr=file1.md,file2.md restricts to those
+// files (by filename or slug). Both override the config; CLI wins.
+const noAdrs = process.argv.includes('--no-adrs');
+const adrArg = arg('adr');
+const adrFiles = adrArg ? adrArg.split(',').map((s) => s.trim()).filter(Boolean) : config.adrs.files;
+const includeAdrs = noAdrs ? false : config.adrs.include;
+const buildOptions = { tracks: config.filter.tracks, domains: config.filter.domains, includeAdrs, adrFiles };
+
 // Mutable: a live ADR re-link edits an ADR file, rebuilds, and swaps these in.
-let graph = buildGraph(root, { tracks: config.filter.tracks, domains: config.filter.domains });
+let graph = buildGraph(root, buildOptions);
 let engine = new QueryEngine(graph, 'unused-retrieval-is-key-free');
 let graphJSON = JSON.stringify(graph.toJSON());
 
 function rebuild(): void {
-  graph = buildGraph(root, { tracks: config.filter.tracks, domains: config.filter.domains });
+  graph = buildGraph(root, buildOptions);
   engine = new QueryEngine(graph, 'unused-retrieval-is-key-free');
   graphJSON = JSON.stringify(graph.toJSON());
 }
@@ -272,5 +280,7 @@ server.listen(PORT, () => {
   console.log(`   URL:    http://localhost:${PORT}`);
   console.log(`   Root:   ${root}`);
   console.log(`   Graph:  ${summary.totalNodes} nodes / ${summary.totalEdges} edges`);
+  if (!includeAdrs) console.log(`   ADRs:   excluded`);
+  else if (adrFiles) console.log(`   ADRs:   ${adrFiles.join(', ')}`);
   console.log(`   Ollama: ${OLLAMA}`);
 });

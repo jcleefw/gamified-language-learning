@@ -23,13 +23,27 @@ function main(): void {
   const configuredRoot = rootArg ?? config.root ?? '.';
   const root = isAbsolute(configuredRoot) ? configuredRoot : join(repoRoot, configuredRoot);
 
+  // --no-adrs skips ADR ingestion; --adr=file1.md,file2.md restricts to those
+  // files (by filename or slug). Both override the config; CLI wins.
+  const noAdrs = process.argv.includes('--no-adrs');
+  const adrArg = process.argv.find((a) => a.startsWith('--adr='))?.slice('--adr='.length);
+  const adrFiles = adrArg ? adrArg.split(',').map((s) => s.trim()).filter(Boolean) : config.adrs.files;
+  const includeAdrs = noAdrs ? false : config.adrs.include;
+
   console.log('🚀 Building ryoiki-centric knowledge graph');
   console.log(`   Focus: ${config.focus.title}`);
   console.log(`   Root:  ${root}`);
   if (config.filter.tracks) console.log(`   Tracks: ${config.filter.tracks.join(', ')}`);
   if (config.filter.domains) console.log(`   Domains: ${config.filter.domains.join(', ')}`);
+  if (!includeAdrs) console.log(`   ADRs:   excluded`);
+  else if (adrFiles) console.log(`   ADRs:   ${adrFiles.join(', ')}`);
 
-  const graph = buildGraph(root, { tracks: config.filter.tracks, domains: config.filter.domains });
+  const graph = buildGraph(root, {
+    tracks: config.filter.tracks,
+    domains: config.filter.domains,
+    includeAdrs,
+    adrFiles,
+  });
   const data = graph.toJSON();
 
   console.log(`\n📈 ${data.summary.totalNodes} nodes, ${data.summary.totalEdges} edges`);
