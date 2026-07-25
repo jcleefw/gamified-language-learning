@@ -16,5 +16,10 @@ description: write compacting epic workflow with archive-epic.sh step by step
 5. run bash script `archive-epic.sh scaffold`
 6. After scaffold, invoke the `write-knowledge` skill
 7. run bash script `archive-epic.sh check`, `archive-epic.sh verify`
+8. **RECORD commit:** confirm change with commit title 
+    - Commit: `git add` the new flat artifact + `index.json`, `ryoiki-blacklist.json`, all `KNOWLEDGE.md` changes  (+ any amended ADR),
+     `git commit -m "docs(archive): record EP## — <title>"`.
+9. **COMPACT commit (self-contained):** `git rm .agents/changelogs/EP##-*.md`
+   then `git commit -m "docs(archive): compact EP## plan"`.
 
 
