@@ -13,7 +13,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 46
     },
     {
       "id": "EP01-DS01",
@@ -28,7 +28,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 46
     },
     {
       "id": "EP01-ST01",
@@ -43,7 +43,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 46
     },
     {
       "id": "EP01-ST02",
@@ -58,7 +58,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 46
     },
     {
       "id": "EP02-DS01",
@@ -73,7 +73,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 46
     },
     {
       "id": "EP02-ST01",
@@ -88,7 +88,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 46
     },
     {
       "id": "EP02-ST02",
@@ -103,7 +103,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 46
     },
     {
       "id": "EP02-ST03",
@@ -118,7 +118,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 46
     },
     {
       "id": "EP02-ST04",
@@ -133,7 +133,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 46
     },
     {
       "id": "EP02-ST05",
@@ -148,7 +148,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 46
     },
     {
       "id": "EP02-DS02",
@@ -160,6 +160,96 @@
       "completed": "2026-03-06",
       "duration": "undetermined",
       "summary": "TODO: summarize — see .agents/changelogs/EP02--srs-engine-mastery/20260306T120000Z-DS02-anki-scheduling.md",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": 46
+    },
+    {
+      "id": "EP04-ST01",
+      "epic": "EP04",
+      "track": "project",
+      "title": "EP04-ST01 Type definition",
+      "domain": "packages/srs-engine",
+      "ryoiki": "type-definitions",
+      "completed": "2026-03-06",
+      "duration": "undetermined",
+      "summary": "Completed both batch composition stories: implemented priority ordering algorithm and question type distribution with audio redistribution. **ST01**: Defined batch types and implemented priority ordering (carry-over → foundational revision → new words → foundational learning) **ST02**: Implemented 70/20/10 question type distribution with audio redistribution to MC when unavailable",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null
+    },
+    {
+      "id": "EP04-ST02",
+      "epic": "EP04",
+      "track": "project",
+      "title": "EP04-ST02: Batch Composition",
+      "domain": "packages/srs-engine",
+      "ryoiki": "batch-composition",
+      "completed": "2026-03-06",
+      "duration": "undetermined",
+      "summary": "Completed both batch composition stories: implemented priority ordering algorithm and question type distribution with audio redistribution. **ST01**: Defined batch types and implemented priority ordering (carry-over → foundational revision → new words → foundational learning) **ST02**: Implemented 70/20/10 question type distribution with audio redistribution to MC when unavailable",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null
+    },
+    {
+      "id": "EP04-DS01",
+      "epic": "EP04",
+      "track": "project",
+      "title": "SRS Engine Batch Composition Specification",
+      "domain": "packages/srs-engine",
+      "ryoiki": "design-spec",
+      "completed": "2026-03-07",
+      "duration": "undetermined",
+      "summary": "TODO: summarize — see .agents/changelogs/EP04--srs-engine-batch-composition/20260306T020000Z-DS01-batch-composition.md",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null
+    },
+    {
+      "id": "EP04-DS02",
+      "epic": "EP04",
+      "track": "project",
+      "title": "Demo Script & Integration Test for Batch Composition",
+      "domain": "packages/srs-engine",
+      "ryoiki": "design-spec",
+      "completed": "2026-03-07",
+      "duration": "undetermined",
+      "summary": "TODO: summarize — see .agents/changelogs/EP04--srs-engine-batch-composition/20260307T000000Z-DS02-demo-and-integration-test.md",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null
+    },
+    {
+      "id": "EP04-ST03",
+      "epic": "EP04",
+      "track": "project",
+      "title": "EP04-ST03: Demo Extension",
+      "domain": "packages/srs-engine",
+      "ryoiki": "demo-harness",
+      "completed": "2026-03-07",
+      "duration": "undetermined",
+      "summary": "Added observable end-to-end coverage for `composeBatch`: a terminal demo (ST03) and an integration test suite (ST04) that both drive words through `updateMastery` before calling `composeBatch` — no hand-crafted phase values. **ST03**: Extended `scripts/demo-srs.ts` with Scenario E (priority ordering with bucket labels) and Scenario F (audio redistribution side-by-side). **ST04**: Created `__tests__/integration/batch-lifecycle.test.ts` with 4 tests asserting that real mastery-engine output is correctly classified and ordered by `composeBatch`.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null
+    },
+    {
+      "id": "EP04-ST04",
+      "epic": "EP04",
+      "track": "project",
+      "title": "EP04-ST04: Batch Lifecycle Integration Test",
+      "domain": "packages/srs-engine",
+      "ryoiki": "demo-harness",
+      "completed": "2026-03-07",
+      "duration": "undetermined",
+      "summary": "Added observable end-to-end coverage for `composeBatch`: a terminal demo (ST03) and an integration test suite (ST04) that both drive words through `updateMastery` before calling `composeBatch` — no hand-crafted phase values. **ST03**: Extended `scripts/demo-srs.ts` with Scenario E (priority ordering with bucket labels) and Scenario F (audio redistribution side-by-side). **ST04**: Created `__tests__/integration/batch-lifecycle.test.ts` with 4 tests asserting that real mastery-engine output is correctly classified and ordered by `composeBatch`.",
       "supersedes": [],
       "fixes": [],
       "pr": null,
@@ -196,6 +286,13 @@
         "packages/srs-engine"
       ],
       "archived": "2026-07-20"
+    },
+    "EP04": {
+      "title": "SRS Engine: Batch Composition",
+      "domains": [
+        "packages/srs-engine"
+      ],
+      "archived": "2026-07-21"
     }
   }
 }
