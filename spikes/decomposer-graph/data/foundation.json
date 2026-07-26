@@ -1,0 +1,64 @@
+{
+  "_note": "The fixed, finite Thai foundation — pure lookup data. The rule LOGIC (tone table, liveness, decomposition) lives in decomposer.mjs.",
+  "rulesetVersion": "th-foundation-v0",
+  "classes": {
+    "mid": "กจฎฏดตบปอ",
+    "high": "ขฃฉฐถผฝศษสห",
+    "low": "คฅฆงชซฌญฑฒณทธนพฟภมยรลวฬฮ"
+  },
+  "sonorantFinals": {
+    "ง": "ng",
+    "ญ": "n",
+    "ณ": "n",
+    "น": "n",
+    "ม": "m",
+    "ร": "n",
+    "ล": "n",
+    "ฬ": "n",
+    "ย": "y",
+    "ว": "w"
+  },
+  "stopFinals": {
+    "ก": "k",
+    "ข": "k",
+    "ค": "k",
+    "ฆ": "k",
+    "จ": "t",
+    "ฉ": "t",
+    "ช": "t",
+    "ซ": "t",
+    "ฌ": "t",
+    "ฎ": "t",
+    "ฏ": "t",
+    "ฐ": "t",
+    "ฑ": "t",
+    "ฒ": "t",
+    "ด": "t",
+    "ต": "t",
+    "ถ": "t",
+    "ท": "t",
+    "ธ": "t",
+    "ศ": "t",
+    "ษ": "t",
+    "ส": "t",
+    "บ": "p",
+    "ป": "p",
+    "พ": "p",
+    "ฟ": "p",
+    "ภ": "p"
+  },
+  "markGlyph": { "ek": "่", "tho": "้", "tri": "๊", "chattawa": "๋" },
+  "markName": {
+    "ek": "mai ek",
+    "tho": "mai tho",
+    "tri": "mai tri",
+    "chattawa": "mai chattawa"
+  },
+  "toneLabel": {
+    "mid": "MID",
+    "low": "LOW",
+    "falling": "FALLING",
+    "high": "HIGH",
+    "rising": "RISING"
+  }
+}
