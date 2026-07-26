@@ -1,0 +1,36 @@
+.wrap {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 28px 22px 48px;
+}
+
+.main {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 940px) {
+  .main {
+    grid-template-columns: 1fr;
+  }
+}
+
+.footer {
+  margin-top: 28px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+  line-height: 1.7;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.footer b {
+  color: var(--muted);
+}
+
+.footer code {
+  color: var(--accent);
+}

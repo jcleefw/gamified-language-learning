@@ -1,0 +1,105 @@
+/*
+ * Theme tokens. Global by design — CSS custom properties are the one thing that
+ * must NOT be module-scoped, since every CSS Module and every inline SVG fill
+ * reads them by name. Component styling lives in *.module.css files.
+ *
+ * Resolution order:
+ *   1. :root                       → dark defaults
+ *   2. @media (prefers-color-scheme: light) → follow the OS when no explicit choice
+ *   3. :root[data-theme="dark|light"]       → explicit user override wins
+ */
+:root {
+  --ground: #0b0e17;
+  --ground-2: #0e1220;
+  --panel: #141a2b;
+  --panel-2: #1a2136;
+  --line: rgba(150, 170, 210, 0.14);
+  --line-strong: rgba(150, 170, 210, 0.28);
+  --ink: #eef1f8;
+  --muted: #8b93ac;
+  --faint: #5a6178;
+  --accent: #6fe3d2;
+  --accent-deep: #2ea99a;
+
+  /* per-node-type accents */
+  --n-word: #e9edf7;
+  --n-consonant: #f2b366;
+  --n-class: #c9a6ff;
+  --n-vowel: #6fe3d2;
+  --n-mark: #ff90b2;
+  --n-tone: #86e8a0;
+  --n-rule: #ffd66b;
+  --n-field: #7fb0ff;
+
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --thai: 'Noto Sans Thai', 'Thonburi', 'Leelawadee UI', 'Tahoma', sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --ground: #f4f6fb;
+    --ground-2: #eef1f8;
+    --panel: #ffffff;
+    --panel-2: #f5f7fc;
+    --line: rgba(40, 60, 110, 0.12);
+    --line-strong: rgba(40, 60, 110, 0.24);
+    --ink: #1a2030;
+    --muted: #59627c;
+    --faint: #97a0b8;
+    --accent: #12a596;
+    --accent-deep: #0d7d72;
+    --n-word: #26304a;
+    --n-consonant: #b96a12;
+    --n-class: #7b4fd0;
+    --n-vowel: #0f9f92;
+    --n-mark: #d64f7c;
+    --n-tone: #2a9b52;
+    --n-rule: #c9931a;
+    --n-field: #3a6fd8;
+  }
+}
+
+:root[data-theme='dark'] {
+  --ground: #0b0e17;
+  --ground-2: #0e1220;
+  --panel: #141a2b;
+  --panel-2: #1a2136;
+  --line: rgba(150, 170, 210, 0.14);
+  --line-strong: rgba(150, 170, 210, 0.28);
+  --ink: #eef1f8;
+  --muted: #8b93ac;
+  --faint: #5a6178;
+  --accent: #6fe3d2;
+  --accent-deep: #2ea99a;
+  --n-word: #e9edf7;
+  --n-consonant: #f2b366;
+  --n-class: #c9a6ff;
+  --n-vowel: #6fe3d2;
+  --n-mark: #ff90b2;
+  --n-tone: #86e8a0;
+  --n-rule: #ffd66b;
+  --n-field: #7fb0ff;
+}
+
+:root[data-theme='light'] {
+  --ground: #f4f6fb;
+  --ground-2: #eef1f8;
+  --panel: #ffffff;
+  --panel-2: #f5f7fc;
+  --line: rgba(40, 60, 110, 0.12);
+  --line-strong: rgba(40, 60, 110, 0.24);
+  --ink: #1a2030;
+  --muted: #59627c;
+  --faint: #97a0b8;
+  --accent: #12a596;
+  --accent-deep: #0d7d72;
+  --n-word: #26304a;
+  --n-consonant: #b96a12;
+  --n-class: #7b4fd0;
+  --n-vowel: #0f9f92;
+  --n-mark: #d64f7c;
+  --n-tone: #2a9b52;
+  --n-rule: #c9931a;
+  --n-field: #3a6fd8;
+}

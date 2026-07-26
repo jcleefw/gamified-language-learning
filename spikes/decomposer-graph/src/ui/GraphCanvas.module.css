@@ -1,0 +1,117 @@
+.stage {
+  position: relative;
+  background: linear-gradient(180deg, var(--ground-2), var(--ground));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 560px;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 620px;
+  touch-action: none;
+}
+
+@media (max-width: 940px) {
+  .svg {
+    height: 480px;
+  }
+}
+
+.legend {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  max-width: 74%;
+}
+
+.legend span {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.hint {
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--faint);
+  text-align: right;
+  line-height: 1.5;
+}
+
+.edge {
+  fill: none;
+  stroke: var(--line-strong);
+  transition:
+    opacity 0.25s ease,
+    stroke 0.25s ease;
+}
+
+.edge.hl {
+  stroke: var(--accent);
+}
+
+.edge.path {
+  stroke: var(--n-rule);
+  stroke-width: 2.4;
+}
+
+.node circle {
+  transition: opacity 0.25s ease;
+}
+
+.wordNode {
+  cursor: pointer;
+}
+
+.node text {
+  font-family: var(--mono);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.node text.thai {
+  font-family: var(--thai);
+  font-size: 14px;
+}
+
+.node text.count {
+  font-size: 9px;
+  fill: var(--faint);
+}
+
+.node.center text.thai {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.node.dim {
+  opacity: 0.16;
+}
+
+.wedge {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+  pointer-events: none;
+}

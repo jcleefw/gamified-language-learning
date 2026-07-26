@@ -1,0 +1,39 @@
+/* Global reset + page shell. Everything else is component-scoped via CSS Modules. */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(
+      1200px 700px at 78% -8%,
+      color-mix(in srgb, var(--accent) 12%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 600px at 8% 108%,
+      color-mix(in srgb, var(--n-field) 10%, transparent),
+      transparent 55%
+    ),
+    var(--ground);
+  color: var(--ink);
+  font-family: var(--serif);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
