@@ -26,6 +26,17 @@ export interface VowelInfo {
   position: VowelPosition
 }
 
+/** One entry in the fixed Thai vowel-spelling table (see VOWEL_TABLE in graphemeParser.ts). */
+export interface VowelPattern {
+  /** '' or one of the leading vowels เ แ โ ใ ไ */
+  lead: string
+  /** glyphs after the onset (before any final), '' if none */
+  body: string
+  /** ◌-notation vowel string, matches RawSyllable.vowel */
+  canonical: string
+  long: boolean
+}
+
 /** The fixed, finite Thai foundation — pure lookup tables (foundation.json). */
 export interface Foundation {
   rulesetVersion: string
@@ -36,6 +47,18 @@ export interface Foundation {
   markName: Record<MarkKey, string>
   tones: Record<Tone, ToneInfo>
   vowels: Record<string, VowelInfo>
+  /** the leading vowels เ แ โ ใ ไ, which visually precede the consonant */
+  leadingVowels: string
+  /** combining (above/below) vowel signs — precede the tone mark in Unicode order */
+  combiningVowelSigns: string
+  /** การันต์ marker (์) — a written-but-silent final glyph */
+  thanthakhat: string
+  /** low-class consonants with no high-class counterpart — the only valid ห/อ นำ targets */
+  namTargets: string
+  /** real Thai consonant clusters (อักษรควบแท้) exercised in the corpus */
+  clusters: string[]
+  /** the fixed Thai vowel-spelling table used by decomposeGraphemes/composeSyllableText */
+  vowelPatterns: VowelPattern[]
 }
 
 /** One authored syllable in words.json. */
