@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useState } from 'react'
-import { loadGraphReader } from '../core/index'
+import { buildGraph, loadGraphReader, type RawWord } from '../core/index'
+import { GraphReader } from '../core/graph'
 import styles from './App.module.css'
 import { Controls } from './Controls'
 import { GraphCanvas } from './GraphCanvas'
 import type { Hl, Hop } from './graphView'
 import { Header } from './Header'
 import { Inspector } from './Inspector'
+import { LiveInput } from './LiveInput'
 import { WordBank } from './WordBank'
 
 export interface AppState {
@@ -16,13 +18,24 @@ export interface AppState {
   pathPicks: string[]
 }
 
-export function App() {
-  const reader = useMemo(() => loadGraphReader(), [])
+interface AppProps {
+  initialWords?: RawWord[]
+}
 
-  const initialFocus = useMemo(
-    () => (reader.has('W:แก้ว') ? 'W:แก้ว' : reader.words()[0].id),
-    [reader],
-  )
+export function App({ initialWords = [] }: AppProps) {
+  const [words, setWords] = useState<RawWord[]>(initialWords)
+
+  const reader = useMemo(() => {
+    if (words.length === 0) {
+      return loadGraphReader()
+    }
+    return new GraphReader(buildGraph(words), '2.0.0')
+  }, [words])
+
+  const initialFocus = useMemo(() => {
+    const wordList = reader.words()
+    return wordList.length > 0 ? wordList[0].id : ''
+  }, [reader])
 
   const [state, setState] = useState<AppState>({
     focus: initialFocus,
@@ -53,6 +66,11 @@ export function App() {
     [],
   )
 
+  const handleAddWord = useCallback((word: RawWord) => {
+    setWords((prev) => [...prev, word])
+    setState((s) => ({ ...s, focus: 'W:' + word.thai }))
+  }, [])
+
   return (
     <div className={styles.wrap}>
       <Header reader={reader} />
@@ -76,7 +94,10 @@ export function App() {
 
       <div className={styles.main}>
         <GraphCanvas reader={reader} state={state} onWordClick={onWordClick} />
-        <Inspector reader={reader} focus={state.focus} onWordClick={onWordClick} />
+        <div className={styles.side}>
+          <LiveInput onAddWord={handleAddWord} />
+          <Inspector reader={reader} focus={state.focus} onWordClick={onWordClick} />
+        </div>
       </div>
 
       <footer className={styles.footer}>

@@ -11,6 +11,12 @@
   align-items: start;
 }
 
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 @media (max-width: 940px) {
   .main {
     grid-template-columns: 1fr;

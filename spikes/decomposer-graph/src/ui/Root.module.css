@@ -1,0 +1,38 @@
+.header {
+  padding: 48px 24px 32px;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.title {
+  margin: 0 0 12px 0;
+  font-family: var(--thai);
+  font-size: 48px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0 0 16px 0;
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--accent);
+  font-style: italic;
+}
+
+.description {
+  margin: 0;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.formWrapper {
+  max-width: 500px;
+  margin: 48px auto;
+  padding: 0 24px;
+}
