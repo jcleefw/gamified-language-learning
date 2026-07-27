@@ -34,6 +34,8 @@ export interface VowelPattern {
   body: string
   /** ◌-notation vowel string, matches RawSyllable.vowel */
   canonical: string
+  /** romanized vowel (phonetic scheme: ə ʉ ɛ ɔ, length by doubling), e.g. ◌า→'aa', เ◌อ→'əə' */
+  rom: string
   long: boolean
 }
 
@@ -41,12 +43,16 @@ export interface VowelPattern {
 export interface Foundation {
   rulesetVersion: string
   classes: Record<ConsonantClass, string>
+  /** onset (syllable-initial) romanization per consonant — distinct from the final maps; อ→'' (zero onset) */
+  onsets: Record<string, string>
   sonorantFinals: Record<string, string>
   stopFinals: Record<string, string>
   markGlyph: Record<MarkKey, string>
   markName: Record<MarkKey, string>
-  tones: Record<Tone, ToneInfo>
-  vowels: Record<string, VowelInfo>
+  /** romanization diacritic per computed tone (combining marks); mid→'' */
+  toneDiacritic: Record<Tone, string>
+  /** display label per tone (e.g. 'MID', 'FALLING') */
+  toneLabel: Record<Tone, string>
   /** the leading vowels เ แ โ ใ ไ, which visually precede the consonant */
   leadingVowels: string
   /** combining (above/below) vowel signs — precede the tone mark in Unicode order */
@@ -61,7 +67,7 @@ export interface Foundation {
   vowelPatterns: VowelPattern[]
 }
 
-/** One authored syllable in words.json. */
+/** One authored syllable in words.json, or computed from live Thai text input. */
 export interface RawSyllable {
   /** initial (tone-bearing) consonant */
   initial: string
@@ -82,15 +88,23 @@ export interface RawSyllable {
   forceTone?: Tone
 }
 
-/** One authored word in words.json. */
+/** Live input from UI: just the Thai text and optional metadata. */
+export interface LiveSyllable {
+  thai: string
+  forceTone?: Tone
+}
+
+/** One authored word in words.json, or from live UI input. */
 export interface RawWord {
   thai: string
-  romanization: string
+  /** authored romanization (corpus only); live input computes it — see computeRomanization() */
+  romanization?: string
   gloss: string
   field: string[]
   /** note explaining an irregularity, if any */
   note?: string
-  syllables: RawSyllable[]
+  /** hand-authored syllables (corpus) or live input syllables */
+  syllables: (RawSyllable | LiveSyllable)[]
 }
 
 export interface Grapheme {
@@ -109,6 +123,8 @@ export interface DecomposedSyllable {
   syllableType: SyllableType
   toneMark: MarkKey | null
   toneMarkName: string | null
+  /** computed Layer-1 romanization for this syllable (onset + vowel[+tone diacritic] + coda) */
+  romanization: string
   firedRuleId: string
   firedRuleLabel: string
   firedRuleShort: string

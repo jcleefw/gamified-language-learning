@@ -15,6 +15,11 @@ for (const [cls, chars] of Object.entries(FOUNDATION.classes)) {
 export const SONORANT = FOUNDATION.sonorantFinals
 export const STOP = FOUNDATION.stopFinals
 
+/** consonant → onset (syllable-initial) romanization. อ→'' (zero onset). */
+export const ONSET = FOUNDATION.onsets
+/** computed tone → romanization diacritic (combining mark). mid→''. */
+export const TONE_DIACRITIC = FOUNDATION.toneDiacritic
+
 /** All 44 Thai consonant letters, keyed for membership tests. */
 export const ALL_CONSONANTS = new Set(
   [...FOUNDATION.classes.mid, ...FOUNDATION.classes.high, ...FOUNDATION.classes.low],

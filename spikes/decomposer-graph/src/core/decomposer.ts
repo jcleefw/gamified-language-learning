@@ -4,10 +4,13 @@ import {
   CLASS,
   MARK_GLYPH,
   MARK_NAME,
+  ONSET,
   RULESET_VERSION,
   SONORANT,
   STOP,
+  TONE_DIACRITIC,
   TONE_LABEL,
+  VOWEL_TABLE,
 } from './foundation'
 import type {
   ConsonantClass,
@@ -24,8 +27,27 @@ import type {
   RelationKey,
   Tone,
 } from './types'
+import { decomposeGraphemes } from './graphemeParser'
+import type { GraphemeException } from './graphemeParser'
 
 export { RULESET_VERSION }
+
+/** Check if a syllable is live input (has thai field) vs hand-authored (has initial field). */
+function isLiveSyllable(s: RawSyllable | any): s is { thai: string; forceTone?: string } {
+  return 'thai' in s && !('initial' in s)
+}
+
+/** Compute RawSyllable from Thai text using the parser, with fallback exception handling. */
+function computeRawSyllable(
+  text: string,
+  forceTone?: any,
+): RawSyllable | { exception: string } {
+  const result = decomposeGraphemes(text)
+  if ('exception' in result) {
+    return result
+  }
+  return forceTone ? { ...result, forceTone } : result
+}
 
 export const RELATIONS: Record<RelationKey, Relation> = {
   'has-initial': { via: 'consonant', label: 'shares initial consonant' },
@@ -59,6 +81,33 @@ export function liveness(final: string | null, vowelLong: boolean): boolean {
   return !!vowelLong
 }
 
+/** canonical vowel pattern (◌-notation) → romanized vowel, from the foundation table. */
+const VOWEL_ROM: Record<string, string> = {}
+for (const v of VOWEL_TABLE) VOWEL_ROM[v.canonical] = v.rom
+
+/** Place a tone's combining diacritic on the first letter of the romanized vowel. */
+function placeTone(vowelRom: string, tone: Tone): string {
+  const dia = TONE_DIACRITIC[tone]
+  if (!dia || !vowelRom) return vowelRom
+  return vowelRom[0] + dia + vowelRom.slice(1)
+}
+
+/**
+ * Layer-1 romanization of one syllable: onset consonant(s) + vowel (carrying the
+ * tone diacritic) + coda. Pure — driven entirely by the foundation lookups, no
+ * dictionary or LLM. อ is a zero onset; the silent ห/อ leader and การันต์ final
+ * are not voiced, so neither is romanized. The tone is passed in (already computed
+ * by computeTone, forceTone applied) so romanization and tone never diverge.
+ */
+export function computeRomanization(raw: RawSyllable, tone: Tone): string {
+  const onset =
+    (ONSET[raw.initial] ?? '') +
+    (raw.clusterConsonant ? ONSET[raw.clusterConsonant] ?? '' : '')
+  const vowel = placeTone(VOWEL_ROM[raw.vowel] ?? '', tone)
+  const coda = raw.final ? SONORANT[raw.final] || STOP[raw.final] || '' : ''
+  return onset + vowel + coda
+}
+
 function graphemesOf(s: RawSyllable): Grapheme[] {
   const g: Grapheme[] = []
   if (s.leadingSilent) g.push({ glyph: s.leadingSilent, role: 'silent leader', silent: true })
@@ -71,49 +120,89 @@ function graphemesOf(s: RawSyllable): Grapheme[] {
   return g
 }
 
+/**
+ * Turn externally-segmented syllable strings (e.g. PyThaiNLP) into the
+ * authored RawSyllable[] shape words.json stores. Same parser decompose()
+ * uses internally for live input — this just stops short of computing tone,
+ * so the result can be written straight into the corpus. Returns an
+ * exception instead of a partial/guessed syllable if any one fails to parse.
+ */
+export function buildRawSyllables(texts: string[]): RawSyllable[] | { exception: string } {
+  const syllables: RawSyllable[] = []
+  for (const text of texts) {
+    const result = decomposeGraphemes(text)
+    if ('exception' in result) return { exception: result.exception }
+    syllables.push(result)
+  }
+  return syllables
+}
+
 export function decompose(w: RawWord): DecomposedWord {
-  const syllables: DecomposedSyllable[] = w.syllables.map((s) => {
-    const cls = CLASS[s.leadingSilent || s.initial]
+  const syllables: DecomposedSyllable[] = []
+  const parseExceptions: string[] = []
+
+  for (const s of w.syllables) {
+    let rawSyllable: RawSyllable | { exception: string }
+    if (isLiveSyllable(s)) {
+      rawSyllable = computeRawSyllable(s.thai, s.forceTone)
+      if ('exception' in rawSyllable) {
+        parseExceptions.push(rawSyllable.exception)
+        continue
+      }
+    } else {
+      rawSyllable = s
+    }
+
+    const cls = CLASS[rawSyllable.leadingSilent || rawSyllable.initial]
     // ไ ใ ำ เ-า end in a glide → always LIVE syllables, regardless of vowel length
     const glideLive =
-      /[ไใ]/.test(s.vowel) || s.vowel.includes('ำ') || (s.vowel.includes('เ') && s.vowel.includes('า'))
-    const isLive = glideLive || liveness(s.final, s.long)
-    const ruleTone = computeTone(cls, s.mark, isLive, s.long)
-    const tone = s.forceTone || ruleTone // irregulars declare the real tone
-    const overridden = !!s.forceTone && s.forceTone !== ruleTone
-    const ruleId = `${cls}·${s.mark || '—'}·${isLive ? 'live' : 'dead'}${
-      cls === 'low' && !isLive ? (s.long ? '·long' : '·short') : ''
+      /[ไใ]/.test(rawSyllable.vowel) ||
+      rawSyllable.vowel.includes('ำ') ||
+      (rawSyllable.vowel.includes('เ') && rawSyllable.vowel.includes('า'))
+    const isLive = glideLive || liveness(rawSyllable.final, rawSyllable.long)
+    const ruleTone = computeTone(cls, rawSyllable.mark, isLive, rawSyllable.long)
+    const tone = rawSyllable.forceTone || ruleTone
+    const overridden = !!rawSyllable.forceTone && rawSyllable.forceTone !== ruleTone
+    const ruleId = `${cls}·${rawSyllable.mark || '—'}·${isLive ? 'live' : 'dead'}${
+      cls === 'low' && !isLive ? (rawSyllable.long ? '·long' : '·short') : ''
     }→${tone}`
-    const base = `${cls.toUpperCase()} ${s.mark ? '+ ' + MARK_NAME[s.mark] : '· no mark'} · ${
-      isLive ? 'live' : 'dead'
-    }`
-    return {
-      graphemes: graphemesOf(s),
-      initial: s.initial,
-      leadingSilent: s.leadingSilent || null,
-      cluster: s.clusterConsonant || null,
+    const base = `${cls.toUpperCase()} ${
+      rawSyllable.mark ? '+ ' + MARK_NAME[rawSyllable.mark] : '· no mark'
+    } · ${isLive ? 'live' : 'dead'}`
+
+    syllables.push({
+      graphemes: graphemesOf(rawSyllable),
+      initial: rawSyllable.initial,
+      leadingSilent: rawSyllable.leadingSilent || null,
+      cluster: rawSyllable.clusterConsonant || null,
       class: cls,
-      vowelLength: s.long ? 'long' : 'short',
+      vowelLength: rawSyllable.long ? 'long' : 'short',
       syllableType: isLive ? 'live' : 'dead',
-      toneMark: s.mark || null,
-      toneMarkName: s.mark ? MARK_NAME[s.mark] : null,
+      toneMark: rawSyllable.mark || null,
+      toneMarkName: rawSyllable.mark ? MARK_NAME[rawSyllable.mark] : null,
+      romanization: computeRomanization(rawSyllable, tone),
       firedRuleId: ruleId,
       firedRuleLabel: overridden
         ? `${base} → ${TONE_LABEL[ruleTone]} by rule · irregular → ${TONE_LABEL[tone]}`
         : `${base} → ${TONE_LABEL[tone]}`,
-      firedRuleShort: `${cls.toUpperCase()}+${s.mark || '∅'}→${TONE_LABEL[tone]}`,
+      firedRuleShort: `${cls.toUpperCase()}+${rawSyllable.mark || '∅'}→${TONE_LABEL[tone]}`,
       tone,
       ruleTone,
       overridden,
-    }
-  })
+    })
+  }
+
+  const hasParseErrors = parseExceptions.length > 0
+  const exceptionMsg = hasParseErrors ? `Parse: ${parseExceptions.join('; ')}` : w.note || null
+
   return {
     thai: w.thai,
-    romanization: w.romanization,
+    // Computed Layer-1 romanization (never the authored field) — the whole point of Slice 7.
+    romanization: syllables.map((s) => s.romanization).join('-'),
     gloss: w.gloss,
     fields: w.field,
-    status: w.note ? 'exception' : 'clean',
-    exception: w.note || null,
+    status: w.note || hasParseErrors ? ('exception' as const) : ('clean' as const),
+    exception: exceptionMsg,
     syllables,
   }
 }

@@ -4,7 +4,8 @@ import { GraphReader } from './graph'
 import type { RawWord } from './types'
 
 export * from './types'
-export { buildGraph, computeTone, decompose, liveness, RELATIONS, RULESET_VERSION } from './decomposer'
+export { buildGraph, computeRomanization, computeTone, decompose, liveness, RELATIONS, RULESET_VERSION } from './decomposer'
+export { decomposeGraphemes } from './graphemeParser'
 export { GraphReader } from './graph'
 export type { Adjacency } from './graph'
 
