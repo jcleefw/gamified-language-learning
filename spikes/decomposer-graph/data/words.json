@@ -1,1 +1,177 @@
-[]
+[
+  {
+    "thai": "เอื้อมมือ",
+    "romanization": "ʉ̂am-mʉʉ",
+    "gloss": "to reach out (with hand)",
+    "field": [
+      "body",
+      "motion"
+    ],
+    "syllables": [
+      {
+        "initial": "อ",
+        "vowel": "เ◌ือ",
+        "long": true,
+        "final": "ม",
+        "mark": "tho"
+      },
+      {
+        "initial": "ม",
+        "vowel": "◌ือ",
+        "long": true,
+        "final": null,
+        "mark": null
+      }
+    ]
+  },
+  {
+    "thai": "คว้า",
+    "romanization": "khwáa",
+    "gloss": "to grasp",
+    "field": [
+      "motion",
+      "body"
+    ],
+    "syllables": [
+      {
+        "initial": "ค",
+        "clusterConsonant": "ว",
+        "vowel": "◌า",
+        "long": true,
+        "final": null,
+        "mark": "tho"
+      }
+    ]
+  },
+  {
+    "thai": "หยาด",
+    "romanization": "yàat",
+    "gloss": "droplet",
+    "field": [
+      "crystal",
+      "nature"
+    ],
+    "note": "ห นำ (silent leader)",
+    "syllables": [
+      {
+        "initial": "ย",
+        "leadingSilent": "ห",
+        "vowel": "◌า",
+        "long": true,
+        "final": "ด",
+        "mark": null
+      }
+    ]
+  },
+  {
+    "thai": "เพชร",
+    "romanization": "phét",
+    "gloss": "diamond",
+    "field": [
+      "crystal"
+    ],
+    "syllables": [
+      {
+        "initial": "พ",
+        "vowel": "เ◌",
+        "long": false,
+        "final": "ช",
+        "mark": null,
+        "silentFinal": "ร"
+      }
+    ]
+  },
+  {
+    "thai": "แก้ว",
+    "romanization": "kɛ̂ɛw",
+    "gloss": "crystal/glass",
+    "field": [
+      "crystal"
+    ],
+    "syllables": [
+      {
+        "initial": "ก",
+        "vowel": "แ◌",
+        "long": true,
+        "final": "ว",
+        "mark": "tho"
+      }
+    ]
+  },
+  {
+    "thai": "เผลอ",
+    "romanization": "phlə̌ə",
+    "gloss": "unaware",
+    "field": [
+      "emotion"
+    ],
+    "syllables": [
+      {
+        "initial": "ผ",
+        "clusterConsonant": "ล",
+        "vowel": "เ◌อ",
+        "long": true,
+        "final": null,
+        "mark": null
+      }
+    ]
+  },
+  {
+    "thai": "รัก",
+    "romanization": "rák",
+    "gloss": "love",
+    "field": [
+      "emotion"
+    ],
+    "syllables": [
+      {
+        "initial": "ร",
+        "vowel": "◌ั",
+        "long": false,
+        "final": "ก",
+        "mark": null
+      }
+    ]
+  },
+  {
+    "thai": "แล้วจึง",
+    "romanization": "lɛ́ɛw-jʉng",
+    "gloss": "and then/thereupon",
+    "field": [
+      "voice"
+    ],
+    "syllables": [
+      {
+        "initial": "ล",
+        "vowel": "แ◌",
+        "long": true,
+        "final": "ว",
+        "mark": "tho"
+      },
+      {
+        "initial": "จ",
+        "vowel": "◌ึ",
+        "long": false,
+        "final": "ง",
+        "mark": null
+      }
+    ]
+  },
+  {
+    "thai": "ฝัน",
+    "romanization": "fǎn",
+    "gloss": "to dream",
+    "field": [
+      "emotion"
+    ],
+    "syllables": [
+      {
+        "initial": "ฝ",
+        "vowel": "◌ั",
+        "long": false,
+        "final": "น",
+        "mark": null
+      }
+    ]
+  }
+]
