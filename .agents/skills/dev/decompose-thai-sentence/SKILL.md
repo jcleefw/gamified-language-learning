@@ -9,11 +9,11 @@ Ask the user for the Thai sentence if not already given. Then follow these steps
 
 ## Step 1 — Ensure the environment
 
-Fixed external location, outside the repo: `$HOME/.local/share/gll-decomposer/` (`venv/` + `tokenize.py`).
+Fixed external location, outside the repo: `$HOME/.local/share/gll-decomposer/` (`venv/` + `decompose_tokenize.py`).
 
 1. Check `$HOME/.local/share/gll-decomposer/venv/bin/python -c "import pythainlp"`.
 2. If it fails: `mkdir -p $HOME/.local/share/gll-decomposer && python3 -m venv $HOME/.local/share/gll-decomposer/venv && $HOME/.local/share/gll-decomposer/venv/bin/pip install pythainlp`.
-3. Check `$HOME/.local/share/gll-decomposer/tokenize.py` exists. If not, write it with exactly this content:
+3. Check `$HOME/.local/share/gll-decomposer/decompose_tokenize.py` exists. If not, write it with exactly this content:
 
 ```python
 import json, sys
@@ -29,7 +29,9 @@ elif mode == "syllable":
     print(json.dumps({"syllables": syllable_tokenize(text, engine="dict")}))
 ```
 
-Never write `tokenize.py` or the venv into the repo — this stays a personal, offline machine tool per RFC OQ-B.
+Never name this file `tokenize.py` — it shadows Python's stdlib `tokenize` module the moment it's on `sys.path`, causing a circular-import crash inside pythainlp itself.
+
+Never write `decompose_tokenize.py` or the venv into the repo — this stays a personal, offline machine tool per RFC OQ-B.
 
 ## Step 2 — Propose segmentation blind
 
@@ -37,7 +39,7 @@ Before running any tool, segment the sentence into words yourself and flag any b
 
 ## Step 3 — Run the dictionary tokenizer
 
-`$HOME/.local/share/gll-decomposer/venv/bin/python $HOME/.local/share/gll-decomposer/tokenize.py word "<sentence>"`
+`$HOME/.local/share/gll-decomposer/venv/bin/python $HOME/.local/share/gll-decomposer/decompose_tokenize.py word "<sentence>"`
 
 ## Step 4 — Diff and adjudicate
 
@@ -51,9 +53,15 @@ Record the final settled word list, and separately record every meaningful overr
 
 ## Step 5 — Syllable-tokenize each settled word
 
-For each word: `$HOME/.local/share/gll-decomposer/venv/bin/python $HOME/.local/share/gll-decomposer/tokenize.py syllable "<word>"`
+For each word: `$HOME/.local/share/gll-decomposer/venv/bin/python $HOME/.local/share/gll-decomposer/decompose_tokenize.py syllable "<word>"`
 
 ## Step 6 — Decompose each word deterministically
+
+`pnpm` is not on `PATH` in a non-interactive shell here. Source the shell rc before every `pnpm` invocation in this skill — this is the default, not a fallback to try after a bare command fails:
+
+```
+source ~/.zshrc
+```
 
 For each word, pipe its syllables into the existing TS pipeline — no logic is re-implemented here:
 
@@ -72,8 +80,23 @@ Show two clearly separated sections:
 
 Never merge the two into one table as if both were computed the same way.
 
+## Step 8 — Write settled words into the corpus
+
+Ask the user whether to add the settled words to `spikes/decomposer-graph/data/words.json`. If yes, for each word that parsed clean in Step 6 (`status !== "exception"`):
+
+```
+echo '{"thai":"<word>","syllables":["<syl1>","<syl2>"],"gloss":"<english gloss>","field":["<semantic field>"]}' | pnpm exec tsx spikes/decomposer-graph/scripts/add-word-to-corpus.ts
+```
+
+This calls `breakdownSyllableToCorpus()` (in `src/core/decomposer.ts`, next to `decompose()`) to convert the syllables into the corpus's `RawSyllable[]` shape directly — no LLM hand-transcription of `decompose()`'s output into `words.json`'s schema. The script itself:
+
+- Refuses to write (exit 1, prints the exception) if any syllable fails to parse. **Never fall back to guessing or copying a value from elsewhere (e.g. an old backup file) to fill the gap** — leave the word out of `words.json` and tell the user it needs manual authoring.
+- Refuses to write (exit 1) if the `thai` key already exists in `words.json`, to avoid duplicate/conflicting corpus entries across separate runs of this skill.
+
+`gloss` and `field` are **not computed by any tool** — they're the LLM's own translation and semantic categorization, a third kind of output this skill produces beyond word boundaries and deterministic decomposition. Present them to the user alongside the word-boundary overrides in Step 7, not as if they were Layer-1 output.
+
 ## Rules
 
-- The LLM only ever decides word boundaries. Tone, grapheme roles, and romanization are always computed by `decompose()` — never estimated or guessed by the LLM.
+- The LLM only ever decides word boundaries, glosses, and semantic fields. Tone, grapheme roles, romanization, and the corpus's `RawSyllable[]` shape are always computed by `decompose()` / `breakdownSyllableToCorpus()` — never estimated, guessed, or hand-transcribed by the LLM.
 - Don't silently accept the dictionary tool's output, and don't silently accept your own first guess — every meaning-changing disagreement gets resolved explicitly.
-- Node is required (`pnpm exec tsx`) for Step 6; Python is required only for Steps 1, 3, 5, and never touches the repo.
+- Node is required (`pnpm exec tsx`, via `source ~/.zshrc` first) for Steps 6 and 8; Python is required only for Steps 1, 3, 5, and never touches the repo.

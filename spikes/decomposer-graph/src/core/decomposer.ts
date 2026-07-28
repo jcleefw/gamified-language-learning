@@ -127,7 +127,7 @@ function graphemesOf(s: RawSyllable): Grapheme[] {
  * so the result can be written straight into the corpus. Returns an
  * exception instead of a partial/guessed syllable if any one fails to parse.
  */
-export function buildRawSyllables(texts: string[]): RawSyllable[] | { exception: string } {
+export function breakdownSyllableToCorpus(texts: string[]): RawSyllable[] | { exception: string } {
   const syllables: RawSyllable[] = []
   for (const text of texts) {
     const result = decomposeGraphemes(text)
