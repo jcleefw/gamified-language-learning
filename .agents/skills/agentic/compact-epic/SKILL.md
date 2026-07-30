@@ -12,9 +12,10 @@ description: write compacting epic workflow with archive-epic.sh step by step
 1. if user call workflow with no Epic now, ask "What is the Epic number"
 2. run bash script `archive-epic.sh discover`. present its output as-is. do not guess or suggest a range — wait for user to confirm range
 3. once commit range is confirmed, run bash script `archive-epic.sh draft`
-4. Invoke the `ryoiki-mapping` skill and provide epic number, wait for return result
+4. Invoke the `.agents/skills/agentic/ryoiki-mapping/SKILL.md` skill and provide epic number, wait for return result
 5. run bash script `archive-epic.sh scaffold`
-6. After scaffold, invoke the `write-knowledge` skill
+6. After scaffold, invoke the `.agents/skills/agentic/write-knowledge/SKILL.md` skill
+7. stop to ask human to review before proceeding
 7. run bash script `archive-epic.sh check`, `archive-epic.sh verify`
 8. **RECORD commit:** confirm change with commit title 
     - Commit: `git add` the new flat artifact + `index.json`, `ryoiki-blacklist.json`, all `KNOWLEDGE.md` changes  (+ any amended ADR),
