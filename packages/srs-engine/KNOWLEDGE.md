@@ -1,7 +1,7 @@
 ---
 unit: packages/srs-engine
-sources: [EP02, EP04, EP05, EP06]
-updated: 2026-07-25
+sources: [EP02, EP04, EP05, EP06, EP07]
+updated: 2026-08-31
 ---
 
 # packages/srs-engine — Domain Knowledge
@@ -20,11 +20,11 @@ Practice batches assemble words in priority order: carry-over from incomplete se
 
 ## learning-session-lifecycle
 
-The active window limits learners to 8 concurrent words (4 new per batch), forcing vocabulary to compete for slots. Foundational decks cap this at 3 active words to reduce cognitive load on script fundamentals.
+The active window limits learners to 8 concurrent words (4 new per batch), forcing vocabulary to compete for slots. Foundational decks cap this at 3 active words to reduce cognitive load on script fundamentals. The orchestrator coordinates batch composition by filtering out shelved words and applying per-deck slot limits before assembling the practice queue.
 
 ## mastery-tracking
 
-Foundational words reset mastery to 0 on three consecutive wrong answers, preventing learners from grinding on words they cannot progress on. This constraint keeps foundational-phase learning focused and efficient.
+Foundational words reset mastery to 0 on three consecutive wrong answers, preventing learners from grinding on words they cannot progress on. This constraint keeps foundational-phase learning focused and efficient. The orchestrator applies rules in staged order: FSRS scheduling only triggers after a word has already been promoted (not on first promotion), demotions are gated similarly to avoid double-penalising, and consecutive wrong counts track across batches for stuck-word detection and shelving.
 
 ## shelving
 
