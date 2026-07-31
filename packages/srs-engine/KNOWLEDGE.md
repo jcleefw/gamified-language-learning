@@ -1,6 +1,6 @@
 ---
 unit: packages/srs-engine
-sources: [EP02, EP04, EP05, EP06, EP07]
+sources: [EP02, EP04, EP05, EP06, EP07, EP08]
 updated: 2026-08-31
 ---
 
@@ -9,6 +9,10 @@ updated: 2026-08-31
 > **APPROVED EDITS ONLY.** No agent or automation may write to this file without
 > explicit human approval. Always ask first, every time — this holds for the
 > first write and every later append.
+
+## curriculum
+
+The engine ingests real Thai language content through a dedicated data layer. Foundational characters and conversation vocabulary are converted to standardized learning objects with machine-generated identifiers based on native script characters, ensuring unique tracking across tonal variations. When the same word appears in multiple conversation decks, it maintains a single unified learning state rather than duplicating progress.
 
 ## spaced-repetition
 
