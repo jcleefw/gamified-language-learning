@@ -1,4 +1,4 @@
-# AGENT.md
+# AGENTS.md
 
 **Project**: Gamified Language Learning Platform
 **Version**: Final (Phase 5)
@@ -47,7 +47,7 @@ Your job is to scaffold, implement, and document work according to the governanc
 
 When starting a new conversation, read in this order:
 
-1. **AGENT.md** — Who you are (this file)
+1. **AGENTS.md** — Who you are (this file)
 2. **WORKTREE.md** — When i tell you you're working in a worktree, then read this before anything else. It tells you how to orient yourself and what is forbidden.
 3. **Resolve your branch** — Run `git rev-parse --abbrev-ref HEAD` to get the current branch name, then read `.agents/memory/{branch}/current-focus.md`. This file tells you exactly what to do next.
 4. **RULES.md** — What you must always do

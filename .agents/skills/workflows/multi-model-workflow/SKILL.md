@@ -1,3 +1,8 @@
+---
+name: multi-model-workflow
+description: Select the appropriate Claude model (Opus, Sonnet, or Haiku) based on task type for optimal speed and quality tradeoffs.
+---
+
 # Multimodel Workflow
 
 Select the appropriate Claude model for your task before starting work.

@@ -22,7 +22,7 @@ Quick command reference. For details, see the governance files linked below.
 
 ## Key References
 
-- [AGENT.md](./AGENT.md) — Role, persona, bootstrap reading order
+- [AGENTS.md](./AGENTS.md) — Role, persona, bootstrap reading order
 - [RULES.md](./RULES.md) — Golden rules, code standards, testing protocol, memory protocol
 - [WORKFLOW.md](./WORKFLOW.md) — Work item naming, hierarchy, lifecycle
 - [CONTEXT.md](./CONTEXT.md) — Tech stack, architecture, domain model

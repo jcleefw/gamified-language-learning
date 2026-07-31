@@ -1,5 +1,6 @@
 ---
-description: Create a Technical Design Specification (DS) for a feature
+name: create-design-spec
+description: Create a Technical Design Specification (DS) for a feature, including requirements analysis and architectural boundaries.
 ---
 
 # Create Design Spec

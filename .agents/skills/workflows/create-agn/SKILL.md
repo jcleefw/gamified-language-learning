@@ -1,5 +1,6 @@
 ---
-description: Create a Agentic Plan + Technical Design Specification (AGN)
+name: create-agn
+description: Create an Agentic Plan (AGN) with technical design specification for agentic workflows and infrastructure.
 ---
 
 # Create AGN plan and technical Design
