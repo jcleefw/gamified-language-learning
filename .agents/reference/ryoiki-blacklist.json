@@ -9,7 +9,7 @@
     "package-scaffold",
     "ui-state"
   ],
-  "packages/api-contract": [],
+  "packages/api-contract": ["design-spec"],
   "packages/db": [],
   "packages/logger": [],
   "packages/shared-utils": [],

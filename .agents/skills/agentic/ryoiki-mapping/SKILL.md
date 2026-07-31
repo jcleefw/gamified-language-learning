@@ -4,7 +4,7 @@ description: 'help map the correct ryoiki into archive list json'
 ---
 
 ## before starting
-- run bash script `archive-epic.sh status`
+- run bash script `.agents/tools/archive-epic.sh status`
 
 
 ## Only file allow to touch 
