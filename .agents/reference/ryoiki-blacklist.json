@@ -5,7 +5,7 @@
     "design-spec"
   ],
   "apps/cli-demo-db": [],
-  "apps/server": [],
+  "apps/server": ["test-infrastructure"],
   "apps/srs-demo": [
     "package-scaffold",
     "ui-state"
