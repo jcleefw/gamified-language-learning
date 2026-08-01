@@ -238,9 +238,9 @@ Checklist: tests pass → changelog generated → CODEMAP synced → memory upda
 
 ## Memory Protocol
 
-> **IMPORTANT**: Do NOT use any platform-specific auto-memory system (e.g., Claude Code's `~/.claude/` directory). All project memory is in `.agents/memory/{branch}/` only.
+> **IMPORTANT**: Do NOT use any platform-specific auto-memory system (e.g., Claude Code's `~/.claude/` directory). All project memory is in `.agents/memory/EP##--slug/` (per epic) only.
 
-The agent writes to `.agents/memory/{branch}/` at these trigger points. For detailed update guidelines, see `.agents/tools/memory-write-guide.md`.
+The agent writes to `.agents/memory/EP##--slug/` at these trigger points. For detailed update guidelines, see `.agents/tools/memory-write-guide.md`.
 
 | Trigger         | File to Update        | Content                                       |
 | --------------- | --------------------- | --------------------------------------------- |
@@ -268,4 +268,4 @@ See `.agents/guardrails.yml` — blocks dangerous commands, requires approval fo
 1. **Stop** — Do not guess or assume
 2. **Ask ONE specific question** — Not "is this okay?" but "Should I use X or Y because Z?"
 3. **Wait for answer** — Do not continue autonomously
-4. **Document the decision** in `.agents/memory/{branch}/recent-decisions.md`
+4. **Document the decision** in `.agents/memory/EP##--slug/recent-decisions.md`
