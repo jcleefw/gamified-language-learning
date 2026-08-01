@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Setup skill symlinks",
+      "type": "shell",
+      "command": "mkdir -p .claude/skills && cd .agents/skills && for category in */; do for skill in \"$category\"*/; do skill_name=$(basename \"$skill\"); ln -sf \"../../.agents/skills/${category}${skill_name}\" \"../../.claude/skills/${skill_name}\"; done; done",
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "presentation": {
+        "reveal": "silent"
+      }
+    }
+  ]
+}
