@@ -170,8 +170,4 @@ After saving, ask: "What would you like to do next?"
 
 Suggest relevant steps based on findings:
 
-- If a redesign is warranted: `/architect/engineering-design`
-- If FE structure is implicated: `/architect/fe-review`
-- If BE structure is implicated: `/architect/be-review`
-- If CI/CD pipeline is implicated: `/architect/infra-review`
-- If test conventions have gaps: `/architect/qa-design`
+- If a redesign is warranted: `/engineering-design`

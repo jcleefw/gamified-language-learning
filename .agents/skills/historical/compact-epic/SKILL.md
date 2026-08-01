@@ -30,13 +30,13 @@ for state.
     The `pr` field is `integer[] | null` (a story can span multiple PRs). Strip the `#` from the tool's `#NN` output — pass bare integers. Do not hand-edit `index.json`.
 4. Draft compact
     a. run `./.agents/tools/archive-epic.sh draft`
-    b. drafting might be incomplete at this stage, so STOP and ASK user whether to investigate more. If yes, read `.agents/changelogs/EP##-DS##.md` for stories with `ST`. If any were not in the earlier draft state, add them as entries to `.agents/changelogs/archive/index.json`. Ask for approval to update.
+    b. drafting might be incomplete at this stage, so STOP and ASK user whether to investigate more. If yes, read `.agents/changelogs/EP##--<slug>/*-EP##-DS##-*.md` for stories with `ST`. If any were not in the earlier draft state, add them as entries to `.agents/changelogs/archive/index.json`. Ask for approval to update.
 5. Map ryoiki
-    a. invoke skill `.agents/skills/agentic/ryoiki-mapping/SKILL.md` with the epic number, wait for return result
+    a. invoke skill `.agents/skills/historical/ryoiki-mapping/SKILL.md` with the epic number, wait for return result
     b. when result returns, run `./.agents/tools/archive-epic.sh status` to confirm ryoiki is confirmed
 6. Scaffold for knowledge writing
     a. run `./.agents/tools/archive-epic.sh scaffold`
-    b. invoke `.agents/skills/agentic/write-knowledge/SKILL.md`
+    b. invoke `.agents/skills/historical/write-knowledge/SKILL.md`
     c. stop to ask human to review before proceeding
 7. Check & verify
     a. run `./.agents/tools/archive-epic.sh check`, then `./.agents/tools/archive-epic.sh verify`
