@@ -9,6 +9,10 @@ disable-model-invocation: true
 
 Invoked after ryoiki confirmation in archive-epic RECORD flow. Write present-tense facts a PO would care about — no code identifiers, file paths, or history.
 
+## READ FIRST
+
+- blacklist .agents/reference/ryoiki-blacklist.json
+
 ## Inputs
 
 **Source of truth:** Archive story summaries in `index.json` (domain filtered). Never read source code.
