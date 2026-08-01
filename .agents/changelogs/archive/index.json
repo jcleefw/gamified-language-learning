@@ -833,6 +833,142 @@
       "compact_pr": null
     },
     {
+      "id": "EP15-DS01",
+      "epic": "EP15",
+      "track": "project",
+      "title": "Quiz Contract — Server-Side Answer Authority",
+      "domain": "apps/server",
+      "ryoiki": "design-spec",
+      "completed": "2026-03-13",
+      "duration": "undetermined",
+      "summary": "TODO: summarize — see .agents/changelogs/EP15--quiz-contract-server-authority/20260313T000000Z-EP15-DS01-design-spec.md",
+      "supersedes": [],
+      "fixes": [],
+      "pr": [
+        13
+      ],
+      "compact_pr": null
+    },
+    {
+      "id": "EP15-ST01",
+      "epic": "EP15",
+      "track": "project",
+      "title": "Update `@gll/api-contract` wire types",
+      "domain": "packages/api-contract",
+      "ryoiki": "api-contract",
+      "completed": "2026-03-13",
+      "duration": "undetermined",
+      "summary": "Updated `@gll/api-contract` wire types to support server-side answer authority. Breaking change to `QuizAnswer` is intentional — forces all callers to migrate from client-reported correctness to `selectedKey`.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": [
+        13
+      ],
+      "compact_pr": null
+    },
+    {
+      "id": "EP15-ST02",
+      "epic": "EP15",
+      "track": "project",
+      "title": "Update `/api/srs/batch` — distractor generation + pool validation",
+      "domain": "apps/server",
+      "ryoiki": "learning-authority",
+      "completed": "2026-03-13",
+      "duration": "undetermined",
+      "summary": "`POST /api/srs/batch` now generates a/b/c/d choices for every `multiple_choice` question. The correct key is stored server-side in the batch registry — never returned to the client. Non-MC questions receive `choices: {}`. Pool validation rejects batches when fewer than 4 words are seeded.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": [
+        13
+      ],
+      "compact_pr": null
+    },
+    {
+      "id": "EP15-ST03",
+      "epic": "EP15",
+      "track": "project",
+      "title": "Update `/api/srs/answers` + `/seed` + integration tests",
+      "domain": "apps/server",
+      "ryoiki": "test-infrastructure",
+      "completed": "2026-03-13",
+      "duration": "undetermined",
+      "summary": "`POST /api/srs/answers` now determines correctness server-side by comparing `selectedKey` against the `correctKey` stored in the batch registry — client-reported correctness is eliminated. `POST /api/srs/seed` is a new route that returns the current `deckId` in the response body, removing the console-log dependency. `SeedPayload` wire type added to `@gll/api-contract`. Tests updated to use `selectedKey`, assert `submittedKey`/`correctKey`, and cover the wrong-key path.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": [
+        13
+      ],
+      "compact_pr": null
+    },
+    {
+      "id": "EP15-DS02",
+      "epic": "EP15",
+      "track": "project",
+      "title": "Mixed Question Direction for `/api/srs/batch`",
+      "domain": "apps/server",
+      "ryoiki": "design-spec",
+      "completed": "2026-03-14",
+      "duration": "undetermined",
+      "summary": "TODO: summarize — see .agents/changelogs/EP15--quiz-contract-server-authority/20260314T000000Z-EP15-DS02-mixed-question-direction.md",
+      "supersedes": [],
+      "fixes": [],
+      "pr": [
+        13
+      ],
+      "compact_pr": null
+    },
+    {
+      "id": "EP15-DS03",
+      "epic": "EP15",
+      "track": "project",
+      "title": "Add `native_to_romanization` Question Direction",
+      "domain": "apps/server",
+      "ryoiki": "design-spec",
+      "completed": "2026-03-14",
+      "duration": "undetermined",
+      "summary": "TODO: summarize — see .agents/changelogs/EP15--quiz-contract-server-authority/20260314T000000Z-EP15-DS03-native-to-romanization-direction.md",
+      "supersedes": [],
+      "fixes": [],
+      "pr": [
+        13
+      ],
+      "compact_pr": null
+    },
+    {
+      "id": "EP15-ST04",
+      "epic": "EP15",
+      "track": "project",
+      "title": "Mixed Question Direction for `/api/srs/batch`",
+      "domain": "apps/server",
+      "ryoiki": "batch-composition",
+      "completed": "2026-03-14",
+      "duration": "undetermined",
+      "summary": "`POST /api/srs/batch` now assigns a random direction to each `multiple_choice` question — either `english_to_native` (see English sound, pick Thai char) or `native_to_english` (see Thai char, pick English sound). The direction is exposed in the wire response as `questionDirection` so the client can render the prompt correctly. The `buildMcChoices` helper was refactored to accept a `direction` parameter and derive `targetText`, `correctText`, and distractor field from it.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": [
+        13
+      ],
+      "compact_pr": null
+    },
+    {
+      "id": "EP15-ST05",
+      "epic": "EP15",
+      "track": "project",
+      "title": "Add `native_to_romanization` Question Direction",
+      "domain": "apps/server",
+      "ryoiki": "batch-composition",
+      "completed": "2026-03-14",
+      "duration": "undetermined",
+      "summary": "Added a third MC question direction: `native_to_romanization` (see Thai character, pick the consonant's full romanization name). This tests a distinct skill from `native_to_english` — many consonants share the same English sound (`\"kh\"` maps to ข, ค, ฆ, ฅ), making romanization the only unambiguous label. The direction picker was changed from a 50/50 coin flip to a uniform 1-of-3 selection via a `DIRECTIONS` constant array.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": [
+        13
+      ],
+      "compact_pr": null
+    },
+    {
       "id": "AGN05",
       "epic": "AGN05",
       "track": "agentic",

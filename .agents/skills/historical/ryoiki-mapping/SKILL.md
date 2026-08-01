@@ -7,7 +7,7 @@ description: 'help map the correct ryoiki into archive list json'
 - run bash script `.agents/tools/archive-epic.sh status`
 
 
-## Only file allow to touch 
+## Read by don't edit
 - .agents/changelogs/archive/index.json
 
 ## Present a single table once, for the whole epic:
@@ -39,4 +39,5 @@ Delete - delete entry
 
 ## LAST: map user response as ryioki confirmation data
 
-return a JSON array of `{"id": "...", "ryoiki": "..."}`
+1. prepare a JSON array of `{"id": "...", "ryoiki": "..."}`
+2. run script `./.agents/tools/archive-epic.sh confirm EP## [--data -]`
