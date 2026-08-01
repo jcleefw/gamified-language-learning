@@ -1,35 +1,40 @@
 ---
 name: change-log-updater
-description: 'Generates and updates story-level changelogs (ST). Use at the end of every story to document work, modified files, and outcomes.'
+description: Generate story-level changelog at story completion. Document work, files modified, outcomes.
 tools: Read, Write, Exec
+role: Documentation specialist ensuring traceable story artifacts compliant with project governance
 ---
 
 # Change Log Updater
 
-This skill handles the formal documentation of story-level work in the project.
+**Trigger**: Call at end of every story after implementation completes (tests pass).
 
-## Standard Procedure
+## Steps
 
-1.  **Summarize Results**: Analyze the completed implementation and summarize the output. Focus on technical changes and behavior shifts.
-2.  **Inventory Changes**: List every file touched, added, or removed.
-3.  **Draft from Template**: Use **[.agents/plans/templates/ST-CHANGELOG-TEMPLATE.md](../../../plans/templates/ST-CHANGELOG-TEMPLATE.md)** as the base structure. Always fill the **`Track`** (`project` | `agentic`) and **`Supersedes`** fields — they make the log archive-ready so `dev/archive-epic` can roll it into the time archive without guessing (Compaction Consequences; Two-Axis D4/D8).
-4.  **Generate Identifiers**:
-    - Run **`.agents/tools/generate-timestamp.sh`** to populate all `{TIMESTAMP}` placeholders in the document body.
-    - Run **`.agents/tools/generate-filename.sh EP##-ST## <slug>`** to determine the final destination path.
-5.  **Finalize Artifact**: Write the completed changelog to the correct epic subfolder in `.agents/changelogs/EP-##`.
-6.  **Trigger Map Sync**: Once the log is written, use the **`code-mapper`** skill to verify if any folder-level `CODEMAP.md` requires updates based on the documented changes.
+1. **Summarize Output**: Technical summary of what changed and behavioral shifts.
+2. **Inventory Files** (Git-backed):
+    - Run: `git diff --name-status HEAD^..HEAD` → list modified/added/deleted files
+    - Filter to project-relevant paths (ignore test coverage reports, lockfiles if not in scope)
+3. **Draft Changelog**: Use template `.agents/plans/templates/ST-CHANGELOG-TEMPLATE.md`.
+    - Fill `Track` (`project` | `agentic`)
+    - Fill `Supersedes` (if applicable)
+4. **Run Timestamp Tool:** `.agents/tools/generate-timestamp.sh` → replace all `{TIMESTAMP}` placeholders
+5. **Generate Filename:** `.agents/tools/generate-filename.sh EP##-ST## <slug>` → determine destination path
+6. **Write Artifact**: Save to `.agents/changelogs/EP##--<slug>/[timestamp]-EP##-ST##-<slug>.md`
+7. **Sync CODEMAP:** Invoke `code-mapper` skill if documented changes affect folder-level `CODEMAP.md`.
 
-## Completion-Compaction Handoff
+## Compliance (Non-Negotiable)
 
-This skill writes the story logs *during* an epic. It does **not** compact them.
-When the epic is done-done (its PR merges to main), "mark complete" hands off to
-the **`dev/archive-epic`** skill (Compaction D3), which rolls these logs onto the
-two knowledge axes (time archive + domain `KNOWLEDGE.md`) and then deletes the
-`EP##--*/` folder. The `Track` + `Supersedes` fields you emit here are what that
-rollup consumes — keep them accurate.
+| Rule | Enforcement |
+|------|-------------|
+| Use timestamp tool for `{TIMESTAMP}` | No manual calculation |
+| Use filename tool for path generation | Follow RULES.md §Mandatory Tooling |
+| Slug must be descriptive + concise | e.g., `add-fsrs-persistence` not `changes` |
+| Link Story ID + Epic ID clearly | Frontmatter or header |
 
-## Compliance Requirements
+## What This Skill Does NOT Do
 
-- **Slugified Filenames**: Ensure the `<slug>` provided to the filename tool is descriptive yet concise.
-- **Story Context**: Ensure the log clearly links to the relevant Story ID (`ST##`) and Epic ID (`EP##`).
-- **No Manual Timestamps**: Never manually calculate or guess the `YYYYMMDDTHHmmssZ` timestamp; always use the provided tool.
+- Compaction to time archive (handled by `historical/compact-epic` after PR merge)
+- Domain knowledge updates (`KNOWLEDGE.md` — separate step)
+
+**Done condition**: Changelog written, CODEMAP synced, human notified.
