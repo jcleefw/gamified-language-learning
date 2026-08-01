@@ -178,7 +178,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 48
     },
     {
       "id": "EP04-ST02",
@@ -193,7 +193,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 48
     },
     {
       "id": "EP05-DS01",
@@ -208,7 +208,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 49
     },
     {
       "id": "EP05-ST01",
@@ -223,7 +223,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 49
     },
     {
       "id": "EP04-DS01",
@@ -238,7 +238,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 48
     },
     {
       "id": "EP04-DS02",
@@ -253,7 +253,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 48
     },
     {
       "id": "EP04-ST03",
@@ -268,7 +268,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 48
     },
     {
       "id": "EP04-ST04",
@@ -283,7 +283,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 48
     },
     {
       "id": "EP05-ST02",
@@ -298,7 +298,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 49
     },
     {
       "id": "EP05-DS02",
@@ -313,7 +313,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 49
     },
     {
       "id": "EP05-ST03",
@@ -328,7 +328,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 49
     },
     {
       "id": "EP05-ST04",
@@ -343,7 +343,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 49
     },
     {
       "id": "EP06-DS01",
@@ -358,7 +358,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": 5,
-      "compact_pr": null
+      "compact_pr": 50
     },
     {
       "id": "EP06-DS02",
@@ -373,7 +373,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": 5,
-      "compact_pr": null
+      "compact_pr": 50
     },
     {
       "id": "EP06-ST01",
@@ -388,7 +388,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": 5,
-      "compact_pr": null
+      "compact_pr": 50
     },
     {
       "id": "EP06-ST02",
@@ -403,7 +403,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": 5,
-      "compact_pr": null
+      "compact_pr": 50
     },
     {
       "id": "EP06-ST03",
@@ -418,7 +418,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": 5,
-      "compact_pr": null
+      "compact_pr": 50
     },
     {
       "id": "EP06-ST04",
@@ -433,7 +433,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": 5,
-      "compact_pr": null
+      "compact_pr": 50
     },
     {
       "id": "EP06-ST05",
@@ -448,7 +448,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": 5,
-      "compact_pr": null
+      "compact_pr": 50
     },
     {
       "id": "EP07-DS01",
@@ -463,7 +463,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 52
     },
     {
       "id": "EP07-ST01",
@@ -478,7 +478,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 52
     },
     {
       "id": "EP07-ST02",
@@ -493,7 +493,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 52
     },
     {
       "id": "EP10-DS01",
@@ -508,7 +508,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 54
     },
     {
       "id": "EP10-ST01",
@@ -523,7 +523,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 54
     },
     {
       "id": "EP10-ST02",
@@ -538,7 +538,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 54
     },
     {
       "id": "EP08-DS01",
@@ -553,7 +553,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 53
     },
     {
       "id": "EP08-ST01",
@@ -568,7 +568,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 53
     },
     {
       "id": "EP08-ST02",
@@ -583,7 +583,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 53
     },
     {
       "id": "EP11-DS01",
@@ -598,7 +598,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 55
     },
     {
       "id": "EP11-ST01",
@@ -613,7 +613,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 55
     },
     {
       "id": "EP11-ST02",
@@ -628,7 +628,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 55
     },
     {
       "id": "EP12-DS01",
@@ -643,7 +643,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 56
     },
     {
       "id": "EP12-ST01",
@@ -658,7 +658,7 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 56
     },
     {
       "id": "EP12-ST02",
@@ -673,7 +673,71 @@
       "supersedes": [],
       "fixes": [],
       "pr": null,
-      "compact_pr": null
+      "compact_pr": 56
+    },
+    {
+      "id": "EP13-DS01",
+      "epic": "EP13",
+      "track": "project",
+      "title": "SRS Routes + In-Memory State Specification",
+      "domain": "apps/server",
+      "ryoiki": "srs-routes-in-memory-state",
+      "completed": "2026-03-13",
+      "duration": "undetermined",
+      "summary": "TODO: summarize — see .agents/changelogs/EP13--srs-routes-in-memory-state/EP13-DS01-srs-routes-in-memory-state.md",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null,
+      "state": "draft"
+    },
+    {
+      "id": "EP13-ST01",
+      "epic": "EP13",
+      "track": "project",
+      "title": "API Contract Wire Type Additions + In-Memory State Module",
+      "domain": "apps/server",
+      "ryoiki": "api-contract-wire-types-state-module",
+      "completed": "2026-03-13",
+      "duration": "undetermined",
+      "summary": "Extended `@gll/api-contract` with five missing wire-type fields identified in DS01. Created `apps/server/src/state/` with three modules: `store.ts` (mutable state singletons), `engine.ts` (`SrsEngine` singleton), and `batchRegistry.ts` (batch tracking map). Added `@gll/srs-engine` as a server dependency.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null,
+      "state": "draft"
+    },
+    {
+      "id": "EP13-ST02",
+      "epic": "EP13",
+      "track": "project",
+      "title": "POST /api/srs/batch Route",
+      "domain": "<non-workspace>",
+      "ryoiki": "post-srs-batch-route",
+      "completed": "2026-03-13",
+      "duration": "undetermined",
+      "summary": "Added `POST /api/srs/batch` route handler in `src/routes/srs.ts`. Validates `deckId` against the seeded store value, calls the `SrsEngine` singleton to compose a batch, maps engine-internal question types to wire format, registers the batch in the batch registry, and returns `ApiResponse<BatchPayload>`. Mounted route on the Hono app at `/api/srs`. Rebuilt `@gll/api-contract` to pick up ST01 type additions.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null,
+      "state": "draft"
+    },
+    {
+      "id": "EP13-ST03",
+      "epic": "EP13",
+      "track": "project",
+      "title": "POST /api/srs/answers Route + E2E Integration Test",
+      "domain": "<non-workspace>",
+      "ryoiki": "post-srs-answers-e2e-test",
+      "completed": "2026-03-13",
+      "duration": "undetermined",
+      "summary": "Added `POST /api/srs/answers` handler to `src/routes/srs.ts`. Validates `batchId` in registry (404 on miss), maps wire `QuizAnswer.correct` → engine `isCorrect`, calls `SrsEngine.processAnswers`, updates the in-memory store via `setWordStates`, maps results to `AnswerResultPayload` wire type (applying `srsM2_review` → `anki_review` phase mapping), returns `ApiResponse<SubmitAnswersResponse>`. Added E2E integration test: seed → batch → answers (all correct) → assert `processed` count and `masteryCount > 0` for each updated word. Break-Verify-Restore confirmed the E2E test detects regressions.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": null,
+      "compact_pr": null,
+      "state": "draft"
     },
     {
       "id": "AGN05",

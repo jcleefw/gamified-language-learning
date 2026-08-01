@@ -516,11 +516,41 @@ export function cmdVerify(root, paths, runArchiveCheck) {
 }
 
 // ── backfill ─────────────────────────────────────────────────────────────
+// Compaction commits are squash-merged PRs titled e.g. "Compact/ep12 (#56)"
+// or "Compact EP08 (#53)" — separator ('/' or ' ') and case vary, and the PR
+// number lives in the subject's "(#NN)" (no "Merge pull request" line, since
+// squash-merge produces a single commit, not a merge commit). A subject-only
+// grep can also collide with a re-run/rebase artifact that shares the same
+// title but touches nothing (seen for EP05: #49 real, #51 an empty replay) —
+// so candidates are disambiguated by which one actually touches index.json.
 function backfillCompactPrInfo(root, epNumber) {
-  const match = gitOrEmpty(root, ['log', '--all', `--grep=compact ${epNumber}`, '--format=%H %s%n%b'])
-  if (!match.trim()) return 'undetermined'
-  const m = match.match(/Merge pull request #([0-9]+)/)
-  return m ? m[1] : 'undetermined'
+  const m = epNumber.match(/^([a-zA-Z]+)0*([0-9]+)$/)
+  if (!m) return 'undetermined'
+  const [, prefix, num] = m
+  const grepPattern = `compact[/ ]${prefix}0*${num}([^0-9]|$)`
+  const log = gitOrEmpty(root, [
+    'log', '--all', '-i', `--grep=${grepPattern}`, '-E', '--format=%H %s',
+  ])
+  const candidates = log
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      const [sha, ...rest] = line.split(' ')
+      const subject = rest.join(' ')
+      const prMatch = subject.match(/\(#([0-9]+)\)/)
+      return prMatch ? { sha, pr: prMatch[1] } : null
+    })
+    .filter(Boolean)
+
+  if (candidates.length === 0) return 'undetermined'
+  if (candidates.length === 1) return candidates[0].pr
+
+  const touchesIndex = candidates.filter(({ sha }) => {
+    const stat = gitOrEmpty(root, ['show', '--stat', '--format=', sha])
+    return /changelogs\/archive\/index\.json/.test(stat)
+  })
+  return touchesIndex.length === 1 ? touchesIndex[0].pr : 'undetermined'
 }
 
 export function cmdBackfill(root, paths) {
