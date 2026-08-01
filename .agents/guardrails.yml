@@ -4,51 +4,62 @@
 
 guardrails:
 
-  # Block dangerous commands
-  - trigger: pre-command
-    action: block
-    match_patterns:
-      - "rm -rf"
-      - "git push --force"
-      - "git push -f"
-      - "git reset --hard"
-      - "--no-verify"
-      - "DROP TABLE"
-      - "DROP DATABASE"
-      - "DELETE FROM.*WHERE.*1"
-    message: "🛑 Blocked: dangerous command. Requires explicit human approval. Ask the user before proceeding."
+   # Block dangerous commands
+    - trigger: pre-command
+      action: block
+      match_patterns:
+        - "rm -rf"
+        - "git push --force"
+        - "git push -f"
+        - "git reset --hard"
+        - "--no-verify"
+        - "DROP TABLE"
+        - "DROP DATABASE"
+        - "DELETE FROM.*WHERE.*1"
+      message: "🛑 Blocked: dangerous command. Requires explicit human approval. Ask the user before proceeding."
 
-  # Require approval for sensitive file edits
-  - trigger: pre-file-edit
-    action: confirm
-    match_paths:
-      - "db/migrate/**"
-      - ".env*"
-      - "**/secrets/**"
-      - "docker-compose*.yml"
-      - ".agents/RULES.md"
-      - ".agents/guardrails.yml"
-      - "AGENTS.md"
-    message: "⚠️ Editing sensitive file — confirm with the user before proceeding."
+   # Require approval for sensitive file edits
+    - trigger: pre-file-edit
+      action: confirm
+      match_paths:
+        - "db/migrate/**"
+        - ".env*"
+        - "**/secrets/**"
+        - "docker-compose*.yml"
+        - ".agents/RULES.md"
+        - ".agents/guardrails.yml"
+        - "AGENTS.md"
+      message: "⚠️ Editing sensitive file — confirm with the user before proceeding."
 
-  # Prevent schema changes without review
-  - trigger: pre-file-edit
-    action: confirm
-    match_paths:
-      - "src/server/db/schema.ts"
-      - "src/server/db/migrations/**"
-    message: "🔒 Schema change detected — requires careful review. Is this intentional?"
+   # Prevent schema changes without review
+    - trigger: pre-file-edit
+      action: confirm
+      match_paths:
+        - "src/server/db/schema.ts"
+        - "src/server/db/migrations/**"
+      message: "🔒 Schema change detected — requires careful review. Is this intentional?"
 
-  # Auto-approve safe reads (documentation)
-  - trigger: pre-file-read
-    action: approve
-    match_paths:
-      - "*.yml"
-      - "*.yaml"
-      - ".gitignore"
-      - "package.json"
-      - "tsconfig.json"
-    suppress_output: false
+   # Block implementation edits after tdd-plan (enforces skill boundary)
+    - trigger: pre-file-edit
+      action: block
+      match_paths:
+        - "src/**/*"
+        - "packages/**/src/**"
+        - "apps/**/src/**"
+      condition_file: ".agents/state/last-skill.txt"
+      condition_match: "tdd-plan"
+      message: "🚫 Edit blocked. Invoke 'tdd-implement' skill before touching implementation files. Your turn ended after the plan was produced."
+
+   # Auto-approve safe reads (documentation)
+    - trigger: pre-file-read
+      action: approve
+      match_paths:
+        - "*.yml"
+        - "*.yaml"
+        - ".gitignore"
+        - "package.json"
+        - "tsconfig.json"
+      suppress_output: false
 
 ---
 
@@ -96,6 +107,12 @@ These guardrails map to Claude Code hooks and settings.json configuration:
 }
 ```
 
+**PreToolUse Hook** (tdd-plan boundary enforcement):
+To enforce the tdd-plan→tdd-implement boundary, your adapter should:
+1. On Edit/Write tool use, check `.agents/state/last-skill.txt` for "tdd-plan"
+2. If match found, block the tool call with the guardrail message
+3. On `tdd-implement` invocation, clear or update `.agents/state/last-skill.txt`
+
 ---
 
 ## Guardrail Categories
@@ -126,7 +143,12 @@ These guardrails map to Claude Code hooks and settings.json configuration:
 
 **When triggered**: Agent confirms schema intent before creating or modifying migrations.
 
-### 4. Auto-Approve Safe Reads
+### 4. Enforce tdd-plan → tdd-implement Boundary
+Block implementation file edits if the last invoked skill was `tdd-plan`. This enforces the workflow boundary and prevents skipping from planning directly to implementation without explicit `tdd-implement` invocation.
+
+**When triggered**: Agent receives error indicating `tdd-implement` must be invoked first.
+
+### 5. Auto-Approve Safe Reads
 Documentation, configuration, and data files are safe to read without user confirmation:
 - `**/*.md` — Markdown documentation
 - `**/*.txt` — Text files

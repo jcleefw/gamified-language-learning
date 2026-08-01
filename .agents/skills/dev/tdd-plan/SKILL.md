@@ -8,6 +8,14 @@ model: opus
 
 When this skill is loaded, produce a thorough implementation plan. Do not write any code.
 
+## Invocation State Marker
+
+**On invocation**: Set the planning boundary state to block premature edits:
+```bash
+echo "tdd-plan" > .agents/state/last-skill.txt
+```
+or manually: write `tdd-plan` to `.agents/state/last-skill.txt`
+
 ## Step 1 — Understand the requirement
 
 - What is the feature or change being requested?
@@ -58,7 +66,9 @@ Output a structured plan with the following sections:
 - <Anything uncertain that tdd-implement should watch for>
 ```
 
-Stop after producing the plan. Hand off to `tdd-implement` to execute it.
+## Stop Protocol (Unconditional)
+
+Your turn ends here. Do not call Edit or Write on any implementation file in this response. If the user's next message is not an explicit invocation of `tdd-implement`, ask them to invoke it before you touch code.
 
 ## Rules
 

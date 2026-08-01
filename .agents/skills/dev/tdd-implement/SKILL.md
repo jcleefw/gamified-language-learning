@@ -8,6 +8,14 @@ model: sonnet
 
 When this skill is loaded, execute the implementation plan produced by `tdd-plan`. If no plan is present in context, ask the user to run `tdd-plan` first.
 
+## Invocation State Reset
+
+**On invocation**: Clear the planning boundary state so edits are permitted:
+```bash
+. agents/state/scripts/clear-last-skill.sh
+```
+or manually: `echo "tdd-implement" > .agents/state/last-skill.txt`
+
 ## Execution Loop
 
 Work through each test in the plan's **test plan** in order. For each:
