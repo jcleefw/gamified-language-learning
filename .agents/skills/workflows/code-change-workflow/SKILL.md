@@ -34,7 +34,7 @@ description: Master workflow for ANY story implementation. Ensures consistency a
 2. Run **`change-log-updater` skill** (refer to [../skills/dev/change-log-updater/SKILL.md](../skills/dev/change-log-updater/SKILL.md)): summarize work, inventory modified files, and produce the ST changelog (save to `.agents/changelogs/EP##--slug/`)
 3. Run **`code-mapper` skill**: update `CODEMAP.md` if any files were added, removed, or repurposed (refer to [.agents/docs/code-map-guide.md](../docs/code-map-guide.md))
 4. If this is the last story of the epic: update epic plan `**Status**` → `Impl-Complete`
-5. Write memory to `.agents/memory/{your-branch}/` (NOT `.agents/memory/main/`):
+5. Write memory to `.agents/memory/EP##--slug/` (epic-keyed, not branch-keyed):
     - `current-focus.md` — story complete, what's next
     - `session-log.md` — if this is the end of the session
 6. Run **`commit-discipline` skill** (refer to [../skills/dev/commit-discipline/SKILL.md](../skills/dev/commit-discipline/SKILL.md)): one commit per story (`feat(EP##-ST##): <what>. <why in body>.`)

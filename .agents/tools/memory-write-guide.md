@@ -1,6 +1,6 @@
 # Memory Write Guide
 
-Guidelines for updating memory files in `.agents/memory/{branch}/`.
+Guidelines for updating memory files in `.agents/memory/EP##--slug/` (epic-keyed, not branch-keyed).
 
 For file definitions and structure, see `.agents/memory/README.md`.
 For trigger points (when to write), see `RULES.md §Memory Protocol`.
