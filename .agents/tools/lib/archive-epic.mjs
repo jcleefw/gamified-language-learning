@@ -212,6 +212,87 @@ export function cmdFindMerge(root, ep, argv) {
   return out.join('\n') + '\n'
 }
 
+// ── find-pr ──────────────────────────────────────────────────────────────
+// For an already-archived story whose changelog file no longer exists on disk
+// (compacted away), `discover`'s pathspec scan against main's current tree
+// finds nothing. Story history is still in git log, just reachable only via
+// `--all` (full history, not HEAD's tree) since the file was deleted. Finds
+// the commit(s) that ever touched the story's changelog file, then re-uses
+// find-merge's forward-scan-for-merge-subject logic from each such commit —
+// same pure-log, no-ancestry-check, no-verdict contract as find-merge.
+function isMergeSubject(s) {
+  return /Merge pull request #[0-9]+|\(#[0-9]+\)$/.test(s)
+}
+
+function allCommitsByDate(root) {
+  return gitOrEmpty(root, ['log', '--all', '--format=%H|%aI|%s'])
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => {
+      const [sha, date, ...rest] = l.split('|')
+      return { sha, date, subject: rest.join('|') }
+    })
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+}
+
+export function cmdFindPr(root, storyId, argv) {
+  const m = storyId.match(/^(EP|AGN)[0-9]+/i)
+  if (!m) die('usage: find-pr EP##-ST## [--count N]  (story id must start with an epic prefix, e.g. EP01-ST03)')
+  const ep = m[0]
+
+  const countIdx = argv.indexOf('--count')
+  const count = countIdx !== -1 ? Number(argv[countIdx + 1]) : 8
+
+  const pathspec = `.agents/changelogs/${ep}--*`
+  const touching = gitOrEmpty(root, ['log', '--all', '--format=%H|%aI|%s', '--', pathspec])
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => {
+      const [sha, date, ...rest] = l.split('|')
+      return { sha, date, subject: rest.join('|') }
+    })
+    .filter((c) => new RegExp(storyId, 'i').test(c.subject))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+
+  const out = []
+  out.push(`${bold('story:')} ${storyId}`)
+  if (touching.length === 0) {
+    out.push(dim(`no commit subject under ${pathspec} mentions ${storyId} — try a broader search or confirm the id`))
+    return out.join('\n') + '\n'
+  }
+  out.push(bold('commits touching this story:'))
+  for (const c of touching) out.push(`  ${dim(c.sha)} ${c.date}  ${c.subject}`)
+
+  const all = allCommitsByDate(root)
+  const epRe = new RegExp(ep, 'i')
+  const seenPrs = new Set()
+
+  for (const touch of touching) {
+    const idx = all.findIndex((c) => c.sha === touch.sha)
+    if (idx === -1) continue
+    const following = all.slice(idx + 1, idx + 1 + count)
+    const candidates = following.filter((c) => isMergeSubject(c.subject) && epRe.test(c.subject))
+    for (const c of candidates) {
+      const pm = c.subject.match(/#([0-9]+)/)
+      if (pm) seenPrs.add(pm[1])
+    }
+  }
+
+  out.push('')
+  if (seenPrs.size === 1) {
+    out.push(`${bold('candidate PR:')} #${[...seenPrs][0]}`)
+  } else if (seenPrs.size > 1) {
+    out.push(`${bold('candidate PRs:')} ${[...seenPrs].map((n) => `#${n}`).join(', ')}`)
+  } else {
+    out.push(`${bold('candidate PR:')} ${dim('none found')} (no merge-subject commit naming the epic followed any commit above within --count)`)
+  }
+  out.push('')
+  out.push(dim('candidate PR is a literal text match (merge-commit pattern + epic id) on commits following each commit above — not an ancestry check. confirm before writing to index.json.'))
+  return out.join('\n') + '\n'
+}
+
 // ── story JSON facts for one changelog file ─────────────────────────────────
 function draftStoryJson(root, ep, file, logRangeFirst, logRangeLast) {
   const base = basename(file, '.md')
@@ -641,6 +722,11 @@ export function main(argv, execRoot) {
       if (!ep) die('usage: find-merge EP## --range "<sha>^ <sha>" [--count N]')
       return cmdFindMerge(root, ep, rest.slice(1))
     }
+    case 'find-pr': {
+      const storyId = rest[0]
+      if (!storyId) die('usage: find-pr EP##-ST## [--count N]')
+      return cmdFindPr(root, storyId, rest.slice(1))
+    }
     case 'status': {
       const ep = rest[0]
       if (!ep) die('usage: status EP##')
@@ -710,7 +796,7 @@ export function main(argv, execRoot) {
       return cmdCompact(root, ep, p)
     }
     default:
-      die('usage: archive-epic.sh {discover|draft|find-merge|status|confirm|blacklist|scaffold|check|verify|backfill|compact} ...')
+      die('usage: archive-epic.sh {discover|draft|find-merge|find-pr|status|confirm|blacklist|scaffold|check|verify|backfill|compact} ...')
   }
 }
 
