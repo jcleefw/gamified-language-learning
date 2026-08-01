@@ -1,4 +1,4 @@
-# SRS Engine v2 Changelog
+# SRS Engine Changelog
 
 ## EP20-ST10: Multi-deck support — WordPool + MockDeck + deck selection
 

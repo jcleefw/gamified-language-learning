@@ -1,4 +1,4 @@
-# SRS Engine v2 — Humanized Explanations
+# SRS Engine — Humanized Explanations
 
 This folder contains three perspectives on how the SRS engine works, written for different audiences and levels of depth.
 
@@ -57,4 +57,8 @@ This document clarifies the gap between the product specification and current im
 - `src/learn/engine/adaptive-session.ts` — `AdaptiveSessionState` orchestration
 - `src/learn/engine/batch-queue.ts` — `BatchState`, retry mechanics
 - `src/learn/engine/compose-word-batch.ts` — Question generation
+- `src/shelving/index.ts` — Public API exports (`shelving` subpath)
+- `src/shelving/policy.ts` — `evaluateShelving`, `unshelveAll`
+- `src/review/index.ts` — Public API exports (`review` subpath, server-only)
+- `src/review/FsrsScheduler.ts` — `ReviewScheduler` implementation wrapping `ts-fsrs`
 - `../CODEMAP.md` — Full package navigation
