@@ -5,8 +5,6 @@ export default tseslint.config(
     ignores: [
       '**/dist/**',
       '**/node_modules/**',
-      '**/.nuxt/**',
-      '.worktrees/**',
       '**/data/**',
       'packages/srs-engine/src/runner/interactive.ts',
       '**/drizzle.config.ts',

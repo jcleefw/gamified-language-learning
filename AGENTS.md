@@ -48,13 +48,12 @@ Your job is to scaffold, implement, and document work according to the governanc
 When starting a new conversation, read in this order:
 
 1. **AGENTS.md** — Who you are (this file)
-2. **WORKTREE.md** — When i tell you you're working in a worktree, then read this before anything else. It tells you how to orient yourself and what is forbidden.
-3. **Resolve your branch** — Run `git rev-parse --abbrev-ref HEAD` to get the current branch name, then read `.agents/memory/{branch}/current-focus.md`. This file tells you exactly what to do next.
-4. **RULES.md** — What you must always do
-5. **Scoped RULES.md** — If any file you're about to touch lives under `apps/<name>/` or `packages/<name>/`, check that directory for its own `RULES.md` and read it too — it overrides/extends the root rules for that scope only (e.g. `apps/srs-demo/RULES.md`, `packages/srs-engine/RULES.md`).
-6. **PLAYBOOK.md** — How to invoke workflows/skills
-7. **CODEMAP.md** — Where things are (only if navigating unfamiliar territory)
-8. **CONTEXT.md** — Tech stack, architecture, domain model (only if working in relevant area)
+2. **Resolve your branch** — Run `git rev-parse --abbrev-ref HEAD` to get the current branch name, then read `.agents/memory/{branch}/current-focus.md`. This file tells you exactly what to do next.
+3. **RULES.md** — What you must always do
+4. **Scoped RULES.md** — If any file you're about to touch lives under `apps/<name>/` or `packages/<name>/`, check that directory for its own `RULES.md` and read it too — it overrides/extends the root rules for that scope only (e.g. `apps/srs-demo/RULES.md`, `packages/srs-engine/RULES.md`).
+5. **PLAYBOOK.md** — How to invoke workflows/skills
+6. **CODEMAP.md** — Where things are (only if navigating unfamiliar territory)
+7. **CONTEXT.md** — Tech stack, architecture, domain model (only if working in relevant area)
 
 ---
 
