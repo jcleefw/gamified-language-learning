@@ -72,7 +72,10 @@
       "summary": "TODO: summarize — see .agents/changelogs/EP02--srs-engine-mastery/20260305T200200Z-DS01-mastery-phase-transitions.md",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        1,
+        2
+      ],
       "compact_pr": 46
     },
     {
@@ -87,7 +90,10 @@
       "summary": "### Created - `packages/srs-engine/src/types.ts` — all engine-owned types: `MasteryPhase`, `WordCategory`, `FsrsCardState`, `WordState`, `QuizAnswer`, `SrsConfig` ### Modified - `packages/srs-engine/src/index.ts` — replaced empty stub with named re-exports of all 6 types - `CODEMAP.md` — added `src/types.ts` entry; updated `src/index.ts` description",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        1,
+        2
+      ],
       "compact_pr": 46
     },
     {
@@ -102,7 +108,10 @@
       "summary": "### Created - `packages/srs-engine/src/mastery.ts` — `updateMastery(state, isCorrect, config)` pure function: mastery counting (+1 correct / -1 wrong, floor 0), configurable thresholds (curated 10, foundational 5), Learning → ANKI transition, 3-lapse ANKI → Learning reset - `packages/srs-engine/__tests__/unit/mastery.test.ts` — 13 unit tests covering all paths (strict TDD) ### Modified - `packages/srs-engine/src/index.ts` — added `updateMastery` export - `CODEMAP.md` — added `src/mastery.ts` entry",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        1,
+        2
+      ],
       "compact_pr": 46
     },
     {
@@ -117,7 +126,10 @@
       "summary": "Defined the scheduling domain interface and result type. Pure type definitions — no runtime logic. Establishes the contract that `FsrsScheduler` (EP02-ST04) must implement.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        1,
+        2
+      ],
       "compact_pr": 46
     },
     {
@@ -132,7 +144,10 @@
       "summary": "Implemented `FsrsScheduler` — a concrete `SpacedRepetitionScheduler` wrapping `ts-fsrs`. Handles ANKI review scheduling with `Rating.Good`/`Rating.Again` mapping, 90-day interval cap, and clean `FsrsCardState` ↔ ts-fsrs `Card` translation (no ts-fsrs types in public surface). Added `ts-fsrs@^5` as a runtime dependency.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        1,
+        2
+      ],
       "compact_pr": 46
     },
     {
@@ -147,7 +162,10 @@
       "summary": "Created `scripts/demo-srs.ts` — a runnable checkpoint that exercises `updateMastery` + `FsrsScheduler` directly on one word. Prints mastery count incrementing, phase flipping to `srsM2_review`, and the first ANKI interval to stdout. Added `tsx` and `@gll/srs-engine` as root devDeps, `\"demo\"` script, and `\"type\": \"module\"` to root `package.json` (required for tsx to resolve ESM-only package exports). EP02 is now Impl-Complete.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        1,
+        2
+      ],
       "compact_pr": 46
     },
     {
@@ -162,7 +180,10 @@
       "summary": "TODO: summarize — see .agents/changelogs/EP02--srs-engine-mastery/20260306T120000Z-DS02-anki-scheduling.md",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        1,
+        2
+      ],
       "compact_pr": 46
     },
     {
@@ -177,7 +198,9 @@
       "summary": "Completed both batch composition stories: implemented priority ordering algorithm and question type distribution with audio redistribution. **ST01**: Defined batch types and implemented priority ordering (carry-over → foundational revision → new words → foundational learning) **ST02**: Implemented 70/20/10 question type distribution with audio redistribution to MC when unavailable",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        3
+      ],
       "compact_pr": 48
     },
     {
@@ -192,7 +215,9 @@
       "summary": "Completed both batch composition stories: implemented priority ordering algorithm and question type distribution with audio redistribution. **ST01**: Defined batch types and implemented priority ordering (carry-over → foundational revision → new words → foundational learning) **ST02**: Implemented 70/20/10 question type distribution with audio redistribution to MC when unavailable",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        3
+      ],
       "compact_pr": 48
     },
     {
@@ -207,7 +232,9 @@
       "summary": "TODO: summarize — see .agents/changelogs/EP05--srs-active-window-stuck-words/20260306T105500Z-EP05-DS01-design-spec.md",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        4
+      ],
       "compact_pr": 49
     },
     {
@@ -222,7 +249,9 @@
       "summary": "Implemented active window management module to enforce learning efficiency constraints. The 8-word active limit prevents cognitive overload, while the 4-new-per-batch cap ensures learners focus on core vocabulary before expanding. Words in the `srsM2_review` phase are identified as \"active\" — a natural entry point after mastery is demonstrated. **Key Implementation**: - Extended `WordState` type with `batchesSinceLastProgress?` and `shelvedUntil?` fields (for EP05-ST02 dependency) - Created `getEligibleWords()` function: identifies active words, calculates available new-word slots, filters eligible candidates - Comprehensive unit tests: 20 tests covering boundary cases (0–8 active, slot math, filtering, immutability, edge configs)",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        4
+      ],
       "compact_pr": 49
     },
     {
@@ -237,7 +266,9 @@
       "summary": "TODO: summarize — see .agents/changelogs/EP04--srs-engine-batch-composition/20260306T020000Z-DS01-batch-composition.md",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        3
+      ],
       "compact_pr": 48
     },
     {
@@ -252,7 +283,9 @@
       "summary": "TODO: summarize — see .agents/changelogs/EP04--srs-engine-batch-composition/20260307T000000Z-DS02-demo-and-integration-test.md",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        3
+      ],
       "compact_pr": 48
     },
     {
@@ -267,7 +300,9 @@
       "summary": "Added observable end-to-end coverage for `composeBatch`: a terminal demo (ST03) and an integration test suite (ST04) that both drive words through `updateMastery` before calling `composeBatch` — no hand-crafted phase values. **ST03**: Extended `scripts/demo-srs.ts` with Scenario E (priority ordering with bucket labels) and Scenario F (audio redistribution side-by-side). **ST04**: Created `__tests__/integration/batch-lifecycle.test.ts` with 4 tests asserting that real mastery-engine output is correctly classified and ordered by `composeBatch`.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        3
+      ],
       "compact_pr": 48
     },
     {
@@ -282,7 +317,9 @@
       "summary": "Added observable end-to-end coverage for `composeBatch`: a terminal demo (ST03) and an integration test suite (ST04) that both drive words through `updateMastery` before calling `composeBatch` — no hand-crafted phase values. **ST03**: Extended `scripts/demo-srs.ts` with Scenario E (priority ordering with bucket labels) and Scenario F (audio redistribution side-by-side). **ST04**: Created `__tests__/integration/batch-lifecycle.test.ts` with 4 tests asserting that real mastery-engine output is correctly classified and ordered by `composeBatch`.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        3
+      ],
       "compact_pr": 48
     },
     {
@@ -297,7 +334,9 @@
       "summary": "Implemented stuck word detection and shelving system for the SRS engine. Words that show no mastery progress for 3 consecutive batches are marked as \"stuck\" and shelved for 1 day to allow cognitive reset. System respects a max-2 shelved cap, with overflow logic (newest stuck word is shelved when capacity is reached). All functions are immutable and time-aware.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        4
+      ],
       "compact_pr": 49
     },
     {
@@ -312,7 +351,9 @@
       "summary": "TODO: summarize — see .agents/changelogs/EP05--srs-active-window-stuck-words/20260307T180000Z-EP05-DS02-demo-and-integration-test.md",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        4
+      ],
       "compact_pr": 49
     },
     {
@@ -327,7 +368,9 @@
       "summary": "Extended `scripts/demo-srs.ts` with two new scenarios demonstrating the EP05 modules (`getEligibleWords`, `detectStuckWords`, `shelveWord`, `unshelveWord`, `isShelved`) end-to-end using realistic word pools.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        4
+      ],
       "compact_pr": 49
     },
     {
@@ -342,7 +385,9 @@
       "summary": "Added `packages/srs-engine/__tests__/integration/active-window-lifecycle.test.ts` with 4 integration tests verifying that the EP05 modules compose correctly with real `updateMastery`-driven word states.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        4
+      ],
       "compact_pr": 49
     },
     {
@@ -357,7 +402,9 @@
       "summary": "TODO: summarize — see .agents/changelogs/EP06--srs-engine-foundational-deck/20260307T160929Z-EP06-DS01-design-spec.md",
       "supersedes": [],
       "fixes": [],
-      "pr": 5,
+      "pr": [
+        5
+      ],
       "compact_pr": 50
     },
     {
@@ -372,7 +419,9 @@
       "summary": "TODO: summarize — see .agents/changelogs/EP06--srs-engine-foundational-deck/20260307T163844Z-EP06-DS02-design-spec.md",
       "supersedes": [],
       "fixes": [],
-      "pr": 5,
+      "pr": [
+        5
+      ],
       "compact_pr": 50
     },
     {
@@ -387,7 +436,9 @@
       "summary": "Implemented foundational deck active limit (3-word cap) and continuous wrong rule (mastery reset on 3rd consecutive wrong answer) as pure functions in a new `foundational.ts` module.",
       "supersedes": [],
       "fixes": [],
-      "pr": 5,
+      "pr": [
+        5
+      ],
       "compact_pr": 50
     },
     {
@@ -402,7 +453,9 @@
       "summary": "Implemented `getFoundationalAllocation` — returns batch slot count (20% active / 5% depleted) and pool depletion status based on mastery threshold.",
       "supersedes": [],
       "fixes": [],
-      "pr": 5,
+      "pr": [
+        5
+      ],
       "compact_pr": 50
     },
     {
@@ -417,7 +470,9 @@
       "summary": "Extended `scripts/demo-srs.ts` with three new scenarios demonstrating the EP06 foundational modules (getActiveFoundationalWords, applyFoundationalWrongRule, getFoundationalAllocation) end-to-end using realistic word pools. Scenarios I (active limit), J (continuous wrong rule), K (batch allocation).",
       "supersedes": [],
       "fixes": [],
-      "pr": 5,
+      "pr": [
+        5
+      ],
       "compact_pr": 50
     },
     {
@@ -432,7 +487,9 @@
       "summary": "Added `packages/srs-engine/__tests__/integration/foundational-lifecycle.test.ts` with 5 integration tests validating foundational modules (getActiveFoundationalWords, applyFoundationalWrongRule) with real updateMastery-driven word states. Coverage: active count, limit cap, 3-wrong reset, correct-after-wrongs, curated guard.",
       "supersedes": [],
       "fixes": [],
-      "pr": 5,
+      "pr": [
+        5
+      ],
       "compact_pr": 50
     },
     {
@@ -447,7 +504,9 @@
       "summary": "Created `foundational-allocation-lifecycle.test.ts` — 4 cross-module integration tests validating `getFoundationalAllocation` and `composeBatch` with real `updateMastery`-driven word states. No hand-crafted `phase` or `masteryCount` values.",
       "supersedes": [],
       "fixes": [],
-      "pr": 5,
+      "pr": [
+        5
+      ],
       "compact_pr": 50
     },
     {
@@ -462,7 +521,9 @@
       "summary": "TODO: summarize — see .agents/changelogs/EP07--srs-engine-orchestrator/20260308T140000Z-EP07-DS01-design-spec.md",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        7
+      ],
       "compact_pr": 52
     },
     {
@@ -477,7 +538,9 @@
       "summary": "Implemented the `SrsEngine` orchestrator class with config validation on construction and a `composeBatch` method that filters shelved words, applies active-window slot limits, and delegates to the existing `batch.ts` module.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        7
+      ],
       "compact_pr": 52
     },
     {
@@ -492,7 +555,9 @@
       "summary": "Implemented `processAnswers` on `SrsEngine` — orchestrates mastery update, FSRS scheduling, foundational wrong rule, stuck-word detection, and shelving. Added 32 tests split across unit and integration per RULES.md package structure conventions.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        7
+      ],
       "compact_pr": 52
     },
     {
@@ -507,7 +572,9 @@
       "summary": "TODO: summarize — see .agents/changelogs/EP10--github-actions-ci/20260308T061000Z-DS01-github-actions-ci.md",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        6
+      ],
       "compact_pr": 54
     },
     {
@@ -522,7 +589,9 @@
       "summary": "Added `typecheck` script and Turbo task across the monorepo (ST01).",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        6
+      ],
       "compact_pr": 54
     },
     {
@@ -537,7 +606,9 @@
       "summary": "Created a GitHub Actions CI workflow that runs lint, typecheck, and test on every push and PR (ST02).",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        6
+      ],
       "compact_pr": 54
     },
     {
@@ -552,7 +623,9 @@
       "summary": "TODO: summarize — see .agents/changelogs/EP08--terminal-quiz-runner/EP08-DS01-terminal-quiz-runner.md",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        8
+      ],
       "compact_pr": 53
     },
     {
@@ -567,7 +640,9 @@
       "summary": "Created the data layer for the SRS engine's real-content pipeline. Defined language-agnostic content types and two pure mapper functions that convert raw Thai seed data into `WordState[]`. A code review caught a spec deviation (`thai` field instead of `native`) which was fixed before commit — all types, mappers, and tests use the language-agnostic `native` field throughout.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        8
+      ],
       "compact_pr": 53
     },
     {
@@ -582,7 +657,9 @@
       "summary": "Implemented an interactive terminal script that wires the SRS engine end-to-end with real Thai content. The runner loads 5 foundational consonants and curated conversation words, then loops `composeBatch → stdin answers (c/w/q) → processAnswers → mastery summary` until the user quits or all words are mastered. Consumer-layer `thai → native` adaptation keeps the sample JSON unchanged while satisfying the language-agnostic mapper API.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        8
+      ],
       "compact_pr": 53
     },
     {
@@ -597,7 +674,9 @@
       "summary": "TODO: summarize — see .agents/changelogs/EP11--api-contract-package/EP11-DS01-api-contract-package.md",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        10
+      ],
       "compact_pr": 55
     },
     {
@@ -612,7 +691,9 @@
       "summary": "Created `packages/api-contract/` with full package scaffolding and the error envelope types. Zero runtime dependencies. `pnpm --filter @gll/api-contract typecheck` passes.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        10
+      ],
       "compact_pr": 55
     },
     {
@@ -627,7 +708,9 @@
       "summary": "Added `src/srs.ts` with all Stage 2 SRS wire types and exported from the barrel. `pnpm --filter @gll/api-contract typecheck` still passes.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        10
+      ],
       "compact_pr": 55
     },
     {
@@ -642,7 +725,9 @@
       "summary": "TODO: summarize — see .agents/changelogs/EP12--hono-server-scaffold/EP12-DS01-hono-server-scaffold.md",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        12
+      ],
       "compact_pr": 56
     },
     {
@@ -657,7 +742,9 @@
       "summary": "Created `apps/server/` as a new pnpm workspace package (`@gll/server`). Scaffolded the Hono 4 app with a `GET /health` route, split into `src/app.ts` (pure Hono app, exported for tests and Workers runtime) and `src/index.ts` (starts `@hono/node-server` for local dev). Added `wrangler.toml` with name and entry point. Added `dev:server` script to monorepo root.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        12
+      ],
       "compact_pr": 56
     },
     {
@@ -672,72 +759,10 @@
       "summary": "Added three middleware layers to the Hono app: CORS (`hono/cors`, permissive for Stage 1), auth passthrough (reads `Authorization` header, sets `userId = null`), and a global error handler (`app.onError`) that returns the `ApiResponse<never>` envelope from `@gll/api-contract`. Middleware registered in order: CORS → auth passthrough → routes, with `onError` as the top-level handler. Error handler extracted as a named export so tests can compose a local Hono instance without coupling to the production app.",
       "supersedes": [],
       "fixes": [],
-      "pr": null,
+      "pr": [
+        12
+      ],
       "compact_pr": 56
-    },
-    {
-      "id": "EP13-DS01",
-      "epic": "EP13",
-      "track": "project",
-      "title": "SRS Routes + In-Memory State Specification",
-      "domain": "apps/server",
-      "ryoiki": "srs-routes-in-memory-state",
-      "completed": "2026-03-13",
-      "duration": "undetermined",
-      "summary": "TODO: summarize — see .agents/changelogs/EP13--srs-routes-in-memory-state/EP13-DS01-srs-routes-in-memory-state.md",
-      "supersedes": [],
-      "fixes": [],
-      "pr": null,
-      "compact_pr": null,
-      "state": "draft"
-    },
-    {
-      "id": "EP13-ST01",
-      "epic": "EP13",
-      "track": "project",
-      "title": "API Contract Wire Type Additions + In-Memory State Module",
-      "domain": "apps/server",
-      "ryoiki": "api-contract-wire-types-state-module",
-      "completed": "2026-03-13",
-      "duration": "undetermined",
-      "summary": "Extended `@gll/api-contract` with five missing wire-type fields identified in DS01. Created `apps/server/src/state/` with three modules: `store.ts` (mutable state singletons), `engine.ts` (`SrsEngine` singleton), and `batchRegistry.ts` (batch tracking map). Added `@gll/srs-engine` as a server dependency.",
-      "supersedes": [],
-      "fixes": [],
-      "pr": null,
-      "compact_pr": null,
-      "state": "draft"
-    },
-    {
-      "id": "EP13-ST02",
-      "epic": "EP13",
-      "track": "project",
-      "title": "POST /api/srs/batch Route",
-      "domain": "<non-workspace>",
-      "ryoiki": "post-srs-batch-route",
-      "completed": "2026-03-13",
-      "duration": "undetermined",
-      "summary": "Added `POST /api/srs/batch` route handler in `src/routes/srs.ts`. Validates `deckId` against the seeded store value, calls the `SrsEngine` singleton to compose a batch, maps engine-internal question types to wire format, registers the batch in the batch registry, and returns `ApiResponse<BatchPayload>`. Mounted route on the Hono app at `/api/srs`. Rebuilt `@gll/api-contract` to pick up ST01 type additions.",
-      "supersedes": [],
-      "fixes": [],
-      "pr": null,
-      "compact_pr": null,
-      "state": "draft"
-    },
-    {
-      "id": "EP13-ST03",
-      "epic": "EP13",
-      "track": "project",
-      "title": "POST /api/srs/answers Route + E2E Integration Test",
-      "domain": "<non-workspace>",
-      "ryoiki": "post-srs-answers-e2e-test",
-      "completed": "2026-03-13",
-      "duration": "undetermined",
-      "summary": "Added `POST /api/srs/answers` handler to `src/routes/srs.ts`. Validates `batchId` in registry (404 on miss), maps wire `QuizAnswer.correct` → engine `isCorrect`, calls `SrsEngine.processAnswers`, updates the in-memory store via `setWordStates`, maps results to `AnswerResultPayload` wire type (applying `srsM2_review` → `anki_review` phase mapping), returns `ApiResponse<SubmitAnswersResponse>`. Added E2E integration test: seed → batch → answers (all correct) → assert `processed` count and `masteryCount > 0` for each updated word. Break-Verify-Restore confirmed the E2E test detects regressions.",
-      "supersedes": [],
-      "fixes": [],
-      "pr": null,
-      "compact_pr": null,
-      "state": "draft"
     },
     {
       "id": "AGN05",
