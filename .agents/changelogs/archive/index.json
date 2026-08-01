@@ -676,6 +676,74 @@
       "compact_pr": null
     },
     {
+      "id": "EP13-DS01",
+      "epic": "EP13",
+      "track": "project",
+      "title": "SRS Routes + In-Memory State Specification",
+      "domain": "apps/server",
+      "ryoiki": "design-spec",
+      "completed": "2026-03-13",
+      "duration": "undetermined",
+      "summary": "TODO: summarize — see .agents/changelogs/EP13--srs-routes-in-memory-state/EP13-DS01-srs-routes-in-memory-state.md",
+      "supersedes": [],
+      "fixes": [],
+      "pr": [
+        11
+      ],
+      "compact_pr": null
+    },
+    {
+      "id": "EP13-ST01",
+      "epic": "EP13",
+      "track": "project",
+      "title": "API Contract Wire Type Additions + In-Memory State Module",
+      "domain": "apps/server",
+      "ryoiki": "type-definitions",
+      "completed": "2026-03-13",
+      "duration": "undetermined",
+      "summary": "Extended `@gll/api-contract` with five missing wire-type fields identified in DS01. Created `apps/server/src/state/` with three modules: `store.ts` (mutable state singletons), `engine.ts` (`SrsEngine` singleton), and `batchRegistry.ts` (batch tracking map). Added `@gll/srs-engine` as a server dependency.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": [
+        11
+      ],
+      "compact_pr": null
+    },
+    {
+      "id": "EP13-ST02",
+      "epic": "EP13",
+      "track": "project",
+      "title": "POST /api/srs/batch Route",
+      "domain": "apps/server",
+      "ryoiki": "http-server",
+      "completed": "2026-03-13",
+      "duration": "undetermined",
+      "summary": "Added `POST /api/srs/batch` route handler in `src/routes/srs.ts`. Validates `deckId` against the seeded store value, calls the `SrsEngine` singleton to compose a batch, maps engine-internal question types to wire format, registers the batch in the batch registry, and returns `ApiResponse<BatchPayload>`. Mounted route on the Hono app at `/api/srs`. Rebuilt `@gll/api-contract` to pick up ST01 type additions.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": [
+        11
+      ],
+      "compact_pr": null
+    },
+    {
+      "id": "EP13-ST03",
+      "epic": "EP13",
+      "track": "project",
+      "title": "POST /api/srs/answers Route + E2E Integration Test",
+      "domain": "apps/server",
+      "ryoiki": "test-infrastructure",
+      "completed": "2026-03-13",
+      "duration": "undetermined",
+      "summary": "Added `POST /api/srs/answers` handler to `src/routes/srs.ts`. Validates `batchId` in registry (404 on miss), maps wire `QuizAnswer.correct` → engine `isCorrect`, calls `SrsEngine.processAnswers`, updates the in-memory store via `setWordStates`, maps results to `AnswerResultPayload` wire type (applying `srsM2_review` → `anki_review` phase mapping), returns `ApiResponse<SubmitAnswersResponse>`. Added E2E integration test: seed → batch → answers (all correct) → assert `processed` count and `masteryCount > 0` for each updated word. Break-Verify-Restore confirmed the E2E test detects regressions.",
+      "supersedes": [],
+      "fixes": [],
+      "pr": [
+        11
+      ],
+      "compact_pr": null
+    },
+    {
       "id": "AGN05",
       "epic": "AGN05",
       "track": "agentic",
