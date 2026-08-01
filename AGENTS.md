@@ -61,6 +61,6 @@ When starting a new conversation, read in this order:
 
 **Location**: `.agents/memory/EP##--slug/`
 
-**Trigger points**: story completed → `current-focus.md` | decision made → `recent-decisions.md` | blocker → `blocked-items.md` | session end → `session-log.md`
+**Trigger points**: story completed → `current-focus.md` | decision made → freeform `<topic>-decisions.md`
 
 See **RULES.md §Memory Protocol** for full details.

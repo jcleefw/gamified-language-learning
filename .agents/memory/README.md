@@ -1,98 +1,36 @@
 # Memory System
 
-Persistent cross-session context storage for AI agents.
+Persistent cross-session context, per epic. Survives across branches and sessions working on the same epic.
 
 **Location**: `.agents/memory/EP##--slug/`
 
-**Epic-per-memory strategy**: Each epic has its own memory folder. Memory persists across all sessions and branches working on that epic.
-
 ---
 
-## Memory Files
+## Files
 
-Each epic has four memory files:
+| File                        | Required? | Contents                                                          |
+| ---------------------------- | --------- | ------------------------------------------------------------------ |
+| `current-focus.md`           | Always    | Active story, status, last session outcome, immediate next steps |
+| `<topic>-decisions.md` (freeform name) | As needed | One resolved decision or design tradeoff, with why + alternatives considered |
 
-### 1. `current-focus.md`
+A blocker is just a next-step in `current-focus.md` ("blocked on X"). Session summaries belong in the story's changelog (`change-log-updater` skill).
 
-**What**: Your active work within the epic
-**When Updated**: After completing a story or when changing focus
-**What to Read**: Session start (tells you where you left off)
+## The one rule that matters
 
-Contents:
+**`current-focus.md` stays short — status and next steps only.** Target ~15 lines.
 
-- Active epic and story
-- Current status
-- Last session outcome
-- Immediate next steps
+The moment you're writing a "why we chose X over Y" or "here's the decision and alternatives considered" — stop, that's not status, that's a decision. Put it in its own file named for the topic (e.g. `wavesurfer-vs-howler.md`, `schema-design-decisions.md`), right then, not in a later cleanup pass. If `current-focus.md` is growing past a screen, decisions have leaked into it — pull them out.
 
-### 2. `recent-decisions.md`
+## When to write
 
-**What**: Architecture and technical decisions made on this epic
-**When Updated**: When a decision is made that affects multiple stories
-**What to Read**: When designing features or reviewing PRs
+| Trigger         | Action                                            |
+| --------------- | -------------------------------------------------- |
+| Story completed | Update `current-focus.md`                          |
+| Decision made   | New or updated topic file, immediately             |
+| Session end     | Update `current-focus.md`'s "last session outcome" |
 
-Contents:
+Full trigger table and update protocol: **RULES.md §Memory Protocol**. Bootstrap read order: **AGENTS.md §Bootstrap Reading Order**.
 
-- Decision title and timestamp
-- Context (why the decision was needed)
-- Decision and rationale
-- Alternatives considered
-- Impact and related ADRs
+## When an epic archives
 
-### 3. `blocked-items.md`
-
-**What**: Known blockers and resolution history
-**When Updated**: When blockers are identified or resolve
-
-Contents:
-
-- Current blockers (story, root cause, what's needed)
-- Unblocking history (resolved blockers)
-
-### 4. `session-log.md`
-
-**What**: Summary of last session on this epic
-**When Updated**: End of each session
-**What to Read**: When starting a new session or onboarding
-
-Contents:
-
-- Per-session summaries (goal, completed, blockers)
-- Files modified
-- Session statistics
-- Next session guidance
-
----
-
-## Epic Memory Strategy
-
-### During Active Development
-
-1. Identify your epic: `EP##--slug` (from the branch, git log, or ask the user)
-2. Read `.agents/memory/EP##--slug/current-focus.md` at session start
-3. Update memory files as you progress (see trigger points in `RULES.md §Memory Protocol`)
-4. At session end, update `session-log.md`
-
-### When Epic Completes and Archives
-
-When the epic is archived/compacted post-merge, the memory folder may be consolidated or archived alongside the epic's changelog — but this is deferred to future automation. For now, memory folders persist indefinitely.
-
-### Session Start Checklist
-
-```
-1. Identify your epic (EP##--slug) — from git branch, log, or ask user
-2. cat .agents/memory/EP##--slug/current-focus.md
-3. Read RULES.md
-4. Read PLAYBOOK.md
-5. Navigate to your current story
-```
-
----
-
-## Golden Rules
-
-1. **Memory is not code** — It's narrative, not documentation
-2. **Be specific** — "Fixed mastery calculation for lapsed words" not "Fixed bug"
-3. **Link to work items** — Reference EP##, ST##, BUG##, etc.
-4. **Keep it fresh** — Update memory as you discover things, not at session end
-5. **Clean up stale items** — Remove resolved blockers, old decisions
+Memory folder persists indefinitely — no automatic cleanup or consolidation on archive.

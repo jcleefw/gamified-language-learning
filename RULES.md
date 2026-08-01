@@ -240,14 +240,12 @@ Checklist: tests pass → changelog generated → CODEMAP synced → memory upda
 
 > **IMPORTANT**: Do NOT use any platform-specific auto-memory system (e.g., Claude Code's `~/.claude/` directory). All project memory is in `.agents/memory/EP##--slug/` (per epic) only.
 
-The agent writes to `.agents/memory/EP##--slug/` at these trigger points. For detailed update guidelines, see `.agents/tools/memory-write-guide.md`.
+The agent writes to `.agents/memory/EP##--slug/` at these trigger points. For detailed update guidelines, see `.agents/memory/README.md`.
 
 | Trigger         | File to Update        | Content                                       |
 | --------------- | --------------------- | --------------------------------------------- |
 | Story completed | `current-focus.md`    | What was completed, what's next               |
-| Decision made   | `recent-decisions.md` | Why the decision, alternatives considered     |
-| Blocker hit     | `blocked-items.md`    | What's blocked, why, what's needed to unblock |
-| Session end     | `session-log.md`      | Summary of session work and next steps        |
+| Decision made   | `<topic>-decisions.md` (freeform) | Why the decision, alternatives considered |
 
 ---
 

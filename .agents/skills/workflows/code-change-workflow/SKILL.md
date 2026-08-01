@@ -23,7 +23,7 @@ description: Master workflow for ANY story implementation. Ensures consistency a
 1. Run `tdd-implement`: execute the approved plan in red-green-refactor cycles
 2. Each cycle:
     - Red → **STOP** → Green → **STOP** → Refactor → **STOP**
-    - If an unexpected decision was made during the cycle: write `recent-decisions.md` before stopping
+    - If an unexpected decision was made during the cycle: write a topic-named decision file (e.g. `<topic>-decisions.md`) before stopping
 3. When all tests pass:
     - Write memory: `current-focus.md` — tests passing, moving to REVIEW
     - **STOP** — wait for user approval before continuing
@@ -36,7 +36,6 @@ description: Master workflow for ANY story implementation. Ensures consistency a
 4. If this is the last story of the epic: update epic plan `**Status**` → `Impl-Complete`
 5. Write memory to `.agents/memory/EP##--slug/` (epic-keyed, not branch-keyed):
     - `current-focus.md` — story complete, what's next
-    - `session-log.md` — if this is the end of the session
 6. Run **`commit-discipline` skill** (refer to [../skills/dev/commit-discipline/SKILL.md](../skills/dev/commit-discipline/SKILL.md)): one commit per story (`feat(EP##-ST##): <what>. <why in body>.`)
 7. **If more stories remain**: **STOP** — ask "Ready for next story?"
 8. **If this is the last story of the epic**:
