@@ -1,5 +1,5 @@
 ---
-name: code-review
+name: project-code-review
 description: 'Reviews code for correctness, security, over-engineering, and style. Use when reviewing a file, diff, or PR before merging.'
 tools: Read, Glob, Grep
 ---
