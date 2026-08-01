@@ -68,9 +68,9 @@ Purpose: Interactive CLI tool for testing and demonstrating the SRS learning eng
 | Target | Used By | Purpose |
 |---|---|---|
 | `@gll/db` | All modules | Database schema, stores, connection. |
-| `@gll/srs-engine` | learning-runner-db, review-runner-db | Quiz batches, answer application, word state. |
-| `@gll/srs-review` | review-runner-db | Review scheduling (FsrsScheduler). |
-| `@gll/srs-shelving` | learning-runner-db | Shelving policy evaluation. |
+| `@gll/srs-engine/learn` | learning-runner-db | Quiz batches, answer application, word state. |
+| `@gll/srs-engine/review` | review-runner-db | Review scheduling (FsrsScheduler). |
+| `@gll/srs-engine/shelving` | learning-runner-db | Shelving policy evaluation. |
 | `@gll/api-contract` | All modules | Type contracts (DeckDoc, BatchResponse, etc.). |
 
 ## Testing & Validation Flow

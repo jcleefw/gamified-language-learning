@@ -11,6 +11,8 @@ The word lifecycle engine for a language-learning app: learning, shelving, and r
 
 ## Library API
 
+Per-phase subpath exports — there is no bare `@gll/srs-engine` barrel:
+
 ```ts
 import {
   composeWordBatchMulti,
@@ -18,7 +20,11 @@ import {
   updateMasteryState,
   initAdaptiveSession,
   advanceAdaptiveSession,
-} from '@gll/srs-engine';
+} from '@gll/srs-engine/learn';
+
+import { evaluateShelving, unshelveAll } from '@gll/srs-engine/shelving';
+
+import { FsrsScheduler } from '@gll/srs-engine/review'; // server-only, see ADR D3
 ```
 
 All functions are pure: no I/O, no persistence, same inputs → same outputs.

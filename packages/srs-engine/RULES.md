@@ -25,3 +25,16 @@
 ## Decision rule
 
 Callbacks are plain functions: `(state: WordState) => void`. The engine calls them; it does not define or import the interface that implements them. If you find yourself importing a type from outside the engine to describe a callback, the abstraction belongs outside.
+
+## Internal module boundaries
+
+- **`shelving/` and `review/` never import `learn/`** — except `GraduationPerformance`, a primitive snapshot the _host_ derives from `WordState` and passes in; `shelving/` and `review/` never import `WordState` itself.
+- **`shelving/`'s public functions take primitives only.** `evaluateShelving`/`unshelveAll` take `string[]`/`Set<string>`/`ShelvingConfig` — never a `learn/` type.
+- **`ReviewCard.schedulerData` is opaque.** Only `FsrsScheduler.ts` may read or write its internal shape (the serialized ts-fsrs `Card`). No other file — including tests — may destructure it or assert on a property inside it; treat it as an opaque blob passed through unchanged.
+- **No barrel export.** `package.json` `exports` must have no bare `"."` entry — only `/learn`, `/shelving`, `/review`, and `/data/*`.
+- **Sub-path purity.** Each module's `index.ts` only exports from within its own folder (plus `config/` for language settings) — never re-exports a sibling phase's internals as a shortcut.
+
+## External consumer boundary
+
+- Blacklist approach — every other consumer is permitted unless it's added here as a new frontend app.
+- **`apps/srs-demo` may not import `@gll/srs-engine/review` directly.**. `review` scheduling is a server-side concern.

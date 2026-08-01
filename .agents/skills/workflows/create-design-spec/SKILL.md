@@ -9,6 +9,6 @@ description: Create a Technical Design Specification (DS) for a feature, includi
 1. Reference Epic Plan
 2. Analyze requirements and technical boundaries
 3. Run `.agents/tools/generate-timestamp.sh` to fill `{TIMESTAMP}`
-4. Generate DS using `.agents/plans/templates/DS-TEMPLATE.md` in `.agents/changelogs/{EP##}` folder
+4. Generate DS using `.agents/plans/templates/DS-TEMPLATE.md` in `.agents/changelogs/EP##--<slug>/` folder
 5. Call `.agents/tools/generate-filename.sh EP##-DS## <slug>` to get the consistent filename
 6. Review with user

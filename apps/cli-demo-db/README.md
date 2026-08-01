@@ -55,7 +55,7 @@ Defaults in `src/config.ts`:
 
 ## Review runner
 
-Exercises the SRS review scheduler (`@gll/srs-review`, FSRS) independently of the learning loop.
+Exercises the SRS review scheduler (`@gll/srs-engine/review`, FSRS) independently of the learning loop.
 
 ```bash
 # Seed 3 real curriculum words as due-now review cards (run engine:import-curriculum first if empty)

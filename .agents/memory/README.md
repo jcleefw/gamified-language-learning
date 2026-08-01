@@ -1,101 +1,36 @@
 # Memory System
 
-Persistent cross-session context storage for AI agents.
+Persistent cross-session context, per epic. Survives across branches and sessions working on the same epic.
 
-**Location**: `.agents/memory/{branch}/`
-
-**Branch-per-memory strategy**: Each git branch has its own memory folder. Memory is consolidated when merging.
+**Location**: `.agents/memory/EP##--slug/`
 
 ---
 
-## Memory Files
+## Files
 
-Each branch has four memory files:
+| File                        | Required? | Contents                                                          |
+| ---------------------------- | --------- | ------------------------------------------------------------------ |
+| `current-focus.md`           | Always    | Active story, status, last session outcome, immediate next steps |
+| `<topic>-decisions.md` (freeform name) | As needed | One resolved decision or design tradeoff, with why + alternatives considered |
 
-### 1. `current-focus.md`
+A blocker is just a next-step in `current-focus.md` ("blocked on X"). Session summaries belong in the story's changelog (`change-log-updater` skill).
 
-**What**: Your active work
-**When Updated**: After completing a story or when changing focus
-**What to Read**: Session start (tells you where you left off)
+## The one rule that matters
 
-Contents:
+**`current-focus.md` stays short — status and next steps only.** Target ~15 lines.
 
-- Active epic and story
-- Current status
-- Last session outcome
-- Immediate next steps
+The moment you're writing a "why we chose X over Y" or "here's the decision and alternatives considered" — stop, that's not status, that's a decision. Put it in its own file named for the topic (e.g. `wavesurfer-vs-howler.md`, `schema-design-decisions.md`), right then, not in a later cleanup pass. If `current-focus.md` is growing past a screen, decisions have leaked into it — pull them out.
 
-### 2. `recent-decisions.md`
+## When to write
 
-**What**: Architecture and technical decisions made on this branch
-**When Updated**: When a decision is made that affects multiple stories
-**What to Read**: When designing features or reviewing PRs
+| Trigger         | Action                                            |
+| --------------- | -------------------------------------------------- |
+| Story completed | Update `current-focus.md`                          |
+| Decision made   | New or updated topic file, immediately             |
+| Session end     | Update `current-focus.md`'s "last session outcome" |
 
-Contents:
+Full trigger table and update protocol: **RULES.md §Memory Protocol**. Bootstrap read order: **AGENTS.md §Bootstrap Reading Order**.
 
-- Decision title and timestamp
-- Context (why the decision was needed)
-- Decision and rationale
-- Alternatives considered
-- Impact and related ADRs
-- only keep the last 3 entries, the rest can be moved to product-documentation/recent-decisions-archive/decision-made-{YYYY-MM-DD}.md. Use start of the week Sunday as the date.
+## When an epic archives
 
-### 3. `blocked-items.md`
-
-**What**: Known blockers and resolution history
-**When Updated**: When blockers are identified or resolve
-
-Contents:
-
-- Current blockers (story, root cause, what's needed)
-- Unblocking history (resolved blockers)
-
-### 4. `session-log.md`
-
-**What**: Summary of last session on this branch
-**When Updated**: End of each session
-**What to Read**: When starting a new session or onboarding
-
-Contents:
-
-- Per-session summaries (goal, completed, blockers)
-- Files modified
-- Session statistics
-- Next session guidance
-
----
-
-## Branch Memory Strategy
-
-### Feature Branch (e.g., `feature-auth`)
-
-1. Create `.agents/memory/feature-auth/` with same structure as `main/`
-2. Work on stories, updating memory files
-3. When ready to merge: run consolidation script
-4. Memory from feature branch merges into `main/`
-
-### Main Branch
-
-- Accumulates consolidated memory from all merged branches
-- Single source of truth for project-wide decisions
-- Preserved indefinitely
-
-### Session Start Checklist
-
-```
-1. git status → which branch?
-2. cat .agents/memory/{branch}/current-focus.md
-3. Read RULES.md
-4. Read PLAYBOOK.md
-5. Navigate to your current story
-```
-
----
-
-## Golden Rules
-
-1. **Memory is not code** — It's narrative, not documentation
-2. **Be specific** — "Fixed mastery calculation for lapsed words" not "Fixed bug"
-3. **Link to work items** — Reference EP##, ST##, BUG##, etc.
-4. **Consolidate early** — Don't let branch memory drift too far from main
-5. **Clean up stale memory** — Remove resolved blockers, old decisions
+Memory folder persists indefinitely — no automatic cleanup or consolidation on archive.

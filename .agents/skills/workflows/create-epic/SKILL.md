@@ -12,4 +12,4 @@ description: Create a new Epic Plan (EP) for a feature or initiative, including 
 // turbo
 5. Call `.agents/tools/generate-filename.sh EP## <slug>` to get the final filename.
 6. Present the drafting plan to the user for approval.
-7. Once approved, save to `.agents/plans/EP##-<slug>.md`.
+7. Once approved, save to `.agents/plans/epics/EP##-<slug>.md`.

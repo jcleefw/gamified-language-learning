@@ -17,8 +17,6 @@ pnpm install
 pnpm --filter @gll/api-contract build
 pnpm --filter @gll/db build
 pnpm --filter @gll/srs-engine build
-pnpm --filter @gll/srs-review build
-pnpm --filter @gll/srs-shelving build
 pnpm --filter @gll/logger build
 
 # 3. Start the server

@@ -31,10 +31,8 @@ Project navigation index. Use this to orient before reading files.
 | `.agents/plans/`                      | Epic plans, RFCs, ADRs (permanent home)                                          |
 | `.agents/plans/templates/`            | Reusable document templates for all work item types                              |
 | `.agents/changelogs/`                 | Implementation records (created during development)                              |
-| `.agents/memory/`                     | Cross-session context; one folder per branch                                     |
-| `.agents/memory/main/`                | Memory for main branch                                                           |
+| `.agents/memory/`                     | Cross-session context; one folder per epic (`.agents/memory/EP##--slug/`)         |
 | `.agents/tools/`                      | Executable scripts                                                               |
-| `.agents/tools/memory-consolidate.sh` | Consolidate branch memory into main on merge                                     |
 | `.agents/guardrails.yml`              | Platform-agnostic safety checks                                                  |
 | `.agents/integrations.yml`            | External tool integrations (MCP servers, APIs)                                   |
 | `.agents/reference/`                  | Platform-specific docs (e.g., `claude-code-playbook.md`). Not read at bootstrap. |

@@ -157,8 +157,4 @@ After saving, ask: "What would you like to do next?"
 
 Suggest relevant steps based on the ADR content:
 
-- If FE package structure is affected: `/architect/fe-design`
-- If BE package structure is affected: `/architect/be-design`
-- If CI/CD pipeline is affected: `/architect/infra-design`
-- If test conventions are affected: `/architect/qa-design`
-- If a PRD needs updating: `/product/prd`
+- If a PRD needs updating: `/prd`

@@ -48,7 +48,7 @@ Your job is to scaffold, implement, and document work according to the governanc
 When starting a new conversation, read in this order:
 
 1. **AGENTS.md** — Who you are (this file)
-2. **Resolve your branch** — Run `git rev-parse --abbrev-ref HEAD` to get the current branch name, then read `.agents/memory/{branch}/current-focus.md`. This file tells you exactly what to do next.
+2. **Resolve your epic** — Identify which epic you're working on (check branch name, git log, or ask the user), then read `.agents/memory/EP##--slug/current-focus.md`. This file tells you exactly what to do next.
 3. **RULES.md** — What you must always do
 4. **Scoped RULES.md** — If any file you're about to touch lives under `apps/<name>/` or `packages/<name>/`, check that directory for its own `RULES.md` and read it too — it overrides/extends the root rules for that scope only (e.g. `apps/srs-demo/RULES.md`, `packages/srs-engine/RULES.md`).
 5. **PLAYBOOK.md** — How to invoke workflows/skills
@@ -59,8 +59,8 @@ When starting a new conversation, read in this order:
 
 ## Memory System
 
-**Location**: `.agents/memory/
+**Location**: `.agents/memory/EP##--slug/`
 
-**Trigger points**: story completed → `current-focus.md` | decision made → `recent-decisions.md` | blocker → `blocked-items.md` | session end → `session-log.md`
+**Trigger points**: story completed → `current-focus.md` | decision made → freeform `<topic>-decisions.md`
 
 See **RULES.md §Memory Protocol** for full details.
