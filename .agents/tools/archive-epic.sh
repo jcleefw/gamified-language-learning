@@ -21,6 +21,11 @@
 #
 # Steps (§4 of the plan):
 #   discover   resolve commit range + route to touched units, read-only
+#   find-merge given a human-confirmed range, print the next commits on the
+#              repo's full history by date (pure `git log`, no ancestry check) —
+#              a squash/merge-PR commit doesn't touch the changelog path itself,
+#              so it never shows up as a discover candidate; this surfaces the
+#              plain log fact so the human can read off the PR number
 #   draft      write each story to index.json as facts + suggested ryoiki + state:"draft"
 #   status     list an epic's index entries split into draft vs confirmed
 #   confirm    apply human-approved renames + delete state for an epic's drafts (bulk-accept)
@@ -33,6 +38,7 @@
 #
 # Usage:
 #   archive-epic.sh discover EP## [--range "<sha>^ <sha>"]
+#   archive-epic.sh find-merge EP## --range "<sha>^ <sha>" [--count N]   # range must already be human-confirmed
 #   archive-epic.sh draft EP## [--range "<sha>^ <sha>"]
 #   archive-epic.sh status EP##
 #   archive-epic.sh confirm EP## [--data -]   # JSON array of {id, ryoiki?} renames on stdin

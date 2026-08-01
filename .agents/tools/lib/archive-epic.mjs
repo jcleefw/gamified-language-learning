@@ -146,6 +146,72 @@ export function cmdDiscover(root, ep, argv) {
   return out.join('\n') + '\n'
 }
 
+// ── find-merge ───────────────────────────────────────────────────────────
+// Requires a confirmed range (the human already did that via discover). Given
+// the range's last commit, prints the next N commits in strict chronological
+// order across all branches — pure `git log`, sorted by commit date, no
+// ancestry check and no verdict. A merge commit for this epic's PR (if one
+// exists) doesn't touch the changelog path itself, so it's invisible to
+// discover's candidate scan; this surfaces the plain log fact so the human
+// can read off the PR number themselves.
+export function cmdFindMerge(root, ep, argv) {
+  const rangeIdx = argv.indexOf('--range')
+  if (rangeIdx === -1) die('usage: find-merge EP## --range "<sha>^ <sha>" [--count N]  (range must already be confirmed)')
+  const override =
+    rangeIdx + 2 < argv.length && !argv[rangeIdx + 2].startsWith('--')
+      ? `${argv[rangeIdx + 1]} ${argv[rangeIdx + 2]}`
+      : argv[rangeIdx + 1]
+  const [, last] = (override ?? '').split(' ')
+  if (!last) die('usage: find-merge EP## --range "<sha>^ <sha>" [--count N]')
+
+  const countIdx = argv.indexOf('--count')
+  const count = countIdx !== -1 ? Number(argv[countIdx + 1]) : 8
+
+  const all = gitOrEmpty(root, ['log', '--all', '--format=%H|%aI|%s'])
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => {
+      const [sha, date, ...rest] = l.split('|')
+      return { sha, date, subject: rest.join('|') }
+    })
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+
+  const idx = all.findIndex((c) => c.sha === last)
+  if (idx === -1) die(`commit ${last} not found in git log --all`)
+
+  const following = all.slice(idx + 1, idx + 1 + count)
+
+  const epRe = new RegExp(ep, 'i')
+  const isMergeSubject = (s) => /Merge pull request #[0-9]+|\(#[0-9]+\)$/.test(s)
+
+  const candidates = following.filter((c) => isMergeSubject(c.subject) && epRe.test(c.subject))
+
+  const out = []
+  out.push(`${bold('epic:')} ${ep}`)
+  out.push(`${bold('range_last_commit:')} ${dim(last)}`)
+  if (candidates.length === 1) {
+    const m = candidates[0].subject.match(/#([0-9]+)/)
+    out.push(`${bold('candidate PR:')} #${m[1]}`)
+  } else if (candidates.length > 1) {
+    out.push(`${bold('candidate PRs:')} ${candidates.map((c) => c.subject.match(/#([0-9]+)/)[1]).map((n) => `#${n}`).join(', ')}`)
+  } else {
+    out.push(`${bold('candidate PR:')} ${dim('none found')}`)
+  }
+  out.push(`-------------------------`)
+  out.push(bold(`next ${following.length} commit(s) by date, across all branches:`))
+  for (const c of following) {
+    const merge = isMergeSubject(c.subject)
+    const namesEpic = epRe.test(c.subject)
+    const marker = merge && namesEpic ? yellow(' <-- merge commit, subject names this epic') : ''
+    out.push(`  ${dim(c.sha)} ${c.date}  ${c.subject}${marker}`)
+  }
+  if (following.length === 0) out.push(dim('  (none — this is the newest commit in the repo)'))
+  out.push('')
+  out.push(dim('marker is a literal text match on the subject line (merge-commit pattern + epic id) — not an ancestry check. confirm which commit/PR (if any) applies.'))
+  return out.join('\n') + '\n'
+}
+
 // ── story JSON facts for one changelog file ─────────────────────────────────
 function draftStoryJson(root, ep, file, logRangeFirst, logRangeLast) {
   const base = basename(file, '.md')
@@ -540,6 +606,11 @@ export function main(argv, execRoot) {
       if (!ep) die('usage: draft EP## [--range ...]')
       return cmdDraft(root, ep, rest.slice(1), p)
     }
+    case 'find-merge': {
+      const ep = rest[0]
+      if (!ep) die('usage: find-merge EP## --range "<sha>^ <sha>" [--count N]')
+      return cmdFindMerge(root, ep, rest.slice(1))
+    }
     case 'status': {
       const ep = rest[0]
       if (!ep) die('usage: status EP##')
@@ -609,7 +680,7 @@ export function main(argv, execRoot) {
       return cmdCompact(root, ep, p)
     }
     default:
-      die('usage: archive-epic.sh {discover|draft|status|confirm|blacklist|scaffold|check|verify|backfill|compact} ...')
+      die('usage: archive-epic.sh {discover|draft|find-merge|status|confirm|blacklist|scaffold|check|verify|backfill|compact} ...')
   }
 }
 
