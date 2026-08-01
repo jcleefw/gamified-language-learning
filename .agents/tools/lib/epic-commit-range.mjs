@@ -155,15 +155,18 @@ export function formatResult(result) {
   out.push(`${bold('suggested_last_commit:')} ${dim(result.suggestedLastCommit ?? '')}`)
   out.push(`${bold('suggested_diff_range:')} ${dim(`${result.suggestedFirstCommit ?? ''}^ ${result.suggestedLastCommit ?? ''}`)}`)
   out.push(emitFlags(result.flags))
+  out.push('---------------------------')
   for (const c of result.candidates ?? []) {
-    out.push(`\n`)
+    out.push('*****')
     const marker = c.isRevert ? red('is_revert=yes') : `is_revert=${dim('no')}`
     const also = c.alsoTouches.length ? yellow(`also_touches=${c.alsoTouches.join(',')}`) : dim('also_touches=')
     out.push(
       `${bold('candidate:')} ${dim(c.sha)} ${c.date} is_add=${c.isAdd ? 'yes' : dim('no')} ${marker} ${also} subject=${c.subject}`,
     )
   }
+  out.push('---------------------------')
   return out.join('\n') + '\n'
+  
 }
 
 export function main(argv) {

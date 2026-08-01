@@ -10,7 +10,7 @@ Project navigation index. Use this to orient before reading files.
 
 | File          | Purpose                                               |
 | ------------- | ----------------------------------------------------- |
-| `AGENT.md`    | AI agent persona, tech stack, bootstrap reading order |
+| `AGENTS.md`    | AI agent persona, tech stack, bootstrap reading order |
 | `RULES.md`    | Mandatory behaviors, code standards, testing protocol |
 | `WORKFLOW.md` | Work item naming, hierarchy, lifecycle                |
 | `PLAYBOOK.md` | Quick command reference                               |

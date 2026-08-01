@@ -146,6 +146,153 @@ export function cmdDiscover(root, ep, argv) {
   return out.join('\n') + '\n'
 }
 
+// ── find-merge ───────────────────────────────────────────────────────────
+// Requires a confirmed range (the human already did that via discover). Given
+// the range's last commit, prints the next N commits in strict chronological
+// order across all branches — pure `git log`, sorted by commit date, no
+// ancestry check and no verdict. A merge commit for this epic's PR (if one
+// exists) doesn't touch the changelog path itself, so it's invisible to
+// discover's candidate scan; this surfaces the plain log fact so the human
+// can read off the PR number themselves.
+export function cmdFindMerge(root, ep, argv) {
+  const rangeIdx = argv.indexOf('--range')
+  if (rangeIdx === -1) die('usage: find-merge EP## --range "<sha>^ <sha>" [--count N]  (range must already be confirmed)')
+  const override =
+    rangeIdx + 2 < argv.length && !argv[rangeIdx + 2].startsWith('--')
+      ? `${argv[rangeIdx + 1]} ${argv[rangeIdx + 2]}`
+      : argv[rangeIdx + 1]
+  const [, last] = (override ?? '').split(' ')
+  if (!last) die('usage: find-merge EP## --range "<sha>^ <sha>" [--count N]')
+
+  const countIdx = argv.indexOf('--count')
+  const count = countIdx !== -1 ? Number(argv[countIdx + 1]) : 8
+
+  const all = gitOrEmpty(root, ['log', '--all', '--format=%H|%aI|%s'])
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => {
+      const [sha, date, ...rest] = l.split('|')
+      return { sha, date, subject: rest.join('|') }
+    })
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+
+  const idx = all.findIndex((c) => c.sha === last)
+  if (idx === -1) die(`commit ${last} not found in git log --all`)
+
+  const following = all.slice(idx + 1, idx + 1 + count)
+
+  const epRe = new RegExp(ep, 'i')
+  const isMergeSubject = (s) => /Merge pull request #[0-9]+|\(#[0-9]+\)$/.test(s)
+
+  const candidates = following.filter((c) => isMergeSubject(c.subject) && epRe.test(c.subject))
+
+  const out = []
+  out.push(`${bold('epic:')} ${ep}`)
+  out.push(`${bold('range_last_commit:')} ${dim(last)}`)
+  if (candidates.length === 1) {
+    const m = candidates[0].subject.match(/#([0-9]+)/)
+    out.push(`${bold('candidate PR:')} #${m[1]}`)
+  } else if (candidates.length > 1) {
+    out.push(`${bold('candidate PRs:')} ${candidates.map((c) => c.subject.match(/#([0-9]+)/)[1]).map((n) => `#${n}`).join(', ')}`)
+  } else {
+    out.push(`${bold('candidate PR:')} ${dim('none found')}`)
+  }
+  out.push(`-------------------------`)
+  out.push(bold(`next ${following.length} commit(s) by date, across all branches:`))
+  for (const c of following) {
+    const merge = isMergeSubject(c.subject)
+    const namesEpic = epRe.test(c.subject)
+    const marker = merge && namesEpic ? yellow(' <-- merge commit, subject names this epic') : ''
+    out.push(`  ${dim(c.sha)} ${c.date}  ${c.subject}${marker}`)
+  }
+  if (following.length === 0) out.push(dim('  (none — this is the newest commit in the repo)'))
+  out.push('')
+  out.push(dim('marker is a literal text match on the subject line (merge-commit pattern + epic id) — not an ancestry check. confirm which commit/PR (if any) applies.'))
+  return out.join('\n') + '\n'
+}
+
+// ── find-pr ──────────────────────────────────────────────────────────────
+// For an already-archived story whose changelog file no longer exists on disk
+// (compacted away), `discover`'s pathspec scan against main's current tree
+// finds nothing. Story history is still in git log, just reachable only via
+// `--all` (full history, not HEAD's tree) since the file was deleted. Finds
+// the commit(s) that ever touched the story's changelog file, then re-uses
+// find-merge's forward-scan-for-merge-subject logic from each such commit —
+// same pure-log, no-ancestry-check, no-verdict contract as find-merge.
+function isMergeSubject(s) {
+  return /Merge pull request #[0-9]+|\(#[0-9]+\)$/.test(s)
+}
+
+function allCommitsByDate(root) {
+  return gitOrEmpty(root, ['log', '--all', '--format=%H|%aI|%s'])
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => {
+      const [sha, date, ...rest] = l.split('|')
+      return { sha, date, subject: rest.join('|') }
+    })
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+}
+
+export function cmdFindPr(root, storyId, argv) {
+  const m = storyId.match(/^(EP|AGN)[0-9]+/i)
+  if (!m) die('usage: find-pr EP##-ST## [--count N]  (story id must start with an epic prefix, e.g. EP01-ST03)')
+  const ep = m[0]
+
+  const countIdx = argv.indexOf('--count')
+  const count = countIdx !== -1 ? Number(argv[countIdx + 1]) : 8
+
+  const pathspec = `.agents/changelogs/${ep}--*`
+  const touching = gitOrEmpty(root, ['log', '--all', '--format=%H|%aI|%s', '--', pathspec])
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => {
+      const [sha, date, ...rest] = l.split('|')
+      return { sha, date, subject: rest.join('|') }
+    })
+    .filter((c) => new RegExp(storyId, 'i').test(c.subject))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+
+  const out = []
+  out.push(`${bold('story:')} ${storyId}`)
+  if (touching.length === 0) {
+    out.push(dim(`no commit subject under ${pathspec} mentions ${storyId} — try a broader search or confirm the id`))
+    return out.join('\n') + '\n'
+  }
+  out.push(bold('commits touching this story:'))
+  for (const c of touching) out.push(`  ${dim(c.sha)} ${c.date}  ${c.subject}`)
+
+  const all = allCommitsByDate(root)
+  const epRe = new RegExp(ep, 'i')
+  const seenPrs = new Set()
+
+  for (const touch of touching) {
+    const idx = all.findIndex((c) => c.sha === touch.sha)
+    if (idx === -1) continue
+    const following = all.slice(idx + 1, idx + 1 + count)
+    const candidates = following.filter((c) => isMergeSubject(c.subject) && epRe.test(c.subject))
+    for (const c of candidates) {
+      const pm = c.subject.match(/#([0-9]+)/)
+      if (pm) seenPrs.add(pm[1])
+    }
+  }
+
+  out.push('')
+  if (seenPrs.size === 1) {
+    out.push(`${bold('candidate PR:')} #${[...seenPrs][0]}`)
+  } else if (seenPrs.size > 1) {
+    out.push(`${bold('candidate PRs:')} ${[...seenPrs].map((n) => `#${n}`).join(', ')}`)
+  } else {
+    out.push(`${bold('candidate PR:')} ${dim('none found')} (no merge-subject commit naming the epic followed any commit above within --count)`)
+  }
+  out.push('')
+  out.push(dim('candidate PR is a literal text match (merge-commit pattern + epic id) on commits following each commit above — not an ancestry check. confirm before writing to index.json.'))
+  return out.join('\n') + '\n'
+}
+
 // ── story JSON facts for one changelog file ─────────────────────────────────
 function draftStoryJson(root, ep, file, logRangeFirst, logRangeLast) {
   const base = basename(file, '.md')
@@ -450,11 +597,41 @@ export function cmdVerify(root, paths, runArchiveCheck) {
 }
 
 // ── backfill ─────────────────────────────────────────────────────────────
+// Compaction commits are squash-merged PRs titled e.g. "Compact/ep12 (#56)"
+// or "Compact EP08 (#53)" — separator ('/' or ' ') and case vary, and the PR
+// number lives in the subject's "(#NN)" (no "Merge pull request" line, since
+// squash-merge produces a single commit, not a merge commit). A subject-only
+// grep can also collide with a re-run/rebase artifact that shares the same
+// title but touches nothing (seen for EP05: #49 real, #51 an empty replay) —
+// so candidates are disambiguated by which one actually touches index.json.
 function backfillCompactPrInfo(root, epNumber) {
-  const match = gitOrEmpty(root, ['log', '--all', `--grep=compact ${epNumber}`, '--format=%H %s%n%b'])
-  if (!match.trim()) return 'undetermined'
-  const m = match.match(/Merge pull request #([0-9]+)/)
-  return m ? m[1] : 'undetermined'
+  const m = epNumber.match(/^([a-zA-Z]+)0*([0-9]+)$/)
+  if (!m) return 'undetermined'
+  const [, prefix, num] = m
+  const grepPattern = `compact[/ ]${prefix}0*${num}([^0-9]|$)`
+  const log = gitOrEmpty(root, [
+    'log', '--all', '-i', `--grep=${grepPattern}`, '-E', '--format=%H %s',
+  ])
+  const candidates = log
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      const [sha, ...rest] = line.split(' ')
+      const subject = rest.join(' ')
+      const prMatch = subject.match(/\(#([0-9]+)\)/)
+      return prMatch ? { sha, pr: prMatch[1] } : null
+    })
+    .filter(Boolean)
+
+  if (candidates.length === 0) return 'undetermined'
+  if (candidates.length === 1) return candidates[0].pr
+
+  const touchesIndex = candidates.filter(({ sha }) => {
+    const stat = gitOrEmpty(root, ['show', '--stat', '--format=', sha])
+    return /changelogs\/archive\/index\.json/.test(stat)
+  })
+  return touchesIndex.length === 1 ? touchesIndex[0].pr : 'undetermined'
 }
 
 export function cmdBackfill(root, paths) {
@@ -540,6 +717,16 @@ export function main(argv, execRoot) {
       if (!ep) die('usage: draft EP## [--range ...]')
       return cmdDraft(root, ep, rest.slice(1), p)
     }
+    case 'find-merge': {
+      const ep = rest[0]
+      if (!ep) die('usage: find-merge EP## --range "<sha>^ <sha>" [--count N]')
+      return cmdFindMerge(root, ep, rest.slice(1))
+    }
+    case 'find-pr': {
+      const storyId = rest[0]
+      if (!storyId) die('usage: find-pr EP##-ST## [--count N]')
+      return cmdFindPr(root, storyId, rest.slice(1))
+    }
     case 'status': {
       const ep = rest[0]
       if (!ep) die('usage: status EP##')
@@ -609,7 +796,7 @@ export function main(argv, execRoot) {
       return cmdCompact(root, ep, p)
     }
     default:
-      die('usage: archive-epic.sh {discover|draft|status|confirm|blacklist|scaffold|check|verify|backfill|compact} ...')
+      die('usage: archive-epic.sh {discover|draft|find-merge|find-pr|status|confirm|blacklist|scaffold|check|verify|backfill|compact} ...')
   }
 }
 

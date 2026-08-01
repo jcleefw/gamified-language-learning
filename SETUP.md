@@ -28,7 +28,7 @@ Visit: `http://localhost:3000`
 
 ```
 gamified-language-learning/
-├── AGENT.md                    # AI agent persona
+├── AGENTS.md                    # AI agent persona
 ├── RULES.md                    # Coding rules and constraints
 ├── WORKFLOW.md                 # Work item definitions
 ├── PLAYBOOK.md                 # Quick command reference
@@ -74,7 +74,7 @@ gamified-language-learning/
 | File                         | Purpose                   |
 | ---------------------------- | ------------------------- |
 | [README.md](./README.md)     | Project overview          |
-| [AGENT.md](./AGENT.md)       | AI persona                |
+| [AGENTS.md](./AGENTS.md)       | AI persona                |
 | [RULES.md](./RULES.md)       | Coding rules              |
 | [CONTEXT.md](./CONTEXT.md)   | Architecture and patterns |
 | [WORKFLOW.md](./WORKFLOW.md) | Work item organization    |

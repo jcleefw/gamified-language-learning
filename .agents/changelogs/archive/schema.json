@@ -79,9 +79,9 @@
           "items": { "type": "string" }
         },
         "pr": {
-          "type": ["integer", "null"],
-          "description": "Provenance PR number (stable across squash-merge, never a commit SHA). Null only for agentic work with no PR.",
-          "minimum": 1
+          "type": ["array", "null"],
+          "description": "Provenance PR number(s) (stable across squash-merge, never a commit SHA). A story can span multiple PRs. Null only for agentic work with no PR.",
+          "items": { "type": "integer", "minimum": 1 }
         },
         "compact_pr": {
           "type": ["integer", "null"],

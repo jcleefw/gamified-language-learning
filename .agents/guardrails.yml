@@ -28,7 +28,7 @@ guardrails:
       - "docker-compose*.yml"
       - ".agents/RULES.md"
       - ".agents/guardrails.yml"
-      - "AGENT.md"
+      - "AGENTS.md"
     message: "⚠️ Editing sensitive file — confirm with the user before proceeding."
 
   # Prevent schema changes without review
@@ -116,7 +116,7 @@ These guardrails map to Claude Code hooks and settings.json configuration:
 - `docker-compose*.yml` — Infrastructure as code
 - `.agents/RULES.md` — This governance system
 - `.agents/guardrails.yml` — This guardrail definition
-- `AGENT.md` — Agent persona
+- `AGENTS.md` — Agent persona
 
 **When triggered**: Agent asks "Are you sure?" with context on why the file is sensitive.
 
