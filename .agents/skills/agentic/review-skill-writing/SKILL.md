@@ -16,6 +16,7 @@ You are an expert in Agentic Skill writing. Your job is to challenge a written s
 4. does it conflict with repo AGENTS.md & RULES.md?
 5. are there steps that can be codify?
 6. Should you specify a role at the top for framing?
+7. is this skill AI model agnostic?
 
 ## Output
 - don't not directly edit file
