@@ -8,10 +8,10 @@ Development environment setup for the Gamified Language Learning Platform.
 
 ```bash
 pnpm install
-pnpm dev
+pnpm dev:all
 ```
 
-Visit: `http://localhost:3000`
+`dev:all` starts Docker Compose, the `@gll/server` backend, and the `@gll/srs-demo` frontend together — check the terminal output for the URL and port each one is listening on.
 
 ---
 
@@ -37,16 +37,23 @@ gamified-language-learning/
 ├── CODEMAP.md                  # Project navigation index
 ├── README.md                   # Project overview
 │
-├── src/                        # Application source (TBD)
-│   ├── server/                 # Cloudflare Workers / Nitro server
-│   │   ├── api/                # API route handlers
-│   │   ├── db/                 # D1 schema, migrations, queries
-│   │   └── services/           # Business logic (TTSService, SRSService, etc.)
-│   ├── components/             # Vue SFC components
-│   ├── composables/            # Vue composables (useQuizBatch, useWordMastery, etc.)
-│   ├── pages/                  # Nuxt pages (file-based routing)
-│   ├── layouts/                # Nuxt layouts
-│   └── assets/                 # Static assets, PandaCSS tokens
+├── apps/                        # Deployable applications (pnpm workspace)
+│   ├── srs-demo/                # Vue 3 + Nuxt frontend
+│   ├── server/                  # Headless Hono backend
+│   └── cli-demo-db/             # CLI demo against persistent storage
+│
+├── packages/                    # Internal packages (pnpm workspace)
+│   ├── srs-engine/               # SRS scheduling engine
+│   ├── curation/                 # Curation engine
+│   ├── graph-rag/                # Graph-RAG read model (in progress)
+│   ├── api-contract/             # Shared HTTP wire-format types
+│   ├── db/                        # Persistent storage layer
+│   ├── logger/                    # Shared logging utility
+│   └── shared-utils/              # Shared utilities
+│
+├── docs/                        # Human + agent reference (not mandatory reading)
+│   ├── code-standards-examples.md
+│   └── historical-archive.md
 │
 ├── product-documentation/      # PRDs, architecture decisions, cost models
 │   ├── PRODUCT-BRIEF.md
@@ -54,15 +61,22 @@ gamified-language-learning/
 │   ├── architecture/           # ADRs
 │   └── cost-models/            # Cost analysis documents
 │
-├── sessions/                   # Session state files (AI session saves)
-│
 └── .agents/                    # AI governance
-    ├── workflows/              # How to do things
-    ├── skills/                 # Specialized AI personas
+    ├── skills/                 # Specialized AI personas (architect/ba/dev/product/historical/workflows/)
     ├── plans/                  # Epics, RFCs, ADRs (plans/rfcs/, plans/adrs/)
     │   └── templates/          # Work item templates
     ├── changelogs/             # Implementation records
+    │   ├── EP##--slug/          # Per-epic story/DS/UX/TP records (deleted once archived)
+    │   ├── agentic/             # AGN## agentic/governance work records
+    │   ├── standalone/          # Standalone TA/BUG/CH not attached to an epic
+    │   ├── _loose/              # Transient staging for post-freeze fixes (empty at rest)
+    │   ├── roadmap/             # Pre-AGN05 stage-level reports (legacy, inactive)
+    │   └── archive/             # Permanent record of archived work
+    │       ├── index.json       # Flat story records + per-epic rollup
+    │       └── schema.json      # Shape of index.json
     ├── memory/                 # Cross-session context
+    ├── reference/              # Reference data for tools/skills (ryoiki maps, etc.)
+    ├── reports/                # One-off audits and reports
     ├── tools/                  # Executable scripts
     └── guardrails.yml          # Safety checks
 ```

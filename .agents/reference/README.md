@@ -27,9 +27,10 @@ one-line `description` and the drift-variant spellings that normalize to it:
   key. The `description` says what the aspect covers — it is the curation
   rationale, for a human deciding whether a candidate name is really this.
 - **Seeded, not empty.** The map ships with a curated starting set covering the
-  aspects that already recur across the repo's packages and apps. This is the
-  reference the `archive-epic` RECORD step **consults first** when naming a
-  ryoiki — a hit means the canonical name is already decided, not re-litigated.
+  aspects that already recur across the repo's packages and apps. Used during
+  ryoiki naming in archival — see
+  [docs/historical-archive.md](../../docs/historical-archive.md) — where a hit
+  means the canonical name is already decided, not re-litigated.
 - **Grows by human ratification.** New entries are added at the review gate
   during compaction, when a genuinely new aspect is named or fresh drift is
   noticed (Package-Scoped Knowledge Filtering ADR, D2, D8). There is no tool
@@ -75,11 +76,9 @@ applies to *every* unit in addition to that unit's own list:
 - **Cascading, longest-prefix-wins.** Listing an entry drops that ryoiki *and*
   every `entry/*` descendant (D6). There is no separate mechanism for
   excluding a whole subtree — the prefix does it.
-- **Consulted at the gate.** The `archive-epic` tooling's `scaffold` and
-  `check` steps read this file when building or validating a unit's
-  `KNOWLEDGE.md`: `scaffold` skips blacklisted ryoiki when printing the
-  heading skeleton, and `check` treats a confirmed-but-blacklisted ryoiki as
-  legitimately headless rather than drift.
+- **Used during archival**, when a unit's `KNOWLEDGE.md` is built and
+  validated — see [docs/historical-archive.md](../../docs/historical-archive.md)
+  for which steps read it and how.
 - **Exclusion is lossy by design.** A blacklisted ryoiki is simply never
   written to `KNOWLEDGE.md`. There is no tombstone and no exclusion log
   anywhere in the repo — `index.json` still carries the confirmed entry, and

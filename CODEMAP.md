@@ -78,6 +78,7 @@ Project navigation index. Use this to orient before reading files.
 | File                         | Purpose                                                                                           |
 | ---------------------------- | ------------------------------------------------------------------------------------------------- |
 | `code-standards-examples.md` | GOOD/BAD code examples for RULES.md code standards. Not mandatory agent reading — reference only. |
+| `historical-archive.md`      | How archiving a finished epic or AGN works end-to-end (see WORKFLOW.md §Epic Archival). Not mandatory agent reading — reference only. |
 
 ---
 

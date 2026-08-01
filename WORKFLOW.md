@@ -119,6 +119,19 @@ Draft → Accepted → In Progress → Impl-Complete → BDD Pending → Complet
 
 ---
 
+## Archiving Finished Work (Separate, Human-Initiated)
+
+Archiving is not a lifecycle stage — an epic is already `Completed`/`Shelved`/`Withdrawn` (or an AGN is already done) before this ever happens. It's a separate step the user decides to take later, whenever they no longer need a finished epic's or AGN's working folder to stick around.
+
+This is the only point where:
+- `KNOWLEDGE.md` gets updated — the lasting facts worth keeping are written down before the folder is deleted
+- Each piece of work gets a short topic label (called a "ryoiki") so it lands under the right `KNOWLEDGE.md` section
+- The finished work's record moves permanently into `.agents/changelogs/archive/index.json`
+
+See `.agents/skills/historical/compact-epic` for the step-by-step checklist, and [docs/historical-archive.md](docs/historical-archive.md) for the full picture — what this is, why it exists, and how it works.
+
+---
+
 ## Story Creation Sequence
 
 Titles → Design spec → Stories detailed → Epic Accepted → agent picks up ST##01.
