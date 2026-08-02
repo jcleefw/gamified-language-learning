@@ -1,6 +1,8 @@
+import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
+import { localRules } from './eslint-rules/index.js';
 
-export default tseslint.config(
+export default defineConfig(
   {
     ignores: [
       '**/dist/**',
@@ -127,6 +129,22 @@ export default tseslint.config(
           ],
         },
       ],
+    },
+  },
+  {
+    // Comments must stand alone without referencing the epic/story/ADR that
+    // produced them — see RULES.md. Warn (not error) so existing violations
+    // surface without blocking commits/CI; applies going forward, same as
+    // every other rule in this file.
+    files: ['apps/**/*.ts', 'packages/**/*.ts'],
+    plugins: { local: { rules: localRules } },
+    rules: {
+      // TODO: see EP18-DS03 need to mark this as `error` once a bulk fixing of linting is complete.
+      'local/no-ticket-refs-in-comments': 'warn',
+      // A TODO legitimately needs to name the ticket that will resolve it —
+      // keep this at 'warn' permanently, even if the rule above is ever
+      // escalated to 'error', so a stale TODO can never fail a build.
+      'local/todo-ticket-refs-in-comments': 'warn',
     },
   },
   {
