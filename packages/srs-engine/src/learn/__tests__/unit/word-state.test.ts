@@ -5,7 +5,7 @@ import type { RunState } from '../../types/word-state.js';
 const THRESHOLDS = { correctStreakThreshold: 3, wrongStreakThreshold: 2, maxMastery: 5 };
 
 // ---------------------------------------------------------------------------
-// updateRunState — cumulative fields (unchanged from ST07/ST08)
+// updateRunState — cumulative fields
 // ---------------------------------------------------------------------------
 describe('updateRunState — cumulative fields', () => {
   it('creates a new entry from empty state on correct answer', () => {

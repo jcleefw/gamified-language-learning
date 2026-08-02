@@ -1,4 +1,4 @@
-/** How the user answered a due review. Inferred by the runner (DS03), never asked. */
+/** How the user answered a due review. Inferred by the runner, never asked. */
 export type ReviewRating = 'again' | 'hard' | 'good' | 'easy';
 
 /**

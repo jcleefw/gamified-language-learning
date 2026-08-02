@@ -45,7 +45,7 @@ export interface BatchValidation {
  * This is a pure predicate over the batch output — it never repairs, throws,
  * or reorders. Callers decide what to do with a failing result (assert in
  * dev/tests, log in production). It exists as a safety net: the shelved-word
- * leak (EP26-BUG01) is already closed at the source in `resolveEligibleContexts`,
+ * leak is already closed at the source in `resolveEligibleContexts`,
  * so a violation here means a *new* consumer wired the sentence path without
  * threading `excludeIds` through, or a regression reopened the seam.
  *

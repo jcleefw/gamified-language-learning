@@ -75,7 +75,7 @@ function toReviewCard(wordId: string, card: Card): ReviewCard {
 
 /**
  * Rehydrate the opaque blob into a ts-fsrs CardInput.
- * After a store round-trip (DS02) the Dates arrive as ISO strings; ts-fsrs `next`
+ * After a store round-trip the Dates arrive as ISO strings; ts-fsrs `next`
  * accepts CardInput whose `due`/`last_review` are DateInput (Date | number | string),
  * so no manual Date parsing is needed here.
  */
