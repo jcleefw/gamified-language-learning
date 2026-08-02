@@ -5,7 +5,7 @@
 <!-- Status: Proposed | Accepted | Superseded | Deprecated -->
 <!-- For amendments, use "Accepted (amended)" and add an Amended-by line below. -->
 
-**Date:** {YYYY-MM-DD} <!-- Run .agents/tools/generate-timestamp.sh for the file-name timestamp -->
+**Date:** {YYYY-MM-DD HH:MM} <!-- Run .agents/tools/generate-timestamp.sh for the file-name timestamp -->
 
 **Deciders:** {Who made the call, e.g. JC Lee / PO}
 
