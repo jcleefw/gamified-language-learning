@@ -31,6 +31,34 @@ async function restrictedImportViolations(relPath: string): Promise<number> {
     .length;
 }
 
+async function withFixtures(
+  fixtures: Fixture[],
+  run: (relPaths: string[]) => Promise<void>,
+): Promise<void> {
+  const absPaths = fixtures.map((f) => path.join(ROOT, f.relPath));
+  await Promise.all(
+    fixtures.map(async (f, i) => {
+      await mkdir(path.dirname(absPaths[i]), { recursive: true });
+      await writeFile(absPaths[i], f.content, 'utf8');
+    }),
+  );
+  try {
+    await run(fixtures.map((f) => f.relPath));
+  } finally {
+    await Promise.all(absPaths.map((p) => rm(p, { force: true })));
+  }
+}
+
+async function cycleViolations(relPaths: string[]): Promise<number> {
+  const eslint = new ESLint({ cwd: ROOT });
+  const results = await eslint.lintFiles(relPaths);
+  return results.reduce(
+    (sum, r) =>
+      sum + r.messages.filter((m) => m.ruleId === 'import/no-cycle').length,
+    0,
+  );
+}
+
 describe('shelving/ and review/ must not import learn/', () => {
   it('flags a shelving/ file importing from learn/', async () => {
     await withFixture(
@@ -228,6 +256,96 @@ describe('packages/api-contract must stay a pure types package', () => {
       },
       async (relPath) => {
         expect(await restrictedImportViolations(relPath)).toBe(0);
+      },
+    );
+  });
+});
+
+describe('apps/srs-demo composables must not have import cycles', () => {
+  it('flags a direct 2-file cycle', async () => {
+    await withFixtures(
+      [
+        {
+          relPath:
+            'apps/srs-demo/src/composables/__fixtures__/tmp-cycle-a.ts',
+          content: `import { b } from './tmp-cycle-b';\n\nexport const a = 1;\nexport const useA = (): number => a + b;\n`,
+        },
+        {
+          relPath:
+            'apps/srs-demo/src/composables/__fixtures__/tmp-cycle-b.ts',
+          content: `import { a } from './tmp-cycle-a';\n\nexport const b = 2;\nexport const useB = (): number => a + b;\n`,
+        },
+      ],
+      async (relPaths) => {
+        expect(await cycleViolations(relPaths)).toBeGreaterThan(0);
+      },
+    );
+  });
+
+  it('flags a transitive 3-file cycle', async () => {
+    await withFixtures(
+      [
+        {
+          relPath:
+            'apps/srs-demo/src/composables/__fixtures__/tmp-transitive-a.ts',
+          content: `import { b } from './tmp-transitive-b';\n\nexport const a = 1;\nexport const useA = (): number => a + b;\n`,
+        },
+        {
+          relPath:
+            'apps/srs-demo/src/composables/__fixtures__/tmp-transitive-b.ts',
+          content: `import { c } from './tmp-transitive-c';\n\nexport const b = 2;\nexport const useB = (): number => b + c;\n`,
+        },
+        {
+          relPath:
+            'apps/srs-demo/src/composables/__fixtures__/tmp-transitive-c.ts',
+          content: `import { a } from './tmp-transitive-a';\n\nexport const c = 3;\nexport const useC = (): number => c + a;\n`,
+        },
+      ],
+      async (relPaths) => {
+        expect(await cycleViolations(relPaths)).toBeGreaterThan(0);
+      },
+    );
+  });
+
+  it('does not flag a one-way import with no cycle', async () => {
+    await withFixtures(
+      [
+        {
+          relPath:
+            'apps/srs-demo/src/composables/__fixtures__/tmp-nocycle-a.ts',
+          content: `import { b } from './tmp-nocycle-b';\n\nexport const useA = (): number => b;\n`,
+        },
+        {
+          relPath:
+            'apps/srs-demo/src/composables/__fixtures__/tmp-nocycle-b.ts',
+          content: `export const b = 2;\n`,
+        },
+      ],
+      async (relPaths) => {
+        expect(await cycleViolations(relPaths)).toBe(0);
+      },
+    );
+  });
+
+  it('does not flag a cycle formed only by a type-only back-edge', async () => {
+    // A value-imports B; B only `import type`s back from A. Type-only imports
+    // erase at compile time and cause no runtime cycle, so this must not flag —
+    // a decision worth locking down as a test, not an assumption.
+    await withFixtures(
+      [
+        {
+          relPath:
+            'apps/srs-demo/src/composables/__fixtures__/tmp-typeonly-a.ts',
+          content: `import { b } from './tmp-typeonly-b';\n\nexport const a = 1;\nexport type AType = typeof a;\nexport const useA = (): number => a + b;\n`,
+        },
+        {
+          relPath:
+            'apps/srs-demo/src/composables/__fixtures__/tmp-typeonly-b.ts',
+          content: `import type { AType } from './tmp-typeonly-a';\n\nexport const b = 2;\nexport const identity = (x: AType): AType => x;\n`,
+        },
+      ],
+      async (relPaths) => {
+        expect(await cycleViolations(relPaths)).toBe(0);
       },
     );
   });

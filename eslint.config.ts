@@ -1,5 +1,6 @@
 import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
+import importPlugin from 'eslint-plugin-import';
 import { localRules } from './eslint-rules/index.js';
 
 export default defineConfig(
@@ -184,6 +185,19 @@ export default defineConfig(
           ],
         },
       ],
+    },
+  },
+  {
+    // EP18-ST09: no import cycles among apps/srs-demo's composables. Severity
+    // starts at 'warn' until the baseline cycle count is measured and reported.
+    files: ['apps/srs-demo/src/composables/**/*.ts'],
+    plugins: { import: importPlugin },
+    settings: {
+      'import/resolver': { typescript: true },
+      'import/parsers': { '@typescript-eslint/parser': ['.ts'] },
+    },
+    rules: {
+      'import/no-cycle': 'warn',
     },
   },
   {
