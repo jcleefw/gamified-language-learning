@@ -1,6 +1,6 @@
 /** One user's config overrides. Every field is nullable — `null` means "no
  *  override", resolved to the server's base/preset default at the read path
- *  (DS02). `difficultyPreset` is a preset NAME (a plain string at this layer;
+ *. `difficultyPreset` is a preset NAME (a plain string at this layer;
  *  the server owns the name→bundle map and validates the name), never a raw
  *  threshold integer. */
 export interface UserConfigRecord {

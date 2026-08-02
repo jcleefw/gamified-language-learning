@@ -56,9 +56,8 @@ export function useSegmentPlayer(
   }
 
   // wavesurfer's WebAudio backend schedules its own precise stop
-  // (WebAudioPlayer.stopAt(end), Web-Audio-clock-scheduled) — no polling
-  // needed (EP43-BUG01 is fixed structurally by the backend, not by a
-  // tighter poll interval; see the wavesurfer.js Pivot ADR).
+  // (WebAudioPlayer.stopAt(end), Web-Audio-clock-scheduled) — no polling needed;
+  // the backend handles this structurally, not by a tighter poll interval.
   function playSegment(start: number, end: number) {
     void wavesurfer.value?.play(start, end);
   }

@@ -84,7 +84,7 @@ describe('reviewUnlocked gate', () => {
     expect(session.reviewUnlocked.value).toBe(false);
   });
 
-  // EP39-BUG01: a due/existing card must unlock Review even with no locally-mastered
+  // a due/existing card must unlock Review even with no locally-mastered
   // word (e.g. a returning user, or the review-only seed fixture).
   it('unlocks when the user has review cards even if no word is mastered locally', async () => {
     loadAnytimeReviews.mockResolvedValueOnce([

@@ -15,7 +15,7 @@ export const MOCK_REVIEW_COUNT = 3;
 const MOCK_PERFORMANCE = { correctStreak: 3, lapses: 0, correctRatio: 1 };
 
 /**
- * ST09: seed the given word ids as review cards, then force their `due` to `now`
+ * seed the given word ids as review cards, then force their `due` to `now`
  * so the runner presents them immediately. `schedulerData` from `seed` is left intact
  * so `FsrsScheduler.schedule` accepts the cards. Ids must be real curriculum words for
  * the runner to build a question — the CLI script derives them from the DB.

@@ -22,7 +22,7 @@ const isRecording = recorder.isRecording;
 const recorderBusy = computed(() => recorder.state.value === 'finalizing');
 
 // Post-hoc dump: assemble a replayable artifact from the last N answers with no prior
-// Record press (EP40). Independent of the armed session — recovers a session after a bug
+// Record press. Independent of the armed session — recovers a session after a bug
 // was already hit. The dumped artifact has no appearance context (see composable).
 async function onDumpRecent() {
   try {

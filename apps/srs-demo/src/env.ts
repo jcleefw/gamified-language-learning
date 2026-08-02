@@ -16,6 +16,6 @@ export const env = {
   cheatMode: import.meta.env.VITE_CHEAT_MODE === 'true',
 
   // Curator tooling only. Set via VITE_CURATION_MODE. Gates the audio-upload page
-  // (EP42-DS02, ST09); dead-code-eliminated from production builds when unset.
+  //; dead-code-eliminated from production builds when unset.
   curationMode: import.meta.env.VITE_CURATION_MODE === 'true',
 } as const;

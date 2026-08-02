@@ -3,10 +3,10 @@ import type { WordState } from '@gll/srs-engine/learn';
 import type { ResolvedThresholds } from '@gll/db';
 
 /**
- * The self-contained, DB-independent replay artifact (EP40-DS01). A captured session serialises to
+ * The self-contained, DB-independent replay artifact. A captured session serialises to
  * this shape; `pnpm seed replay` and the Vitest fixture runner consume it. Types are server-owned
  * (the composition layer), not `@gll/api-contract` — the artifact is a tool contract, not a wire DTO.
- * DS02's browser recorder writes JSON matching this.
+ * browser recorder writes JSON matching this.
  */
 
 /** One recorded transition input, stitched to its served question by correlationId, in answer_events id order. */
@@ -19,7 +19,7 @@ export interface TransitionInput {
   recordedAfter: WordState; // the authoritative afterState this step is diffed against
 }
 
-/** Recorded orchestration context — read-only, NOT recomputed (ADR D4). Shape owned by DS02's recorder. */
+/** Recorded orchestration context — read-only, Shape owned by recorder. */
 export interface AppearanceEvent {
   correlationId: string | null;
   kind: 'pool-selected' | 'question-served' | 'recheck-triggered' | 'shelving';
@@ -71,7 +71,12 @@ const transitionInputSchema = z.object({
 
 const appearanceEventSchema = z.object({
   correlationId: z.string().nullable(),
-  kind: z.enum(['pool-selected', 'question-served', 'recheck-triggered', 'shelving']),
+  kind: z.enum([
+    'pool-selected',
+    'question-served',
+    'recheck-triggered',
+    'shelving',
+  ]),
   at: z.string(),
   data: z.unknown(),
 });
@@ -94,7 +99,9 @@ export const replayArtifactSchema = z.object({
 export function parseArtifact(json: unknown): ReplayArtifact {
   const result = replayArtifactSchema.safeParse(json);
   if (!result.success) {
-    throw new Error(`Invalid replay artifact: ${result.error.issues.map((i) => `${i.path.join('.')} ${i.message}`).join('; ')}`);
+    throw new Error(
+      `Invalid replay artifact: ${result.error.issues.map((i) => `${i.path.join('.')} ${i.message}`).join('; ')}`,
+    );
   }
   return result.data as ReplayArtifact;
 }

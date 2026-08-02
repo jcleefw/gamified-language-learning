@@ -1,5 +1,5 @@
 /**
- * Deck audio storage (EP42-DS01, ST02). Local MinIO stands in for production
+ * Deck audio storage. Local MinIO stands in for production
  * Cloudflare R2 (S3-compatible, public-read bucket, browser→bucket per the
  * hosting ADR). `makeResolveAudioUrl` is pure string composition — no SDK,
  * no network, no credentials — so the read path (every GET /api/decks) is
@@ -19,7 +19,7 @@ export interface AudioStorageConfig {
 /**
  * True when the curator-only mutating surface (audio upload) is enabled.
  * Default off — a mutating audio endpoint must not be reachable in a default
- * production deploy without also flipping this flag (EP42-DS02, ST08).
+ * production deploy without also flipping this flag.
  */
 export function isCurationMode(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.GLL_CURATION_MODE === 'true' || env.GLL_CURATION_MODE === '1';
@@ -67,7 +67,7 @@ export function makeResolveAudioUrl(
 /**
  * Dev/curator-only upload. Constructs the S3 client lazily here — the only
  * place `@aws-sdk/client-s3` and credentials are touched. Throws if config
- * is incomplete (called only by the ST03 curator script, never on the
+ * is incomplete (called only by the curator script, never on the
  * request path). Always writes Cache-Control: public, max-age=31536000,
  * immutable — keys are never overwritten in place (playback ADR §7), so
  * objects are safe to cache forever once written.

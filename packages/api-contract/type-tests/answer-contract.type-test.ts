@@ -1,4 +1,4 @@
-// Compile-time contract checks for POST /api/answer DTOs (EP37-ST01).
+// Compile-time contract checks for POST /api/answer DTOs.
 // Type-only: tsc erases these; there is no runtime behaviour. Acts as a
 // regression guard that the DTOs exist and keep their shape.
 import type {

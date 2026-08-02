@@ -17,7 +17,7 @@ const emit = defineEmits<{ due: []; anytime: [] }>();
     <p class="subtitle">Choose how you want to review today.</p>
 
     <div class="mode-cards">
-      <!-- Due Review — the EP38 path; shows the due badge (mirrors HomeDashboard).
+      <!-- Due Review — the path; shows the due badge (mirrors HomeDashboard).
            Disabled when dueCount is exactly 0 (nothing to review); left clickable
            when dueCount is null/badgeError so a failed fetch can still be retried. -->
       <button

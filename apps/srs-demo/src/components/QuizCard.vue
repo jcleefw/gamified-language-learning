@@ -268,7 +268,7 @@ watch(
         }}
       </p>
 
-      <!-- EP43-DS01 ST03: word-block segment playback. Present only when
+      <!-- ST03: word-block segment playback. Present only when
            App.vue resolved audio for this sentence (silent degrade — ADR §6). -->
       <div v-if="audio" class="sentence-audio">
         <AudioPlayer ref="sentenceAudioPlayer" :src="audio.audioUrl" :vtt-url="audio.vttUrl" />

@@ -305,7 +305,7 @@ export async function runAdaptiveLoop(
   onShelve?: (wordId: string, batchNum: number) => void | Promise<void>,
   onUnshelveAll?: () => void | Promise<void>,
   initialShelvedIds?: Set<string>,
-  /** DS02: called after each batch boundary to detect stagnant word IDs via DB counters. */
+  /** called after each batch boundary to detect stagnant word IDs via DB counters. */
   onGetStagnantIds?: (activeWordIds: string[]) => string[] | Promise<string[]>,
 ): Promise<{ runState: RunState; sentenceRunState: SentenceRunState }> {
   const config: SessionConfig = {
@@ -395,7 +395,7 @@ export async function runAdaptiveLoop(
       }
     }
 
-    // DS02 shelving pipeline: stagnation detection via DB counters (onGetStagnantIds callback).
+    // shelving pipeline: stagnation detection via DB counters (onGetStagnantIds callback).
     if (onShelve) {
       const activeIds = state.active.map((w) => w.id);
       const stagnant = (await onGetStagnantIds?.(activeIds)) ?? [];

@@ -107,7 +107,7 @@ describe('SqliteReviewStore', () => {
     expect(result).toEqual([]);
   });
 
-  // --- ST04: idempotent re-graduation (seedReviewCard, ignore-if-exists) ---
+  // --- idempotent re-graduation (seedReviewCard, ignore-if-exists) ---
 
   it('seedReviewCard creates the card and returns true on first graduation', async () => {
     const inserted = await store.seedReviewCard('user-a', card());
@@ -130,7 +130,7 @@ describe('SqliteReviewStore', () => {
     expect(result!.schedulerData).toEqual(original.schedulerData);
   });
 
-  // --- ST05: one-way graduation (re-graduation never rewinds an advanced card) ---
+  // --- one-way graduation (re-graduation never rewinds an advanced card) ---
 
   it('graduation is one-way: re-seeding after a review advance preserves the advanced card', async () => {
     await store.seedReviewCard('user-a', card());
@@ -147,7 +147,7 @@ describe('SqliteReviewStore', () => {
     expect(result!.schedulerData).toEqual(advanced.schedulerData);
   });
 
-  // --- ST05: orphan tolerance (a card whose word is gone must never crash a reader) ---
+  // --- orphan tolerance (a card whose word is gone must never crash a reader) ---
 
   it('getDueReviewCards tolerates an orphaned card (no words row) without crashing', async () => {
     const now = new Date('2026-07-08T12:00:00.000Z');
@@ -167,7 +167,7 @@ describe('SqliteReviewStore', () => {
     expect(result).toEqual([]);
   });
 
-  // --- EP39-ST03: last-practised recency (MAX(created_at) per word, user-scoped) ---
+  // --- last-practised recency (MAX(created_at) per word, user-scoped) ---
 
   it('getLastPracticedAtByWord returns MAX(created_at) per word and omits never-practised words', async () => {
     const insert = (wordId: string, createdAt: string, userId = 'user-a'): unknown =>
@@ -198,7 +198,7 @@ describe('SqliteReviewStore', () => {
     expect(map.size).toBe(2);
   });
 
-  // EP39-BUG01: verify the mastered-vs-due timing. Three words graduated "today"
+  // verify the mastered-vs-due timing. Three words graduated "today"
   // via the real FSRS seed are NOT due today (graduation schedules the first review
   // in the future), and ALL THREE resurface together once their due date arrives —
   // the due list is uncapped, so mastering 3 never drip-feeds "only 1".

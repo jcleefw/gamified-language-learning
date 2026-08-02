@@ -8,8 +8,8 @@ import type { DeckDoc } from '@gll/api-contract';
 /** One user's config overrides (T1), stored as a JSON blob on the identity row.
  *  Every field is optional; a field's absence (or a NULL `config` column) means
  *  "no override", resolved to the server's base/preset default at the read path
- *  (DS02). `difficultyPreset` is a preset NAME — the name-only invariant is
- *  enforced by the write path (DS02), not by storage. */
+ *. `difficultyPreset` is a preset NAME — the name-only invariant is
+ *  enforced by the write path, not by storage. */
 export interface UserConfigJson {
   difficultyPreset?: string | null;
   wordsPerBatch?: number | null;
@@ -69,9 +69,9 @@ export const decks = sqliteTable('decks', {
   doc: text('doc', { mode: 'json' }).$type<DeckDoc>().notNull(),
 });
 
-// Standalone, versioned audio asset (EP42 — asset-model ADR). One row = one
+// Standalone, versioned audio asset. One row = one
 // binary: content-addressed `key`, format/size/duration metadata, and a nullable
-// `vtt` WebVTT timing sidecar (filled by EP43). Polymorphic owner via
+// `vtt` WebVTT timing sidecar (filled by). Polymorphic owner via
 // `subject_type` ('deck' only; 'sentence'/'word' reserved) + `subject_id`.
 // Deck↔audio is 1:1-current: re-upload inserts a new row and demotes the prior
 // via `is_current` (history retained; bytes deduped by content-address).

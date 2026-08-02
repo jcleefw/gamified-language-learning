@@ -151,7 +151,7 @@ describe('useDebugRecording — finalizeAndDownload (EP40-ST07b)', () => {
   });
 });
 
-describe('dumpRecentAndDownload — post-hoc dump (EP40)', () => {
+describe('dumpRecentAndDownload — post-hoc dump', () => {
   const fetchMock = vi.fn();
   const downloadSpy = vi.fn();
 
@@ -252,7 +252,7 @@ describe('crossesPhaseOrMidQuiz — nav-confirm trigger, recording-agnostic (EP4
   });
 });
 
-describe('shouldFinalizeOnNav — recorder finalize decision (EP40-ST08)', () => {
+describe('shouldFinalizeOnNav — recorder finalize decision', () => {
   it('never finalizes when not recording, regardless of the trigger condition', () => {
     expect(shouldFinalizeOnNav(false, 'learning', 'review', true)).toBe(false);
     expect(shouldFinalizeOnNav(false, null, 'learning', true)).toBe(false);

@@ -77,8 +77,8 @@ export interface AppLinePayload {
   romanization: string;
   english: string;
   wordIds: string[];
-  // No per-line timing: timing is the served WebVTT track (EP43 consumes it via
-  // the browser's TextTrack, cue-ID = sentenceId).
+  // No per-line timing: timing is the served WebVTT track consumed via the
+  // browser's TextTrack (cue-ID = sentenceId).
 }
 
 export interface AppDeckPayload {

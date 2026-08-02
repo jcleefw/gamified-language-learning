@@ -42,7 +42,7 @@ describe('buildScenario', () => {
     expect(out.expected).toEqual({ dueNow: 3, anytime: 3, reviewUnlocked: true });
   });
 
-  it('review-only: cards due now but NO word state (BUG01 — unlock from card existence)', () => {
+  it('review-only: cards due now but NO word state', () => {
     const out = buildScenario(REVIEW_SCENARIOS['review-only'], {
       wordIds: ['w-a', 'w-b'],
       deckId: 'deck-eat',

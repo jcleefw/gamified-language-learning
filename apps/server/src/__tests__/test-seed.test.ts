@@ -34,7 +34,7 @@ beforeEach(async () => {
 const { default: app } = await import('../app.js');
 
 // ---------------------------------------------------------------------------
-// Helper types matching the ScenarioFixture schema from DS03
+// Helper types matching the ScenarioFixture schema
 // ---------------------------------------------------------------------------
 
 interface ScenarioFixture {
@@ -217,7 +217,7 @@ describe('POST /api/test/seed', () => {
     expect(reviewsBody.data.reviews.map((r) => r.wordId)).not.toContain('th::หิว');
   });
 
-  // EP39: a positive dueOffsetMs seeds a NOT-DUE learned card — the fixture the
+  // a positive dueOffsetMs seeds a NOT-DUE learned card — the fixture the
   // Practice-Anytime path needs. It is absent from /api/reviews (due-only) yet
   // present in /api/reviews/anytime (all learned words), end-to-end via the seed.
   it('a future-due (not-due) seeded card is served by /api/reviews/anytime but not /api/reviews', async () => {
@@ -247,7 +247,7 @@ describe('POST /api/test/seed', () => {
     expect(anytimeIds).toContain('th::กิน'); // AND the not-due word — the anytime fixture works
   });
 
-  // EP39-BUG01: reproduce "mastered N words" faithfully — naturalDue keeps the FSRS
+  // reproduce "mastered N words" faithfully — naturalDue keeps the FSRS
   // graduation interval (always future), so freshly-mastered words are NOT due now
   // but ARE practisable via anytime. Verifies "mastered ≠ due today".
   it('naturalDue seeds a future-due card (absent from /api/reviews, present in /api/reviews/anytime)', async () => {
@@ -321,7 +321,7 @@ describe('POST /api/test/seed/scenario', () => {
     expect(due.data.reviews).toHaveLength(3);
   });
 
-  it('review-only: cards but NO mastered word state (EP39-BUG01) — still N due', async () => {
+  it('review-only: cards but NO mastered word state — still N due', async () => {
     const res = await seedScenario({ name: 'review-only', count: 2 });
     expect(res.status).toBe(200);
     const body = (await res.json()) as { data: { expected: { reviewUnlocked: boolean } } };

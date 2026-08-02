@@ -2,7 +2,7 @@
 defineProps<{
   // Which top-level destination is active: highlights the matching item.
   active: 'home' | 'learn' | 'review' | 'curation';
-  // Review unlock gate (any word mastered) — reused from App.vue (ST05).
+  // Review unlock gate (any word mastered) — reused from App.vue.
   reviewUnlocked: boolean;
   // Due-card count for the Review badge; null when unknown (not fetched).
   dueCount: number | null;

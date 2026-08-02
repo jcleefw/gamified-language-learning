@@ -1,7 +1,7 @@
 import { ref, type Ref } from 'vue';
 import { buildVtt as buildVttText, parseVtt } from '@gll/shared-utils';
 
-// EP43-DS02 ST04 — the marker-authoring state, extracted from the view so the
+// — the marker-authoring state, extracted from the view so the
 // capture / seed / validity / VTT-emit logic is unit-testable without a DOM (the
 // repo tests composables, not .vue files). MarkAudio.vue is the thin shell that
 // wires the shared AudioPlayer's live `currentTime` into these operations. The
@@ -64,7 +64,7 @@ export function useMarkerAuthoring(): MarkerAuthoring {
     if (draft) draft.start = quantize(Math.max(0, time));
   }
 
-  // EP43-ST07 marker-UX improvement: today's toil is clicking the same
+  // marker-UX improvement: today's toil is clicking the same
   // play-head point twice (sentence N's out, then N+1's in). Pre-fill N+1's
   // start from N's committed end — but only if it's still unset, so the
   // curator's own edits are never silently clobbered.

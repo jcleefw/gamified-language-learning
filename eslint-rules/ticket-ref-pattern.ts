@@ -1,4 +1,4 @@
-const TICKET_ABBREVIATIONS = 'EP|PH|DS|UX|TP|ST|TA|BUG|CH|RV|ADR|RFC|AGN';
+export const TICKET_ABBREVIATIONS = 'EP|PH|DS|UX|TP|ST|TA|BUG|CH|RV|ADR|RFC|AGN';
 
 // Every abbreviation from WORKFLOW.md's artifact taxonomy (epic-attached and
 // standalone): Epic, Phase, Design Spec, UX Spec, Test Plan, Story, Task, Bug,

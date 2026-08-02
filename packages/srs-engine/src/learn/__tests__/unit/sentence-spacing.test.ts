@@ -132,7 +132,7 @@ describe('Sentence Spacing and Eligibility Gates', () => {
     expect(eligibleIds).toContain('sent::002');
   });
 
-  describe('Streak tracking, graduation, and shelving (ST10)', () => {
+  describe('Streak tracking, graduation, and shelving', () => {
 
     it('increments correct streak and resets wrong streak on correct answer', () => {
       const sentenceRunState: SentenceRunState = new Map();
