@@ -1,33 +1,10 @@
 import { strict as assert } from 'assert';
+import { removeTicketRefs } from './remove-ticket-refs.mjs';
 
 /**
  * Test cases for remove-ticket-refs patterns.
- * Run: node --test remove-ticket-refs.test.mjs
+ * Run: node --import tsx/esm --test remove-ticket-refs.test.mjs
  */
-
-// Match the actual removeTicketRefs function from remove-ticket-refs.mjs
-function removeTicketRefs(content) {
-  return content.split('\n').map(line => {
-    // Skip TODO: lines — they intentionally track ticket references
-    if (/^\s*(\/\/|\/?\*)\s*TODO\s*:/.test(line)) {
-      return line;
-    }
-
-    return line
-      // Pattern 1: "/** TicketID: description */" → "/** description */"
-      .replace(/^(.*?)(\/\*\*\s*\b(EP\d+(-[A-Z]+\d+)?|PH\d+|DS\d+|ST\d+|BUG\d+)\b:\s*)/, (_, prefix) => prefix + '/** ')
-      // Pattern 2: "// TicketID: description" → "// description"
-      .replace(/^(\s*\/\/)\s+\b(EP\d+(-[A-Z]+\d+)?|PH\d+|DS\d+|ST\d+|BUG\d+)\b:\s*/g, '$1 ')
-      // Pattern 3: "// TicketID description" → "// description" (only at line start)
-      .replace(/^(\s*\/\/)\s+\b(EP\d+(-[A-Z]+\d+)?|PH\d+|DS\d+|ST\d+|BUG\d+)\b\s+/gm, '$1 ')
-      // Pattern 4: Remove " (TicketID §x)" or " (unchanged from TicketID)" style references
-      .replace(/\s+\(\s*(?:unchanged from\s+)?(EP\d+(?:-[A-Z]+\d+)?|PH\d+|DS\d+|ST\d+|BUG\d+)\s*(?:§\d+)?\s*\)/g, '')
-      // Pattern 5: Remove references like " ST07/ST08" in comments after "from" or similar
-      .replace(/\s+(?:from\s+)?(EP\d+(?:-[A-Z]+\d+)?|PH\d+|DS\d+|ST\d+|BUG\d+)(?:\/(EP\d+(?:-[A-Z]+\d+)?|PH\d+|DS\d+|ST\d+|BUG\d+))*(?=\)|\s|$)/g, '')
-      // Pattern 6: Remove orphaned "(unchanged)" left after stripping ticket refs
-      .replace(/\s+\(\s*unchanged\s*\)/g, '');
-  }).join('\n');
-}
 
 console.log('Testing remove-ticket-refs patterns...\n');
 

@@ -7,7 +7,8 @@
 #   
 # Usage:
 #   remove-ticket-refs.sh packages/srs-engine
-#   remove-ticket-refs.sh apps/server
+#   remove-ticket-refs.sh apps/srs-demo   (walks .vue files too)
+#   remove-ticket-refs.sh <file...>   (lint-staged passes staged files this way)
 #
 # Patterns handled:
 #   /** TicketID: text */ → /** text */
@@ -18,4 +19,6 @@
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec node "$DIR/lib/remove-ticket-refs.mjs" "$@"
+# --import tsx/esm lets the script import eslint-rules/ticket-ref-pattern.ts directly,
+# so the abbreviation list can't drift from the one the eslint rule matches against.
+exec node --import tsx/esm "$DIR/lib/remove-ticket-refs.mjs" "$@"
