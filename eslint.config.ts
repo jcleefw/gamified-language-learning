@@ -91,6 +91,45 @@ export default tseslint.config(
     },
   },
   {
+    // EP18-ST02a: no consumer outside srs-engine imports the bare package — see
+    // packages/srs-engine/RULES.md (no barrel export; subpaths only).
+    files: ['apps/**/*.ts', 'packages/!(srs-engine)/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@gll/srs-engine',
+              message:
+                'Import a subpath (/learn, /shelving, /review, /data/*) — there is no barrel export.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // EP18-ST02b: srs-demo may not import @gll/srs-engine/review — review scheduling
+    // is a server-side concern. Blacklist, not an allowlist — every other consumer
+    // may import /review freely.
+    files: ['apps/srs-demo/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@gll/srs-engine/review',
+              message:
+                'review scheduling is server-side only — see packages/srs-engine/RULES.md',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // SqliteLearningStore/SqliteContentStore methods are async-over-sync wrappers by design
     // (EP34 ADR, extended to ContentStore by EP35-ST02): the body wraps synchronous
     // better-sqlite3 calls with zero internal `await`. require-await doesn't apply here.
