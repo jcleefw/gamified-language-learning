@@ -9,7 +9,7 @@
 import fs from 'fs';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
-import { TICKET_ABBREVIATIONS } from '../../../eslint-rules/ticket-ref-pattern.ts';
+import { TICKET_ABBREVIATIONS } from '../eslint-rules/ticket-ref-pattern.ts';
 
 // Same abbreviation list the eslint rule matches against (eslint-rules/ticket-ref-pattern.ts) —
 // kept as one source of truth so this script and the rule can't drift apart.

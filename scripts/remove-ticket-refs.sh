@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# .agents/tools/remove-ticket-refs.sh
+# scripts/remove-ticket-refs.sh
 # Removes ticket ID references from comments while preserving descriptive content.
 # 
 # Context:
@@ -39,4 +39,4 @@ done
 
 # --import tsx/esm lets the script import eslint-rules/ticket-ref-pattern.ts directly,
 # so the abbreviation list can't drift from the one the eslint rule matches against.
-exec node --import tsx/esm "$DIR/lib/remove-ticket-refs.mjs" "${expanded_args[@]}"
+exec node --import tsx/esm "$DIR/remove-ticket-refs.mjs" "${expanded_args[@]}"

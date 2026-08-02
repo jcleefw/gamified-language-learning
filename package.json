@@ -21,7 +21,7 @@
   "lint-staged": {
     "*.{ts,vue}": [
       "eslint --fix",
-      ".agents/tools/remove-ticket-refs.sh"
+      "scripts/remove-ticket-refs.sh"
     ]
   },
   "devDependencies": {

@@ -90,5 +90,5 @@ console.log(`✓ "${test10}" → "${result10}"\n`);
 
 console.log('✨ All tests passed!\n');
 console.log('Usage:');
-console.log('  .agents/tools/remove-ticket-refs.sh packages/srs-engine');
-console.log('  .agents/tools/remove-ticket-refs.sh apps/server');
+console.log('  scripts/remove-ticket-refs.sh packages/srs-engine');
+console.log('  scripts/remove-ticket-refs.sh apps/server');
