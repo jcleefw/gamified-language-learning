@@ -8,7 +8,7 @@
 **Amended by:** AGN05 implementation (2026-07-18) — corrects **D5** (KNOWLEDGE.md is maintained incrementally to current state, by area; it is *not* overwritten to a snapshot and carries no superseded log) and refines **D10** (record and compact land as two commits; the folder deletion is a self-contained commit; rollup-PR / manifest+GitHub-Action delivery are future automation, not built). See the amendment notes on D5 and D10 below.
 
 **Amended by:** [Package-Scoped Knowledge Filtering](20260718T213334Z-agentic-package-scoped-knowledge-filtering.md) (2026-07-18) — refines **D1**: within-unit cross-cutting structure is renamed `concern` → `ryoiki` and gains a concrete model (free-form path notation + a soft alias map, surfaced as `KNOWLEDGE.md` section headings, filtered include-by-default via a per-unit blacklist). Keeps D1's free-form / no-controlled-vocabulary stance; see the amendment note on D1 below.
-**Amended by:** graph-rag concern-centric pivot (2026-07-19) — revises **D7**'s node model. The `spike/graph-rag` reader was built to D7 (story/epic as first-class timeline nodes) and the result inverted the ADR's own goal: the EP44 sample rendered 8 story + 2 epic nodes against 3 concerns — a *work-item* breakdown, not a knowledge map. D7's principle ("an epic is a unit of work, not of knowledge") is taken to its conclusion: **the graph portrays knowledge only — nodes are `domain` + `concern`; stories/epics are provenance *metadata* on concerns, never nodes.** See the amendment note on D7 below.
+**Amended by:** [Graph RAG Read Model](20260720T235931Z-engineering-graph-rag-read-model.md) (2026-07-20) — supersedes **D7**'s node model in full; that ADR now owns Graph RAG's architecture. See the amendment note on D7 below.
 
 **Date:** 2026-07-18
 
@@ -125,23 +125,9 @@ The compaction ADR's D3 said the per-story breakdown is kept in "the record." Th
 
 There is no third "record" file. The compaction ADR is amended accordingly.
 
-### D7 — Graph RAG projection (intention only)
+### D7 — Graph RAG projection (superseded)
 
-> **Amended by the graph-rag concern-centric pivot (2026-07-19):** the original projection below made story/epic first-class **nodes** (an epic reduced to an *edge target*, but a node nonetheless). Implementing it proved that even as edge targets, work items dominate the graph — the EP44 sample was mostly `EP44-ST0x` nodes, i.e. an episode breakdown wearing a domain hat. The corrected model demotes work items **out of the node set entirely**:
->
-> - **Nodes are `domain` + `concern` only.** The graph portrays knowledge (what is true now), never work.
-> - **`KNOWLEDGE.md` is the whole structure:** frontmatter → `domain` node; each `## concern` heading → a `concern` node whose *content* is the prose beneath it. Edge: `domain --contains--> concern`.
-> - **Stories/epics are provenance *metadata* on each concern** — `sources` (story ids), `epics`, `prs` — derived by folding the archive into an index keyed by `(domain, concern)`. The archive produces **no nodes**. "What produced this concern?" is answered from metadata, so the work is a citation, never the skeleton.
-> - **New edge `concern --relates--> concern`** links concerns in *different* domains that were produced by the same epic (co-evolution; labelled `via <epicId>`). Same-domain concerns are already grouped by their shared domain node.
->
-> What the original decision got right is preserved and *strengthened*: grouping is by workspace `domain` (D1), and an epic can never be a grouping node — now it isn't a node at all, so the fragmentation bug is structurally impossible. The `sources` frontmatter (D5) still carries provenance; it now lands as concern metadata rather than a `domain → epic` edge. Implemented in `packages/graph-rag` (reader-only, isolated); the EP44 fixture builds 2 domain + 3 concern nodes. The superseded projection is kept below for the record.
-
-This is a *forward-looking projection*, not a commitment to any package. No retrieval layer is solidified; this decision only shapes the artifacts so a future graph **could** ingest them. When such a layer exists, it ingests these two artifacts, not raw changelogs:
-
-- Archive JSON → story/epic nodes on a timeline.
-- Domain `KNOWLEDGE.md` frontmatter → domain nodes (correctly grouped by workspace unit), with **`sources` IDs as provenance edges** to the archive's epic/story nodes.
-
-The epic is thus always an *edge target*, never the grouping — which structurally prevents the epic-fragmentation bug that motivated this ADR.
+> **Superseded by the [Graph RAG Read Model](20260720T235931Z-engineering-graph-rag-read-model.md) ADR (2026-07-20):** the original projection here made story/epic first-class nodes; a 2026-07-19 pivot (implementing it showed work items dominating the graph) demoted them to provenance metadata instead. The Graph RAG ADR now owns the full node/edge model and everything built on it — this clause no longer does. What it preserved and still holds: grouping is by workspace `domain` (D1), and an epic can never be a grouping node, so the fragmentation bug this ADR exists to prevent stays structurally impossible.
 
 ### D8 — Two work tracks: project and agentic
 
