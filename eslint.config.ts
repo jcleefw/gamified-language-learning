@@ -65,6 +65,32 @@ export default tseslint.config(
     },
   },
   {
+    // EP18: root-level tooling test file — needs the TS parser (no type-aware
+    // project; it's not part of any package's tsconfig `include`).
+    files: ['eslint-boundary-rules.test.ts'],
+    languageOptions: {
+      parser: tseslint.parser,
+    },
+  },
+  {
+    // EP18-ST01: shelving/ and review/ never import learn/ — see packages/srs-engine/RULES.md
+    files: ['packages/srs-engine/src/{shelving,review}/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/learn/*', '**/learn'],
+              message:
+                'shelving/ and review/ must not import learn/ — see packages/srs-engine/RULES.md',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // SqliteLearningStore/SqliteContentStore methods are async-over-sync wrappers by design
     // (EP34 ADR, extended to ContentStore by EP35-ST02): the body wraps synchronous
     // better-sqlite3 calls with zero internal `await`. require-await doesn't apply here.
