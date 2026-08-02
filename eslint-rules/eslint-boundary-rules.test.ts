@@ -107,6 +107,18 @@ describe('srs-demo must not import @gll/srs-engine/review', () => {
       },
     );
   });
+
+  it('flags srs-demo importing @gll/db', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/srs-demo/src/__fixtures__/tmp-db-import.ts',
+        content: `import { db } from '@gll/db';\n\nexport const usesDb = db;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
 });
 
 describe('packages/logger and packages/shared-utils must not import other @gll/* packages', () => {

@@ -112,9 +112,9 @@ export default defineConfig(
     },
   },
   {
-    // EP18-ST02b: srs-demo may not import @gll/srs-engine/review — review scheduling
-    // is a server-side concern. Blacklist, not an allowlist — every other consumer
-    // may import /review freely.
+    // srs-demo may not import @gll/srs-engine/review (review scheduling) or @gll/db
+    // (storage access) — both are server-side concerns. Blacklist, not an allowlist —
+    // every other consumer may import /review freely.
     files: ['apps/srs-demo/**/*.ts'],
     rules: {
       'no-restricted-imports': [
@@ -125,6 +125,11 @@ export default defineConfig(
               name: '@gll/srs-engine/review',
               message:
                 'review scheduling is server-side only — see packages/srs-engine/RULES.md',
+            },
+            {
+              name: '@gll/db',
+              message:
+                'db access is server-side only — apps/srs-demo talks to server over HTTP.',
             },
           ],
         },
