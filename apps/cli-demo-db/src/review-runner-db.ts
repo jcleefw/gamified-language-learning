@@ -39,7 +39,7 @@ export interface ReviewSessionDeps {
 
 /**
  * ST07: core review loop. For each due card, present a question, infer the rating
- * from the answer (ST08), reschedule, and persist immediately (write-on-answer).
+ * from the answer, reschedule, and persist immediately (write-on-answer).
  * A card with no vocab question is skipped. Errors propagate after already-answered
  * cards are safely persisted.
  */
