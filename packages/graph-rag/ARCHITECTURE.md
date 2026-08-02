@@ -62,7 +62,7 @@
 
 The graph portrays **knowledge, not work**. Grouping is by workspace `domain`;
 the atom of knowledge is the `ryoiki`. Above them sits a decision layer — the
-`adr` node (the *why*). Stories/epics are provenance metadata on each ryoiki,
+`kettei` node (the *why*). Stories/epics are provenance metadata on each ryoiki,
 never nodes — so the picture can't fragment into an episode breakdown. There are
 no `file:` nodes: the graph never duplicates what git stores (Compaction D6).
 Enforced by `__tests__/unit/ryoiki-reader.test.ts`.
@@ -77,14 +77,16 @@ Enforced by `__tests__/unit/ryoiki-reader.test.ts`.
 | --- | --- | --- |
 | `domain` | `KNOWLEDGE.md` frontmatter | `unit`, `updated`, `sources`, `path` |
 | `ryoiki` | `KNOWLEDGE.md` `##` heading | `ryoiki`, `unit`, `updated`, `content` (prose), `sources[]`, `epics[]`, `prs[]` |
-| `adr` | `product-documentation/architecture/*.md` | `slug`, `status`, `date`, `deciders`, `scope`, `content`, `decides[]`, `path` |
+| `kettei` | `product-documentation/architecture/*.md` | `slug`, `status`, `date`, `deciders`, `scope`, `content`, `decides[]`, `path` |
 
-The `adr` is a third layer — a **decision** (the *why*), distinct from realized knowledge
-(`ryoiki`) and from work (provenance). ADRs ingest as-is and start **floating**; a human
-links an ADR to the ryoiki(s) it governs, and that link is authored back into the ADR's
-`**Decides:**` field (the source of truth). An ADR with no `decides` edge is "decided, not
-yet built". Read by `src/readers/adr.ts`; the link write-back lives in `server/serve.ts`
-(`POST /api/link`). See [docs/plan/adr-third-node-layer.md](./docs/plan/adr-third-node-layer.md).
+`kettei` is a third layer — a **decision** (the *why*), distinct from realized knowledge
+(`ryoiki`) and from work (provenance). Named `kettei`, not `adr`, so the graph's node-type
+identifier never collides with "ADR" already meaning the source document elsewhere in the
+repo. An ADR's kettei node enters the graph only once a human has authored its
+`**Decides:**` field against an existing ryoiki/domain node *and* added it to
+`.graph-rag-config.json`'s `adrs.files` allowlist — nothing ever enters floating. Read by
+`src/readers/adr.ts`; the link write-back lives in `server/serve.ts` (`POST /api/link`).
+See the [Graph RAG Read Model](../../product-documentation/architecture/20260720T235931Z-engineering-graph-rag-read-model.md) ADR.
 
 ## Edge types
 

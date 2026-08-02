@@ -9,7 +9,7 @@ export interface BuildOptions {
   tracks?: string[] | null;
   /** Restrict to these workspace units; null/undefined = all. */
   domains?: string[] | null;
-  /** Set false to skip ADR ingestion entirely — no adr nodes/edges. Default true. */
+  /** Set false to skip ADR ingestion entirely — no kettei nodes/edges. Default true. */
   includeAdrs?: boolean;
   /** Restrict ADR ingestion to specific files (filename or slug); null/undefined = every ADR. */
   adrFiles?: string[] | null;

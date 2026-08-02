@@ -25,7 +25,7 @@
     --epic: #a78bfa;
     --domain: #2dd4bf;
     --ryoiki: #4ade80;
-    --adr: #fbbf24;
+    --kettei: #fbbf24;
     --danger: #f87171;
     --ok: #34d399;
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
@@ -245,18 +245,18 @@
 
 <script type="module">
 const TYPE_COLOR = {
-  domain: getVar('--domain'), ryoiki: getVar('--ryoiki'), adr: getVar('--adr'),
+  domain: getVar('--domain'), ryoiki: getVar('--ryoiki'), kettei: getVar('--kettei'),
 };
 function getVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function nodeRadius(n){
-  const base = n.type === 'domain' ? 11 : n.type === 'adr' ? 8.5 : 6.5;
+  const base = n.type === 'domain' ? 11 : n.type === 'kettei' ? 8.5 : 6.5;
   return (base + Math.min(n.deg, 6) * 1.4) * Math.max(0.6, Math.min(view.k, 1.6));
 }
 
 // ---- State ----------------------------------------------------------------
 let NODES = [], EDGES = [], byId = new Map();
 let selected = null, highlighted = new Set(), highlightEdges = new Set();
-let adrHasDecides = new Set();          // adr ids that carry >=1 outgoing `decides`
+let ketteiHasDecides = new Set();          // kettei ids that carry >=1 outgoing `decides`
 let linkMode = false, linkFrom = null;  // ADR→ryoiki linking: the ADR awaiting a target
 const view = { x: 0, y: 0, k: 1 };
 let model = null;
@@ -308,7 +308,7 @@ function applyGraph(g, preserve){
   });
   EDGES = g.edges.filter(e => byId.has(e.from) && byId.has(e.to));
   EDGES.forEach(e => { byId.get(e.from).deg++; byId.get(e.to).deg++; });
-  adrHasDecides = new Set(EDGES.filter(e => e.type === 'decides').map(e => e.from));
+  ketteiHasDecides = new Set(EDGES.filter(e => e.type === 'decides').map(e => e.from));
 
   renderStats(g.summary);
   buildBubbles();
@@ -362,8 +362,8 @@ function renderLegend(){
     el.innerHTML =
       `<div class="row"><span class="swatch" style="background:var(--domain)"></span>domain · workspace unit</div>` +
       `<div class="row"><span class="swatch" style="background:var(--ryoiki)"></span>ryoiki · area of knowledge</div>` +
-      `<div class="row"><span class="swatch" style="background:var(--adr);transform:rotate(45deg);border-radius:1px"></span>adr · a decision (◇ = different shape)</div>` +
-      `<div class="row"><span class="swatch" style="background:transparent;border:1.4px dotted var(--adr);transform:rotate(45deg)"></span>floating adr · decided, not built</div>` +
+      `<div class="row"><span class="swatch" style="background:var(--kettei);transform:rotate(45deg);border-radius:1px"></span>kettei · a decision (◇ = different shape)</div>` +
+      `<div class="row"><span class="swatch" style="background:transparent;border:1.4px dotted var(--kettei);transform:rotate(45deg)"></span>floating kettei · decided, not built</div>` +
       `<div class="row"><span class="swatch" style="background:var(--accent);border-radius:1px;width:14px;height:2px"></span>relates · co-evolved in one epic</div>` +
       `<div class="axis-note">click a node · drag to move · scroll to zoom</div>`;
   }
@@ -519,25 +519,25 @@ function draw(){
       ctx.beginPath(); ctx.arc(p.x, p.y, r+7, 0, 7);
       ctx.fillStyle = 'rgba(56,189,248,0.16)'; ctx.fill();
     }
-    // ADRs are DIAMONDS (a different shape = a different kind of thing: a decision,
+    // kettei nodes are DIAMONDS (a different shape = a different kind of thing: a decision,
     // not realized knowledge). Circles for domain/ryoiki.
     ctx.beginPath();
-    if (n.type === 'adr'){
+    if (n.type === 'kettei'){
       ctx.moveTo(p.x, p.y-r); ctx.lineTo(p.x+r, p.y); ctx.lineTo(p.x, p.y+r); ctx.lineTo(p.x-r, p.y); ctx.closePath();
     } else {
       ctx.arc(p.x, p.y, r, 0, 7);
     }
     ctx.fillStyle = TYPE_COLOR[n.type] || '#888';
     ctx.globalAlpha = faded ? 0.25 : 1;
-    if (n.type === 'adr'){
+    if (n.type === 'kettei'){
       // status/anchoring shapes the fill: Accepted+linked = solid; superseded =
       // dashed hollow; floating (no `decides`) = dotted hollow = "decided, not built".
       const superseded = /supersed/i.test(String(n.metadata?.status || ''));
-      const linked = adrHasDecides.has(n.id);
+      const linked = ketteiHasDecides.has(n.id);
       if (superseded || !linked){
         ctx.globalAlpha = faded ? 0.06 : 0.14; ctx.fill();
         ctx.globalAlpha = faded ? 0.2 : 0.95;
-        ctx.strokeStyle = TYPE_COLOR.adr; ctx.lineWidth = 1.6;
+        ctx.strokeStyle = TYPE_COLOR.kettei; ctx.lineWidth = 1.6;
         ctx.setLineDash(superseded ? [4,3] : [2,3]); ctx.stroke(); ctx.setLineDash([]);
       } else {
         ctx.fill();
@@ -546,7 +546,7 @@ function draw(){
       ctx.fill();
     }
     // linking source gets a bright ring
-    if (linkFrom && linkFrom.id === n.id){ ctx.lineWidth = 2.5; ctx.strokeStyle = TYPE_COLOR.adr; ctx.stroke(); }
+    if (linkFrom && linkFrom.id === n.id){ ctx.lineWidth = 2.5; ctx.strokeStyle = TYPE_COLOR.kettei; ctx.stroke(); }
     if (selected && selected.id === n.id){ ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff'; ctx.stroke(); }
     ctx.globalAlpha = 1;
     // label
@@ -583,7 +583,7 @@ function drawEdgeLabel(a, b, type, hot, dim){
 function shortLabel(n){
   if (n.type === 'domain') return n.id;
   if (n.type === 'ryoiki') return String(n.metadata?.ryoiki ?? n.label);
-  if (n.type === 'adr') return String(n.label).replace(/^ADR:\s*/i, '');
+  if (n.type === 'kettei') return String(n.label).replace(/^ADR:\s*/i, '');
   return n.id;
 }
 function edgeKey(e){ return `${e.from}|${e.type}|${e.to}`; }
@@ -666,7 +666,7 @@ function renderDetail(node){
   const rows = [];
   const add = (k,v) => { if (v!==undefined && v!==null && v!=='') rows.push(`<dt>${k}</dt><dd>${esc(String(v))}</dd>`); };
 
-  if (node.type === 'adr'){
+  if (node.type === 'kettei'){
     add('status', m.status); add('date', m.date); add('deciders', m.deciders); add('scope', m.scope);
     // The ryoiki/domain(s) this decision governs — each removable (write-back).
     const targets = EDGES.filter(e => e.from === node.id && e.type === 'decides').map(e => e.to);
@@ -676,7 +676,7 @@ function renderDetail(node){
       : `<span style="color:var(--faint);font-size:11px">floating — decided, not yet linked. Use “Link ADR”.</span>`;
     el.innerHTML =
       `<span class="close" id="det-close">×</span>` +
-      `<span class="type-chip" style="background:${hexA(color,0.16)};color:${color}">adr ◇</span>` +
+      `<span class="type-chip" style="background:${hexA(color,0.16)};color:${color}">kettei ◇</span>` +
       `<h3>${esc(node.label)}</h3>` +
       `<dl>${rows.join('')}</dl>` +
       `<dt style="margin-top:8px">decides</dt><div class="cites" style="margin-top:4px">${decidesHtml}</div>`;
@@ -775,11 +775,11 @@ btnLink.onclick = () => setLinkMode(!linkMode);
 
 function handleLinkClick(node){
   if (!linkFrom){
-    if (node.type === 'adr'){ linkFrom = node; select(node); btnLink.textContent = 'Linking… pick a target'; }
+    if (node.type === 'kettei'){ linkFrom = node; select(node); btnLink.textContent = 'Linking… pick a target'; }
     return; // clicking a non-ADR first does nothing
   }
   if (node.id === linkFrom.id){ resetLink(); return; }
-  if (node.type === 'adr'){ linkFrom = node; select(node); return; } // switch source
+  if (node.type === 'kettei'){ linkFrom = node; select(node); return; } // switch source
   if (node.type === 'ryoiki' || node.type === 'domain'){
     doLink(linkFrom.metadata.slug, node.id, 'add');
     resetLink();

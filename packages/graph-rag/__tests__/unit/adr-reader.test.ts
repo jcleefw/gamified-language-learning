@@ -54,7 +54,7 @@ describe('parseAdr', () => {
     expect(parseAdr('# Just a note\n\nsome text', '/x/notes.md')).toBeNull();
   });
 
-  it('parses adr->adr lineage from a "Superseded by" link (newer supersedes this)', () => {
+  it('parses kettei->kettei lineage from a "Superseded by" link (newer supersedes this)', () => {
     const doc = parseAdr(
       [
         '# ADR: Old approach',
@@ -78,12 +78,12 @@ describe('ingestAdrs — against the fixture', () => {
     expect(findAdrFiles(FIXTURE_ROOT).length).toBe(3);
   });
 
-  it('adds an adr node per ADR', () => {
-    const adrs = graph.nodesByType('adr').map((n) => n.id).sort();
+  it('adds a kettei node per ADR', () => {
+    const adrs = graph.nodesByType('kettei').map((n) => n.id).sort();
     expect(adrs).toEqual([
-      'adr:engineering-audio-playback',
-      'adr:engineering-routing-vue-router',
-      'adr:engineering-screen-string-routing',
+      'kettei:engineering-audio-playback',
+      'kettei:engineering-routing-vue-router',
+      'kettei:engineering-screen-string-routing',
     ]);
   });
 
@@ -91,7 +91,7 @@ describe('ingestAdrs — against the fixture', () => {
     expect(
       graph.edges.some(
         (e) =>
-          e.from === 'adr:engineering-routing-vue-router' &&
+          e.from === 'kettei:engineering-routing-vue-router' &&
           e.to === 'apps/srs-demo#Routing' &&
           e.type === 'decides',
       ),
@@ -101,14 +101,14 @@ describe('ingestAdrs — against the fixture', () => {
   it('leaves an ADR FLOATING when its Decides target has no matching ryoiki', () => {
     // engineering-audio-playback decides `apps/srs-demo#Audio Playback` (not built).
     const decides = graph.edges.filter(
-      (e) => e.from === 'adr:engineering-audio-playback' && e.type === 'decides',
+      (e) => e.from === 'kettei:engineering-audio-playback' && e.type === 'decides',
     );
     expect(decides).toHaveLength(0);
   });
 
   it('leaves an ADR FLOATING when it has no Decides field at all', () => {
     const decides = graph.edges.filter(
-      (e) => e.from === 'adr:engineering-screen-string-routing' && e.type === 'decides',
+      (e) => e.from === 'kettei:engineering-screen-string-routing' && e.type === 'decides',
     );
     expect(decides).toHaveLength(0);
   });
@@ -117,8 +117,8 @@ describe('ingestAdrs — against the fixture', () => {
     expect(
       graph.edges.some(
         (e) =>
-          e.from === 'adr:engineering-routing-vue-router' &&
-          e.to === 'adr:engineering-screen-string-routing' &&
+          e.from === 'kettei:engineering-routing-vue-router' &&
+          e.to === 'kettei:engineering-screen-string-routing' &&
           e.type === 'supersedes',
       ),
     ).toBe(true);

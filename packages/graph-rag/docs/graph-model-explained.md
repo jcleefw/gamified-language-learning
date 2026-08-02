@@ -28,7 +28,7 @@ The whole graph is just two lists in one JSON file (`.graph-data.json`): a list 
 ```
 
 The `type` field is the whole game. There are **three** types: `domain` and `ryoiki`
-(the knowledge) and `adr` (the decisions). Here they are, one at a time.
+(the knowledge) and `kettei` (the decisions). Here they are, one at a time.
 
 ---
 
@@ -116,7 +116,7 @@ citation, never part of the skeleton.
 
 ---
 
-## Node type 3 of 3 — `adr`
+## Node type 3 of 3 — `kettei`
 
 **What it represents:** an architecture **decision** — the *why*. A ryoiki says *how routing
 works now*; an ADR says *why we chose Vue Router in the first place*. It's neither a folder
@@ -127,8 +127,8 @@ instead of a circle so you can tell a decision from realized knowledge at a glan
 
 ```json
 {
-  "id": "adr:engineering-routing-vue-router",
-  "type": "adr",
+  "id": "kettei:engineering-routing-vue-router",
+  "type": "kettei",
   "label": "ADR: Routing via Vue Router 4",
   "metadata": {
     "slug": "engineering-routing-vue-router",
@@ -149,9 +149,9 @@ straight from the file, never interpreted from prose:
 
 | Field | Source in the `.md` file |
 | --- | --- |
-| `id` | `adr:` + the filename minus its timestamp prefix and `.md` |
+| `id` | `kettei:` + the filename minus its timestamp prefix and `.md` |
 | `label` | the first `# ` heading line |
-| `slug` | the id without the `adr:` prefix (used to find the file for write-backs) |
+| `slug` | the id without the `kettei:` prefix (used to find the file for write-backs) |
 | `status` | first word of `**Status:**` (`Accepted`, `Superseded`, `Proposed`…) |
 | `date` / `deciders` / `scope` | the matching `**…:**` bold fields |
 | `content` | the prose body after the `---`, stored **verbatim** (for search/detail) |

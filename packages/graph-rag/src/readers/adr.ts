@@ -8,14 +8,14 @@ import { ryoikiKey } from './archive.js';
 //
 // ADRs live in <root>/product-documentation/architecture/*.md and use markdown
 // bold fields (`**Status:**`, `**Date:**`, …), NOT YAML frontmatter. They ingest
-// AS-IS as standalone `adr` nodes and start FLOATING — no prose is mined for
+// AS-IS as standalone `kettei` nodes and start FLOATING — no prose is mined for
 // ryoiki links (staying true to EXTRACTION_PATTERNS.md's "no prose mining").
 //
 // A human links an ADR to the ryoiki it governs; that link is authored back
 // into the ADR's `**Decides:**` field (the SOURCE OF TRUTH), so a reset + rebuild
 // reconstructs it by re-reading the ADR. Two edge kinds come out:
-//   - decides   : adr -> ryoiki|domain    (from the `**Decides:**` field)
-//   - supersedes: adr -> adr              (auto-parsed from `Superseded by` /
+//   - decides   : kettei -> ryoiki|domain    (from the `**Decides:**` field)
+//   - supersedes: kettei -> kettei              (auto-parsed from `Superseded by` /
 //                 `Amended by` links in the Status/header block; best-effort)
 //
 // Reads only. The write-back that maintains `**Decides:**` lives in server/serve.ts.
@@ -42,7 +42,7 @@ export interface AdrDoc {
   scope: string;
   content: string; // the body after the header block — carried for search/detail
   decides: string[]; // `**Decides:**` targets: `domain#Ryoiki` or bare `domain`
-  lineage: AdrLineage[]; // adr→adr supersedes claims (slugs, unresolved to nodes)
+  lineage: AdrLineage[]; // kettei→kettei supersedes claims (slugs, unresolved to nodes)
   path: string;
 }
 
@@ -118,7 +118,7 @@ export function parseAdr(content: string, path: string): AdrDoc | null {
 }
 
 /**
- * Best-effort adr→adr lineage from the header block. `Superseded by` / `Amended by`
+ * Best-effort kettei→kettei lineage from the header block. `Superseded by` / `Amended by`
  * name a NEWER decision that replaces THIS one (edge newer→this); an active
  * `supersedes` names an OLDER one (edge this→older).
  */
@@ -139,7 +139,7 @@ function parseLineage(header: string, thisSlug: string): AdrLineage[] {
 }
 
 /**
- * Read every ADR into the graph as `adr` nodes, drawing `decides` edges to the
+ * Read every ADR into the graph as `kettei` nodes, drawing `decides` edges to the
  * ryoiki/domain nodes they govern and `supersedes` edges between ADRs. MUST run
  * AFTER ingestKnowledge so the ryoiki/domain nodes a `**Decides:**` field points
  * at already exist — an unmatched target simply leaves the ADR floating.
@@ -176,10 +176,10 @@ export function ingestAdrs(
     const doc = parseAdr(readFileSync(file, 'utf-8'), file);
     if (!doc) continue;
 
-    const id = `adr:${doc.slug}`;
+    const id = `kettei:${doc.slug}`;
     graph.addNode({
       id,
-      type: 'adr',
+      type: 'kettei',
       label: doc.title,
       metadata: {
         slug: doc.slug,
@@ -202,8 +202,8 @@ export function ingestAdrs(
 
   // Lineage edges last, so both endpoint nodes exist regardless of file order.
   for (const { supersederSlug, supersededSlug } of lineage) {
-    const from = `adr:${supersederSlug}`;
-    const to = `adr:${supersededSlug}`;
+    const from = `kettei:${supersederSlug}`;
+    const to = `kettei:${supersededSlug}`;
     if (graph.getNode(from) && graph.getNode(to)) {
       graph.addEdge({ from, to, type: 'supersedes', label: 'supersedes' });
     }

@@ -29,11 +29,11 @@ describe('ryoiki-centric reader — EP44 fixture', () => {
   const idsOf = (type: Node['type']) => graph.nodesByType(type).map((n) => n.id).sort();
 
   it('portrays knowledge, not work: NO story or epic nodes exist', () => {
-    // The graph is domains + ryoiki (knowledge) + adrs (decisions) — never work.
+    // The graph is domains + ryoiki (knowledge) + kettei (decisions) — never work.
     const types = new Set(Array.from(graph.nodes.values()).map((n) => n.type));
     expect(types.has('story' as Node['type'])).toBe(false);
     expect(types.has('epic' as Node['type'])).toBe(false);
-    expect([...types].sort()).toEqual(['adr', 'domain', 'ryoiki']);
+    expect([...types].sort()).toEqual(['domain', 'kettei', 'ryoiki']);
   });
 
   it('groups ryoiki under their workspace-unit domain', () => {

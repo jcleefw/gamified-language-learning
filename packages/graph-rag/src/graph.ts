@@ -89,7 +89,7 @@ export class ProjectGraph {
     const counts: Record<NodeType, number> = {
       domain: 0,
       ryoiki: 0,
-      adr: 0,
+      kettei: 0,
     };
 
     this.nodes.forEach((node) => {

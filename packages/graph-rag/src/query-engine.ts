@@ -94,7 +94,7 @@ You read a knowledge graph of a language-learning platform organized by KNOWLEDG
 - domain nodes are workspace units (apps/*, packages/*),
 - ryoiki nodes are named areas of knowledge within a domain, each carrying the durable
   description of how that area works,
-- adr nodes are architecture DECISIONS (the *why*): a 'decides' edge points from an ADR to the
+- kettei nodes are architecture DECISIONS (the *why*): a 'decides' edge points from an ADR to the
   ryoiki/domain it governs, and a 'supersedes' edge from a newer ADR to the one it replaces.
   An ADR with no 'decides' edge is a decision not yet realized in a ryoiki.
 Each ryoiki also records its provenance — the stories/epics/PRs that produced it — as
@@ -144,8 +144,8 @@ Do not organize your answer around epics — organize it around ryoiki.`;
         m.content, // the ryoiki's durable knowledge prose (or an ADR's body)
         m.ryoiki,
         m.unit,
-        m.status, // adr: Accepted / Superseded / Proposed
-        m.scope, // adr: what the decision covers
+        m.status, // kettei: Accepted / Superseded / Proposed
+        m.scope, // kettei: what the decision covers
         Array.isArray(m.sources) ? m.sources.join(' ') : undefined, // provenance ids
         Array.isArray(m.epics) ? m.epics.join(' ') : undefined,
       ];

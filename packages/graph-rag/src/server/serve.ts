@@ -70,7 +70,7 @@ knowledge graph organized by KNOWLEDGE, not by work:
 - domain nodes are workspace units (apps/*, packages/*);
 - ryoiki nodes are named areas of knowledge within a domain, each carrying the durable
   description of how that area works, plus provenance (the stories/epics/PRs that produced it);
-- adr nodes are architecture DECISIONS (the *why*). A 'decides' edge points from an ADR to the
+- kettei nodes are architecture DECISIONS (the *why*). A 'decides' edge points from an ADR to the
   ryoiki/domain it governs; a 'supersedes' edge points from a newer ADR to the one it replaces.
   An ADR with no 'decides' edge is a decision that is not yet realized in a ryoiki.
 Answer ONLY from the graph context below. Be specific: name domains and ryoiki, cite the

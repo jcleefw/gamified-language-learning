@@ -24,7 +24,7 @@ its architecture decisions:
 | --- | --- | --- |
 | `domain` | `{apps,packages}/<unit>/KNOWLEDGE.md` frontmatter | a workspace unit — a grouping of ryoiki |
 | `ryoiki` | each `##` heading in a `KNOWLEDGE.md` | a named area of knowledge, carrying the prose beneath it |
-| `adr` | `product-documentation/architecture/*.md` | an architecture decision (the *why*) |
+| `kettei` | `product-documentation/architecture/*.md` | an architecture decision (the *why*) |
 
 `ryoiki` is the within-unit knowledge axis defined by **AGN06 (Package-Scoped
 Knowledge Filtering)**. Two curated reference files drive how ryoiki are read
@@ -204,7 +204,7 @@ Tests assert the ryoiki-centric invariants against the EP44 fixture: **no
 story or epic nodes**, ryoiki grouped under their domain, provenance kept as
 ryoiki metadata, cross-domain `relates` only, zero `file:` nodes, blacklisted
 headings excluded with a warning, and alias-drift stories still joining their
-canonical ryoiki. A separate suite covers the `adr` reader: parsing, `decides`
+canonical ryoiki. A separate suite covers the kettei-producing ADR reader: parsing, `decides`
 resolution (including unmatched targets staying floating), and `supersedes`
 lineage.
 
@@ -229,7 +229,7 @@ ingestAdrs(graph, root, canonicalize?, only?)       // adr nodes + decides/super
 
 // graph
 graph.getNode(id): Node | undefined
-graph.nodesByType(type): Node[]                    // 'domain' | 'ryoiki' | 'adr'
+graph.nodesByType(type): Node[]                    // 'domain' | 'ryoiki' | 'kettei'
 graph.traverse(nodeId, edgeTypes, depth?): Node[]
 graph.toJSON(): GraphData
 

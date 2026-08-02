@@ -14,7 +14,7 @@
 // each ryoiki (`sources` / `epics` / `prs`) so "which work produced this?" is
 // still answerable — the work is the citation, never the skeleton.
 //
-// A third layer sits above both: the `adr` node — a design DECISION (the *why*),
+// A third layer sits above both: the `kettei` node — a design DECISION (the *why*),
 // distinct from realized knowledge (`ryoiki`) and from work (provenance). ADRs
 // ingest as-is and start FLOATING; a human links an ADR to the ryoiki it
 // governs, and that link is authored back into the ADR's `**Decides:**` field
@@ -30,7 +30,7 @@
 export type NodeType =
   | 'domain' // a workspace unit — groups the ryoiki beneath it
   | 'ryoiki' // a named area of knowledge within a domain (a KNOWLEDGE.md heading)
-  | 'adr'; // an architecture decision — the *why* behind one or more ryoiki
+  | 'kettei'; // an architecture decision — the *why* behind one or more ryoiki
 
 export interface Node {
   id: string;
@@ -42,8 +42,8 @@ export interface Node {
 export type EdgeType =
   | 'contains' // domain -> ryoiki    (a domain groups its ryoiki)
   | 'relates' // ryoiki -> ryoiki    (two ryoiki co-evolved in the same epic)
-  | 'decides' // adr -> ryoiki|domain    (this decision governs that knowledge)
-  | 'supersedes'; // adr -> adr        (this decision replaces/amends an earlier one)
+  | 'decides' // kettei -> ryoiki|domain    (this decision governs that knowledge)
+  | 'supersedes'; // kettei -> kettei        (this decision replaces/amends an earlier one)
 
 export interface Edge {
   from: string;
