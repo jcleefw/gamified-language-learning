@@ -31,7 +31,7 @@ async function restrictedImportViolations(relPath: string): Promise<number> {
     .length;
 }
 
-describe('ST01: shelving/review must not import learn/', () => {
+describe('shelving/ and review/ must not import learn/', () => {
   it('flags a shelving/ file importing from learn/', async () => {
     await withFixture(
       {
@@ -57,7 +57,7 @@ describe('ST01: shelving/review must not import learn/', () => {
   });
 });
 
-describe('ST02a: no consumer outside srs-engine imports the bare package', () => {
+describe('no consumer outside srs-engine may import the bare package', () => {
   it('flags an app importing the bare @gll/srs-engine specifier', async () => {
     await withFixture(
       {
@@ -83,7 +83,7 @@ describe('ST02a: no consumer outside srs-engine imports the bare package', () =>
   });
 });
 
-describe('ST02b: srs-demo must not import @gll/srs-engine/review', () => {
+describe('srs-demo must not import @gll/srs-engine/review', () => {
   it('flags srs-demo importing /review', async () => {
     await withFixture(
       {
@@ -101,6 +101,56 @@ describe('ST02b: srs-demo must not import @gll/srs-engine/review', () => {
       {
         relPath: 'apps/server/src/__fixtures__/tmp-review-import.ts',
         content: `import { FsrsScheduler } from '@gll/srs-engine/review';\n\nexport const scheduler = FsrsScheduler;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(0);
+      },
+    );
+  });
+});
+
+describe('packages/logger and packages/shared-utils must not import other @gll/* packages', () => {
+  it('flags packages/logger importing another @gll/* package', async () => {
+    await withFixture(
+      {
+        relPath: 'packages/logger/src/__fixtures__/tmp-boundary.ts',
+        content: `import { formatVtt } from '@gll/shared-utils';\n\nexport const usesSharedUtils = formatVtt;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('does not flag packages/logger importing a non-@gll/* package', async () => {
+    await withFixture(
+      {
+        relPath: 'packages/logger/src/__fixtures__/tmp-control.ts',
+        content: `import pino from 'pino';\n\nexport const usesPino = pino;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(0);
+      },
+    );
+  });
+
+  it('flags packages/shared-utils importing another @gll/* package', async () => {
+    await withFixture(
+      {
+        relPath: 'packages/shared-utils/src/__fixtures__/tmp-boundary.ts',
+        content: `import { logger } from '@gll/logger';\n\nexport const usesLogger = logger;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('does not flag packages/shared-utils importing a non-@gll/* module', async () => {
+    await withFixture(
+      {
+        relPath: 'packages/shared-utils/src/__fixtures__/tmp-control.ts',
+        content: `import { readFileSync } from 'node:fs';\n\nexport const usesFs = readFileSync;\n`,
       },
       async (relPath) => {
         expect(await restrictedImportViolations(relPath)).toBe(0);

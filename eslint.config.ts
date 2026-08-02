@@ -67,9 +67,9 @@ export default defineConfig(
     },
   },
   {
-    // EP18: root-level tooling test file — needs the TS parser (no type-aware
-    // project; it's not part of any package's tsconfig `include`).
-    files: ['eslint-boundary-rules.test.ts'],
+    // Tooling test file — needs the TS parser (no type-aware project; it's
+    // not part of any package's tsconfig `include`).
+    files: ['eslint-rules/eslint-boundary-rules.test.ts'],
     languageOptions: {
       parser: tseslint.parser,
     },
@@ -125,6 +125,25 @@ export default defineConfig(
               name: '@gll/srs-engine/review',
               message:
                 'review scheduling is server-side only — see packages/srs-engine/RULES.md',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // packages/logger and packages/shared-utils are leaf packages — no @gll/*
+    // import inside either, by construction (not just convention).
+    files: ['packages/{logger,shared-utils}/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@gll/*'],
+              message:
+                'packages/logger and packages/shared-utils are leaf packages — no @gll/* imports allowed.',
             },
           ],
         },

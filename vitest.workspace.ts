@@ -6,7 +6,7 @@ export default defineWorkspace([
   {
     test: {
       name: 'tooling',
-      include: ['eslint-boundary-rules.test.ts', 'eslint-rules/**/*.test.ts'],
+      include: ['eslint-rules/**/*.test.ts'],
       globals: true,
     },
   },
