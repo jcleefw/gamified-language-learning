@@ -133,7 +133,7 @@ describe('GET /api/decks', () => {
   });
 });
 
-describe('GET /api/decks — audio fields (EP42-DS01,)', () => {
+describe('GET /api/decks — audio fields', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });

@@ -233,7 +233,7 @@ describe('POST /api/reviews/answer', () => {
     expect(cards).toEqual([]);
   });
 
-  // --- ST04: durable review-answer record ---
+  // --- durable review-answer record ---
 
   it('appends exactly one review_answer_events row carrying all facts + rating + correlation id', async () => {
     await seedCard('rec1', -1_000);
@@ -288,7 +288,7 @@ describe('POST /api/reviews/answer', () => {
     expect(persisted!.due.getTime()).toBeGreaterThan(card.due.getTime());
   });
 
-  // --- EP39-ST02: due-gate (ADR §2 / NFR-005) ---
+  // --- due-gate (ADR §2 / NFR-005) ---
 
   it('advances a DUE card and reports advanced:true (EP38 behaviour + the new flag)', async () => {
     const card = await seedCard('due1', -1_000);

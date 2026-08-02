@@ -177,7 +177,7 @@ export async function postReviewAnswer(
 }
 
 /**
- * Curator-only (EP42-DS02,): upload a deck's conversation audio via the
+ * Curator-only: upload a deck's conversation audio via the
  * gated server endpoint, which stores the file and inserts a current `audio` row
  * in one request. Resolves the server-owned key on success; throws the server's
  * error message on failure so the page can surface it rather than fail silently.
@@ -206,7 +206,7 @@ export async function uploadDeckAudio(
 }
 
 /**
- * Curator-only (EP43-DS02,): commit a deck's WebVTT timing via the gated
+ * Curator-only: commit a deck's WebVTT timing via the gated
  * server-write endpoint, which validates the audio-sha256 stamp and writes the
  * `audio.vtt` DB column + the durable bucket `.vtt`. Throws the server error
  * (e.g. 409 stamp mismatch, 404 no current audio) so the tool can surface it.

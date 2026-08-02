@@ -88,7 +88,7 @@ const {
   refreshReviewAvailability,
 } = reviewSession;
 
-// --- ST03: word-block segment audio resolution ---
+// --- word-block segment audio resolution ---
 // The engine stays audio-free (playback ADR §5); App.vue holds `appDecks` and
 // resolves sentenceId → audio for the current word-block question, in both
 // Learning and Review (same QuizCard). MCQ questions resolve to undefined —

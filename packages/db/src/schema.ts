@@ -69,7 +69,7 @@ export const decks = sqliteTable('decks', {
   doc: text('doc', { mode: 'json' }).$type<DeckDoc>().notNull(),
 });
 
-// Standalone, versioned audio asset (EP42 — asset-model ADR). One row = one
+// Standalone, versioned audio asset. One row = one
 // binary: content-addressed `key`, format/size/duration metadata, and a nullable
 // `vtt` WebVTT timing sidecar (filled by). Polymorphic owner via
 // `subject_type` ('deck' only; 'sentence'/'word' reserved) + `subject_id`.

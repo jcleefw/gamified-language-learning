@@ -1,4 +1,4 @@
-// ── WebVTT timing helpers (EP43 — WebVTT ADR) ────────────────────────────────
+// ── WebVTT timing helpers ────────────────────────────────
 // Pure, dependency-free. Shared by the marker tool (build/parse/read) and the
 // server VTT-write endpoint (readVttHash for the stamp check). A deck's timing
 // is ONE WebVTT track bound to its audio binary: cue-ID = sentenceId; the header

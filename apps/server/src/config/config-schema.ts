@@ -4,7 +4,7 @@ import { DIFFICULTY_PRESETS, type DifficultyPreset } from './difficulty-presets.
 
 /**
  * Server-side validation for `PUT /api/user/config` — the SOLE guard of the
- * preset-name-only invariant (DS01 stores config as a JSON blob, so storage cannot
+ * preset-name-only invariant (config is stored as a JSON blob, so storage cannot
  * reject a raw threshold). Load-bearing, not defence-in-depth.
  *
  * `.strict()` makes any unknown key a 400 — so a T3 field (e.g. `masteryThreshold`)

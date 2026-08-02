@@ -1,5 +1,5 @@
 /**
- * Deck audio storage (EP42-DS01,). Local MinIO stands in for production
+ * Deck audio storage. Local MinIO stands in for production
  * Cloudflare R2 (S3-compatible, public-read bucket, browser→bucket per the
  * hosting ADR). `makeResolveAudioUrl` is pure string composition — no SDK,
  * no network, no credentials — so the read path (every GET /api/decks) is
@@ -19,7 +19,7 @@ export interface AudioStorageConfig {
 /**
  * True when the curator-only mutating surface (audio upload) is enabled.
  * Default off — a mutating audio endpoint must not be reachable in a default
- * production deploy without also flipping this flag (EP42-DS02,).
+ * production deploy without also flipping this flag.
  */
 export function isCurationMode(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.GLL_CURATION_MODE === 'true' || env.GLL_CURATION_MODE === '1';

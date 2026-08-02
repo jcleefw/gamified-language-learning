@@ -149,7 +149,7 @@ describe('POST /api/answer', () => {
     expect(persisted.get('w5')?.seen).toBe(1);
   });
 
-  // --- ST06: server-side Review seeding on graduation ---
+  // --- server-side Review seeding on graduation ---
 
   async function answerCorrect(wordId: string): Promise<ApiResponse<AnswerResponse>> {
     const res = await post({ wordId, correct: true, latencyMs: 1000 });
@@ -262,7 +262,7 @@ describe('POST /api/answer', () => {
   });
 });
 
-// --- EP41-ST06: per-user difficulty is applied on the transition ---
+// --- per-user difficulty is applied on the transition ---
 describe('POST /api/answer applies the current user\'s difficulty preset', () => {
   it('uses the per-user resolved streakThresholds while the mastery bar stays fixed', async () => {
     // Inject a selectable second preset (masters in ONE correct — normal needs two).

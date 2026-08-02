@@ -234,7 +234,7 @@ describe('SqliteContentStore.importCurriculum', () => {
   });
 });
 
-describe('SqliteContentStore audio asset resolution (EP42-DS01,)', () => {
+describe('SqliteContentStore audio asset resolution', () => {
   let db: DbClient;
 
   beforeEach(() => {

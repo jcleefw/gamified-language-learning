@@ -4,7 +4,7 @@ import type { IReviewStore } from '@gll/db';
 import { toGraduationPerformance } from './graduation-performance.js';
 
 /**
- * ST06: for each graduated word, derive its GraduationPerformance from the final
+ * for each graduated word, derive its GraduationPerformance from the final
  * WordState, seed a ReviewCard via the scheduler, and persist it (write-on-graduation).
  * Words absent from runState are skipped.
  */

@@ -3,7 +3,7 @@ import { ref, computed, type Ref, type ComputedRef } from 'vue';
 /**
  * The debug-trace recorder. One phase-scoped session issues a correlation id
  * per served question, buffers read-only appearance context, and on finalize assembles a
- * self-contained ReplayArtifact (DS01 shape) fetched partly from POST /api/debug/transitions.
+ * self-contained ReplayArtifact fetched partly from POST /api/debug/transitions.
  *
  * A module-level singleton so App.vue, useLearningSession and useShelving share one recorder
  * without prop-drilling. Capture is a no-op unless recording, so it costs nothing off the
@@ -46,8 +46,8 @@ interface TransitionSlice {
   inputs: unknown[];
 }
 
-// The self-contained artifact (DS01 ReplayArtifact shape; the client adds meta +
-// appearance around the server's transition slice).
+// The self-contained artifact (the client adds meta + appearance around the
+// server's transition slice).
 interface ReplayArtifact {
   version: 1;
   meta: { createdAt: string; sessionId: string; phase: Phase; originUserId: string };
