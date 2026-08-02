@@ -198,7 +198,7 @@ describe('SqliteReviewStore', () => {
     expect(map.size).toBe(2);
   });
 
-  // EP39-BUG01: verify the mastered-vs-due timing. Three words graduated "today"
+  // verify the mastered-vs-due timing. Three words graduated "today"
   // via the real FSRS seed are NOT due today (graduation schedules the first review
   // in the future), and ALL THREE resurface together once their due date arrives —
   // the due list is uncapped, so mastering 3 never drip-feeds "only 1".

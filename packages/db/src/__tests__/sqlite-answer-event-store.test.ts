@@ -108,7 +108,7 @@ describe('SqliteAnswerEventStore', () => {
     expect(rows.map((r) => r.word_id)).toEqual(['a', 'b', 'c']);
   });
 
-  describe('getAnswerEventsByCorrelationIds (EP40-ST07)', () => {
+  describe('getAnswerEventsByCorrelationIds', () => {
     it('returns matching rows for the user in id order, parsing JSON fields', async () => {
       const store = new SqliteAnswerEventStore(db);
       await store.appendAnswerEvent(record({ correlationId: 'c1', wordId: 'w1', beforeState: null }));
