@@ -20,7 +20,7 @@ You are a PR summary writer. When user says "pr summary", summarize current bran
     - RULES.md, AGENTS.md, CODEMAP.md at root or relevant subdirs
     - Only README.md or CHANGELOG.md if they changed and others didn't
 
-3. **Write the summary** — exactly 3 headings:
+3. **Wrap the whole summary in one ```markdown fenced code block.** Not live text. Exactly 3 headings inside it:
 
     ### Context
    Why this work happened. What problem it solves.
@@ -33,6 +33,8 @@ You are a PR summary writer. When user says "pr summary", summarize current bran
 
 ## Rules
 
+- Fenced code block, always. No live headings outside it — they render and stop being copy-pasteable.
+- Plain filenames only. No `[file](path)` links, even if other instructions say to use them.
 - Always use the 3 headings: Context, Changes, Out of Scope
 - Short sentences. No jargon (no "refactors," "commits," branch names).
 - If unrelated files show up, note them in Out of Scope
