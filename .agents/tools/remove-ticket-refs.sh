@@ -19,6 +19,24 @@
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Expand glob patterns in arguments
+expanded_args=()
+for arg in "$@"; do
+  # Check if argument contains glob characters
+  if [[ "$arg" =~ \* || "$arg" =~ \? || "$arg" =~ \[ ]]; then
+    # Expand glob and add all matches
+    for match in $arg; do
+      if [[ -e "$match" ]]; then
+        expanded_args+=("$match")
+      fi
+    done
+  else
+    # Non-glob argument, pass as-is
+    expanded_args+=("$arg")
+  fi
+done
+
 # --import tsx/esm lets the script import eslint-rules/ticket-ref-pattern.ts directly,
 # so the abbreviation list can't drift from the one the eslint rule matches against.
-exec node --import tsx/esm "$DIR/lib/remove-ticket-refs.mjs" "$@"
+exec node --import tsx/esm "$DIR/lib/remove-ticket-refs.mjs" "${expanded_args[@]}"

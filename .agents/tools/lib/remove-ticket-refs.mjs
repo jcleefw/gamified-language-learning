@@ -54,17 +54,24 @@ function main(args) {
     process.exit(1);
   }
 
-  // A single directory argument (bulk mode) walks the package; otherwise treat
-  // args as an explicit file list (e.g. staged files from lint-staged).
-  const files =
-    args.length === 1 && isDirectory(args[0])
-      ? execSync(
-          `find "${args[0]}" -type f \\( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.vue" \\) 2>/dev/null`,
-          { encoding: 'utf-8' },
-        )
-          .split('\n')
-          .filter(Boolean)
-      : args;
+  // Separate directories from files: walk directories, treat files as explicit
+  const dirs = args.filter(isDirectory);
+  const explicitFiles = args.filter(arg => !isDirectory(arg));
+
+  let files = explicitFiles;
+
+  // Walk each directory and collect files
+  if (dirs.length > 0) {
+    const findPattern = dirs.map(d => `"${d}"`).join(' ');
+    const foundFiles = execSync(
+      `find ${findPattern} -type f \\( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.vue" \\) 2>/dev/null`,
+      { encoding: 'utf-8' },
+    )
+      .split('\n')
+      .filter(Boolean);
+
+    files = [...explicitFiles, ...foundFiles];
+  }
 
   let fixed = 0;
   let skipped = 0;
