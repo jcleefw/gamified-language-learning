@@ -28,7 +28,7 @@ export default defineConfig(
       parserOptions: { project: true },
     },
     rules: {
-      // guardrail: the async storage contract migration (EP34) relies on
+      // the async storage contract migration relies on
       // every LearningStore call being awaited. This is the one type-aware rule the
       // app layer needs for that; the rest of *TypeChecked's rule bundle is out of
       // scope here and would surface unrelated pre-existing issues across apps/**.
