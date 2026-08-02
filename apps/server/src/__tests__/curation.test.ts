@@ -222,7 +222,7 @@ describe('POST /api/curation/decks/:deckId/audio — with curator mode on', () =
   });
 });
 
-describe('PUT /api/curation/decks/:deckId/audio/vtt — WebVTT server-write (EP43-DS02)', () => {
+describe('PUT /api/curation/decks/:deckId/audio/vtt — WebVTT server-write', () => {
   /** The 16-hex content hash embedded in the current audio row's key. */
   function currentHash(deckId: string): string {
     return currentAudio(deckId)!.key.match(/\/([0-9a-f]+)\.mp3$/)![1];

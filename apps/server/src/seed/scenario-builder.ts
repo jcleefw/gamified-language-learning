@@ -35,7 +35,7 @@ export interface ScenarioStep {
 export interface ReviewScenarioSpec {
   name: string;
   description: string;
-  /** Also upsert a mastered WordState per word (false = review-only / BUG01 repro). */
+  /** Also upsert a mastered WordState per word (false = review-only / repro). */
   seedWordState: boolean;
   steps: ScenarioStep[];
   expected: ExpectedOutcome;

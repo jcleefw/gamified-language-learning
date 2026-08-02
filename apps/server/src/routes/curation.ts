@@ -50,7 +50,7 @@ function keyHash(key: string): string | null {
 }
 
 /**
- * Curator audio upload (EP42-DS02, ST08). A multipart file in → `putObject` +
+ * Curator audio upload (EP42-DS02,). A multipart file in → `putObject` +
  * an `audio`-row insert out, in one request, so the bucket object and the DB row
  * never drift. The key is server-owned and content-addressed
  * (`decks/{deckId}/{sha256}.{ext}`), never taken from the client, which prevents
@@ -161,7 +161,7 @@ function currentAudioRow(deckId: string) {
 }
 
 /**
- * Commit a WebVTT timing track for a deck's current audio (EP43-DS02, ST05).
+ * Commit a WebVTT timing track for a deck's current audio (EP43-DS02,).
  * Single-pass server-write (WebVTT ADR §8): validate the `NOTE audio-sha256`
  * stamp against the current binary, then write BOTH tiers — the `audio.vtt` DB
  * column (live projection) and the durable bucket `.vtt` (system-of-record).

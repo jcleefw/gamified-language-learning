@@ -3,7 +3,7 @@ import type { GraduationPerformance } from '@gll/srs-engine/review';
 
 /**
  * Learning WordState → Review seed input. Server-owned copy of the same mapping
- * used by cli-demo-db; parity is enforced by the PH04 golden-master test, not a
+ * used by cli-demo-db; parity is enforced by the golden-master test, not a
  * shared constant (behavioural glue has no clean library home — @gll/srs-engine/review
  * never imports WordState by design).
  */

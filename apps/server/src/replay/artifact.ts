@@ -3,7 +3,7 @@ import type { WordState } from '@gll/srs-engine/learn';
 import type { ResolvedThresholds } from '@gll/db';
 
 /**
- * The self-contained, DB-independent replay artifact (EP40-DS01). A captured session serialises to
+ * The self-contained, DB-independent replay artifact. A captured session serialises to
  * this shape; `pnpm seed replay` and the Vitest fixture runner consume it. Types are server-owned
  * (the composition layer), not `@gll/api-contract` — the artifact is a tool contract, not a wire DTO.
  * DS02's browser recorder writes JSON matching this.

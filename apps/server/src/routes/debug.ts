@@ -21,7 +21,7 @@ const RECENT_MAX = 1000;
 const router = new Hono();
 
 /**
- * The transition slice of a debug-trace artifact (EP40-DS02). Assembled server-side
+ * The transition slice of a debug-trace artifact. Assembled server-side
  * from `answer_events` because the server owns the WordState/threshold rows — the
  * browser does no WordState arithmetic, it only decorates with appearance + meta.
  */
@@ -137,7 +137,7 @@ router.post('/debug/transitions', async (c) => {
 });
 
 /**
- * Post-hoc transition assembly (EP40): assemble a replayable slice from the most recent
+ * Post-hoc transition assembly: assemble a replayable slice from the most recent
  * `lastN` answer_events — no prior arming needed, because every `/api/answer` already
  * persisted its transition. The resulting artifact carries an empty `appearance[]` (that
  * context is only buffered while a recording is armed); the replay fold does not use it.

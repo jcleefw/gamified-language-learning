@@ -72,7 +72,7 @@ async function post(correlationIds: unknown): Promise<Response> {
   });
 }
 
-describe('POST /api/debug/transitions (EP40-ST07)', () => {
+describe('POST /api/debug/transitions', () => {
   it('assembles ordered inputs, a lazy baseline, and uniform thresholds', async () => {
     insertEvent({ correlationId: 'c1', wordId: 'w1', before: null, after: ws('w1', 1) });
     insertEvent({ correlationId: 'c2', wordId: 'w2', before: ws('w2', 0), after: ws('w2', 1) });

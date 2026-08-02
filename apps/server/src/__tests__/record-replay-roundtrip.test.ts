@@ -44,7 +44,7 @@ async function transitions(correlationIds: string[]): Promise<DebugTransitionsRe
   return body.data;
 }
 
-describe('record → replay round-trip (EP40-ST07)', () => {
+describe('record → replay round-trip', () => {
   it('a session recorded across the live answer path replays byte-exact on a fresh store', async () => {
     // A recording spanning two "decks" (w1/w2 then w3/w4) — the artifact inputs
     // must span both, and replay must reproduce them with no origin-DB access.
@@ -77,7 +77,7 @@ describe('record → replay round-trip (EP40-ST07)', () => {
       ],
     };
 
-    // The downloaded JSON passes the DS01 contract parser…
+    // The downloaded JSON passes the contract parser…
     const artifact: ReplayArtifact = parseArtifact(assembled);
 
     // …and replays byte-exact on a fresh :memory: store with no origin-DB dependency.
