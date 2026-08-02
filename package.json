@@ -12,15 +12,22 @@
     "test": "turbo test",
     "test:watch": "turbo watch test",
     "lint": "eslint .",
+    "test:eslint-config": "vitest run --project tooling",
     "typecheck": "turbo typecheck",
     "engine:mock-db": "tsx packages/srs-engine/demo/learning-runner.ts",
-    "dev:all": "docker compose up -d && concurrently -n server,web -c blue,green \"pnpm --filter @gll/server dev\" \"pnpm --filter @gll/srs-demo dev\""
+    "dev:all": "docker compose up -d && concurrently -n server,web -c blue,green \"pnpm --filter @gll/server dev\" \"pnpm --filter @gll/srs-demo dev\"",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,vue}": ["eslint --fix"]
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
     "concurrently": "^9",
     "eslint": "^9",
+    "husky": "^9.1.7",
     "jiti": "^2.6.1",
+    "lint-staged": "^17.3.0",
     "prettier": "^3.8.1",
     "tsx": "^4",
     "turbo": "^2",
