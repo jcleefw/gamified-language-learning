@@ -149,6 +149,164 @@ describe('srs-demo must not import @gll/srs-engine/review', () => {
   });
 });
 
+describe("apps must not import each other's source directly", () => {
+  it('flags server importing srs-demo via relative traversal', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/server/src/__fixtures__/tmp-cross-srs-demo.ts',
+        content: `import { store } from '../../../srs-demo/src/store.js';\n\nexport const usesStore = store;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('flags server importing cli-demo-db via relative traversal', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/server/src/__fixtures__/tmp-cross-cli-demo-db.ts',
+        content: `import { menu } from '../../../cli-demo-db/src/menu.js';\n\nexport const usesMenu = menu;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('does not flag server importing its own source', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/server/src/__fixtures__/tmp-in-app.ts',
+        content: `import { log } from '../logger.js';\n\nexport const usesLog = log;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(0);
+      },
+    );
+  });
+
+  it('flags server importing the bare @gll/srs-demo specifier', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/server/src/__fixtures__/tmp-bare-srs-demo.ts',
+        content: `import { store } from '@gll/srs-demo';\n\nexport const usesStore = store;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('still flags server importing the bare @gll/srs-engine specifier (ST02a regression guard)', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/server/src/__fixtures__/tmp-bare-srs-engine.ts',
+        content: `import type { WordState } from '@gll/srs-engine';\n\nexport type Alias = WordState;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('flags srs-demo importing server via relative traversal', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/srs-demo/src/__fixtures__/tmp-cross-server.ts',
+        content: `import { app } from '../../../server/src/app.js';\n\nexport const usesApp = app;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('flags srs-demo importing cli-demo-db via relative traversal', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/srs-demo/src/__fixtures__/tmp-cross-cli-demo-db.ts',
+        content: `import { menu } from '../../../cli-demo-db/src/menu.js';\n\nexport const usesMenu = menu;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('does not flag srs-demo importing its own source', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/srs-demo/src/__fixtures__/tmp-in-app.ts',
+        content: `import { routeNames } from '../routeNames.js';\n\nexport const usesRouteNames = routeNames;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(0);
+      },
+    );
+  });
+
+  it('flags cli-demo-db importing server via relative traversal', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/cli-demo-db/src/__fixtures__/tmp-cross-server.ts',
+        content: `import { app } from '../../../server/src/app.js';\n\nexport const usesApp = app;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('flags cli-demo-db importing srs-demo via relative traversal', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/cli-demo-db/src/__fixtures__/tmp-cross-srs-demo.ts',
+        content: `import { store } from '../../../srs-demo/src/store.js';\n\nexport const usesStore = store;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('does not flag cli-demo-db importing its own source', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/cli-demo-db/src/__fixtures__/tmp-in-app.ts',
+        content: `import { menu } from '../menu.js';\n\nexport const usesMenu = menu;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(0);
+      },
+    );
+  });
+
+  it('flags cli-demo-db importing the bare @gll/server specifier', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/cli-demo-db/src/__fixtures__/tmp-bare-server.ts',
+        content: `import { app } from '@gll/server';\n\nexport const usesApp = app;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('still flags cli-demo-db importing the bare @gll/srs-engine specifier (ST02a regression guard)', async () => {
+    await withFixture(
+      {
+        relPath: 'apps/cli-demo-db/src/__fixtures__/tmp-bare-srs-engine.ts',
+        content: `import type { WordState } from '@gll/srs-engine';\n\nexport type Alias = WordState;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+});
+
 describe('packages/logger and packages/shared-utils must not import other @gll/* packages', () => {
   it('flags packages/logger importing another @gll/* package', async () => {
     await withFixture(
