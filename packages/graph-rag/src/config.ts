@@ -46,7 +46,9 @@ export class ConfigLoader {
       const parsed = JSON.parse(content) as Partial<GraphRagConfig>;
       return { ...ConfigLoader.getDefault(), ...parsed } as GraphRagConfig;
     } catch (error) {
-      throw new Error(`Failed to load config from ${this.configPath}: ${error}`);
+      throw new Error(
+        `Failed to load config from ${this.configPath}: ${error}`,
+      );
     }
   }
 
@@ -54,7 +56,8 @@ export class ConfigLoader {
     return {
       focus: {
         title: 'Two-Axis Knowledge Graph',
-        description: 'Stories/epics (time) + domains/ryoikis (workspace) from the compacted archive',
+        description:
+          'Stories/epics (time) + domains/ryoikis (workspace) from the compacted archive',
         created_at: '',
         updated_at: '',
       },
@@ -64,7 +67,7 @@ export class ConfigLoader {
         domains: null,
       },
       adrs: {
-        include: true,
+        include: false,
         files: null,
       },
       output: {

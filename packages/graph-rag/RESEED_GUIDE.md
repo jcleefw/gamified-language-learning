@@ -41,6 +41,24 @@ pnpm --filter @gll/graph-rag graph:build -- --root=.
 A `KNOWLEDGE.md`'s true unit is its `unit:` frontmatter, so a fixture under a
 different disk path still yields correct domain ids.
 
+**`--root=` is not shared between commands.** `graph:build` and `graph:ui` are
+two independent processes, each re-reading `root` from the CLI arg or config
+default on its own — passing `--root=.` to one has no effect on the other. If
+you build against the live repo but launch the UI bare, `graph:ui` silently
+falls back to `config.root` (the frozen EP44 fixture) and renders that instead
+of your build, with nothing louder than the on-screen "EP44 Two-Axis Sample"
+banner to say so:
+
+```bash
+pnpm --filter @gll/graph-rag graph:build -- --root=.
+pnpm --filter @gll/graph-rag graph:ui    -- --root=.   # same flag, again
+```
+
+Also note `graph:ui` never reads `.graph-data.json` — it calls `buildGraph()`
+itself once at process boot and holds the result in memory (see below), so a
+`graph:build` run while the UI is already running has no effect on it either;
+the UI process must be restarted.
+
 ## Scope the graph
 
 Filter by the axes the archive actually carries — **track** and **domain**, never
