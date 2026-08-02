@@ -17,5 +17,9 @@
   "packages/srs-engine": [
     "demo-harness",
     "test-infrastructure"
+  ],
+  "packages/srs-engine-v2": [
+    "demo-harness",
+    "test-infrastructure"
   ]
 }
