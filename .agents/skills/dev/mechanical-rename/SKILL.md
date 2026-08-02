@@ -7,25 +7,30 @@ description: 'Bulk find-and-replace an identifier across many files using sed, t
 
 ## Step 0 — Scope and choose
 
-Before touching anything, check whether bulk sed is even the right tool:
+- `grep -rl '<oldName>' .` — count files/hits. A handful → just edit them directly, skip this skill.
+- Semantic rename available (IDE "rename symbol", `ts-morph`, language server) and the rename is code-only (no markdown/JSON/prose)? Use that instead. Fall back to sed only for what it doesn't cover.
+- Old name shows up in many unrelated semantic roles (needs near-one-pattern-per-file to disambiguate)? Abort to manual edits — bulk sed isn't saving anything here.
 
-- **Scope it**: `grep -rl` the old name to see how many files/occurrences are involved. If it's only a handful, just edit them directly — the pattern-then-verify ceremony below only earns its keep on real repetition.
-- **Prefer a semantic rename tool when one applies**: if the rename is confined to code (not also touching markdown/JSON/comments) and an AST-aware rename is available (IDE "rename symbol," `ts-morph`, language-server rename), use that instead — it can't over-match a substring inside an unrelated identifier the way plain text substitution can. Reach for sed for the parts such a tool doesn't cover.
-- **Abort to manual if too heterogeneous**: if the name appears in so many distinct semantic roles that safely disambiguating would need nearly as many patterns as there are files, the mechanical approach isn't saving anything — do individual edits instead.
-
-If bulk sed is still the right call, continue below.
+Otherwise, continue.
 
 ## Step 1 — Bulk pass
 
-Write one `sed -i ''` pattern (macOS/BSD syntax) per distinct legitimate context of the old name. Never write one blanket pattern for the whole rename if the old name is overloaded — e.g. it also appears as part of another identifier, a CLI flag, a file path, or in prose describing something unrelated to the rename. One pattern per context, not one pattern for the whole codebase.
+One `sed -i ''` pattern per distinct legitimate context of the old name. Never one blanket pattern if the name is overloaded (also part of another identifier, a CLI flag, a file path, unrelated prose).
+
+Example: renaming field `role` where `roleConfig` must NOT change:
+```
+sed -i '' 's/\brole\b/newRole/g' file.ts      # word-boundary anchored, skips roleConfig
+```
 
 ## Step 2 — Verify both directions
 
-Run two greps after the pass:
-
-- Grep for the **old name still remaining** — this catches a pattern that silently failed to match (commonly from shell-escaping swallowing backticks or asterisks in the pattern).
-- Grep for the **new name in unexpected contexts** — this catches over-matches the pattern was too broad to avoid.
+```
+grep -rn '<oldName>' .    # anything left = a pattern silently failed to match
+grep -rn '<newName>' .    # eyeball for over-matches the pattern was too broad to avoid
+```
 
 ## Step 3 — Hand-fix what sed can't safely do
 
-Route anything needing reordering or context-dependent logic straight to an individual edit — recognize this upfront as out of scope for a string swap, not a fallback attempted only after sed fails on it. The clearest example: an alphabetically-sorted list or array whose correct order shifts once the name changes (e.g. `['adr', 'domain', 'ryoiki']` sorts differently once `adr` becomes `kettei`) — a pure text substitution produces syntactically valid but wrongly-ordered output, and no pattern fixes that; the fix is positional, not textual.
+Anything needing reordering or context-dependent logic goes straight to a manual edit — this is out of scope for a string swap, not a fallback to try after sed fails.
+
+Example: an alphabetically-sorted array whose order shifts once a name changes (`['adr', 'domain', 'ryoiki']` → `kettei` sorts differently). Text substitution produces syntactically valid but wrongly-ordered output — fix is positional, not textual.
