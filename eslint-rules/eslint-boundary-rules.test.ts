@@ -158,3 +158,65 @@ describe('packages/logger and packages/shared-utils must not import other @gll/*
     );
   });
 });
+
+describe('packages/api-contract must stay a pure types package', () => {
+  it('flags api-contract importing @gll/db', async () => {
+    await withFixture(
+      {
+        relPath: 'packages/api-contract/src/__fixtures__/tmp-db-import.ts',
+        content: `import { db } from '@gll/db';\n\nexport const usesDb = db;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('flags api-contract importing @gll/server', async () => {
+    await withFixture(
+      {
+        relPath: 'packages/api-contract/src/__fixtures__/tmp-server-import.ts',
+        content: `import { app } from '@gll/server';\n\nexport const usesServer = app;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('flags api-contract importing drizzle-orm', async () => {
+    await withFixture(
+      {
+        relPath: 'packages/api-contract/src/__fixtures__/tmp-drizzle-import.ts',
+        content: `import { eq } from 'drizzle-orm';\n\nexport const usesDrizzle = eq;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('flags api-contract importing better-sqlite3', async () => {
+    await withFixture(
+      {
+        relPath: 'packages/api-contract/src/__fixtures__/tmp-sqlite-import.ts',
+        content: `import Database from 'better-sqlite3';\n\nexport const usesSqlite = Database;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(1);
+      },
+    );
+  });
+
+  it('does not flag api-contract importing zod', async () => {
+    await withFixture(
+      {
+        relPath: 'packages/api-contract/src/__fixtures__/tmp-control.ts',
+        content: `import { z } from 'zod';\n\nexport const usesZod = z;\n`,
+      },
+      async (relPath) => {
+        expect(await restrictedImportViolations(relPath)).toBe(0);
+      },
+    );
+  });
+});

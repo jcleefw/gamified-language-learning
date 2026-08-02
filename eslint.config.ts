@@ -151,6 +151,37 @@ export default defineConfig(
     },
   },
   {
+    // packages/api-contract stays a pure types/contract package — no db/server
+    // access or DB-driver import, by construction.
+    files: ['packages/api-contract/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@gll/db',
+              message:
+                'api-contract must stay a pure types package — no db access.',
+            },
+            {
+              name: '@gll/server',
+              message:
+                'api-contract must stay a pure types package — no server-side deps.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['drizzle-orm', 'better-sqlite3', '**/packages/db/**'],
+              message:
+                'api-contract must stay a pure types package — no DB driver or db package reach-through.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Comments must stand alone without referencing the epic/story/ADR that
     // produced them — see RULES.md. Warn (not error) so existing violations
     // surface without blocking commits/CI; applies going forward, same as
