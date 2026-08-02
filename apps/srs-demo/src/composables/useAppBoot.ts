@@ -102,7 +102,7 @@ export async function bootApp(deps: AppBootDeps): Promise<void> {
 
   // Review state at boot: the due-count badge and card availability. Availability
   // (any review card exists) unlocks Review even when nothing is due yet, so a
-  // returning user with future-due cards isn't locked out (EP39-BUG01). Both are
+  // returning user with future-due cards isn't locked out. Both are
   // error-tolerant (badgeError / best-effort) and safe for a brand-new user.
   await Promise.all([refreshDueBadge(), refreshReviewAvailability()]);
 

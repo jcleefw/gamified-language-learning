@@ -28,7 +28,7 @@ export interface UseReviewSessionDeps {
   apiError: Ref<string | null>;
 }
 
-// --- Review mode (EP38-DS02) — pool-global session; the client is a dumb
+// --- Review mode — pool-global session; the client is a dumb
 // terminal: it renders questions, self-reports facts, and adopts the schedule
 // the server returns. It computes no rating and no `due`, and imports no FSRS
 // scheduler. ---
@@ -40,7 +40,7 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
   const badgeError = ref(false); // due-count fetch failed (never masquerade as "caught up")
   // Does the user have ANY review card (due or not)? Set from /api/reviews/anytime.
   // Unlocks Review even when nothing is due yet (fresh graduation) so Practice
-  // Anytime is reachable — fixes EP39-BUG01 (a due card behind a locked tab).
+  // Anytime is reachable — fixes (a due card behind a locked tab).
   const hasReviewCards = ref(false);
   const reviewBatchState = ref<BatchState | null>(null);
   const reviewQuestion = ref<QuizQuestion | null>(null);
@@ -63,7 +63,7 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
   // Review unlock gate. Epic: "locked until any word is mastered." Unlocked when
   // EITHER a word is mastered locally (instant, no round-trip — covers a word just
   // graduated this session) OR the user has any review card (covers a returning
-  // user whose cards exist but aren't currently due — see EP39-BUG01). Fail-closed
+  // user whose cards exist but aren't currently due — see). Fail-closed
   // when config isn't ready (no threshold to test).
   const reviewUnlocked = computed(
     () =>
@@ -85,13 +85,13 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
   }
 
   // ReviewQuestionType mirrors QuizQuestion.kind, so the client reports what was
-  // shown as-is — no mapping/renaming (a DS01 wire fact, not policy).
+  // shown as-is — no mapping/renaming (a wire fact, not policy).
   function toReviewQuestionType(q: QuizQuestion): ReviewQuestionType {
     return q.kind;
   }
 
   // Review due-count badge. No longer gated on reviewUnlocked: the count itself now
-  // feeds availability (EP39-BUG01), so it must load regardless — a locked-but-due
+  // feeds availability, so it must load regardless — a locked-but-due
   // state must still surface its count. A failed fetch flags badgeError so home
   // shows a dash, never a false "0 / caught up".
   async function refreshDueBadge() {
@@ -107,7 +107,7 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
 
   // "Does the user have any review card at all?" — sourced from the anytime read
   // (all learned words, due or not). Drives the unlock gate so Review is reachable
-  // whenever cards exist, even with nothing due today (EP39-BUG01). Best-effort:
+  // whenever cards exist, even with nothing due today. Best-effort:
   // on failure the local mastery path still unlocks.
   async function refreshReviewAvailability() {
     try {
@@ -227,7 +227,7 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
         questionType,
       });
     } catch (err) {
-      // DS01 leaves the card unchanged on error; do not advance past this word or
+      // leaves the card unchanged on error; do not advance past this word or
       // fake success — surface it (write-on-answer contract).
       console.error('[REVIEW] answer persistence failed for', result.wordId, err);
       apiError.value =
@@ -236,7 +236,7 @@ export function useReviewSession(deps: UseReviewSessionDeps) {
     }
 
     // Adopt the server-returned schedule for the summary horizon (no client math).
-    // `advanced` is server truth (due-gate, DS01): only an advanced answer moved
+    // `advanced` is server truth (due-gate,): only an advanced answer moved
     // the schedule, so only its `due` may narrow the next-due horizon. A read-only
     // (eager, not-due) answer returns its unchanged far-future `due` — folding that
     // in would misreport the horizon.

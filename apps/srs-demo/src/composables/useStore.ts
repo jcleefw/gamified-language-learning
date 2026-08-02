@@ -100,7 +100,7 @@ export async function saveWordState(ws: WordState): Promise<void> {
  *
  * When a debug recording is active, `correlationId` stitches this answer's
  * authoritative transition (durable in `answer_events`) to the question that
- * was served (EP40-ST05). Off the recording path it is falsy and no header is
+ * was served. Off the recording path it is falsy and no header is
  * sent — the request is byte-identical to before.
  */
 export async function postAnswer(
@@ -157,7 +157,7 @@ export async function loadAnytimeReviews(): Promise<DueReviewItem[]> {
  * Post a review answer; the server maps it to an FSRS rating, advances the
  * schedule, and returns the new `due`. Throws a typed error on failure so the
  * caller can avoid advancing the queue past a lost answer (write-on-answer:
- * DS01 leaves the card unchanged on error). The client computes no rating or
+ * leaves the card unchanged on error). The client computes no rating or
  * interval — it adopts whatever schedule comes back.
  */
 export async function postReviewAnswer(
@@ -177,7 +177,7 @@ export async function postReviewAnswer(
 }
 
 /**
- * Curator-only (EP42-DS02, ST09): upload a deck's conversation audio via the
+ * Curator-only (EP42-DS02,): upload a deck's conversation audio via the
  * gated server endpoint, which stores the file and inserts a current `audio` row
  * in one request. Resolves the server-owned key on success; throws the server's
  * error message on failure so the page can surface it rather than fail silently.
@@ -206,7 +206,7 @@ export async function uploadDeckAudio(
 }
 
 /**
- * Curator-only (EP43-DS02, ST05): commit a deck's WebVTT timing via the gated
+ * Curator-only (EP43-DS02,): commit a deck's WebVTT timing via the gated
  * server-write endpoint, which validates the audio-sha256 stamp and writes the
  * `audio.vtt` DB column + the durable bucket `.vtt`. Throws the server error
  * (e.g. 409 stamp mismatch, 404 no current audio) so the tool can surface it.

@@ -6,9 +6,9 @@ import {
   NUDGE_FINE,
 } from '../useMarkerAuthoring';
 
-// EP43-DS02 ST04 — the marker-authoring flow lives in this composable so it is
+// — the marker-authoring flow lives in this composable so it is
 // testable without a DOM (the repo tests composables, not .vue files). These
-// cover the ST04 acceptance criteria: capture off the play-head, hydrate/round-
+// cover the acceptance criteria: capture off the play-head, hydrate/round-
 // trip an existing VTT, exclude half/inverted markers, and emit a WebVTT track
 // (cue-ID = sentenceId, hash-stamped) from complete rows only.
 
@@ -91,10 +91,10 @@ describe('useMarkerAuthoring', () => {
     expect(a.markers.value.other).toEqual({ start: null, end: null });
   });
 
-  // EP43-ST07 — marker-UX improvement: committing a sentence's out point
+  // — marker-UX improvement: committing a sentence's out point
   // pre-fills the next sentence's in point, so the curator doesn't have to
   // click the same play-head position twice.
-  describe('auto-populate next start on setOut (EP43-ST07)', () => {
+  describe('auto-populate next start on setOut', () => {
     it('fills the next sentence in `order`\'s start if it is unset', () => {
       const a = useMarkerAuthoring();
       a.seed(['s1', 's2']);

@@ -308,7 +308,7 @@ describe('correlation-id stitch (EP40-ST05b)', () => {
   });
 });
 
-describe('appearance channel (EP40-ST06)', () => {
+describe('appearance channel', () => {
   beforeEach(() => useDebugRecording().cancel());
 
   it('records a correlated entry per orchestration decision', async () => {

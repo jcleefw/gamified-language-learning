@@ -24,7 +24,7 @@ const appDecks = ref<AppDeckPayload[]>([]);
 const wordPool = ref<QuizItem[]>([]);
 
 // No config is declared in the FE. The whole surface is fetched read-only from
-// GET /api/config at boot (see EP37-DS05 + the Config Ownership ADR). Until then
+// GET /api/config at boot (see + the Config Ownership ADR). Until then
 // CONFIG is empty; `configReady` gates session start so nothing runs the engine
 // with unset config (fail-closed — no hardcoded fallback).
 const CONFIG = ref<ConfigType>({} as ConfigType);
@@ -44,7 +44,7 @@ async function internalNavigate(
   await router.push({ name, params, query });
 }
 
-// --- Learning session (EP38-DS03) — the adaptive quiz state machine (pools,
+// --- Learning session — the adaptive quiz state machine (pools,
 // batches, sentence scheduling, shelving pipeline, server-authoritative answer
 // persistence). Owned by useLearningSession; App.vue keeps boot + nav wiring. ---
 const learning = useLearningSession({
@@ -68,7 +68,7 @@ const {
 // inject() this instance — register it on the module-level singleton instead.
 setLearningSession({ session: learning, apiError });
 
-// --- Review mode (EP38-DS02) — pool-global session; the client is a dumb
+// --- Review mode — pool-global session; the client is a dumb
 // terminal: it renders questions, self-reports facts, and adopts the schedule
 // the server returns. It computes no rating and no `due`, and imports no FSRS
 // scheduler. Owned by useReviewSession; App.vue keeps only the boot/nav wiring. ---
@@ -88,7 +88,7 @@ const {
   refreshReviewAvailability,
 } = reviewSession;
 
-// --- EP43-DS01 ST03: word-block segment audio resolution ---
+// --- ST03: word-block segment audio resolution ---
 // The engine stays audio-free (playback ADR §5); App.vue holds `appDecks` and
 // resolves sentenceId → audio for the current word-block question, in both
 // Learning and Review (same QuizCard). MCQ questions resolve to undefined —
@@ -109,7 +109,7 @@ const reviewQuestionAudio = computed(() => {
   return deckAudio ? { ...deckAudio, sentenceId } : undefined;
 });
 
-// --- Top nav menu (EP38-ST08) ---
+// --- Top nav menu ---
 // Which top-level destination the current route belongs to (for highlighting).
 const activeNav = computed<'home' | 'learn' | 'review' | 'curation'>(() =>
   navTabOf(route.name),
@@ -142,7 +142,7 @@ async function refreshDecks(): Promise<void> {
   appDecks.value = body.data;
 }
 
-// ST03 view wrappers read boot state + the session instances through these
+// view wrappers read boot state + the session instances through these
 // (not by re-instantiating the composables — see learningSessionSingleton.ts
 // for why the guard specifically can't use provide/inject).
 provide('appDecks', appDecks);

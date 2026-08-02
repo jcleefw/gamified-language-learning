@@ -86,7 +86,7 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
   const batchState = ref<BatchState | null>(null);
   const currentQuestion = ref<QuizQuestion | null>(null);
 
-  // Sentence state (in-memory only; not persisted in EP31)
+  // Sentence state (in-memory only; not persisted in)
   const sentenceRunState = ref<SentenceRunState>(new Map());
   const batchNum = ref(0);
 
@@ -445,7 +445,7 @@ export function useLearningSession(deps: UseLearningSessionDeps) {
         'Could not save some answers. Your latest progress may not be recorded — please check the server and try again.';
     }
 
-    // DS02 shelving pipeline: stagnation detection via persistent DB counters.
+    // shelving pipeline: stagnation detection via persistent DB counters.
     if (deckId.value) {
       const activeIds = sessionState.value.active.map((w) => w.id);
       await updateStagnationCounters({

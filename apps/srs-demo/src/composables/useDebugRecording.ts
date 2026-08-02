@@ -1,7 +1,7 @@
 import { ref, computed, type Ref, type ComputedRef } from 'vue';
 
 /**
- * The debug-trace recorder (EP40-DS02). One phase-scoped session issues a correlation id
+ * The debug-trace recorder. One phase-scoped session issues a correlation id
  * per served question, buffers read-only appearance context, and on finalize assembles a
  * self-contained ReplayArtifact (DS01 shape) fetched partly from POST /api/debug/transitions.
  *
@@ -161,7 +161,7 @@ async function finalizeAndDownload(): Promise<'downloaded' | 'empty' | 'idle'> {
   }
 }
 
-// Build the DS01 ReplayArtifact around a server transition slice and download it. Shared
+// Build the ReplayArtifact around a server transition slice and download it. Shared
 // by the armed finalize path (with buffered appearance) and the post-hoc dump (empty
 // appearance) so both emit byte-identical artifact shapes.
 function downloadArtifact(
@@ -187,7 +187,7 @@ function downloadArtifact(
 }
 
 /**
- * Post-hoc dump (EP40): assemble + download a replayable artifact from the last `lastN`
+ * Post-hoc dump: assemble + download a replayable artifact from the last `lastN`
  * answers WITHOUT a prior recording. Independent of the armed-session state — every
  * `/api/answer` already persisted its transition server-side. The artifact has an empty
  * `appearance[]` (that context is only buffered while armed); replay parity doesn't use it.
@@ -249,7 +249,7 @@ export function crossesPhaseOrMidQuiz(
 }
 
 /**
- * Whether a navigation must finalize the active recording before leaving (EP40-ST08). A
+ * Whether a navigation must finalize the active recording before leaving. A
  * recording is finalized rather than silently dropped/spanning the boundary on the same
  * trigger the nav-confirm dialog uses. Not recording ⇒ never — independent of whether the
  * (now recording-agnostic) confirm dialog shows.
