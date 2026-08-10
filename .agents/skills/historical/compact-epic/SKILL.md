@@ -12,11 +12,19 @@ for state.
 # RULES
 - do not guess path, or where to go next
 - any time unsure, run `./.agents/tools/archive-epic.sh status` to understand where it last stopped
-- Create a TodoWrite item for every numbered step below verbatim, including sub-steps.
-  Do not start executing. Show the checklist first, then work through it one item at a
-  time, marking each complete only after the user confirms the output.
+- use the following checklist and mark each complete only after the user confirms the output.
+### TODO:                                                                                                                                     
+ - [ ] Discover:                             
+ - [ ] Merge:                                
+ - [ ] Draft:                               
+ - [ ] Map Ryoiki:            
+ - [ ] Knowledge:                                                                
+ - [ ] Verify:                     
+ - [ ] Record:                             
+ - [ ] Compact: 
 
-# Checklist
+
+# Steps
 
 1. If no Epic given, ask for the Epic number
 2. Discover

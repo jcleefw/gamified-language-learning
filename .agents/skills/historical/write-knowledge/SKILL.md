@@ -1,17 +1,25 @@
 ---
 name: write-knowledge
 description: 'Write KNOWLEDGE.md content from archive summaries — check for duplicates, conflicts, ask before writing unclear sections.'
-tools: Read, Write, Exec
+tools: Read, Edit, Write, Exec
 disable-model-invocation: true
 ---
 
 # Write KNOWLEDGE.md (PO-Focused Current State)
 
-Invoked after ryoiki confirmation in archive-epic RECORD flow. Write present-tense facts a PO would care about — no code identifiers, file paths, or history.
+Invoked after ryoiki confirmation in archive-epic RECORD flow.
 
-## READ FIRST
+You are writing for a PO who never reads code. Every sentence must survive
+without a code identifier, file path, or history reference. If a claim only
+makes sense to an engineer, it doesn't belong here.
 
-- blacklist .agents/reference/ryoiki-blacklist.json
+## Hard rules (mechanical, not judgment calls)
+
+- **Edit, never regenerate.** Per RULES.md §KNOWLEDGE.md Maintenance: append new
+  `##` areas, edit existing bullets in place, delete removed claims. Use `Edit`
+  on existing files. Only use `Write` when the file doesn't exist yet (step 0).
+- Full "what not to include" list lives in RULES.md §KNOWLEDGE.md Maintenance —
+  don't restate it here, follow it.
 
 ## Inputs
 
@@ -19,38 +27,18 @@ Invoked after ryoiki confirmation in archive-epic RECORD flow. Write present-ten
 
 ## Procedure
 
-1. **Read existing KNOWLEDGE.md** — check for duplicate/conflicting claims against what you're about to write.
-2. **Map confirmed ryoiki** to their summaries from `index.json` (by domain + ryoiki, non-blacklisted).
-3. **Check for conflicts explicitly:**
-   - Does this claim already exist elsewhere in KNOWLEDGE.md?
-   - Does it contradict an existing claim?
-   - If yes to either → flag and ask user before writing.
-4. **Judge each heading:** Does it contain PO-relevant product behavior?
-   - Yes → draft section
-   - No (pure engineering mechanics) → recommend blacklist
-   - Unclear → ask user before writing
-5. **Zero-weight check:** If no headings survived, report blacklist recommendations and stop.
-6. **Translate summaries to plain language** (present tense, nouns, no code paths).
-7. **Update frontmatter:** `sources` (add new ids), `updated` (today's date).
-8. **Ask user to confirm** before writing if you found conflicts, blacklist candidates, or unclear sections.
-
-## What to write
-
-- Named tools/tech only when the name itself is the claim ("automated tests" label "Vitest").
-- What exists, what it's for, what depends on it.
-- Known rough edges framed as product risk, not engineering debt.
-
-## What NOT to write
-
-- Code identifiers, file paths, config names, function signatures, API routes.
-- Inline epic/story IDs, `file:line` anchors, acceptance criteria, planning meta.
-- Anything already forbidden by `RULES.md` §KNOWLEDGE.md Maintenance.
-- Duplication of claims across sections.
-- Sections you can't trace to a confirmed summary.
+0. Find the domain's `KNOWLEDGE.md`. Missing → create from `.agents/plans/templates/KNOWLEDGE-TEMPLATE.md`.
+1. Read it in full; note existing claims per area.
+2. Map confirmed, non-blacklisted ryoiki to their `index.json` summaries (`.agents/reference/ryoiki-blacklist.json`).
+3. For each summary, decide:
+   - Duplicates or contradicts an existing claim → flag, don't write yet.
+   - Pure engineering mechanics, no product behavior → recommend blacklisting the ryoiki, skip it.
+   - Otherwise → translate to a present-tense, plain-language bullet under its area (new area if none fits).
+4. If nothing survived step 3 → report blacklist recommendations and stop.
+5. Update frontmatter: `sources` (epic-id-only, see Hard rules), `updated` (today).
+6. If step 3 produced any flags (conflicts/blacklist candidates/unclear calls), present them and get confirmation before editing. Otherwise, edit directly.
 
 ## Ask user template
-
-Use this when you hit conflicts, unclear sections, or blacklist candidates:
 
 ```
 **Conflicts found:**
@@ -64,5 +52,3 @@ Use this when you hit conflicts, unclear sections, or blacklist candidates:
 
 Proceed with edits? Confirm conflicts/blacklist/unclear sections above.
 ```
-
-Do not guess or overwrite without approval.
