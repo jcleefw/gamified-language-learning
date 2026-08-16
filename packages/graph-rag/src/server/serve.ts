@@ -9,7 +9,7 @@
 // contextToString from the package); only the final generation hop calls Ollama.
 //
 //   pnpm --filter @gll/graph-rag graph:ui
-//   pnpm --filter @gll/graph-rag graph:ui -- --root=. --port=5173
+//   pnpm --filter @gll/graph-rag graph:ui -- --port=5173
 //
 // Endpoints:
 //   GET  /              -> single-page explorer (graph + chat)
@@ -18,9 +18,10 @@
 //   POST /api/query     -> SSE stream: {context nodeIds} then generated tokens
 // ---------------------------------------------------------------------------
 
-import { createServer, IncomingMessage, ServerResponse } from 'http';
+import { createServer } from 'http';
+import type { IncomingMessage, ServerResponse } from 'http';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { dirname, join, isAbsolute } from 'path';
+import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { buildGraph } from '../build-graph.js';
 import { ConfigLoader } from '../config.js';
@@ -43,8 +44,7 @@ const config = existsSync(configPath)
   ? new ConfigLoader(configPath).load()
   : ConfigLoader.getDefault();
 
-const configuredRoot = arg('root') ?? config.root ?? '.';
-const root = isAbsolute(configuredRoot) ? configuredRoot : join(repoRoot, configuredRoot);
+const root = repoRoot;
 
 // --no-adrs skips ADR ingestion; --adr=file1.md,file2.md restricts to those
 // files (by filename or slug). Both override the config; CLI wins.
@@ -83,11 +83,18 @@ function send(res: ServerResponse, code: number, type: string, body: string | Bu
   res.end(body);
 }
 
+/** Narrow an unknown JSON-parsed field to a trimmed string, or fall back. */
+function asString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value : fallback;
+}
+
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let data = '';
-    req.on('data', (c) => (data += c));
-    req.on('end', () => resolve(data));
+    req.on('data', (c: Buffer) => (data += c.toString()));
+    req.on('end', () => {
+      resolve(data);
+    });
     req.on('error', reject);
   });
 }
@@ -109,9 +116,9 @@ async function handleQuery(req: IncomingMessage, res: ServerResponse): Promise<v
   let question = '';
   let model = 'qwen3-coder:30b';
   try {
-    const parsed = JSON.parse(body || '{}');
-    question = String(parsed.question ?? '').trim();
-    if (parsed.model) model = String(parsed.model);
+    const parsed = JSON.parse(body || '{}') as { question?: unknown; model?: unknown };
+    question = asString(parsed.question).trim();
+    if (parsed.model) model = asString(parsed.model, model);
   } catch {
     /* fall through to empty-question guard */
   }
@@ -121,7 +128,9 @@ async function handleQuery(req: IncomingMessage, res: ServerResponse): Promise<v
     'Cache-Control': 'no-store',
     Connection: 'keep-alive',
   });
-  const emit = (event: Record<string, unknown>) => res.write(`data: ${JSON.stringify(event)}\n\n`);
+  const emit = (event: Record<string, unknown>): void => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+  };
 
   if (!question) {
     emit({ type: 'error', message: 'Empty question.' });
@@ -156,7 +165,7 @@ async function handleQuery(req: IncomingMessage, res: ServerResponse): Promise<v
     });
 
     if (!ollamaRes.ok || !ollamaRes.body) {
-      emit({ type: 'error', message: `Ollama ${ollamaRes.status}: ${await ollamaRes.text()}` });
+      emit({ type: 'error', message: `Ollama ${String(ollamaRes.status)}: ${await ollamaRes.text()}` });
       res.end();
       return;
     }
@@ -177,7 +186,9 @@ async function handleQuery(req: IncomingMessage, res: ServerResponse): Promise<v
         const payload = trimmed.slice(5).trim();
         if (payload === '[DONE]') continue;
         try {
-          const chunk = JSON.parse(payload);
+          const chunk = JSON.parse(payload) as {
+            choices?: { delta?: { content?: string } }[];
+          };
           const delta = chunk.choices?.[0]?.delta?.content;
           if (delta) emit({ type: 'token', text: delta });
         } catch {
@@ -219,21 +230,29 @@ async function handleLink(req: IncomingMessage, res: ServerResponse): Promise<vo
   let target = '';
   let op = 'add';
   try {
-    const parsed = JSON.parse((await readBody(req)) || '{}');
-    adrSlugArg = String(parsed.adrSlug ?? '').trim();
-    target = String(parsed.target ?? '').trim();
-    if (parsed.op) op = String(parsed.op);
+    const parsed = JSON.parse((await readBody(req)) || '{}') as {
+      adrSlug?: unknown;
+      target?: unknown;
+      op?: unknown;
+    };
+    adrSlugArg = asString(parsed.adrSlug).trim();
+    target = asString(parsed.target).trim();
+    if (parsed.op) op = asString(parsed.op, op);
   } catch {
     /* fall through to guard */
   }
   if (!adrSlugArg || !target || (op !== 'add' && op !== 'remove')) {
-    return send(res, 400, 'application/json', JSON.stringify({ error: 'bad request' }));
+    send(res, 400, 'application/json', JSON.stringify({ error: 'bad request' }));
+    return;
   }
 
   // Only files the ADR reader recognises are editable — keeps writes inside the
   // architecture dir and to a real ADR.
   const file = findAdrFiles(root).find((f) => adrSlug(f.slice(f.lastIndexOf('/') + 1)) === adrSlugArg);
-  if (!file) return send(res, 404, 'application/json', JSON.stringify({ error: 'unknown adr' }));
+  if (!file) {
+    send(res, 404, 'application/json', JSON.stringify({ error: 'unknown adr' }));
+    return;
+  }
 
   const content = readFileSync(file, 'utf-8');
   const doc = parseAdr(content, file);
@@ -243,44 +262,55 @@ async function handleLink(req: IncomingMessage, res: ServerResponse): Promise<vo
 
   writeFileSync(file, setDecidesField(content, targets));
   rebuild(); // re-read the ADR (now the source of truth) into a fresh graph
-  return send(res, 200, 'application/json', graphJSON);
+  send(res, 200, 'application/json', graphJSON);
 }
 
 // --- Router -----------------------------------------------------------------
 const uiPath = join(__dirname, 'ui.html');
 
-const server = createServer(async (req, res) => {
+async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = (req.url ?? '/').split('?')[0];
   try {
     if (req.method === 'GET' && url === '/') {
-      return send(res, 200, 'text/html; charset=utf-8', readFileSync(uiPath));
+      send(res, 200, 'text/html; charset=utf-8', readFileSync(uiPath));
+      return;
     }
     if (req.method === 'GET' && url === '/api/graph') {
-      return send(res, 200, 'application/json', graphJSON);
+      send(res, 200, 'application/json', graphJSON);
+      return;
     }
     if (req.method === 'GET' && url === '/api/models') {
       const models = await listModels();
-      return send(res, 200, 'application/json', JSON.stringify({ models, ollama: OLLAMA }));
+      send(res, 200, 'application/json', JSON.stringify({ models, ollama: OLLAMA }));
+      return;
     }
     if (req.method === 'POST' && url === '/api/query') {
-      return handleQuery(req, res);
+      await handleQuery(req, res);
+      return;
     }
     if (req.method === 'POST' && url === '/api/link') {
-      return handleLink(req, res);
+      await handleLink(req, res);
+      return;
     }
     send(res, 404, 'text/plain', 'Not found');
   } catch (err) {
     send(res, 500, 'text/plain', `Server error: ${(err as Error).message}`);
   }
+}
+
+const server = createServer((req, res) => {
+  void handleRequest(req, res);
 });
 
 server.listen(PORT, () => {
   const summary = graph.toJSON().summary;
+  /* eslint-disable no-console -- server boot banner is the intended UX here */
   console.log('🔭 Graph explorer running');
-  console.log(`   URL:    http://localhost:${PORT}`);
+  console.log(`   URL:    http://localhost:${String(PORT)}`);
   console.log(`   Root:   ${root}`);
-  console.log(`   Graph:  ${summary.totalNodes} nodes / ${summary.totalEdges} edges`);
+  console.log(`   Graph:  ${String(summary.totalNodes)} nodes / ${String(summary.totalEdges)} edges`);
   if (!includeAdrs) console.log(`   ADRs:   excluded`);
   else if (adrFiles) console.log(`   ADRs:   ${adrFiles.join(', ')}`);
   console.log(`   Ollama: ${OLLAMA}`);
+  /* eslint-enable no-console */
 });

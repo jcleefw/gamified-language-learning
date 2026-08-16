@@ -13,8 +13,6 @@ export interface GraphRagConfig {
     created_at: string;
     updated_at: string;
   };
-  /** Base directory the readers mount at. Absolute, or relative to the repo root. */
-  root: string;
   filter: {
     /** e.g. ['project'] to exclude 'agentic'; null = all tracks. */
     tracks: string[] | null;
@@ -46,8 +44,9 @@ export class ConfigLoader {
       const parsed = JSON.parse(content) as Partial<GraphRagConfig>;
       return { ...ConfigLoader.getDefault(), ...parsed } as GraphRagConfig;
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       throw new Error(
-        `Failed to load config from ${this.configPath}: ${error}`,
+        `Failed to load config from ${this.configPath}: ${message}`,
       );
     }
   }
@@ -61,7 +60,6 @@ export class ConfigLoader {
         created_at: '',
         updated_at: '',
       },
-      root: '.',
       filter: {
         tracks: null,
         domains: null,

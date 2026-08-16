@@ -5,7 +5,6 @@
     "created_at": "2026-07-19",
     "updated_at": "2026-07-19"
   },
-  "root": "packages/graph-rag/__fixtures__/two-axis-sample",
   "filter": {
     "tracks": null,
     "domains": null

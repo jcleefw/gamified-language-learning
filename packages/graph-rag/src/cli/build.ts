@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { writeFileSync, existsSync } from 'fs';
-import { dirname, join, isAbsolute } from 'path';
+import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { buildGraph } from '../build-graph.js';
 import { ConfigLoader } from '../config.js';
@@ -18,10 +18,7 @@ function main(): void {
     ? new ConfigLoader(configPath).load()
     : ConfigLoader.getDefault();
 
-  // --root override lets you point at the fixture without editing config.
-  const rootArg = process.argv.find((a) => a.startsWith('--root='))?.slice('--root='.length);
-  const configuredRoot = rootArg ?? config.root ?? '.';
-  const root = isAbsolute(configuredRoot) ? configuredRoot : join(repoRoot, configuredRoot);
+  const root = repoRoot;
 
   // --no-adrs skips ADR ingestion; --adr=file1.md,file2.md restricts to those
   // files (by filename or slug). Both override the config; CLI wins.
@@ -30,6 +27,7 @@ function main(): void {
   const adrFiles = adrArg ? adrArg.split(',').map((s) => s.trim()).filter(Boolean) : config.adrs.files;
   const includeAdrs = noAdrs ? false : config.adrs.include;
 
+  /* eslint-disable no-console -- CLI progress output is the intended UX here */
   console.log('🚀 Building ryoiki-centric knowledge graph');
   console.log(`   Focus: ${config.focus.title}`);
   console.log(`   Root:  ${root}`);
@@ -37,6 +35,7 @@ function main(): void {
   if (config.filter.domains) console.log(`   Domains: ${config.filter.domains.join(', ')}`);
   if (!includeAdrs) console.log(`   ADRs:   excluded`);
   else if (adrFiles) console.log(`   ADRs:   ${adrFiles.join(', ')}`);
+  /* eslint-enable no-console */
 
   const graph = buildGraph(root, {
     tracks: config.filter.tracks,
@@ -46,11 +45,14 @@ function main(): void {
   });
   const data = graph.toJSON();
 
-  console.log(`\n📈 ${data.summary.totalNodes} nodes, ${data.summary.totalEdges} edges`);
+  /* eslint-disable no-console -- CLI progress output is the intended UX here */
+  console.log(
+    `\n📈 ${String(data.summary.totalNodes)} nodes, ${String(data.summary.totalEdges)} edges`,
+  );
   console.log(
     `   Node types: ${Object.entries(data.summary.nodesByType)
       .filter(([, v]) => v > 0)
-      .map(([k, v]) => `${k}(${v})`)
+      .map(([k, v]) => `${k}(${String(v)})`)
       .join(', ')}`,
   );
 
@@ -60,6 +62,7 @@ function main(): void {
     : JSON.stringify(data);
   writeFileSync(outputPath, json);
   console.log(`\n💾 Saved to ${config.output.graph_file}`);
+  /* eslint-enable no-console */
 }
 
 main();
