@@ -1,0 +1,32 @@
+{
+  "name": "@gll/graph-rag",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "graph:build": "tsx src/cli/build.ts",
+    "graph:refresh": "tsx src/cli/build.ts",
+    "graph:reset": "rm -f .graph-data.json && tsx src/cli/build.ts",
+    "graph:query": "tsx src/cli/query.ts",
+    "graph:ui": "tsx src/server/serve.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.31.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7",
+    "vitest": "^3"
+  }
+}

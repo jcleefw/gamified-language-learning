@@ -1,7 +1,7 @@
 ---
 unit: packages/srs-engine
-sources: [EP02, EP04, EP05, EP06, EP07, EP08]
-updated: 2026-08-31
+sources: [EP17, EP18, EP20, EP21, EP22, EP23, EP25, EP26, EP30, EP31, EP36]
+updated: 2026-08-16
 ---
 
 # packages/srs-engine — Domain Knowledge
@@ -10,26 +10,38 @@ updated: 2026-08-31
 > explicit human approval. Always ask first, every time — this holds for the
 > first write and every later append.
 
-## curriculum
-
-The engine ingests real Thai language content through a dedicated data layer. Foundational characters and conversation vocabulary are converted to standardized learning objects with machine-generated identifiers based on native script characters, ensuring unique tracking across tonal variations. When the same word appears in multiple conversation decks, it maintains a single unified learning state rather than duplicating progress.
-
-## spaced-repetition
-
-The core scheduling engine that drives adaptive learning. Words advance through phases (Learning → Foundational ANKI → Curated ANKI) based on mastery points: correct answers add 1 point, incorrect subtract 1 (floor at 0). Curated words that lapse 3 times reset to Learning. Scheduling uses ts-fsrs algorithm with intervals capped at 90 days. Only two user ratings (Good/Again) are exposed; the engine handles the mapping internally.
-
-## batch-composition
-
-Practice batches assemble words in priority order: carry-over from incomplete sessions, foundational review, new words, foundational learning. Question types mix at 70/20/10 ratio, with audio questions swapped to multiple-choice when unavailable. Foundational decks allocate only 20% of batch slots to active foundational words, with 5% reserved for depleted pools.
-
 ## learning-session-lifecycle
 
-The active window limits learners to 8 concurrent words (4 new per batch), forcing vocabulary to compete for slots. Foundational decks cap this at 3 active words to reduce cognitive load on script fundamentals. The orchestrator coordinates batch composition by filtering out shelved words and applying per-deck slot limits before assembling the practice queue.
+Words move automatically through queued → active → mastered as a session progresses, continuing until everything is mastered, rather than running a fixed sequence of batches. How many words are active at once is configurable. A word that was already mastered before a new deck loads gets a one-time re-check: a correct answer reconfirms mastery, a wrong answer returns it to active play without wiping its prior streak history.
 
 ## mastery-tracking
 
-Foundational words reset mastery to 0 on three consecutive wrong answers, preventing learners from grinding on words they cannot progress on. This constraint keeps foundational-phase learning focused and efficient. The orchestrator applies rules in staged order: FSRS scheduling only triggers after a word has already been promoted (not on first promotion), demotions are gated similarly to avoid double-penalising, and consecutive wrong counts track across batches for stuck-word detection and shelving.
+Mastery is tracked as a level on a configurable scale that rises or falls based on consecutive right/wrong streaks, with faster climbs or drops once a streak passes a configurable threshold.
+
+## batch-composition
+
+Practice batches draw from a deck's word pool, guaranteeing every active word appears at least once per batch (batch size is configurable). A shelved word is skipped when assembling a batch's questions but still keeps its reserved slot in the active pool rather than being backfilled. Within a batch, a wrong answer is automatically re-asked up to a configurable retry limit, reusing the exact same question rather than rewording it, and the batch produces a clean summary once it ends.
+
+## batch-validation
+
+The engine runs a safety-net check on a finished batch, flagging two kinds of problems: a word that should have been excluded sneaking back in — either as its own question or hidden inside a sentence's word tiles — and the same question appearing twice in one batch. The check only reports problems; it never fixes or blocks anything itself, leaving that decision to the caller.
+
+## foundational-content
+
+The engine supports Thai vowels and tones alongside consonants as foundational content. Tone quizzing is limited to two directions instead of the usual four, since distinguishing the small diacritic marks visually was judged too unreliable to quiz in all four directions.
+
+## sentence-scheduling
+
+Once a learner has seen every word in a pre-written sentence enough times (configurable), "arrange the tiles in order" questions appear, in three directions: from an English prompt, from a romanized prompt, and from a native-script prompt. Sentences track their own streak and are shelved or graduated out of rotation based on consecutive results, mirroring word-level shelving.
 
 ## shelving
 
-Words showing no progress for 3 consecutive batches are shelved for 1 day. Maximum 2 shelved words; overflow shelves the newest stuck word.
+Stagnation tracking and shelving are persistent (they survive across sessions) and scoped per learner per deck.
+
+## data-access
+
+A learner's progress is saved after every answer rather than only at the end of a session, so quitting mid-session doesn't lose progress.
+
+## spaced-repetition
+
+The engine schedules reviews with an FSRS-based scheduler: seeding a new review card from a learner's mastery performance, advancing the card's due date after each review, and checking whether a card is due. The third-party scheduling library is isolated behind this one internal module so the rest of the engine never depends on it directly.
