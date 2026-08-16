@@ -33,7 +33,7 @@ function writeJson(path, obj) {
   writeFileSync(path, JSON.stringify(obj, null, 2) + '\n')
 }
 
-function newStory(e, today) {
+function newStory(e) {
   const epic = (e.id.match(/^(EP[0-9]+|AGN[0-9]+)/) ?? [])[0] ?? null
   return {
     id: e.id,
@@ -42,7 +42,7 @@ function newStory(e, today) {
     title: e.title ?? e.id,
     domain: e.domain ?? '<non-workspace>',
     ryoiki: e.ryoiki,
-    completed: e.completed ?? today,
+    completed: e.completed ?? 'undetermined',
     duration: e.duration ?? 'undetermined',
     summary: e.summary ?? '',
     supersedes: [],
@@ -67,8 +67,7 @@ export function cmdWrite(indexPath, entries) {
   const renames = new Map(toPatch.map((e) => [e.id, e.ryoiki]))
   const { index: patched, matchedIds } = applyRyoikiWrites(rawIndex, renames)
 
-  const today = new Date().toISOString().slice(0, 10)
-  const created = toCreate.map((e) => newStory(e, today))
+  const created = toCreate.map((e) => newStory(e))
   const written = { ...patched, stories: [...patched.stories, ...created] }
   writeJson(indexPath, written)
 
