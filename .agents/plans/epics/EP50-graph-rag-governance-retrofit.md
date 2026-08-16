@@ -12,19 +12,21 @@
 
 ## Problem Statement
 
-`packages/graph-rag` builds a knowledge graph from the repo's own governance artifacts — `KNOWLEDGE.md` files, the changelog archive, and ADRs — and serves it for querying. The package needs a proper Epic/DS trail: DS01 specifies the core graph pipeline (ingestion, storage, query, server), and DS02 specifies ADR consolidation, removal of the fixture-based build path, and documentation cleanup.
+`packages/graph-rag` builds a knowledge graph from the repo's own governance artifacts — `KNOWLEDGE.md` files, the changelog archive, and ADRs — and serves it for querying. The package needs a proper Epic/DS trail: DS01 specifies the core graph pipeline (ingestion, storage, query, server), and DS02 specifies removal of the fixture-based build path and documentation cleanup.
 
 ## Scope
 
 **In scope**:
 
 - DS01: specify the graph pipeline — provenance indexing, knowledge ingestion, the core graph engine, ADR/decision linking, config-driven filtering, CLI tools, the query engine, and the server UI.
-- DS02: consolidate the two ADRs into one, remove the fixture-pointing capability from the build CLI, prune redundant documentation.
+- DS02: remove the fixture-pointing capability from the build CLI, prune redundant documentation.
+- DS03: kettei-without-linkage visibility (query engine + server UI) and model-string housekeeping in the query engine.
 
 **Out of scope**:
 
 - New features (custom field extraction, git history ingestion, validation CLI, web UI, API endpoint) — candidate future DS scope, not committed in this epic.
-- Any change to the actual graph/query logic — this epic is a governance and cleanup pass, not a rewrite.
+- Domain-data ingestion (surfacing srs-engine's own domain concepts, e.g. shelving rules, in the graph) — parked pending a clearer shape; will get its own DS or epic.
+- Any *other* change to the actual graph/query logic beyond DS03's scope — this epic is primarily a governance and cleanup pass. <!-- Exception already taken once: EP50-BUG01 fixed cross-domain ryoiki linking (wireRelates gated by epic co-occurrence instead of shared ryoiki key), logged as a defect against the read-model ADR's own stated intent, not scope creep. -->
 
 ---
 
@@ -64,26 +66,39 @@
 
 **Scope**: `src/server/serve.ts` + `src/server/ui.html` (`graph:ui`), routes generation to local Ollama.
 
-### Phase 2: Cleanup and Consolidation (EP50-DS02)
+### Phase 2: Cleanup (EP50-DS02)
 
-### EP50-ST09: Consolidate the two graph-rag ADRs
-
-**Scope**: Merge `20260718T094101Z-agentic-two-axis-knowledge-architecture.md` and `20260720T235931Z-engineering-graph-rag-read-model.md` into one ADR with an options-considered section; delete the superseded file; update all references.
+<!-- ADR consolidation was considered and dropped: the two ADRs are at different scope
+     levels (Two-Axis is repo-wide governance; Graph RAG Read Model is package-specific
+     and already correctly supersedes only Two-Axis's D7 clause). Left as-is. -->
 
 ### EP50-ST10: Remove fixture-pointing and test fixtures
 
-**Scope**: Delete `__fixtures__/two-axis-sample/`, remove `--root`/`config.root` from `src/cli/build.ts`, update the 3 affected unit tests. Runs after DS01 is complete.
+**Scope**: Delete `__fixtures__/two-axis-sample/`, remove `--root`/`config.root` from `src/cli/build.ts` and `src/server/serve.ts`, update the 2 affected unit tests. Runs after DS01 is complete.
 
 ### EP50-ST11: Prune documentation
 
 **Scope**: Once DS01 is complete, delete or fold `ARCHITECTURE.md`/`EXTRACTION_PATTERNS.md`/`RESEED_GUIDE.md`/`docs/graph-model-explained.md` into it where redundant; keep `README.md` as a package-level pointer to DS01.
+
+### Phase 3: Enhancements (EP50-DS03)
+
+### EP50-ST12: Orphan kettei surfacing in query engine
+
+**Scope**: `src/query-engine.ts` — `includeOrphanKettei` option to union zero-edge `kettei` nodes into query results.
+
+### EP50-ST13: Server UI toggle for orphan kettei
+
+**Scope**: `src/server/serve.ts` (+ UI) — expose ST12's option as a user-facing toggle.
+
+### EP50-ST14: Fix hardcoded model string in query engine
+
+**Scope**: `src/query-engine.ts` — replace inline `'claude-opus-4-8'` literal with a verified, named model constant.
 
 ---
 
 ## Overall Acceptance Criteria
 
 - [ ] Graph pipeline (ingestion, storage, query, server) is implemented per DS01 and passes its acceptance criteria.
-- [ ] Exactly one graph-rag ADR remains; all references across the repo point to it.
 - [ ] No test fixture or CLI path allows building the graph against anything other than repo root.
 - [ ] No doc file under `packages/graph-rag` duplicates content now owned by DS01.
 - [ ] Package builds and existing tests pass after fixture removal.
@@ -98,5 +113,5 @@
 
 1. Review and approve this plan.
 2. Write DS01 (this epic's first deliverable).
-3. Write DS02 covering ST09-ST11.
+3. Write DS02 covering ST10-ST11.
 4. Begin implementation.
