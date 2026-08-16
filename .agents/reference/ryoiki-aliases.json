@@ -142,5 +142,17 @@
   "ui-state": {
     "description": "Generic Vue 3 composables holding app-level state/bootstrapping not covered by a more specific ryoiki (e.g. the app boot sequence).",
     "alias": ["composables", "vue-composables", "state-management", "app-boot", "boot-sequence"]
+  },
+  "config-policy": {
+    "description": "Server-owned config/preference semantics — named presets/tiers mapped to underlying numeric knobs, per-user override resolution against defaults, and the fixed-vs-personal settings split. Distinct from data-access (storing the raw values) and mastery-tracking (the state the policy parameterizes).",
+    "alias": ["config-tier", "preset-map", "difficulty-preset", "policy-map", "config-policy", "preference-tier", "config-merge", "fixed-vs-personal", "preference-resolution"]
+  },
+  "decommission": {
+    "description": "Wholesale removal of superseded code — whole packages, scripts, routes, or subsystems deleted because a newer implementation replaced them. Change-type tag (what happened to the code), not a content tag (what the code was) — use when a story's substance is deletion itself, not the shape of what was deleted.",
+    "alias": ["deletion", "removal", "cleanup", "teardown", "sunset", "superseded", "dead-code-removal"]
+  },
+  "documentation": {
+    "description": "Reader-facing docs — setup guides, local dev loops, how-tos, and README-style walkthroughs. Not the code itself, but instructions for using or running it.",
+    "alias": ["docs", "how-to", "how-tos", "how-tos-guide", "guide", "setup-guide", "readme", "walkthrough", "dev-loop-docs"]
   }
 }
