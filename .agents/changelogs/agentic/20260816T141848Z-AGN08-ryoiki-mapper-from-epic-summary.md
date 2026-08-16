@@ -1,11 +1,14 @@
 # AGN08: Ryoiki Mapper From Epic Summary — Implementation Plan
 
 **Date**: 20260816T141848Z <!-- Run .agents/tools/generate-timestamp.sh -->
+**Revised**: 20260816T150000Z — corrected ST02 scope: create-or-patch, not patch-only (see §Correction)
 **Type**: Tool | Skill
-**Status**: **Draft**
+**Status**: Completed
 **Track**: agentic
 
 ---
+
+> **Correction (post-ST01/ST02 review).** The original ST02 scope below assumed `index.json` already had an entry for every id in the summary report — patch `ryoiki` on a match, report a miss. That's wrong for this tool's actual purpose: the whole point of skipping `draft`/`confirm` is that the epic-summary report is the **only** source of truth, and an id may not exist in `index.json` at all yet. §4.2 and ST02 are updated to **create a full new entry** when the id is absent (using the report's own `summary`/`domain`/`ryoiki` columns, with placeholder values for fields the report doesn't carry — `title`, `completed`, `duration`, `pr`, `compact_pr`), and to patch-in-place only when the id already exists. No dependency on any previously-recorded facts for that id — each run is a blank slate for ids not already in the index.
 
 ## 1. Overview
 
@@ -28,19 +31,21 @@ This plan extracts the id→ryoiki **write** step out of `cmdConfirm` into a sta
 
 ## 3. Data Structures
 
-Unchanged wire format — reuses what `confirm --data` already accepts:
+Extended wire format — a superset of what `confirm --data` accepts, since a create path needs more than `{id, ryoiki}`:
 
 ```jsonc
-// stdin / file: JSON array of {id, ryoiki} pairs, e.g. extracted from an
-// epic-summary report's Story/Ryoiki columns
+// stdin / file: JSON array of entries built from an epic-summary report's
+// Story/Summary/Domain/Ryoiki columns. {id, ryoiki} is the required
+// minimum (patch-only, if the id already exists in index.json); summary/
+// domain/title/etc are used when the id doesn't exist yet and a full
+// entry must be created.
 [
-  { "id": "EP21-DS01", "ryoiki": "design-spec" },
-  { "id": "EP21-ST02", "ryoiki": "learning-session-lifecycle" },
-  { "id": "EP21-ST03", "ryoiki": "demo-harness" }
+  { "id": "EP20-ST01", "ryoiki": "test-infrastructure", "summary": "…", "domain": "packages/srs-engine-v2" },
+  { "id": "EP20-DS01", "ryoiki": "design-spec", "summary": "…", "domain": "packages/srs-engine-v2" }
 ]
 ```
 
-No change to `index.json`'s story shape or `ryoiki-aliases.json`.
+No change to `index.json`'s story *shape* (still schema-conformant) or `ryoiki-aliases.json`. Fields the report doesn't carry (`title`, `completed`, `duration`, `pr`, `compact_pr`) get placeholder values on create (`title` defaults to the id, `completed`/`duration` default to `"undetermined"`, `pr`/`compact_pr` default to `null`).
 
 ## 4. Design
 
@@ -62,23 +67,25 @@ The new tool does NOT filter by epic or by `state` presence — it looks up stor
 `.agents/tools/write-ryoiki.sh` → `.agents/tools/lib/write-ryoiki.mjs` (mirrors the existing `.sh` → `.mjs` pattern).
 
 ```
-write-ryoiki.sh --data -   # JSON array of {id, ryoiki} on stdin (or a path instead of -)
+write-ryoiki.sh --data -   # JSON array of entries on stdin (or a path instead of -)
 ```
 
-- Reads `index.json`, applies the shared write function by `id` (no epic filter), writes back.
-- Reports how many ids were found/written vs. not found in the index (so a typo'd id in the summary report doesn't fail silently).
+Create-or-patch by `id`, in one pass:
+- **Id already exists in `index.json`** → patch just `ryoiki` in place (reuses ST01's shared function), clearing `state` if present.
+- **Id does not exist** → create a full new schema-conformant entry from the input's own fields (`summary`, `domain`, `ryoiki`, optionally `title`/`completed`/`duration`/`pr`/`compact_pr`); anything not supplied gets a placeholder. `epic` is derived from the id's own prefix (`EP20-ST01` → `EP20`).
+- Reports counts: how many ids were patched vs. newly created.
 - Does not touch `ryoiki-blacklist.json` or `ryoiki-aliases.json` — those stay human-curated, untouched by any tool (Golden Rule 3 carries over unchanged).
 
 ### 4.3 New skill
 
-`.agents/skills/agentic/ryoiki-from-summary/SKILL.md` (name TBC with user), sibling to `epic-summarizer` and `ryoiki-mapping`:
+`.agents/skills/agentic/ryoiki-from-summary/SKILL.md`, sibling to `epic-summarizer` and `ryoiki-mapping`:
 
 1. Take a given `.agents/reports/epic-summary/EP##-*.md` report (must already be human-verified, per `epic-summarizer`'s "Verified by JC" convention).
-2. Parse the `Story` / `Ryoiki` table columns into `{id: "EP##-<Story>", ryoiki}` pairs.
-3. Call `write-ryoiki.sh --data -` once with the full array.
-4. Report the written/not-found counts back to the user.
+2. Parse the `Story` / `Summary` / `Domain` / `Ryoiki` table columns into entries: `{id: "EP##-<Story>", ryoiki, summary, domain}`.
+3. Call `write-ryoiki.sh --data -` once with the full array — creating ids that don't exist yet, patching ones that do.
+4. Report the created/patched summary back to the user.
 
-No `draft`, `status`, or `confirm` step — this path assumes the mapping is already decided (in the report), unlike `ryoiki-mapping`'s live table-and-respond flow which is for when the mapping is *not yet* decided.
+No `draft`, `status`, or `confirm` step — the report itself is the complete, already-decided source of truth. Unlike `ryoiki-mapping`'s live table-and-respond flow (for when the mapping is *not yet* decided), this path treats every id in the report as fresh, regardless of whatever facts may or may not already sit in `index.json` for it.
 
 ## 5. Stories
 
@@ -96,20 +103,21 @@ No `draft`, `status`, or `confirm` step — this path assumes the mapping is alr
 - [ ] `archive-epic.sh confirm EP## --data -` output is byte-identical to before the refactor for the same input.
 - [ ] The shared function has no epic-scoping baked in — an epic filter is a caller-supplied option, not hardcoded.
 
-### AGN08-ST02: standalone `write-ryoiki` tool
+### AGN08-ST02: standalone `write-ryoiki` tool — create-or-patch
 
-**Scope**: New `.sh`/`.mjs` pair, outside `archive-epic.sh`, that applies `{id, ryoiki}[]` writes directly to `index.json` by id, independent of draft/confirm state.
-**Read List**: ST01's shared function; `archive-epic.sh`'s `.sh`→`.mjs` exec pattern
+**Scope**: New `.sh`/`.mjs` pair, outside `archive-epic.sh`, that writes directly to `index.json` by id: patch `ryoiki` if the id exists, create a full new entry if it doesn't. Independent of draft/confirm state and of any prior recorded facts for that id.
+**Read List**: ST01's shared function; `archive-epic.sh`'s `.sh`→`.mjs` exec pattern; `.agents/changelogs/archive/schema.json` (required story fields)
 
 **Tasks**:
-- [ ] `write-ryoiki.sh --data -` (or a path) reads the JSON array, calls the shared function scoped by id (not epic), writes `index.json`.
-- [ ] Clears `state` on any matched entry that has one; does not require `state` to be present.
-- [ ] Reports counts: written vs. id-not-found (printed, not silently dropped).
+- [ ] `write-ryoiki.sh --data -` (or a path) reads the JSON array; ids already in `index.json` are patched via the shared function (`ryoiki`, clearing `state` if present); ids not in `index.json` are appended as new, schema-conformant entries built from the input's own fields.
+- [ ] A new entry derives `epic` from the id's own prefix (`EP20-ST01` → `EP20`), defaults `title` to the id, `completed`/`duration` to `"undetermined"`, `pr`/`compact_pr` to `null`, and takes `summary`/`domain`/`ryoiki` straight from the input.
+- [ ] Reports counts: how many ids were patched vs. newly created.
 
 **Acceptance**:
-- [ ] Running against a fully-confirmed (no `state` anywhere) `index.json` still updates matching ids' `ryoiki` values.
-- [ ] An id not present in `index.json` is reported, not silently ignored, and does not abort the rest of the batch.
-- [ ] Tool has no dependency on `archive-epic.sh` or any archive-step (commit-range, discover, draft).
+- [ ] Running against a fully-confirmed (no `state` anywhere) `index.json` still updates matching ids' `ryoiki` values (patch path unchanged).
+- [ ] An id not present in `index.json` is created as a new, schema-valid entry — not skipped, not reported as an error.
+- [ ] A created entry passes `.agents/changelogs/archive/schema.json` validation (all required fields present).
+- [ ] Tool has no dependency on `archive-epic.sh` or any archive-step (commit-range, discover, draft), and no dependency on any entry for that id having existed before this run.
 
 ### AGN08-ST03: `ryoiki-from-summary` skill
 
@@ -117,15 +125,15 @@ No `draft`, `status`, or `confirm` step — this path assumes the mapping is alr
 **Read List**: `.agents/skills/historical/epic-summarizer/SKILL.md` (both content and brevity as the format model), `.agents/skills/historical/ryoiki-mapping/SKILL.md` (contrast: this skips its draft/confirm loop), a sample report (`EP21-srs-engine-v2-revision-build.md`)
 
 **Tasks**:
-- [ ] Parse the report's `Story` / `Ryoiki` table columns into `{id, ryoiki}` pairs (id = `EP##-<Story>`).
-- [ ] If a story's `Domain` column lists more than one domain (multi-domain story), split it into one `{id, ryoiki}` entry per domain instead of one shared entry — each `index.json` entry belongs to exactly one domain, matching the existing one-domain-per-entry invariant.
-- [ ] Call `write-ryoiki.sh --data -` once with the full (post-split) set.
-- [ ] Surface the written/not-found summary to the user; do not silently proceed past not-found ids.
+- [ ] Parse the report's `Story` / `Summary` / `Domain` / `Ryoiki` table columns into `{id, ryoiki, summary, domain}` entries (id = `EP##-<Story>`).
+- [ ] If a story's `Domain` column lists more than one domain (multi-domain story), split it into one entry per domain instead of one shared entry — each `index.json` entry belongs to exactly one domain, matching the existing one-domain-per-entry invariant.
+- [ ] Call `write-ryoiki.sh --data -` once with the full (post-split) set — creating ids absent from `index.json`, patching ids already present.
+- [ ] Surface the created/patched summary to the user.
 
 **Acceptance**:
-- [ ] Running against `EP21-srs-engine-v2-revision-build.md` writes `EP21-DS01`, `EP21-DS02`, `EP21-ST02`, `EP21-ST03`'s ryoiki values into `index.json` in a single command.
+- [ ] Running against `EP21-srs-engine-v2-revision-build.md` writes `EP21-DS01`, `EP21-DS02`, `EP21-ST02`, `EP21-ST03`'s entries into `index.json` in a single command, whether or not they already existed.
 - [ ] A story listing multiple domains produces one entry per domain, each with a single domain value — never one entry with multiple domains.
-- [ ] No `draft`/`status`/`confirm` step is invoked anywhere in the skill.
+- [ ] No `draft`/`status`/`confirm` step is invoked anywhere in the skill; no dependency on prior recorded facts for an id.
 - [ ] A malformed or missing report is rejected with a clear message, not partially applied.
 
 ## 6. Not built
