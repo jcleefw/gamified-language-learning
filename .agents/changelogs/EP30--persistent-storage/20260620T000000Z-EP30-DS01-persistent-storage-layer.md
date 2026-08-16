@@ -474,7 +474,7 @@ data/
 | ✅ Graduation hook | ST08 | COMPLETE |
 | ✅ Runner resume fix — skip mastered words on session start | post-ST08 | COMPLETE |
 
-### Post-ST08 fix: runner resume (2026-06-23)
+### BUG01 fix: runner resume (2026-06-23)
 
 During manual verification of ST08, mastered words were reappearing at the start of every new session, forcing users through a recheck batch before reaching unmastered words.
 
