@@ -2,20 +2,34 @@
   "*": [
     "type-definitions",
     "workspace-tooling",
-    "design-spec"
+    "design-spec",
+    "test-infrastructure",
+    "demo-harness"
   ],
-  "apps/cli-demo-db": [],
-  "apps/server": ["test-infrastructure"],
+  "apps/cli-demo-db": [
+    "demo-harness",
+    "package-scaffold"
+  ],
+  "apps/server": [ "decommission"],
   "apps/srs-demo": [
     "package-scaffold",
-    "ui-state"
+    "ui-state",
+    "api-client",
+    "decommission",
+    "client-routing"
   ],
-  "packages/api-contract": [],
-  "packages/db": [],
+  "packages/api-contract": [
+    "package-scaffold",
+    "database-schema"
+  ],
+  "packages/db": [
+    "package-scaffold",
+    "documentation"
+  ],
   "packages/logger": [],
   "packages/shared-utils": [],
   "packages/srs-engine": [
-    "demo-harness",
-    "test-infrastructure"
+    "package-scaffold",
+    "client-routing"
   ]
 }
