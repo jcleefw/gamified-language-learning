@@ -29,7 +29,7 @@ export class ProjectGraph {
     const visited = new Set<string>();
     const results: Node[] = [];
 
-    const walk = (id: string, d: number) => {
+    const walk = (id: string, d: number): void => {
       if (d === 0 || visited.has(id)) return;
       visited.add(id);
       const node = this.nodes.get(id);
@@ -38,7 +38,7 @@ export class ProjectGraph {
       const outgoing = this.edges.filter(
         (e) => e.from === id && edgeTypes.includes(e.type),
       );
-      outgoing.forEach((e) => walk(e.to, d - 1));
+      outgoing.forEach((e) => { walk(e.to, d - 1); });
     };
 
     walk(nodeId, depth);
@@ -49,7 +49,7 @@ export class ProjectGraph {
   findPath(fromId: string, toId: string, maxDepth = 5): Edge[] {
     const paths: Edge[][] = [];
 
-    const dfs = (current: string, target: string, visited: Set<string>, path: Edge[]) => {
+    const dfs = (current: string, target: string, visited: Set<string>, path: Edge[]): void => {
       if (current === target) {
         paths.push([...path]);
         return;

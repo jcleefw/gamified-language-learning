@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Node, Edge, GraphContext, QueryResult } from './types.js';
-import { ProjectGraph } from './graph.js';
+import type { ProjectGraph } from './graph.js';
 
 export class QueryEngine {
   graph: ProjectGraph;
@@ -19,6 +19,11 @@ export class QueryEngine {
     const nodeIds = relevantNodes.map((n) => n.id);
     const subgraph = this.buildSubgraph(nodeIds, 3);
 
+    const nodeTypes: Record<string, number> = {};
+    for (const node of this.graph.nodes.values()) {
+      nodeTypes[node.type] = (nodeTypes[node.type] ?? 0) + 1;
+    }
+
     return {
       query,
       relevantNodes,
@@ -26,7 +31,7 @@ export class QueryEngine {
       graphStats: {
         totalNodes: this.graph.nodes.size,
         totalEdges: this.graph.edges.length,
-        nodeTypes: this.graph['_countByType']?.() || {},
+        nodeTypes,
       },
     };
   }
@@ -37,48 +42,48 @@ export class QueryEngine {
     str += `${'='.repeat(60)}\n\n`;
 
     str += `GRAPH OVERVIEW:\n`;
-    str += `- Total nodes: ${context.graphStats.totalNodes}\n`;
-    str += `- Total edges: ${context.graphStats.totalEdges}\n`;
+    str += `- Total nodes: ${String(context.graphStats.totalNodes)}\n`;
+    str += `- Total edges: ${String(context.graphStats.totalEdges)}\n`;
     str += `- Node types: ${Object.entries(context.graphStats.nodeTypes)
       .filter(([, v]) => v > 0)
-      .map(([k, v]) => `${k}(${v})`)
+      .map(([k, v]) => `${k}(${String(v)})`)
       .join(', ')}\n\n`;
 
     str += `RELEVANT NODES (for your query):\n`;
     context.relevantNodes.forEach((node) => {
-      const m = node.metadata ?? {};
+      const m = node.metadata;
       str += `- [${node.type.toUpperCase()}] ${node.label}\n`;
-      if (m.content) {
+      if (typeof m.content === 'string') {
         str += `  Knowledge:\n`;
-        String(m.content)
+        m.content
           .split('\n')
           .forEach((line) => (str += `    ${line}\n`));
       }
       if (Array.isArray(m.sources) && m.sources.length) {
         str += `  Produced by: ${m.sources.join(', ')}`;
         if (Array.isArray(m.epics) && m.epics.length) str += ` (epic ${m.epics.join(', ')})`;
-        if (Array.isArray(m.prs) && m.prs.length) str += ` — PR ${m.prs.map((p) => `#${p}`).join(', ')}`;
+        if (Array.isArray(m.prs) && m.prs.length) str += ` — PR ${m.prs.map((p) => `#${String(p)}`).join(', ')}`;
         str += `\n`;
       }
     });
 
     str += `\nRELATIONSHIP SUBGRAPH (related nodes & edges):\n`;
-    str += `Nodes (${context.subgraph.nodes.length}):\n`;
+    str += `Nodes (${String(context.subgraph.nodes.length)}):\n`;
     context.subgraph.nodes.slice(0, 20).forEach((node) => {
       str += `  • [${node.type}] ${node.label}\n`;
     });
     if (context.subgraph.nodes.length > 20) {
-      str += `  ... and ${context.subgraph.nodes.length - 20} more\n`;
+      str += `  ... and ${String(context.subgraph.nodes.length - 20)} more\n`;
     }
 
-    str += `\nEdges (${context.subgraph.edges.length}):\n`;
+    str += `\nEdges (${String(context.subgraph.edges.length)}):\n`;
     context.subgraph.edges.slice(0, 20).forEach((edge) => {
       const from = this.graph.getNode(edge.from);
       const to = this.graph.getNode(edge.to);
       str += `  • ${from?.label || edge.from} --[${edge.type}]--> ${to?.label || edge.to}\n`;
     });
     if (context.subgraph.edges.length > 20) {
-      str += `  ... and ${context.subgraph.edges.length - 20} more\n`;
+      str += `  ... and ${String(context.subgraph.edges.length - 20)} more\n`;
     }
 
     return str;
@@ -138,18 +143,18 @@ Do not organize your answer around epics — organize it around ryoiki.`;
       .filter((w) => w.length > 2);
 
     const searchableText = (node: Node): string => {
-      const m = node.metadata ?? {};
-      const parts = [
+      const m = node.metadata;
+      const parts: string[] = [
         node.label,
-        m.content, // the ryoiki's durable knowledge prose (or an ADR's body)
-        m.ryoiki,
-        m.unit,
-        m.status, // kettei: Accepted / Superseded / Proposed
-        m.scope, // kettei: what the decision covers
-        Array.isArray(m.sources) ? m.sources.join(' ') : undefined, // provenance ids
-        Array.isArray(m.epics) ? m.epics.join(' ') : undefined,
       ];
-      return parts.filter(Boolean).join(' ').toLowerCase();
+      if (typeof m.content === 'string') parts.push(m.content);
+      if (typeof m.ryoiki === 'string') parts.push(m.ryoiki);
+      if (typeof m.unit === 'string') parts.push(m.unit);
+      if (typeof m.status === 'string') parts.push(m.status);
+      if (typeof m.scope === 'string') parts.push(m.scope);
+      if (Array.isArray(m.sources)) parts.push(m.sources.join(' '));
+      if (Array.isArray(m.epics)) parts.push(m.epics.join(' '));
+      return parts.join(' ').toLowerCase();
     };
 
     const scored = Array.from(this.graph.nodes.values())
@@ -165,7 +170,7 @@ Do not organize your answer around epics — organize it around ryoiki.`;
   }
 
   // Build subgraph from node IDs
-  private buildSubgraph(nodeIds: string[], depth: number) {
+  private buildSubgraph(nodeIds: string[], depth: number): { nodes: Node[]; edges: Edge[] } {
     const visited = new Set(nodeIds);
     const queue = [...nodeIds];
     const subgraphEdges: Edge[] = [];
@@ -188,7 +193,7 @@ Do not organize your answer around epics — organize it around ryoiki.`;
     }
 
     return {
-      nodes: Array.from(visited).map((id) => this.graph.getNode(id)!),
+      nodes: Array.from(visited).map((id) => this.graph.getNode(id)).filter(Boolean) as Node[],
       edges: subgraphEdges,
     };
   }

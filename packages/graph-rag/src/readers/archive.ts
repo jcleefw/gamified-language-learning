@@ -10,11 +10,11 @@ import { join } from 'path';
 // ryoiki nodes as metadata and uses the epic spans to draw `relates` edges
 // between ryoiki that co-evolved in the same epic.
 //
-// `ryoiki` (AGN06) is the within-unit knowledge axis — the aspect a story
-// touched, and the text of a KNOWLEDGE.md `##` heading. The join to headings is
-// alias-aware: story ryoiki are canonicalized (see readers/ryoiki-config.ts)
-// before keying, so drift variants (`fsrs`, `scheduler`) still meet their
-// heading (`spaced-repetition`).
+// `ryoiki` is the within-unit knowledge axis — the aspect a story touched, and
+// the text of a KNOWLEDGE.md `##` heading. The join to headings is alias-aware:
+// story ryoiki are canonicalized (see readers/ryoiki-config.ts) before keying,
+// so drift variants (`fsrs`, `scheduler`) still meet their heading
+// (`spaced-repetition`).
 //
 // Reads .agents/changelogs/archive/index.json. Never writes.
 // ---------------------------------------------------------------------------

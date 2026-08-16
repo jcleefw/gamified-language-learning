@@ -6,9 +6,9 @@
 //   - domain:  a workspace unit (apps/*, packages/*) — a grouping of ryoiki
 //   - ryoiki:  a named area of knowledge within a domain (a KNOWLEDGE.md heading),
 //              carrying the durable prose that describes how that area works.
-//              `ryoiki` (AGN06) is the within-unit knowledge axis; drift variants
-//              are folded to a canonical spelling and blacklisted ryoiki are kept
-//              out of the graph entirely (see readers/ryoiki-config.ts).
+//              The within-unit knowledge axis; drift variants are folded to a
+//              canonical spelling and blacklisted ryoiki are kept out of the
+//              graph entirely (see readers/ryoiki-config.ts).
 //
 // Stories and epics are NOT nodes. They are demoted to provenance metadata on
 // each ryoiki (`sources` / `epics` / `prs`) so "which work produced this?" is

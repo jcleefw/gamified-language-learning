@@ -31,11 +31,11 @@ export function buildGraph(root: string, options: BuildOptions = {}): ProjectGra
 
   const config = loadRyoikiConfig(root);
   const archive = loadArchiveIndex(root);
-  const provenance = buildProvenanceIndex(archive, filter, config.canonicalize);
+  const provenance = buildProvenanceIndex(archive, filter, (name) => config.canonicalize(name));
   ingestKnowledge(graph, root, { domains: filter.domains }, provenance, config);
   // ADRs last: the decision layer links to ryoiki/domain nodes just created.
   if (options.includeAdrs ?? true) {
-    ingestAdrs(graph, root, config.canonicalize, options.adrFiles ?? null);
+    ingestAdrs(graph, root, (name) => config.canonicalize(name), options.adrFiles ?? null);
   }
 
   return graph;

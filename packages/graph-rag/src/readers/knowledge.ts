@@ -1,6 +1,6 @@
-import { readFileSync, readdirSync } from 'fs';
+import { readFileSync, readdirSync, type Dirent } from 'fs';
 import { join } from 'path';
-import { ProjectGraph } from '../graph.js';
+import type { ProjectGraph } from '../graph.js';
 import { ryoikiKey } from './archive.js';
 import type { ProvenanceIndex } from './archive.js';
 import { INCLUDE_ALL } from './ryoiki-config.js';
@@ -18,7 +18,7 @@ import type { RyoikiConfig } from './ryoiki-config.js';
 //   - relates edge:  ryoiki --relates--> ryoiki, for ryoiki in DIFFERENT
 //                    domains that were produced by the same epic (co-evolution)
 //
-// A `ryoiki` (AGN06) is a named aspect of one unit — the text of a `##` heading.
+// A ryoiki is a named aspect of one unit — the text of a `##` heading.
 // Blacklisted ryoiki are NEVER added to the graph: the heading is skipped at
 // ingest (RyoikiConfig.isBlacklisted). The join to archive provenance is
 // alias-aware — each heading is canonicalized before keying.
@@ -52,8 +52,8 @@ export interface KnowledgeFilter {
 /** Recursively find every KNOWLEDGE.md below `root`, skipping vendored/agent dirs. */
 export function findKnowledgeFiles(root: string): string[] {
   const found: string[] = [];
-  const walk = (dir: string) => {
-    let entries: import('fs').Dirent[];
+  const walk = (dir: string): void => {
+    let entries: Dirent[];
     try {
       entries = readdirSync(dir, { withFileTypes: true });
     } catch {
@@ -104,8 +104,8 @@ export function parseKnowledge(content: string, path: string): KnowledgeDoc | nu
   const matches = [...body.matchAll(headingRe)];
   for (let i = 0; i < matches.length; i++) {
     const title = matches[i][1].trim();
-    const start = matches[i].index! + matches[i][0].length;
-    const end = i + 1 < matches.length ? matches[i + 1].index! : body.length;
+    const start = matches[i].index + matches[i][0].length;
+    const end = i + 1 < matches.length ? matches[i + 1].index : body.length;
     ryoiki.push({ title, content: body.slice(start, end).trim() });
   }
 
@@ -154,15 +154,15 @@ export function ingestKnowledge(
     });
 
     for (const { title, content } of doc.ryoiki) {
-      // Blacklisted ryoiki are excluded by design — never a node (AGN06 D5/D9).
-      // A blacklisted ryoiki should never have been WRITTEN as a heading in the
-      // first place (the blacklist is a write-time projection), so its presence
-      // here is an authoring anomaly: warn loudly, then skip so it still never
-      // enters the graph.
+      // Blacklisted ryoiki are excluded by design — never a node. A blacklisted
+      // ryoiki should never have been WRITTEN as a heading in the first place
+      // (the blacklist is a write-time projection), so its presence here is an
+      // authoring anomaly: warn loudly, then skip so it still never enters graph.
       if (config.isBlacklisted(unit, title)) {
+        // eslint-disable-next-line no-console
         console.warn(
           `[graph-rag] "${unit}" KNOWLEDGE.md has a blacklisted ryoiki heading ` +
-            `"${title}" — it should never have been written (AGN06 D9). Skipping; ` +
+            `"${title}" — it should never have been written. Skipping; ` +
             `not added to the graph.`,
         );
         continue;

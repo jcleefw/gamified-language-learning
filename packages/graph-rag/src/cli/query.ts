@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
@@ -8,15 +9,15 @@ import type { GraphData } from '../types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-async function main() {
+function main(): void {
   const graphPath = join(__dirname, '../../.graph-data.json');
 
   const graphData = JSON.parse(readFileSync(graphPath, 'utf-8')) as GraphData;
 
   // Reconstruct graph from JSON
   const graph = new ProjectGraph();
-  graphData.nodes.forEach((node) => graph.addNode(node));
-  graphData.edges.forEach((edge) => graph.addEdge(edge));
+  graphData.nodes.forEach((node) => { graph.addNode(node); });
+  graphData.edges.forEach((edge) => { graph.addEdge(edge); });
 
   const engine = new QueryEngine(graph);
 
@@ -50,9 +51,12 @@ async function main() {
 
   console.log('\n✅ Graph is ready for LLM queries!');
   console.log('\nGraph Stats:');
-  console.log(`- Total nodes: ${graph.nodes.size}`);
-  console.log(`- Total edges: ${graph.edges.length}`);
-  console.log('- Node types:', graphData.summary.nodesByType);
+  console.log(`- Total nodes: ${String(graph.nodes.size)}`);
+  console.log(`- Total edges: ${String(graph.edges.length)}`);
+  console.log('- Node types:');
+  for (const [type, count] of Object.entries(graphData.summary.nodesByType)) {
+    console.log(`  ${type}: ${String(count)}`);
+  }
 }
 
-main().catch(console.error);
+main();

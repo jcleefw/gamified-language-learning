@@ -3,32 +3,30 @@ import { join } from 'path';
 import { normalizeRyoiki } from './archive.js';
 
 // ---------------------------------------------------------------------------
-// Ryoiki reference config — the read-side of AGN06 (Package-Scoped Knowledge
-// Filtering). Two curated files under <root>/.agents/reference/ drive it:
+// Ryoiki reference config — manages knowledge filtering via curated reference
+// files. Two curated files under <root>/.agents/reference/ drive it:
 //
 //   - ryoiki-aliases.json   { canonical: { description, alias: [variants…] } }
 //         Heals NAMING DRIFT. When the same aspect is spelled differently across
 //         units or over time (`fsrs`, `scheduler` → `spaced-repetition`), the map
-//         canonicalizes it so the provenance join and ADR links still meet.
+//         canonicalizes it so the provenance join and references still meet.
 //
 //   - ryoiki-blacklist.json { "*": […], "apps/srs-demo": […] }
 //         Per-unit EXCLUSION. A blacklisted ryoiki is NEVER added to the graph
 //         (the user's rule): its KNOWLEDGE.md heading is skipped at ingest. The
 //         reserved "*" key applies to every unit, additive on top of its own
-//         list. Cascading, longest-prefix-wins on the slash path (D6).
+//         list. Cascading, longest-prefix-wins on the slash path.
 //
-// AGN06 §6 deferred these two read-time behaviours ("alias map as query-synonym
-// resolver", "read-time filtering by ryoiki") to Graph RAG's own ADR — this is
-// where that decision is realized. Both files are optional: a root with neither
-// yields identity canonicalization and an empty blacklist (include-by-default).
-// Reads only; nothing here ever writes the reference files (AGN06 D2/D5).
+// Both files are optional: a root with neither yields identity canonicalization
+// and an empty blacklist (include-by-default). Reads only; nothing here ever
+// writes the reference files.
 // ---------------------------------------------------------------------------
 
 const REFERENCE_DIR = join('.agents', 'reference');
 const ALIASES_FILE = 'ryoiki-aliases.json';
 const BLACKLIST_FILE = 'ryoiki-blacklist.json';
 
-/** Reserved blacklist key whose entries apply to every unit (AGN06 D7). */
+/** Reserved blacklist key whose entries apply to every unit. */
 const GLOBAL_KEY = '*';
 
 type AliasMap = Record<string, { description?: string; alias?: string[] }>;
@@ -48,7 +46,8 @@ export interface RyoikiConfig {
   isBlacklisted(unit: string, ryoiki: string): boolean;
 }
 
-function readJson<T>(path: string): T | null {
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+function readJson<T extends Record<string, unknown>>(path: string): T | null {
   try {
     return JSON.parse(readFileSync(path, 'utf-8')) as T;
   } catch {
