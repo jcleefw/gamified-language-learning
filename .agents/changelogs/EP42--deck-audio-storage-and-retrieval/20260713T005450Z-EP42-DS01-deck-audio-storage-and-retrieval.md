@@ -2,7 +2,7 @@
 
 **Date**: 20260713T005450Z
 **Redefined**: 20260714 — re-based on the standalone `audio` table; `decks.audio_key` + per-sentence marker fields removed; timing served as WebVTT.
-**Status**: Draft (re-implementation)
+**Status**: Complete (re-implementation)
 **Epic**: [EP42 - Deck Audio Storage & Retrieval](../../plans/epics/EP42-deck-audio-storage-and-retrieval.md)
 
 **Architecture**:

@@ -1,7 +1,7 @@
 # EP26-DS02: Shelving Policy Design Specification v2
 
 **Date**: 20260626T
-**Status**: Draft
+**Status**: Complete
 **Epic**: [EP26 - SRS Shelving Policy](../../plans/epics/EP26-srs-shelving-policy.md)
 **Supersedes**: [DS01](20260626T004213Z-EP26-DS01-shelving-policy-design.md)
 

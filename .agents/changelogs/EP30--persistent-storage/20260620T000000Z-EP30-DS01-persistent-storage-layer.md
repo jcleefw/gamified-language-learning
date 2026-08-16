@@ -1,7 +1,7 @@
 # EP30-DS01: Persistent Storage Layer
 
 **Date**: 2026-06-20
-**Status**: Draft
+**Status**: Complete
 **Epic**: [EP30 — Persistent Storage Layer](../../.agents/plans/epics/EP30-persistent-storage.md)
 **Schema authority**: [Database Schema ADR](../../product-documentation/architecture/20260620T000000Z-engineering-database-schema.md)
 
