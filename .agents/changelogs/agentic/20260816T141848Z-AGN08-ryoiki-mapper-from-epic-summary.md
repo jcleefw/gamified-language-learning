@@ -136,6 +136,21 @@ No `draft`, `status`, or `confirm` step — the report itself is the complete, a
 - [ ] No `draft`/`status`/`confirm` step is invoked anywhere in the skill; no dependency on prior recorded facts for an id.
 - [ ] A malformed or missing report is rejected with a clear message, not partially applied.
 
+### AGN08-ST04: `completed` date fixup — bug fix + bulk-correction tool
+
+**Scope**: Fix the `completed` default bug in `write-ryoiki.mjs` (created entries were getting today's date instead of the documented `"undetermined"` placeholder, per §3), update `ryoiki-from-summary` to supply a real `completed` value, and add a standalone tool to bulk-correct `completed` on already-written epics.
+**Read List**: `write-ryoiki.mjs:36-53` (`newStory`), `.agents/skills/agentic/ryoiki-from-summary/SKILL.md`, `.agents/tools/archive-set-pr.sh` / `lib/archive-set-pr.mjs` (pattern model for a bulk epic-scoped fixup tool)
+
+**Tasks**:
+- [x] `write-ryoiki.mjs`'s `newStory` defaults `completed` to `"undetermined"` when the caller doesn't supply it, matching `duration`'s existing placeholder pattern — no more silent `today` fallback.
+- [x] `ryoiki-from-summary/SKILL.md` step 1 instructs the agent to compute `completed` as the latest changelog-file timestamp for the epic (one shared date per epic, not per-story) and include it in each entry's payload; omit it (falls back to `"undetermined"`) only when no changelog file exists for the epic.
+- [x] New `.agents/tools/archive-set-completed.sh` → `lib/archive-set-completed.mjs`, mirroring `archive-set-pr.sh`'s pattern: `--epic EP## --date YYYY-MM-DD`, overwrites `completed` on every story in that epic, re-sorts by `completed`, schema-validates before writing, leaves the index untouched on validation failure.
+
+**Acceptance**:
+- [x] A newly-created entry with no `completed` field in the input gets `"undetermined"`, not the run date.
+- [x] `archive-set-completed.sh --epic EP## --date <date>` updates every story with that `epic`, re-sorts the archive by `completed`, and refuses to write (index unchanged) if the resulting document fails schema validation.
+- [ ] EP17–EP40's manually-corrected `completed` values (done ad hoc via `jq` before this tool existed) are re-verified or re-applied through `archive-set-completed.sh` for consistency — optional cleanup, not required for this story to be considered done.
+
 ## 6. Not built
 
 - No changes to `ryoiki-aliases.json` or `ryoiki-blacklist.json` semantics — still human-curated only.
