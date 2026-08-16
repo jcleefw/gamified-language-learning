@@ -73,8 +73,8 @@ adr     --supersedes-->adr         (auto-parsed from "Superseded by" / "Amended 
 ryoiki.metadata = { content, sources:[storyIds], epics:[epicIds], prs:[numbers] }
 ```
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for the pipeline and JSON shape, and
-[EXTRACTION_PATTERNS.md](./EXTRACTION_PATTERNS.md) for exact field mappings.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the pipeline, JSON shape, and exact
+field mappings.
 
 ## Usage
 
@@ -114,6 +114,12 @@ before rebuilding — the graph only reconstructs what's on disk.
 
 After any of these, restart `graph:ui` (below) to pick up the change — it
 builds once at boot and only rebuilds on an explicit `/api/link`.
+
+**`graph:build` and `graph:ui` are separate processes.** Each resolves and
+builds the graph independently; rebuilding via `graph:build` does not update
+an already-running `graph:ui` server, since the server only builds once at
+boot and holds the result in memory. Restart `graph:ui` to pick up a fresh
+build.
 
 ### Filtering out ADR noise
 

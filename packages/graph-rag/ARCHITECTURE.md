@@ -171,4 +171,4 @@ graph:
 
 The graph accretes for free: it grows each time an epic is compacted into the
 archive + `KNOWLEDGE.md`. To refresh, just rebuild — see
-[RESEED_GUIDE.md](./RESEED_GUIDE.md).
+[README.md's Usage section](./README.md#usage).
