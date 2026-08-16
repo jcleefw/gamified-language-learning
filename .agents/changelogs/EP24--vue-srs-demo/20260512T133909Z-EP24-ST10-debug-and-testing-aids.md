@@ -1,4 +1,4 @@
-# EP24-DS03: Debug and Testing Aids
+# EP24-ST10: Debug and Testing Aids
 
 **Date**: 20260512T133909Z
 **Status**: Completed

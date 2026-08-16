@@ -1,7 +1,7 @@
 # EP30-DS01: Persistent Storage Layer
 
 **Date**: 2026-06-20
-**Status**: Draft
+**Status**: Complete
 **Epic**: [EP30 — Persistent Storage Layer](../../.agents/plans/epics/EP30-persistent-storage.md)
 **Schema authority**: [Database Schema ADR](../../product-documentation/architecture/20260620T000000Z-engineering-database-schema.md)
 
@@ -474,7 +474,7 @@ data/
 | ✅ Graduation hook | ST08 | COMPLETE |
 | ✅ Runner resume fix — skip mastered words on session start | post-ST08 | COMPLETE |
 
-### Post-ST08 fix: runner resume (2026-06-23)
+### BUG01 fix: runner resume (2026-06-23)
 
 During manual verification of ST08, mastered words were reappearing at the start of every new session, forcing users through a recheck batch before reaching unmastered words.
 

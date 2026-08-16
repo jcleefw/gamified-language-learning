@@ -2,7 +2,7 @@
 
 **Date**: 20260713T232015Z
 **Redefined**: 20260714 — timing authored as **WebVTT**, committed via a **gated server-write** (DB `audio.vtt` + durable bucket `.vtt`); the bespoke JSON marker map + `apply-markers` CLI are dropped.
-**Status**: Draft (re-implementation)
+**Status**: Complete (re-implementation)
 **Epic**: [EP43 - Audio Playback & Marking UI](../../plans/epics/EP43-audio-playback-and-marking.md)
 
 **Architecture**:

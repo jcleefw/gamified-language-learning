@@ -1,7 +1,7 @@
 # EP26-DS02: Shelving Policy Design Specification v2
 
 **Date**: 20260626T
-**Status**: Draft
+**Status**: Complete
 **Epic**: [EP26 - SRS Shelving Policy](../../plans/epics/EP26-srs-shelving-policy.md)
 **Supersedes**: [DS01](20260626T004213Z-EP26-DS01-shelving-policy-design.md)
 
@@ -382,17 +382,6 @@ DS01 was partially implemented across 5 isolated worktrees (none merged to main)
 - [ ] Max 2 (or configured) words shelved simultaneously per deck
 - [ ] Shelving in deck A does not affect deck B
 
-### EP26-ST06: BDD scenarios for srs-demo
-
-**Scope**: `apps/srs-demo/e2e/` — Playwright + Cucumber feature files
-
-**Scenarios**:
-- [ ] Word shelved after N stagnant batches stops appearing in questions
-- [ ] Shelved word holds active slot — no new words enter from queue
-- [ ] New session unshelves all words
-- [ ] `maxShelved` cap enforced — only N words shelved simultaneously
-
-**BDD seeding strategy**: Seed `user_deck_word_tracking.stagnation_count` and `user_shelved_words` via test API endpoints (`POST /api/test/seed-stagnation`, `POST /api/test/seed-shelved`) to set up preconditions without driving N batches through the UI.
 
 ---
 

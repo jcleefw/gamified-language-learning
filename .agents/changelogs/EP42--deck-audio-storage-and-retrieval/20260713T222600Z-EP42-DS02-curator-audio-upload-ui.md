@@ -2,7 +2,7 @@
 
 **Date**: 20260713T222600Z
 **Redefined**: 20260714 — upload writes a versioned `audio` row (insert + demote prior), not a `decks.audio_key` column.
-**Status**: Draft (re-implementation)
+**Status**: Complete (re-implementation)
 **Epic**: [EP42 - Deck Audio Storage & Retrieval](../../plans/epics/EP42-deck-audio-storage-and-retrieval.md)
 
 **Architecture**:

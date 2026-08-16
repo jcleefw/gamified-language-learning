@@ -1,7 +1,7 @@
 # EP36-DS01: Review Scheduler Package (`@gll/srs-review`) Specification
 
 **Date**: 20260708T011607Z
-**Status**: Draft
+**Status**: Complete
 **Epic**: [EP36 - SRS Review Phase](../../plans/epics/EP36-srs-review-phase.md)
 
 **Architecture**: [Review Phase Packaging ADR](../../../product-documentation/architecture/20260708T005635Z-engineering-srs-review-phase-packaging.md) · FSRS behaviour: [20260321 Review Phase ADR](../../../product-documentation/architecture/20260321T145300Z-engineering-srs-engine-v2-review-phase.md)

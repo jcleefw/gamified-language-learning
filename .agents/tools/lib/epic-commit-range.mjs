@@ -39,7 +39,7 @@ function emitFlags(flags) {
 }
 
 // ── Path 2 helper: branch-divergence result, or null if not applicable ──────
-function branchDivergence(root, pathspec) {
+function branchDivergence(root, pathspecs) {
   const branch = gitOrEmpty(root, ['rev-parse', '--abbrev-ref', 'HEAD']).trim()
   if (branch === 'main' || !branch) return null
   try {
@@ -50,17 +50,19 @@ function branchDivergence(root, pathspec) {
   const base = git(root, ['merge-base', 'main', 'HEAD']).trim()
   const tip = git(root, ['rev-parse', 'HEAD']).trim()
   if (base === tip) return null
-  const touching = git(root, ['log', '--format=%H', `${base}..${tip}`, '--', pathspec]).trim()
+  const touching = git(root, ['log', '--format=%H', `${base}..${tip}`, '--', ...pathspecs]).trim()
   if (!touching) return null
   return { firstCommit: base, lastCommit: tip }
 }
 
 export function epicCommitRange(root, ep) {
-  const pathspec = `.agents/changelogs/${ep}--*`
-  const shas = lines(git(root, ['log', 'main', '--reverse', '--format=%H', '--', pathspec]))
+  // tolerate both the current `EP##--slug` convention and legacy `EP##-slug`
+  // single-hyphen folders (e.g. EP22) that predate it
+  const pathspecs = [`.agents/changelogs/${ep}--*`, `.agents/changelogs/${ep}-*`]
+  const shas = lines(git(root, ['log', 'main', '--reverse', '--format=%H', '--', ...pathspecs]))
 
   if (shas.length === 0) {
-    const div = branchDivergence(root, pathspec)
+    const div = branchDivergence(root, pathspecs)
     if (div) {
       return {
         epic: ep,
@@ -85,7 +87,7 @@ export function epicCommitRange(root, ep) {
     const date = git(root, ['log', '-1', '--format=%ad', '--date=short', sha]).trim()
     const subject = git(root, ['log', '-1', '--format=%s', sha]).trim()
 
-    const addedFiles = git(root, ['show', '--diff-filter=A', '--name-only', '--format=', sha, '--', pathspec]).trim()
+    const addedFiles = git(root, ['show', '--diff-filter=A', '--name-only', '--format=', sha, '--', ...pathspecs]).trim()
     const isAdd = addedFiles !== ''
 
     const isRevert = /^Revert/.test(subject)

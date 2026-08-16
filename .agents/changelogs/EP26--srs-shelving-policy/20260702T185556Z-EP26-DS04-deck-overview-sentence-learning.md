@@ -1,8 +1,12 @@
 # EP26-DS04: Deck Overview with Sentence-by-Sentence Learning
 
 **Date**: 20260702T185556Z
-**Status**: Draft
+**Status**: Complete
 **Epic**: [EP26 - SRS Shelving Policy](../../plans/epics/EP26-srs-shelving-policy.md)
+
+> **Verified 2026-08-16**: All stories (ST07–ST09) implemented and confirmed against current code. Two details in this spec have since drifted from later, unrelated epics and should be read as historical context, not current fact:
+> - **Navigation**: the `App.vue` `Screen`/`overviewDeckId` mechanism in §2 and §4.1 was replaced by vue-router routes (`OverviewPage.vue`, `/learn/overview/:deckId`) in EP44's router refactor. `DeckOverview.vue` itself and its emits are unchanged.
+> - **Server location**: routes described under `apps/srs-demo-server` (§ST08 Read List) now live in `apps/server/src/routes/shelving.ts`.
 
 ---
 
@@ -133,21 +137,21 @@ For each sentence:
 
 **Tasks**:
 
-- [ ] Add `'overview'` to `type Screen` and `overviewDeckId` ref in `App.vue`
-- [ ] Add `@overview` emit to `DeckSelector.vue`; add [Overview] button to each deck row
-- [ ] Create `DeckOverview.vue`: header, conversation panel (`AppLinePayload[]` rendered as sentence cards with Thai + English), word table (word, English, mastery dots, status)
-- [ ] Implement word-to-sentence scroll: clicking word in table highlights sentence card(s) containing that `wordId`
-- [ ] Wire [Start full quiz] to emit `startQuiz` → `App.vue` calls `initSession`
-- [ ] Wire [← Back] to emit `back` → `App.vue` sets `screen = 'select'`
+- [x] Add `'overview'` to `type Screen` and `overviewDeckId` ref in `App.vue`
+- [x] Add `@overview` emit to `DeckSelector.vue`; add [Overview] button to each deck row
+- [x] Create `DeckOverview.vue`: header, conversation panel (`AppLinePayload[]` rendered as sentence cards with Thai + English), word table (word, English, mastery dots, status)
+- [x] Implement word-to-sentence scroll: clicking word in table highlights sentence card(s) containing that `wordId`
+- [x] Wire [Start full quiz] to emit `startQuiz` → `App.vue` calls `initSession`
+- [x] Wire [← Back] to emit `back` → `App.vue` sets `screen = 'select'`
 
 **Acceptance Criteria**:
 
-- [ ] [Overview] button on each deck row; clicking it shows `DeckOverview` without starting a quiz
-- [ ] Clicking the deck row directly still starts the quiz immediately (no regression)
-- [ ] All conversation sentences display with Thai text and English translation
-- [ ] Word table shows mastery dots and "Shelved" label for shelved words
-- [ ] Clicking a word in the table scrolls to and highlights the sentence containing it
-- [ ] [Start full quiz] and [← Back] navigate correctly
+- [x] [Overview] button on each deck row; clicking it shows `DeckOverview` without starting a quiz
+- [x] Clicking the deck row directly still starts the quiz immediately (no regression)
+- [x] All conversation sentences display with Thai text and English translation
+- [x] Word table shows mastery dots and "Shelved" label for shelved words
+- [x] Clicking a word in the table scrolls to and highlights the sentence containing it
+- [x] [Start full quiz] and [← Back] navigate correctly
 
 ---
 
@@ -163,19 +167,19 @@ For each sentence:
 
 **Tasks**:
 
-- [ ] Add `unshelveWord` and `resetStagnationCountersForWords` to `LearningStore` interface and SQLite implementation in `@gll/db`
-- [ ] Add `UnshelveWordRequest` and `ResetStagnationCountersForWordsRequest` to `packages/api-contract/src/srs.ts`
-- [ ] Add `POST /api/shelving/unshelve-word` and `POST /api/stagnation/reset-words` Hono routes
-- [ ] Add `unshelveWord` and `resetStagnationCountersForWords` functions to `useShelving.ts`
-- [ ] Add [Try now] button to shelved word rows in `DeckOverview.vue`; on click: call both composable functions, emit `unshelveWord` to `App.vue`, update local status display
+- [x] Add `unshelveWord` and `resetStagnationCountersForWords` to `LearningStore` interface and SQLite implementation in `@gll/db`
+- [x] Add `UnshelveWordRequest` and `ResetStagnationCountersForWordsRequest` to `packages/api-contract/src/srs.ts`
+- [x] Add `POST /api/shelving/unshelve-word` and `POST /api/stagnation/reset-words` Hono routes
+- [x] Add `unshelveWord` and `resetStagnationCountersForWords` functions to `useShelving.ts`
+- [x] Add [Try now] button to shelved word rows in `DeckOverview.vue`; on click: call both composable functions, emit `unshelveWord` to `App.vue`, update local status display
 
 **Acceptance Criteria**:
 
-- [ ] [Try now] button visible only on shelved words in the word table
-- [ ] Clicking [Try now] calls both endpoints successfully; word row updates to "Active" and button disappears
-- [ ] `shelvedSet` in `App.vue` is updated so the word is excluded from `excludeIds` on the next `assembleBatch` call
-- [ ] Word mastery is unchanged after unshelving
-- [ ] Unshelving is deck-scoped; unshelving in one deck does not affect another deck's shelved state
+- [x] [Try now] button visible only on shelved words in the word table
+- [x] Clicking [Try now] calls both endpoints successfully; word row updates to "Active" and button disappears
+- [x] `shelvedSet` in `App.vue` is updated so the word is excluded from `excludeIds` on the next `assembleBatch` call
+- [x] Word mastery is unchanged after unshelving
+- [x] Unshelving is deck-scoped; unshelving in one deck does not affect another deck's shelved state
 
 ---
 
@@ -190,22 +194,22 @@ For each sentence:
 
 **Tasks**:
 
-- [ ] Add `sentenceLearningActive`, `currentSentenceIndex`, `miniQuizBatchState`, `miniQuizCurrentQuestion` refs to `DeckOverview.vue`
-- [ ] Implement sentence walker: display current sentence (Thai + English), then call `assembleBatch` with that sentence's words and `excludeIds: shelvedSet`
-- [ ] Render `QuizCard` for mini-quiz questions; wire `onAnswered` → `submitBatchResult` → `nextQuestion` or `finishBatch`
-- [ ] On mini-quiz completion: `saveWordState` for answered words, `updateStagnationCounters`, `getStagnantWords`, `evaluateShelving`, `applyShelving` if needed — same pipeline as `finishBatchAndTransition`
-- [ ] Show [Next sentence →] after mini-quiz results; after final sentence show [Back to overview]
-- [ ] Wire [Learn sentence by sentence] button to start walker at `currentSentenceIndex = 0`
+- [x] Add `sentenceLearningActive`, `currentSentenceIndex`, `miniQuizBatchState`, `miniQuizCurrentQuestion` refs to `DeckOverview.vue`
+- [x] Implement sentence walker: display current sentence (Thai + English), then call `assembleBatch` with that sentence's words and `excludeIds: shelvedSet`
+- [x] Render `QuizCard` for mini-quiz questions; wire `onAnswered` → `submitBatchResult` → `nextQuestion` or `finishBatch`
+- [x] On mini-quiz completion: `saveWordState` for answered words, `updateStagnationCounters`, `getStagnantWords`, `evaluateShelving`, `applyShelving` if needed — same pipeline as `finishBatchAndTransition`
+- [x] Show [Next sentence →] after mini-quiz results; after final sentence show [Back to overview]
+- [x] Wire [Learn sentence by sentence] button to start walker at `currentSentenceIndex = 0`
 
 **Acceptance Criteria**:
 
-- [ ] [Learn sentence by sentence] steps through each sentence sequentially
-- [ ] Each sentence displays Thai + English before its mini-quiz
-- [ ] Mini-quiz question count = `min(3, sentenceWords.length)`
-- [ ] Mini-quiz uses `excludeIds: shelvedSet` (shelved words not quizzed unless manually unshelved)
-- [ ] Mastery updates and stagnation reevaluation run after each sentence's mini-quiz
-- [ ] A word that is re-shelved after a sentence mini-quiz is excluded from subsequent sentence mini-quizzes in the same session
-- [ ] After all sentences, user is returned to overview
+- [x] [Learn sentence by sentence] steps through each sentence sequentially
+- [x] Each sentence displays Thai + English before its mini-quiz
+- [x] Mini-quiz question count = `min(3, sentenceWords.length)`
+- [x] Mini-quiz uses `excludeIds: shelvedSet` (shelved words not quizzed unless manually unshelved)
+- [x] Mastery updates and stagnation reevaluation run after each sentence's mini-quiz
+- [x] A word that is re-shelved after a sentence mini-quiz is excluded from subsequent sentence mini-quizzes in the same session
+- [x] After all sentences, user is returned to overview
 
 ---
 

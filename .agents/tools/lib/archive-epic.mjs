@@ -470,6 +470,39 @@ export function parseMapShorthand(ep, mapStr) {
   return { renames, deletes }
 }
 
+// ── shared ryoiki-write core ────────────────────────────────────────────
+// Applies a `renames` map (id -> ryoiki) to `index.stories`, clearing
+// `state` on any matched entry that has one (absence of `state` is not an
+// error — a caller may target already-confirmed entries directly). Optional
+// `epic` scopes matching to one epic's stories; optional `deletes`/`onlyIds`
+// restrict further, mirroring cmdConfirm's `--map` shorthand semantics.
+// Optional `requireState: true` additionally restricts matches to entries
+// that currently carry a `state` field (cmdConfirm's draft-only behavior).
+// Returns { index, matchedIds, notFoundIds } — caller decides whether/how
+// to write the index back and how to report the result.
+export function applyRyoikiWrites(index, renames, { epic, deletes, onlyIds, requireState } = {}) {
+  const dels = deletes ?? new Set()
+  const inScope = (s) =>
+    (epic == null || s.epic === epic) && (!onlyIds || onlyIds.has(s.id)) && (!requireState || 'state' in s)
+
+  const matchedIds = new Set()
+  const stories = (index.stories ?? [])
+    .filter((s) => !(inScope(s) && dels.has(s.id)))
+    .map((s) => {
+      if (inScope(s) && renames.has(s.id)) {
+        matchedIds.add(s.id)
+        const next = { ...s }
+        next.ryoiki = renames.get(next.id)
+        delete next.state
+        return next
+      }
+      return s
+    })
+
+  const notFoundIds = [...renames.keys()].filter((id) => !matchedIds.has(id) && !dels.has(id))
+  return { index: { ...index, stories }, matchedIds, notFoundIds }
+}
+
 // ── confirm ──────────────────────────────────────────────────────────────
 export function cmdConfirm(ep, overrides, paths, mapOpts) {
   needIndex(paths.index)
@@ -478,26 +511,16 @@ export function cmdConfirm(ep, overrides, paths, mapOpts) {
     if (o.ryoiki != null) renames.set(o.id, o.ryoiki)
   }
 
-  const index = readJson(paths.index)
+  const rawIndex = readJson(paths.index)
   const deletes = mapOpts?.deletes ?? new Set()
   const onlyIds = mapOpts?.renames ? new Set(mapOpts.renames.keys()) : null
   if (mapOpts?.renames) for (const [id, ryoiki] of mapOpts.renames) renames.set(id, ryoiki)
 
-  index.stories = (index.stories ?? [])
-    .filter((s) => !(s.epic === ep && deletes.has(s.id)))
-    .map((s) => {
-      if (s.epic === ep && 'state' in s && (!onlyIds || onlyIds.has(s.id))) {
-        const next = { ...s }
-        if (renames.has(next.id)) next.ryoiki = renames.get(next.id)
-        delete next.state
-        return next
-      }
-      return s
-    })
-  writeJson(paths.index, index)
+  const { index: written } = applyRyoikiWrites(rawIndex, renames, { epic: ep, deletes, onlyIds, requireState: true })
+  writeJson(paths.index, written)
 
-  const n = index.stories.filter((s) => s.epic === ep && !('state' in s)).length
-  const remaining = index.stories.filter((s) => s.epic === ep && 'state' in s).length
+  const n = written.stories.filter((s) => s.epic === ep && !('state' in s)).length
+  const remaining = written.stories.filter((s) => s.epic === ep && 'state' in s).length
   const delMsg = deletes.size ? `, ${deletes.size} deleted` : ''
   const draftMsg = onlyIds && remaining ? `, ${remaining} still draft` : ''
   return green(`✓ confirmed ${ep} draft entries (${n} confirmed total for this epic${delMsg}${draftMsg})`) + '\n'

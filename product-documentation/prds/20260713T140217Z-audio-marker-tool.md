@@ -1,16 +1,16 @@
 # PRD: Audio Marker Tool
 
 **Date**: 20260713T140217Z
-**Status**: Draft (revised 20260714 — realigned to the WebVTT + standalone-audio ADRs)
+**Status**: Implemented (verified 20260816 against EP43-DS02/DS03 — marker component, gated VTT server-write, and the wavesurfer.js waveform/Regions swap are all shipped)
 **Epic**: EP43 — Audio Playback & Marking (re-scoped DS02); depends on the audio-asset-model storage work in the redefined EP42 (the standalone `audio` table).
 
-**Related ADR**: [Conversation Audio — Timing as WebVTT (Storage, Authoring & Playback)](../architecture/20260714T123438Z-engineering-audio-timing-webvtt.md) — *the governing ADR for this tool.*
+**Related ADR**: [Conversation Audio — Timing as WebVTT (Storage, Authoring & Playback)](../architecture/20260714T123438Z-engineering-audio-timing-webvtt.md) — _the governing ADR for this tool._
 **Related ADR**: [Conversation Audio — Standalone Audio Asset Model & Versioning](../architecture/20260714T123409Z-engineering-audio-asset-model.md) — where the VTT is stored.
-**Related ADR**: [Conversation Audio — Playback Model & Data Contract](../architecture/20260713T140218Z-engineering-audio-playback-model.md) *(amended — consume mechanism now Option C)*.
-**Superseded ADR**: [Conversation Audio — Marking (Authoring) Architecture](../architecture/20260713T140219Z-engineering-audio-marking-authoring.md) *(the bespoke-JSON / two-pass build this PRD originally assumed)*.
+**Related ADR**: [Conversation Audio — Playback Model & Data Contract](../architecture/20260713T140218Z-engineering-audio-playback-model.md) _(amended — consume mechanism now Option C)_.
+**Superseded ADR**: [Conversation Audio — Marking (Authoring) Architecture](../architecture/20260713T140219Z-engineering-audio-marking-authoring.md) _(the bespoke-JSON / two-pass build this PRD originally assumed)_.
 **Related ADR**: [Infrastructure — Mixed-Platform Hosting](../architecture/20260712T124801Z-infra-mixed-platform-hosting.md) (R2 audio storage).
 
-> **Scope**: The **curator experience** for placing per-sentence audio markers on a deck's single conversation file. Defines what the curator does and the minimum tool capability to unblock MVP audio. The *format, storage, and persistence* of markers are decided by the WebVTT ADR; the *audio entity* they attach to by the asset-model ADR; *playback* of the resulting markers to learners by the playback ADR. This PRD owns the authoring UX, not the mechanics.
+> **Scope**: The **curator experience** for placing per-sentence audio markers on a deck's single conversation file. Defines what the curator does and the minimum tool capability to unblock MVP audio. The _format, storage, and persistence_ of markers are decided by the WebVTT ADR; the _audio entity_ they attach to by the asset-model ADR; _playback_ of the resulting markers to learners by the playback ADR. This PRD owns the authoring UX, not the mechanics.
 
 ---
 
@@ -25,7 +25,7 @@ The marker tool lets the curator (the PO, for the MVP) **scrub the deck's alread
 ## 2. Users
 
 - **Curator / PO** — authors decks and their audio markers. The only user for the MVP. No learner sees this tool.
-- *(Later, not built here)* the same marker capability may be exposed to learners for their own word-level markers — hence the tool is built as an **isolated, portable component** rather than wired into curator-only plumbing.
+- _(Later, not built here)_ the same marker capability may be exposed to learners for their own word-level markers — hence the tool is built as an **isolated, portable component** rather than wired into curator-only plumbing.
 
 ---
 
@@ -57,7 +57,7 @@ Single delivery — no pass-1/pass-2 split (the old two-pass build is superseded
 ### 4.2 Out of scope (this tool)
 
 - **No waveform** — a scrubber + numeric time is enough to place markers.
-- **No word-level marking UI** — the VTT cue-ID namespace *reserves* the `sentenceId#wordIndex` shape, but no word-level authoring UI is built here.
+- **No word-level marking UI** — the VTT cue-ID namespace _reserves_ the `sentenceId#wordIndex` shape, but no word-level authoring UI is built here.
 - **No automated marker derivation** — forced alignment (aeneas/MFA) is a separate future producer/epic, not this hand-marking tool.
 - **No audio upload** — the binary already exists (EP42 curator upload). This tool marks it; it does not ingest audio.
 - **No TTS / audio generation** — audio is manually produced for the MVP.
@@ -76,9 +76,9 @@ Single delivery — no pass-1/pass-2 split (the old two-pass build is superseded
 
 ## 6. Open Questions
 
-| Question | Owner |
-| -------- | ----- |
-| Keyboard-nudge granularity + whether snap-to-play-head is enough without a waveform | Dev / PO |
-| Route gating for the curator view (how "curator-only" is enforced pre-auth) | Dev |
-| Confirm the Option-C premise for this tool's *preview* (browser TextTrack vs a simple seek-and-stop) | Dev |
-| Exact shape of the gated commit endpoint (upsert VTT for an existing audio key) | Dev |
+| Question                                                                                             | Owner    |
+| ---------------------------------------------------------------------------------------------------- | -------- |
+| Keyboard-nudge granularity + whether snap-to-play-head is enough without a waveform                  | Dev / PO |
+| Route gating for the curator view (how "curator-only" is enforced pre-auth)                          | Dev      |
+| Confirm the Option-C premise for this tool's _preview_ (browser TextTrack vs a simple seek-and-stop) | Dev      |
+| Exact shape of the gated commit endpoint (upsert VTT for an existing audio key)                      | Dev      |

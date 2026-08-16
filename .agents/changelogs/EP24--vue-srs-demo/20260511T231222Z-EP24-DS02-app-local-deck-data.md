@@ -1,7 +1,7 @@
 # EP24-DS02: App-Local Deck Data Specification
 
 **Date**: 20260511T231222Z
-**Status**: Draft
+**Status**: Completed
 **Epic**: [EP24 - Vue SRS Demo App](../../plans/epics/EP24-vue-srs-demo.md)
 
 ---

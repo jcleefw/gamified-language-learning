@@ -2,7 +2,7 @@
 
 **Date**: 20260713T232015Z
 **Redefined**: 20260714 — consume timing from a served `.vtt` via the browser's native `TextTrack`/`cuechange` (Option C), not per-line `audioStart`/`audioEnd`.
-**Status**: Draft (retrofit; DS01 v1 shipped against per-line numbers)
+**Status**: Complete (retrofit; DS01 v1 shipped against per-line numbers)
 **Epic**: [EP43 - Audio Playback & Marking UI](../../plans/epics/EP43-audio-playback-and-marking.md)
 
 **Architecture**:

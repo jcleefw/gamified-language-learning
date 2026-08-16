@@ -308,23 +308,6 @@ masteryHistory = new Map()            // fresh — no prior batch context
 - [ ] Shelving a word that's already shelved is idempotent (upsert)
 - [ ] `pnpm --filter db test` green
 
-### EP26-ST06: Host integration wiring
-
-**Scope**: Host layer (srs-demo or CLI demo)
-**Read List**: `apps/srs-demo/` or `packages/srs-engine-v2/demo/` (whichever is current host), EP26-ST01 through ST05 outputs
-**Tasks**:
-
-- [ ] Initialize `MasteryHistory` at session start
-- [ ] Call `unshelveAllWords` at session start
-- [ ] After each `advanceAdaptiveSession`, call `recordMasterySnapshot` → `detectStagnantWords` → `evaluateShelving`
-- [ ] Persist shelving decisions via `LearningStore`
-- [ ] Pass `excludeIds` to `assembleBatch`
-      **Acceptance Criteria**:
-- [ ] A word with no mastery progress over 3 batches gets shelved and stops appearing in questions
-- [ ] Shelved word still holds its active slot (new words don't enter from queue)
-- [ ] Starting a new session unshelves all words
-- [ ] Max 2 (or configured) words shelved simultaneously
-
 ---
 
 ## 6. Success Criteria
