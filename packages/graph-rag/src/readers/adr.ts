@@ -1,6 +1,6 @@
-import { readFileSync, readdirSync } from 'fs';
+import { readFileSync, readdirSync, type Dirent } from 'fs';
 import { join } from 'path';
-import { ProjectGraph } from '../graph.js';
+import type { ProjectGraph } from '../graph.js';
 import { ryoikiKey } from './archive.js';
 
 // ---------------------------------------------------------------------------
@@ -9,7 +9,7 @@ import { ryoikiKey } from './archive.js';
 // ADRs live in <root>/product-documentation/architecture/*.md and use markdown
 // bold fields (`**Status:**`, `**Date:**`, …), NOT YAML frontmatter. They ingest
 // AS-IS as standalone `kettei` nodes and start FLOATING — no prose is mined for
-// ryoiki links (staying true to EXTRACTION_PATTERNS.md's "no prose mining").
+// ryoiki links (staying true to ARCHITECTURE.md's "no prose mining").
 //
 // A human links an ADR to the ryoiki it governs; that link is authored back
 // into the ADR's `**Decides:**` field (the SOURCE OF TRUTH), so a reset + rebuild
@@ -59,7 +59,7 @@ export function adrSlug(filename: string): string {
  */
 export function findAdrFiles(root: string, only?: string[] | null): string[] {
   const dir = join(root, ADR_RELATIVE_DIR);
-  let entries: import('fs').Dirent[];
+  let entries: Dirent[];
   try {
     entries = readdirSync(dir, { withFileTypes: true });
   } catch {
@@ -158,8 +158,8 @@ export function ingestAdrs(
   const ryoikiByKey = new Map<string, string>(); // ryoikiKey -> node id
   for (const node of graph.nodes.values()) {
     if (node.type === 'ryoiki') {
-      const unit = String(node.metadata.unit ?? '');
-      const ryoiki = String(node.metadata.ryoiki ?? '');
+      const unit = typeof node.metadata.unit === 'string' ? node.metadata.unit : '';
+      const ryoiki = typeof node.metadata.ryoiki === 'string' ? node.metadata.ryoiki : '';
       ryoikiByKey.set(ryoikiKey(unit, canonicalize(ryoiki)), node.id);
     }
   }

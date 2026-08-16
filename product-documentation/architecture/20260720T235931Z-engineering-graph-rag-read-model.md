@@ -302,7 +302,6 @@ output cache (`.graph-data.json`) is gitignored.
 - ADR: [Package-Scoped Knowledge Filtering (AGN06)](20260718T213334Z-agentic-package-scoped-knowledge-filtering.md)
   — defines ryoiki, the blacklist, and the alias map, and defers their read-time
   consumption to this ADR (D5–D7); its D1 (`concern` → `ryoiki`) is the precedent D3 follows.
-- Package docs: `packages/graph-rag/ARCHITECTURE.md` (build pipeline),
-  `EXTRACTION_PATTERNS.md` (field-by-field mapping), `docs/graph-model-explained.md`
-  (conceptual primer), `RESEED_GUIDE.md` (rebuild runbook) — the mechanics this ADR
-  governs.
+- Package docs: `packages/graph-rag/ARCHITECTURE.md` (build pipeline,
+  field-by-field mapping, and rebuild runbook), `docs/graph-model-explained.md`
+  (conceptual primer) — the mechanics this ADR governs.

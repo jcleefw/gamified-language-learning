@@ -3,10 +3,9 @@
 A plain-language primer on how graph-rag's graph is actually built out of **nodes** and
 **edges** — what the objects look like, where each one comes from, and how they connect.
 
-This is the *conceptual* doc. For the build pipeline see
-[ARCHITECTURE.md](../ARCHITECTURE.md); for the exact field-by-field mapping from source
-files see [EXTRACTION_PATTERNS.md](../EXTRACTION_PATTERNS.md). The three form a set — start
-here, then go to those for the mechanics.
+This is the *conceptual* doc. For the build pipeline and exact field-by-field
+mapping from source files see [ARCHITECTURE.md](../ARCHITECTURE.md). The two
+form a set — start here, then go there for the mechanics.
 
 Every example below uses real data from the project (`apps/srs-demo`, the `Routing`
 ryoiki, `EP44`).
