@@ -1,4 +1,0 @@
-{
-  "*": ["type-definitions"],
-  "apps/srs-demo": ["workspace-tooling"]
-}
